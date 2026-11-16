@@ -50,6 +50,8 @@ export interface TransformedQuestion {
     reattemptCount?: string;
     decimals?: number;
     numericType?: string;
+    /** Optional ± tolerance of a numeric answer; empty/0 = exact match. */
+    numericTolerance?: number | null;
     parentRichTextContent?: string | null;
     singleChoiceOptions?: Array<{ id: string; name: string; isSelected: boolean }>;
     multipleChoiceOptions?: Array<{ id: string; name: string; isSelected: boolean }>;

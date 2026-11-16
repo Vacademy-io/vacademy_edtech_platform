@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { trackOrQueue, isNetworkError } from "@/lib/offline/events/track-or-queue";
 import QuizReview from "./QuizReview";
 import { isMultiSelectQuestion, partialCreditFraction } from "./quiz-scoring";
+import { numericToleranceVerdict } from "./numeric-answer-match";
 import { useGetQuizSlideActivityLogs } from "@/services/study-library/tracking-api/get-quiz-slide-activity-logs";
 import { getStudentDisplaySettings } from "@/services/student-display-settings";
 import confetti from "canvas-confetti";
@@ -172,10 +173,12 @@ const isAnswerCorrect = (q: Question, answer: AnswerValue): boolean => {
 // On a multiple-correct question a lone option id must match the WHOLE key: picking
 // one of two correct options is not a correct answer. Single-select questions keep
 // accepting any keyed option (an author may key two options as both acceptable).
+// A numeric question with a ± tolerance is judged on that (null = no tolerance, old rule).
 const isSingleAnswerCorrect = (q: Question, answer: string, correct: string[]): boolean =>
-  isMultiSelectQuestion(q.question_type)
+  numericToleranceVerdict(q.question_type, q.auto_evaluation_json, answer) ??
+  (isMultiSelectQuestion(q.question_type)
     ? correct.length === 1 && correct[0] === answer
-    : correct.includes(answer);
+    : correct.includes(answer));
 
 const getQuestionTypeDescription = (type: string | undefined, t: TFunction): string => {
   const baseDescriptions = getBaseQuestionTypeDescriptions(t);
@@ -705,8 +708,11 @@ export const QuizViewer: React.FC<QuizViewerProps> = ({
       return correctAsStrings.every((c) => asStrings.includes(c));
     }
 
-    // Single answer
-    return correctAnswers.map((x) => String(x)).includes(String(userAns));
+    // Single answer (a numeric question with a ± tolerance is judged on that)
+    return (
+      numericToleranceVerdict(currentQuestion.question_type, currentQuestion.auto_evaluation_json, userAns) ??
+      correctAnswers.map((x) => String(x)).includes(String(userAns))
+    );
   }, [answers, correctAnswers, currentQuestion]);
 
   if (!questions || questions.length === 0) {

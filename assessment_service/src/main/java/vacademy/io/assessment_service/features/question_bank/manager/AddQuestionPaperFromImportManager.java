@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.assessment_service.features.assessment.service.marking_strategy.NumericAnswerMatcher;
 import vacademy.io.assessment_service.features.evaluation.service.QuestionEvaluationService;
 import vacademy.io.assessment_service.features.question_bank.dto.AddQuestionDTO;
 import vacademy.io.assessment_service.features.question_bank.dto.AddQuestionPaperDTO;
@@ -523,7 +524,10 @@ public class AddQuestionPaperFromImportManager {
 
         // Check if valid answers are not null before setting them
         if (requestNumericalEvaluation.getData() != null && requestNumericalEvaluation.getData().getValidAnswers() != null) {
-            numericalEvaluation.setData(new NumericalEvaluationDto.NumericalData(requestNumericalEvaluation.getData().getValidAnswers()));
+            NumericalEvaluationDto.NumericalData data =
+                    new NumericalEvaluationDto.NumericalData(requestNumericalEvaluation.getData().getValidAnswers());
+            data.setTolerance(NumericAnswerMatcher.normaliseTolerance(requestNumericalEvaluation.getData().getTolerance()));
+            numericalEvaluation.setData(data);
         }
 
         // Set the auto evaluation JSON only if numerical evaluation is not null

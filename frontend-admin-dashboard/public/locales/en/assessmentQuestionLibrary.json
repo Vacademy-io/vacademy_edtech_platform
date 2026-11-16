@@ -103,6 +103,7 @@
         "showAnswer": "Show answer",
         "hideAnswer": "Hide answer",
         "answer": "Answer:",
+        "tolerance": "(accepted within ± {{value}})",
         "explanation": "Explanation",
         "total_one": "{{count}} question",
         "total_other": "{{count}} questions",

@@ -72,6 +72,7 @@ const QuizQuestionsPreviewDialog = ({
         subjectiveAnswerText: q.subjectiveAnswerText || '',
         decimals: q.decimals ?? 0,
         numericType: q.numericType || '',
+        numericTolerance: q.numericTolerance ?? null,
         singleChoiceOptions: mapOptions(q.singleChoiceOptions),
         multipleChoiceOptions: mapOptions(q.multipleChoiceOptions),
         trueFalseOptions: mapOptions(q.trueFalseOptions),

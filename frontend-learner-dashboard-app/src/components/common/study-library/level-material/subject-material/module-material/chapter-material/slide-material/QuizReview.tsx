@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { ScoreCard } from "./quiz-viewer";
 import { isMultiSelectQuestion, partialCreditFraction } from "./quiz-scoring";
+import { numericToleranceVerdict } from "./numeric-answer-match";
 import type { QuizAttemptLog, QuizSideEntry } from "@/services/study-library/tracking-api/get-quiz-slide-activity-logs";
 import { getPublicUrl } from "@/services/upload_file";
 import { isRichTextEmpty, parseHtmlToString } from "@/lib/utils";
@@ -193,6 +194,9 @@ const isAnswerMatch = (
   correctAnswers: (string | number)[],
 ): boolean => {
   if (correctAnswers.length === 0) return false;
+  // A numeric question with a ± tolerance is judged on that (null = no tolerance, old rule).
+  const withinTolerance = numericToleranceVerdict(q.question_type, q.auto_evaluation_json, answer);
+  if (withinTolerance !== null) return withinTolerance;
   const correct = correctAnswers.map(String);
   if (Array.isArray(answer)) {
     const ans = new Set(answer.map(String));
@@ -330,8 +334,9 @@ export const QuizReview: React.FC<QuizReviewProps> = ({ questions, userAnswers, 
         const correctIds = getCorrectAnswers(q).map(String);
         if (correctIds.length === 0) return;
         const isCorrect =
-          answerIds.length === correctIds.length &&
-          correctIds.every((c) => answerIds.includes(c));
+          numericToleranceVerdict(q.question_type, q.auto_evaluation_json, answerIds[0]) ??
+          (answerIds.length === correctIds.length &&
+            correctIds.every((c) => answerIds.includes(c)));
         if (isCorrect) earned += 1;
       });
       const pct = total > 0 ? Math.round((earned / total) * 100) : 0;

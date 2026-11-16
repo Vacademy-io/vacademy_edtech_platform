@@ -250,6 +250,7 @@
       "submittedSuccessfully": "Answer submitted successfully.",
       "correctWellDone": "Correct! Well done.",
       "incorrectAnswerIs": "Incorrect. The correct answer is: {{answer}}",
+      "incorrectAnswerWithin": "Incorrect. The correct answer is: {{answer}} (± {{tolerance}} accepted)",
       "notFound": "Not found",
       "correctAllSelected": "Correct! You selected all the right answers.",
       "incorrectAnswersAre": "Incorrect. The correct answers are: {{answers}}",

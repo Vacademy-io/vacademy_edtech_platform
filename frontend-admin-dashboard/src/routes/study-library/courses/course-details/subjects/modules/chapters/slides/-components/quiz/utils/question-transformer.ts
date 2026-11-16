@@ -1,4 +1,5 @@
 import { BackendQuestion, TransformedQuestion } from '../types';
+import { readNumericTolerance } from '@/routes/assessment/question-papers/-utils/numeric-tolerance';
 
 // Helper function to parse auto_evaluation_json
 // Returns an array that may contain numeric indices OR string option IDs (UUIDs).
@@ -129,6 +130,12 @@ const createBaseTransformedQuestion = (
         reattemptCount: question.reattemptCount,
         decimals: question.decimals,
         numericType: question.numericType,
+        // A form question carries its own (possibly just cleared) value; a saved one has it
+        // in the answer key.
+        numericTolerance:
+            question.numericTolerance !== undefined
+                ? question.numericTolerance
+                : readNumericTolerance(question.auto_evaluation_json),
         parentRichTextContent: parentRichTextContent,
         singleChoiceOptions: [],
         multipleChoiceOptions: [],

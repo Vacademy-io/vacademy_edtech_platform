@@ -17,6 +17,7 @@ import { useWatch } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { Badge } from '@/components/ui/badge';
 import { NumericAnswerInput, answerSlots } from '../../NumericAnswerInput';
+import { NumericToleranceField } from '../../NumericToleranceField';
 
 export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
     form,
@@ -241,6 +242,10 @@ export const ComprehensiveNumericQuestionPaperTemplateMainView = ({
                         </FormItem>
                     )}
                 />
+                    <NumericToleranceField
+                        control={control}
+                        name={`questions.${currentQuestionIndex}.numericTolerance`}
+                    />
             </div>
             )}
             <div className="mb-6 flex w-full flex-col !flex-nowrap items-start gap-1">

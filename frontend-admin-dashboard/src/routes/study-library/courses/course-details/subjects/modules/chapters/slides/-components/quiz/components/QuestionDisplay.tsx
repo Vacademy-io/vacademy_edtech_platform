@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { TransformedQuestion } from '../types';
 import { CaretDown, CaretUp } from '@phosphor-icons/react';
 import { isRichTextEmpty } from '@/lib/utils';
+import { normaliseNumericTolerance } from '@/routes/assessment/question-papers/-utils/numeric-tolerance';
 
 interface QuestionDisplayProps {
     question: TransformedQuestion;
@@ -104,6 +105,7 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     };
 
     const renderNumericAnswer = (validAnswers: (number | string)[]) => {
+        const tolerance = normaliseNumericTolerance(question.numericTolerance);
         return (
             <div className="mt-3 space-y-2">
                 <div className="text-xs font-medium text-slate-600">{t('correctAnswersLabel')}</div>
@@ -117,6 +119,11 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                         </div>
                     ))}
                 </div>
+                {tolerance !== undefined && (
+                    <div className="text-xs text-neutral-600">
+                        {t('toleranceLabel', { value: tolerance })}
+                    </div>
+                )}
             </div>
         );
     };

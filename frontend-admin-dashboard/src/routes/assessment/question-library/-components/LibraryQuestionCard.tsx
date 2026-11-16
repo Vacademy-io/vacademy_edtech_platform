@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { cn } from '@/lib/utils';
 import { sanitizeRichHtml } from '@/lib/sanitize-html';
 import { renderLatexDelimiters } from '@/lib/latex-delimiters';
+import { normaliseNumericTolerance } from '@/routes/assessment/question-papers/-utils/numeric-tolerance';
 import {
     nodePath,
     type LibraryNode,
@@ -31,6 +32,7 @@ const richHtml = (html: string | null | undefined) =>
 interface EvaluationData {
     correctOptionIds?: string[];
     validAnswers?: (string | number)[];
+    tolerance?: number;
     answer?: string | { content?: string };
 }
 
@@ -262,7 +264,18 @@ export const LibraryQuestionCard = ({
                                         {t('list.answer')}{' '}
                                     </span>
                                     {evaluation.validAnswers?.length ? (
-                                        evaluation.validAnswers.join(', ')
+                                        <>
+                                            {evaluation.validAnswers.join(', ')}
+                                            {normaliseNumericTolerance(evaluation.tolerance) !==
+                                                undefined && (
+                                                <span className="text-neutral-500">
+                                                    {' '}
+                                                    {t('list.tolerance', {
+                                                        value: evaluation.tolerance,
+                                                    })}
+                                                </span>
+                                            )}
+                                        </>
                                     ) : (
                                         <span
                                             dangerouslySetInnerHTML={{
