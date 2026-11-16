@@ -228,7 +228,8 @@ export function QuestionDisplay() {
     passageHtml,
   });
 
-  const content = (
+  // The question column; `withPassage` = today's collapsible passage above the stem.
+  const renderColumn = (withPassage: boolean) => (
     <div className="mx-auto w-full max-w-4xl">
       {header}
 
@@ -237,7 +238,7 @@ export function QuestionDisplay() {
       {/* Comprehension passage for this question (backend: parent_rich_text).
           ExpandableParagraph above is a different thing — the assessment-wide
           "about" text fetched once from about_id — so it never showed passages. */}
-      {!splitPassage && <QuestionPassage html={passageHtml} />}
+      {withPassage && <QuestionPassage html={passageHtml} />}
 
       {/* Tailwind's reset strips <p> margins — a multi-paragraph stem would
           otherwise render as one block with no breaks. */}
@@ -382,10 +383,14 @@ export function QuestionDisplay() {
 
   if (splitPassage && passageHtml) {
     return (
-      <PassageSplitView passageHtml={passageHtml} questionId={currentQuestion.question_id}>
-        {content}
+      <PassageSplitView
+        passageHtml={passageHtml}
+        questionId={currentQuestion.question_id}
+        stacked={renderColumn(true)}
+      >
+        {renderColumn(false)}
       </PassageSplitView>
     );
   }
-  return content;
+  return renderColumn(true);
 }

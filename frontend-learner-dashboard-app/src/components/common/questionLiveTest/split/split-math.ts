@@ -30,6 +30,13 @@ export const boundsForWidth = (width: number): SplitBounds => {
   return max < min ? { min: max, max } : { min, max };
 };
 
+/**
+ * Whether a row `width` px wide holds both panes at their pixel floors. An
+ * unmeasured row (0, e.g. before layout) counts as wide enough.
+ */
+export const splitFits = (width: number): boolean =>
+  width <= 0 || width >= START_MIN_PX + DIVIDER_PX + END_MIN_PX;
+
 /** A remembered split (raw storage string) as a usable %, or the fallback. */
 export const parseStoredSplit = (raw: string | null | undefined, fallback: number): number => {
   const stored = Number(raw);

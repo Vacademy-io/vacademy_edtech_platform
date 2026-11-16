@@ -7,10 +7,21 @@ import {
   clampSplit,
   parseStoredSplit,
   splitForKey,
+  splitFits,
   splitFromPointer,
 } from "./split-math";
 
 describe("split maths (CBE + passage beside the question)", () => {
+  it("knows when a row is too narrow for both panes", () => {
+    // 250 + 12 + 400 = 662px: a 768px tablet with the 320px question rail open has 448px.
+    expect(splitFits(448)).toBe(false);
+    expect(splitFits(661)).toBe(false);
+    expect(splitFits(662)).toBe(true);
+    expect(splitFits(1200)).toBe(true);
+    // Not measured yet (or no layout, as in jsdom): assume it fits.
+    expect(splitFits(0)).toBe(true);
+  });
+
   it("clamps to the default limits", () => {
     expect(clampSplit(5)).toBe(SPLIT_MIN);
     expect(clampSplit(90)).toBe(SPLIT_MAX);

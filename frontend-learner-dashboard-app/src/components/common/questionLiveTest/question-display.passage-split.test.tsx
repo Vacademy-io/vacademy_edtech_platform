@@ -105,6 +105,36 @@ describe("QuestionDisplay — show passage beside the question", () => {
     unmount();
   });
 
+  it("stacks the passage when the question area is too narrow for both panes", () => {
+    // A 768px tablet with the 320px question rail open leaves a 448px area.
+    const rect = vi
+      .spyOn(HTMLElement.prototype, "getBoundingClientRect")
+      .mockReturnValue({ width: 448, height: 600, top: 0, left: 0, right: 448, bottom: 600, x: 0, y: 0, toJSON: () => ({}) } as DOMRect);
+    const g = globalThis as { ResizeObserver?: unknown };
+    const hadObserver = "ResizeObserver" in g;
+    const original = g.ResizeObserver;
+    g.ResizeObserver = class {
+      observe() {}
+      disconnect() {}
+      unobserve() {}
+    };
+    try {
+      load({ v: 1, preset: "default", passage_beside_question: true });
+      const { host, unmount } = render();
+      expect(host.querySelector('[role="separator"]')).toBeNull();
+      // Today's collapsible passage above the question, once, in a scroller of its own.
+      expect(host.querySelectorAll("button[aria-expanded]").length).toBe(1);
+      expect(host.textContent).toContain("The river rose.");
+      expect(host.textContent).toContain("Why did it rise?");
+      expect(host.querySelector(".overflow-auto")).not.toBeNull();
+      unmount();
+    } finally {
+      rect.mockRestore();
+      if (hadObserver) g.ResizeObserver = original;
+      else delete g.ResizeObserver;
+    }
+  });
+
   it("keeps the normal layout for a question without a passage", () => {
     load({ v: 1, preset: "default", passage_beside_question: true }, question("MCQS", null));
     const { host, unmount } = render();
