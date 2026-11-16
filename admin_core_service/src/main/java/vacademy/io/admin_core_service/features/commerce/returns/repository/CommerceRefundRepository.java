@@ -75,13 +75,16 @@ public interface CommerceRefundRepository extends JpaRepository<CommerceRefund, 
             """, nativeQuery = true)
     int release(@Param("id") String id, @Param("nextPoll") Date nextPoll, @Param("error") String error);
 
-    /** The gateway's refund id, stored once. */
+    /**
+     * The gateway's refund id, stored once, and only on a refund still under way: a row that was
+     * finished or cancelled meanwhile is not touched (the caller re-reads it and alerts).
+     */
     @Modifying
     @Query(value = """
             UPDATE commerce_refund
             SET gateway_refund_id = :refundId, gateway_status = CAST(:gatewayStatus AS VARCHAR),
                 reference = COALESCE(CAST(:reference AS VARCHAR), reference), updated_at = CURRENT_TIMESTAMP
-            WHERE id = :id AND gateway_refund_id IS NULL
+            WHERE id = :id AND gateway_refund_id IS NULL AND status = 'IN_PROGRESS'
             """, nativeQuery = true)
     int storeGatewayRefund(@Param("id") String id, @Param("refundId") String refundId,
                            @Param("gatewayStatus") String gatewayStatus, @Param("reference") String reference);
@@ -142,6 +145,30 @@ public interface CommerceRefundRepository extends JpaRepository<CommerceRefund, 
     int markFailed(@Param("id") String id, @Param("now") Date now, @Param("code") String code,
                    @Param("reason") String reason, @Param("actor") String actor,
                    @Param("gatewayStatus") String gatewayStatus);
+
+    /**
+     * A staff cancel: PENDING (never sent) to FAILED, once. A refund the executor claimed
+     * meanwhile (IN_PROGRESS) is not touched, so a cancel can never fail a refund being sent.
+     */
+    @Modifying
+    @Query(value = """
+            UPDATE commerce_refund
+            SET status = 'FAILED', failed_at = :now, failure_code = :code,
+                failure_reason = CAST(:reason AS VARCHAR), processed_by = CAST(:actor AS VARCHAR),
+                next_poll_at = NULL, updated_at = CURRENT_TIMESTAMP
+            WHERE id = :id AND status = 'PENDING'
+            """, nativeQuery = true)
+    int cancelPending(@Param("id") String id, @Param("now") Date now, @Param("code") String code,
+                      @Param("reason") String reason, @Param("actor") String actor);
+
+    /**
+     * The poll leaves a row of an institute without commerce alone until {@code nextPoll}, so
+     * such rows never crowd out the others. Only the schedule changes.
+     */
+    @Modifying
+    @Query(value = "UPDATE commerce_refund SET next_poll_at = :nextPoll WHERE id = :id "
+            + "AND status IN ('PENDING', 'IN_PROGRESS')", nativeQuery = true)
+    int deferPoll(@Param("id") String id, @Param("nextPoll") Date nextPoll);
 
     /** The poll job's rows: gateway refunds waiting for their call (PENDING) or outcome (IN_PROGRESS). */
     interface DueRefund {

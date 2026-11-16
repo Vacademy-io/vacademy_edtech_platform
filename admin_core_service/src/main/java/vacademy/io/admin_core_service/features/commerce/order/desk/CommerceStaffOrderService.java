@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.commerce.order.desk;
 
+import vacademy.io.admin_core_service.features.commerce.returns.entity.CommerceReturn;
 import vacademy.io.admin_core_service.features.commerce.returns.enums.RefundMethod;
 import vacademy.io.admin_core_service.features.commerce.returns.service.CommerceExchangeService;
 import lombok.extern.slf4j.Slf4j;
@@ -188,6 +189,11 @@ public class CommerceStaffOrderService {
                 throw new ConflictException(CommerceExchangeService.EXCHANGE_NOT_AVAILABLE + ": exchanges are not "
                         + "available");
             }
+            // The exchange spends the return's credit: the caller must manage the return's
+            // location too (as POST /refunds with a return_id), not only the new order's.
+            CommerceReturn exchanged = transaction.execute(status -> exchanges().readReturn(instituteId,
+                    clean.exchange().returnId()));
+            desk.authorize(user, instituteId, exchanged == null ? null : exchanged.getLocationId(), MANAGER);
         } else if (received.compareTo(total) > 0) {
             throw new InvalidRequestException("TENDERS_OVER: the money received (" + received.toPlainString()
                     + ") is more than the order total (" + total.toPlainString() + ")");

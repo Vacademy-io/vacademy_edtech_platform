@@ -23,7 +23,7 @@ import vacademy.io.admin_core_service.features.commerce.returns.repository.Comme
 public class CommerceRefundWebhookService {
 
     /** What the event did, for the tests and the log. */
-    public enum Outcome { PROCESSED, FAILED, REPLAY, UNKNOWN_REFUND, AMOUNT_MISMATCH, NO_ENTITY, IGNORED }
+    public enum Outcome { PROCESSED, FAILED, REPLAY, CONFLICT, UNKNOWN_REFUND, AMOUNT_MISMATCH, NO_ENTITY, IGNORED }
 
     private final CommerceRefundRepository refundRepository;
     private final CommerceRefundService refundService;
@@ -75,12 +75,21 @@ public class CommerceRefundWebhookService {
         if ("refund.processed".equals(eventType)) {
             boolean moved = refundService.markProcessed(refund.getId(),
                     CommerceRefundService.Facts.gateway(status == null ? "processed" : status, bankReference));
-            return moved ? Outcome.PROCESSED : Outcome.REPLAY;
+            if (moved) {
+                return Outcome.PROCESSED;
+            }
+            // Not moved: a replay, unless the row is FAILED (an alert: the buyer was paid).
+            return refundService.outcomeConflict(refund.getId(), "processed", gatewayRefundId, eventType)
+                    ? Outcome.CONFLICT : Outcome.REPLAY;
         }
         if ("refund.failed".equals(eventType)) {
             boolean moved = refundService.markFailed(refund.getId(), CommerceRefundExecutor.GATEWAY_FAILED,
                     "the gateway reports the refund failed", status == null ? "failed" : status);
-            return moved ? Outcome.FAILED : Outcome.REPLAY;
+            if (moved) {
+                return Outcome.FAILED;
+            }
+            return refundService.outcomeConflict(refund.getId(), "failed", gatewayRefundId, eventType)
+                    ? Outcome.CONFLICT : Outcome.REPLAY;
         }
         return Outcome.IGNORED;
     }

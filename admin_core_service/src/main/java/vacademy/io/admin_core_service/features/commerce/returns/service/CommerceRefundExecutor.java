@@ -66,7 +66,7 @@ public class CommerceRefundExecutor {
     }
 
     /** What one execute did; for the tests and the poll's counts. */
-    public enum Result { NOT_CLAIMED, FAILED, RETRY_LATER, PROCESSED, PENDING_AT_GATEWAY, CREATE_UNKNOWN }
+    public enum Result { NOT_CLAIMED, FAILED, RETRY_LATER, PROCESSED, PENDING_AT_GATEWAY, CREATE_UNKNOWN, CONFLICT }
 
     public Result execute(String refundId) {
         return execute(refundId, new Date());
@@ -81,7 +81,8 @@ public class CommerceRefundExecutor {
         if (claimed == null || claimed != 1) {
             return Result.NOT_CLAIMED;
         }
-        CommerceRefund refund = ownTransaction.execute(status -> refundRepository.findById(refundId).orElse(null));
+        // Read again: the persistence context of a request may hold the row from before the claim.
+        CommerceRefund refund = ownTransaction.execute(status -> refundService.reload(refundId));
         if (refund == null) {
             return Result.NOT_CLAIMED;
         }
@@ -132,7 +133,15 @@ public class CommerceRefundExecutor {
                     refundId, error);
             return Result.CREATE_UNKNOWN;
         }
-        return apply(refund, created, now, true);
+        try {
+            return apply(refund, created, now, true);
+        } catch (RuntimeException e) {
+            // Created at the gateway, but its answer could not be stored: the row stays
+            // IN_PROGRESS and the poll finds the refund by its receipt.
+            log.error("COMMERCE_ALERT refund_apply_failed refund={} after the create: {}", refundId,
+                    e.getClass().getSimpleName(), e);
+            return Result.CREATE_UNKNOWN;
+        }
     }
 
     /**
@@ -142,7 +151,7 @@ public class CommerceRefundExecutor {
      * passed since the claim. A gateway error only reschedules.
      */
     public Result check(String refundId, Date now) {
-        CommerceRefund refund = ownTransaction.execute(status -> refundRepository.findById(refundId).orElse(null));
+        CommerceRefund refund = ownTransaction.execute(status -> refundService.reload(refundId));
         if (refund == null || !RefundMethod.GATEWAY.name().equals(refund.getMethod())
                 || !RefundStatus.IN_PROGRESS.name().equals(refund.getStatus())) {
             return Result.NOT_CLAIMED;
@@ -177,7 +186,16 @@ public class CommerceRefundExecutor {
             reschedule(refund, now, null);
             return Result.RETRY_LATER;
         }
-        return apply(refund, found, now, false);
+        try {
+            return apply(refund, found, now, false);
+        } catch (RuntimeException e) {
+            // One row whose answer cannot be stored must not throw on every run: asked again
+            // later with the poll's backoff, and alerted.
+            log.error("COMMERCE_ALERT refund_apply_failed refund={} gateway_refund={}: {}", refundId,
+                    found == null ? null : found.id(), e.getClass().getSimpleName(), e);
+            reschedule(refund, now, null);
+            return Result.RETRY_LATER;
+        }
     }
 
     /** The gateway's answer about the refund: stored, then processed, failed or asked again later. */
@@ -192,21 +210,48 @@ public class CommerceRefundExecutor {
             reschedule(refund, now, answer.status());
             return Result.RETRY_LATER;
         }
+        String status = answer.status() == null ? "" : answer.status();
+        String source = fromCreate ? "create" : "poll";
         if (answer.id() != null) {
-            ownTransaction.executeWithoutResult(status -> refundRepository.storeGatewayRefund(refund.getId(),
+            Integer stored = ownTransaction.execute(tx -> refundRepository.storeGatewayRefund(refund.getId(),
                     answer.id(), CommerceRefundService.clip(answer.status(), 32),
                     CommerceRefundService.clip(answer.bankReference(), 100)));
+            if (stored == null || stored != 1) {
+                // Not stored: the id is there already, or the row is no longer under way (it
+                // was finished or cancelled while the gateway had it). The latter never moves
+                // from here; an opposite outcome is an alert.
+                CommerceRefund current = ownTransaction.execute(tx -> refundService.reload(refund.getId()));
+                if (current != null && !RefundStatus.IN_PROGRESS.name().equals(current.getStatus())) {
+                    if (!RefundStatus.PROCESSED.name().equals(current.getStatus())
+                            && !RefundStatus.FAILED.name().equals(current.getStatus())) {
+                        log.error("COMMERCE_ALERT refund_outcome_conflict refund={} ours={} gateway={} "
+                                        + "gateway_refund={} source={} (the gateway has a refund the row does not "
+                                        + "record as sent)", refund.getId(), current.getStatus(), status, answer.id(),
+                                source);
+                        return Result.CONFLICT;
+                    }
+                    if (refundService.outcomeConflict(refund.getId(), status, answer.id(), source)) {
+                        return Result.CONFLICT;
+                    }
+                    return RefundStatus.PROCESSED.name().equals(current.getStatus()) ? Result.PROCESSED
+                            : Result.FAILED;
+                }
+            }
         }
-        String status = answer.status() == null ? "" : answer.status();
         switch (status) {
             case "processed" -> {
-                refundService.markProcessed(refund.getId(),
-                        CommerceRefundService.Facts.gateway(status, answer.bankReference()));
+                if (!refundService.markProcessed(refund.getId(),
+                        CommerceRefundService.Facts.gateway(status, answer.bankReference()))
+                        && refundService.outcomeConflict(refund.getId(), status, answer.id(), source)) {
+                    return Result.CONFLICT;
+                }
                 return Result.PROCESSED;
             }
             case "failed" -> {
-                refundService.markFailed(refund.getId(), GATEWAY_FAILED, "the gateway reports the refund failed",
-                        status);
+                if (!refundService.markFailed(refund.getId(), GATEWAY_FAILED, "the gateway reports the refund failed",
+                        status) && refundService.outcomeConflict(refund.getId(), status, answer.id(), source)) {
+                    return Result.CONFLICT;
+                }
                 return Result.FAILED;
             }
             default -> {

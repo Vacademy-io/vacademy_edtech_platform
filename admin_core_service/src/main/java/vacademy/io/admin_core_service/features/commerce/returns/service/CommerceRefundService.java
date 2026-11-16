@@ -350,7 +350,9 @@ public class CommerceRefundService {
                         throw new ConflictException(REFUND_STATE_CHANGED + ": the refund is " + refund.getStatus()
                                 + "; only a pending refund is cancelled");
                     }
-                    if (!markFailedInside(order, refund, CANCELLED, reason, actor, null)) {
+                    // Only from PENDING: a refund the executor claimed after the read above is being
+                    // sent and is never failed from here.
+                    if (!markFailedInside(order, refund, CANCELLED, reason, actor, null, true)) {
                         throw new ConflictException(REFUND_STATE_CHANGED + ": the refund changed meanwhile");
                     }
                     auditService.record(instituteId, actor, order.getFulfilmentLocationId(), "REFUND_CANCELLED",
@@ -515,8 +517,18 @@ public class CommerceRefundService {
 
     boolean markFailedInside(CommerceOrder order, CommerceRefund refund, String code, String reason, String actor,
                              String gatewayStatus) {
-        if (refundRepository.markFailed(refund.getId(), new Date(), clip(code, 64), clip(reason, 500), actor,
-                clip(gatewayStatus, 32)) != 1) {
+        return markFailedInside(order, refund, code, reason, actor, gatewayStatus, false);
+    }
+
+    /** As above; {@code pendingOnly} (a staff cancel) moves only a refund nobody has claimed. */
+    boolean markFailedInside(CommerceOrder order, CommerceRefund refund, String code, String reason, String actor,
+                             String gatewayStatus, boolean pendingOnly) {
+        Date now = new Date();
+        int moved = pendingOnly
+                ? refundRepository.cancelPending(refund.getId(), now, clip(code, 64), clip(reason, 500), actor)
+                : refundRepository.markFailed(refund.getId(), now, clip(code, 64), clip(reason, 500), actor,
+                        clip(gatewayStatus, 32));
+        if (moved != 1) {
             return false;
         }
         refresh(refund);
@@ -542,6 +554,7 @@ public class CommerceRefundService {
         if (nz(order.getRefundDue()).compareTo(nz(order.getRefundCommitted())) == 0
                 && nz(order.getAmountRefunded()).compareTo(nz(order.getRefundDue())) == 0) {
             exceptions.resolveRefundDue(order.getId(), now);
+            exceptions.resolveOversoldRefundedOtherwise(order.getId(), "Refunded by refund " + refund.getId(), now);
         }
         String instituteId = order.getInstituteId();
         String orderId = order.getId();
@@ -560,6 +573,11 @@ public class CommerceRefundService {
      * refund id, or null when there is no paying payment to refund. Idempotent by key.
      */
     public String autoOversold(String instituteId, String orderId) {
+        if (!accessGuard.featureOn(instituteId, CommerceFeature.ORDERS)) {
+            log.error("COMMERCE_ALERT oversold_paid_order_needs_refund institute={} order={} (commerce is off for "
+                    + "the institute: no automatic refund)", instituteId, orderId);
+            return null;
+        }
         return transaction.execute(status -> {
             CommerceOrder order = desk.lockOrder(instituteId, orderId);
             desk.raiseRefundDue(order, nz(order.getAmountPaid()).subtract(nz(order.getRefundDue())),
@@ -571,18 +589,31 @@ public class CommerceRefundService {
                 exceptions.linkRefund(orderId, CommercePaymentException.KIND_OVERSOLD_PAID, "", earlier.get().getId());
                 return earlier.get().getId();
             }
-            CommerceGatewayOrder paying = gatewayOrders.findFirstByCommerceOrderIdAndPayingTrue(orderId).orElse(null);
+            // Read as a value: the gateway row may sit in this request's persistence context with
+            // the values it had before the payment claim marked it paying (open-in-view).
+            String paymentId = gatewayOrders.findPayingPaymentId(orderId).filter(StringUtils::hasText).orElse(null);
+            if (paymentId == null) {
+                log.error("COMMERCE_ALERT oversold_paid_order_needs_refund institute={} order={} (no paying gateway "
+                        + "payment known yet: the refund poll retries)", instituteId, orderId);
+                return null;
+            }
             BigDecimal open = nz(order.getRefundDue()).subtract(nz(order.getRefundCommitted()));
-            if (paying == null || !StringUtils.hasText(paying.getGatewayPaymentId()) || open.signum() <= 0) {
-                // The payment that paid is marked after the order code ran (same request): the
-                // refund poll calls this again once it is (its exception row has no refund yet).
-                log.error("COMMERCE_ALERT oversold_paid_order_needs_refund institute={} order={} open={} "
-                        + "(no paying gateway payment known yet: the refund poll retries)", instituteId, orderId,
-                        open);
+            if (open.signum() <= 0) {
+                // Staff refunded it another way before the automatic refund was made. Settled in
+                // full: the exception row is resolved. A refund still pending keeps the row open;
+                // the poll does not read it while nothing is open, and reads it again if that
+                // refund fails.
+                boolean settled = nz(order.getAmountRefunded()).compareTo(nz(order.getRefundDue())) >= 0;
+                if (settled) {
+                    exceptions.resolveOversoldRefundedOtherwise(orderId, "Refunded otherwise: nothing left due",
+                            new Date());
+                }
+                log.info("Commerce oversold order {} of institute {}: nothing left due back (refunded otherwise{})",
+                        orderId, instituteId, settled ? "" : ", a refund is pending");
                 return null;
             }
             CommerceRefund refund = insertInside(order, new NewRefund(RefundKind.ORDER, RefundSource.OVERSOLD_PAID,
-                    RefundMethod.GATEWAY, RefundStatus.PENDING, open, null, null, paying.getGatewayPaymentId(), null,
+                    RefundMethod.GATEWAY, RefundStatus.PENDING, open, null, null, paymentId, null,
                     null, null, null, null, "Paid after the stock was gone; the order is cancelled.", key, null));
             exceptions.linkRefund(orderId, CommercePaymentException.KIND_OVERSOLD_PAID, "", refund.getId());
             return refund.getId();
@@ -595,6 +626,11 @@ public class CommerceRefundService {
      */
     public String autoDuplicate(String instituteId, String orderId, String gatewayPaymentId, BigDecimal amount) {
         if (!StringUtils.hasText(gatewayPaymentId) || amount == null || amount.signum() <= 0) {
+            return null;
+        }
+        if (!accessGuard.featureOn(instituteId, CommerceFeature.ORDERS)) {
+            log.error("COMMERCE_ALERT duplicate_payment_needs_refund institute={} order={} payment={} (commerce is "
+                    + "off for the institute: no automatic refund)", instituteId, orderId, gatewayPaymentId);
             return null;
         }
         return transaction.execute(status -> {
@@ -638,6 +674,42 @@ public class CommerceRefundService {
         }
     }
 
+    /**
+     * The refund row as stored now (read again when the persistence context holds it). Null
+     * when there is none. Call inside a transaction.
+     */
+    public CommerceRefund reload(String refundId) {
+        CommerceRefund refund = refundRepository.findById(refundId).orElse(null);
+        if (refund != null) {
+            refresh(refund);
+        }
+        return refund;
+    }
+
+    /**
+     * A gateway outcome (a webhook, the poll, the create's answer) that moved nothing because the
+     * row is final already. When our final state says the opposite (FAILED while the gateway
+     * says processed or pending, PROCESSED while it says failed) money and the ledger disagree:
+     * an alert, so staff check before anything is refunded again. True when it is such a case.
+     */
+    public boolean outcomeConflict(String refundId, String gatewayStatus, String gatewayRefundId, String source) {
+        CommerceRefund refund = ownTransaction.execute(status -> reload(refundId));
+        if (refund == null || gatewayStatus == null) {
+            return false;
+        }
+        String gateway = gatewayStatus.trim().toLowerCase(Locale.ROOT);
+        boolean conflict = (RefundStatus.FAILED.name().equals(refund.getStatus())
+                && ("processed".equals(gateway) || "pending".equals(gateway) || "created".equals(gateway)))
+                || (RefundStatus.PROCESSED.name().equals(refund.getStatus()) && "failed".equals(gateway));
+        if (conflict) {
+            log.error("COMMERCE_ALERT refund_outcome_conflict institute={} order={} refund={} ours={} gateway={} "
+                            + "gateway_refund={} source={} (the gateway's outcome contradicts the recorded one: check "
+                            + "the payment before any further refund)", refund.getInstituteId(), refund.getOrderId(),
+                    refund.getId(), refund.getStatus(), gateway, gatewayRefundId, source);
+        }
+        return conflict;
+    }
+
     // ================================================================== reads
 
     public RefundDtos.RefundView get(CustomUserDetails user, String instituteId, String refundId) {
@@ -677,6 +749,9 @@ public class CommerceRefundService {
         return ownTransaction.execute(tx -> {
             CommerceRefund r = refundRepository.findByIdAndInstituteId(refundId, instituteId)
                     .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "REFUND_NOT_FOUND: no such refund"));
+            // The request's persistence context may hold the row as it was before the executor's
+            // native updates (claim, gateway id): read it again.
+            refresh(r);
             String orderNumber = orderRepository.findById(r.getOrderId()).map(CommerceOrder::getOrderNumber)
                     .orElse(null);
             String returnNumber = r.getReturnId() == null ? null : returnRepository.findById(r.getReturnId())
@@ -742,6 +817,8 @@ public class CommerceRefundService {
         if (paying == null) {
             throw new ConflictException(REFUND_METHOD_NOT_AVAILABLE + ": the order was not paid through the gateway");
         }
+        // A managed row may predate the bulk update that marked it paying in this request.
+        refresh(paying);
         if (!StringUtils.hasText(paying.getGatewayPaymentId())) {
             throw new ConflictException(GATEWAY_PAYMENT_UNKNOWN + ": the gateway payment of the order is not known");
         }
@@ -766,6 +843,14 @@ public class CommerceRefundService {
         }
         if (!"processed".equals(found.status()) && !"pending".equals(found.status())) {
             throw new ConflictException(GATEWAY_REFUND_MISMATCH + ": the gateway refund is " + found.status());
+        }
+        String receipt = found.receipt();
+        if (StringUtils.hasText(receipt) && receipt.length() <= 36 && Boolean.TRUE.equals(ownTransaction.execute(
+                status -> refundRepository.findById(receipt.trim()).isPresent()))) {
+            // Its receipt names one of our refunds: the shop sent it, and that row records it
+            // (the poll or the webhook stores its id). Adopting it would count it twice.
+            throw new ConflictException(GATEWAY_REFUND_MISMATCH + ": the gateway refund is the shop's own refund "
+                    + receipt.trim() + "; it is recorded there");
         }
         return found;
     }

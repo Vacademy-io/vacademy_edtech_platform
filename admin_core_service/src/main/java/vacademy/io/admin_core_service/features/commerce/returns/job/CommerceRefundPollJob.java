@@ -13,6 +13,8 @@ import vacademy.io.admin_core_service.features.commerce.order.payment.CommercePa
 import vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentExceptionRepository;
 import vacademy.io.admin_core_service.features.commerce.returns.repository.CommerceRefundRepository;
 import vacademy.io.admin_core_service.features.commerce.returns.service.CommerceRefundExecutor;
+import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard;
+import vacademy.io.admin_core_service.features.commerce.security.CommerceFeature;
 import vacademy.io.common.logging.SentryLogger;
 
 import java.time.Duration;
@@ -36,6 +38,11 @@ import java.util.function.LongSupplier;
  * </ol>
  * With no refund rows (commerce switched off) each query is a probe of an empty partial index:
  * no gateway call, no write.
+ *
+ * <p>Only institutes with the commerce feature are served: a row of any other institute makes
+ * no gateway call and gets no hook. Its refund row is left alone for {@link #FEATURE_OFF_DEFER}
+ * (only its next poll time moves, so it never crowds out the others); its exception row is
+ * skipped inside a read window of {@value #EXCEPTION_WINDOW} rows.
  */
 @Slf4j
 @Component
@@ -49,29 +56,35 @@ public class CommerceRefundPollJob {
     static final Duration EXCEPTION_GRACE = Duration.ofMinutes(2);
     static final Duration STUCK_AFTER = Duration.ofHours(72);
     static final Duration STUCK_ALERT_EVERY = Duration.ofHours(24);
+    static final Duration FEATURE_OFF_DEFER = Duration.ofHours(1);
+    static final int EXCEPTION_WINDOW = 100;
 
     private final CommerceRefundRepository refundRepository;
     private final CommerceRefundExecutor executor;
     private final CommercePaymentExceptionRepository exceptions;
     private final CommerceRefundHook refundHook;
+    private final CommerceAccessGuard accessGuard;
     private final TransactionTemplate ownTransaction;
     private final LongSupplier clockMillis;
 
     @Autowired
     public CommerceRefundPollJob(CommerceRefundRepository refundRepository, CommerceRefundExecutor executor,
                                  CommercePaymentExceptionRepository exceptions, CommerceRefundHook refundHook,
-                                 PlatformTransactionManager transactionManager) {
-        this(refundRepository, executor, exceptions, refundHook, transactionManager, System::currentTimeMillis);
+                                 CommerceAccessGuard accessGuard, PlatformTransactionManager transactionManager) {
+        this(refundRepository, executor, exceptions, refundHook, accessGuard, transactionManager,
+                System::currentTimeMillis);
     }
 
     /** For tests: the wall clock the run budget is measured on. */
     CommerceRefundPollJob(CommerceRefundRepository refundRepository, CommerceRefundExecutor executor,
                           CommercePaymentExceptionRepository exceptions, CommerceRefundHook refundHook,
-                          PlatformTransactionManager transactionManager, LongSupplier clockMillis) {
+                          CommerceAccessGuard accessGuard, PlatformTransactionManager transactionManager,
+                          LongSupplier clockMillis) {
         this.refundRepository = refundRepository;
         this.executor = executor;
         this.exceptions = exceptions;
         this.refundHook = refundHook;
+        this.accessGuard = accessGuard;
         this.ownTransaction = new TransactionTemplate(transactionManager);
         this.ownTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         this.ownTransaction.setReadOnly(false);
@@ -94,6 +107,7 @@ public class CommerceRefundPollJob {
         long started = clockMillis.getAsLong();
         Map<String, Integer> counts = new HashMap<>();
         Map<String, Integer> perInstitute = new HashMap<>();
+        Map<String, Boolean> commerceOn = new HashMap<>();
         int handled = 0;
 
         List<CommerceRefundRepository.DueRefund> pending = ownTransaction.execute(status ->
@@ -102,6 +116,10 @@ public class CommerceRefundPollJob {
                 : pending) {
             if (handled >= MAX_PER_RUN || overBudget(started)) {
                 break;
+            }
+            if (!on(commerceOn, row.getInstituteId())) {
+                deferOff(row, now, counts);
+                continue;
             }
             if (perInstitute.merge(row.getInstituteId(), 1, Integer::sum) > MAX_PER_INSTITUTE) {
                 continue;
@@ -123,6 +141,10 @@ public class CommerceRefundPollJob {
                 ? List.<CommerceRefundRepository.DueRefund>of() : inProgress) {
             if (handled >= MAX_PER_RUN || overBudget(started)) {
                 break;
+            }
+            if (!on(commerceOn, row.getInstituteId())) {
+                deferOff(row, now, counts);
+                continue;
             }
             if (perInstitute.merge(row.getInstituteId(), 1, Integer::sum) > MAX_PER_INSTITUTE) {
                 continue;
@@ -153,12 +175,18 @@ public class CommerceRefundPollJob {
 
         if (!overBudget(started)) {
             List<CommercePaymentException> unrefunded = ownTransaction.execute(status -> exceptions.findUnrefunded(
-                    new Date(now.getTime() - EXCEPTION_GRACE.toMillis()), MAX_EXCEPTIONS));
+                    new Date(now.getTime() - EXCEPTION_GRACE.toMillis()), EXCEPTION_WINDOW));
+            int retried = 0;
             for (CommercePaymentException row : unrefunded == null ? List.<CommercePaymentException>of()
                     : unrefunded) {
-                if (overBudget(started)) {
+                if (retried >= MAX_EXCEPTIONS || overBudget(started)) {
                     break;
                 }
+                if (!on(commerceOn, row.getInstituteId())) {
+                    counts.merge("skipped_commerce_off", 1, Integer::sum);
+                    continue;
+                }
+                retried++;
                 if (CommercePaymentException.KIND_OVERSOLD_PAID.equals(row.getKind())) {
                     refundHook.refundOversoldPaidOrder(row.getInstituteId(), row.getCommerceOrderId(),
                             row.getOrderNumber(), row.getAmount(), row.getCurrency());
@@ -174,6 +202,25 @@ public class CommerceRefundPollJob {
             log.info("COMMERCE_REFUND_POLL run {} ms={}", counts, clockMillis.getAsLong() - started);
         }
         return counts;
+    }
+
+    /** Whether the institute has the commerce feature; asked once per institute and run. */
+    private boolean on(Map<String, Boolean> cache, String instituteId) {
+        return cache.computeIfAbsent(instituteId == null ? "" : instituteId,
+                id -> accessGuard != null && accessGuard.featureOn(id, CommerceFeature.ORDERS));
+    }
+
+    /** A refund row of an institute without commerce: no gateway call; looked at again later. */
+    private void deferOff(CommerceRefundRepository.DueRefund row, Date now, Map<String, Integer> counts) {
+        counts.merge("skipped_commerce_off", 1, Integer::sum);
+        try {
+            ownTransaction.executeWithoutResult(status -> refundRepository.deferPoll(row.getId(),
+                    new Date(now.getTime() + FEATURE_OFF_DEFER.toMillis())));
+        } catch (RuntimeException e) {
+            log.warn("Commerce refund poll: could not defer refund {}: {}", row.getId(), e.getClass().getSimpleName());
+        }
+        log.warn("COMMERCE_REFUND_POLL refund {} of institute {} skipped: commerce is off for the institute",
+                row.getId(), row.getInstituteId());
     }
 
     private boolean overBudget(long started) {

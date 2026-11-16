@@ -83,7 +83,7 @@ public class CommerceExchangeService {
     public record Locked(CommerceOrder oldOrder, CommerceReturn ret, BigDecimal credit, String creditNoteNumber) {
     }
 
-    /** The old order (the location the new one is checked against), read without a lock; 404 otherwise. */
+    /** The return (its location is checked before the exchange writes), read without a lock; 404 otherwise. */
     public CommerceReturn readReturn(String instituteId, String returnId) {
         CommerceReturn ret = returnRepository.findByIdAndInstituteId(returnId, instituteId).orElse(null);
         if (ret == null) {

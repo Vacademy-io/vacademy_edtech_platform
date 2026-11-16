@@ -106,6 +106,9 @@ class RefundFixture {
                 exceptions, dueService, requestGuard, accessGuard, auditService, events, gateway, clock, periodGuard,
                 executorProvider, transactionManager);
         lenient().when(executorProvider.getIfAvailable()).thenReturn(executor);
+        if (org.mockito.Mockito.mockingDetails(guard).isMock()) {
+            lenient().when(guard.featureOn(anyString(), any())).thenReturn(true);
+        }
         lenient().when(clock.today(anyString())).thenReturn(today);
         lenient().when(requestGuard.run(any(), any(), any())).thenAnswer(call -> new CommerceRequestGuard.Outcome<>(
                 ((Supplier<Object>) call.getArgument(1)).get(), false));
@@ -152,6 +155,8 @@ class RefundFixture {
         paying.setPaying(true);
         lenient().when(gatewayOrders.findFirstByCommerceOrderIdAndPayingTrue(ORDER)).thenAnswer(call ->
                 Optional.ofNullable(paying.getPaying() ? paying : null));
+        lenient().when(gatewayOrders.findPayingPaymentId(ORDER)).thenAnswer(call ->
+                Optional.ofNullable(paying.getPaying() ? paying.getGatewayPaymentId() : null));
 
         lenient().when(refundRepository.saveAndFlush(any(CommerceRefund.class))).thenAnswer(call -> {
             CommerceRefund r = call.getArgument(0);
@@ -178,6 +183,24 @@ class RefundFixture {
                 }));
         lenient().when(refundRepository.markFailed(anyString(), any(), anyString(), any(), any(), any())).thenAnswer(
                 call -> cas(call.getArgument(0), "FAILED", r -> r.setFailureCode(call.getArgument(2))));
+        lenient().when(refundRepository.cancelPending(anyString(), any(), anyString(), any(), any())).thenAnswer(call -> {
+            CommerceRefund r = find(call.getArgument(0)).orElse(null);
+            if (r == null || !"PENDING".equals(r.getStatus())) {
+                return 0;
+            }
+            r.setStatus("FAILED");
+            r.setFailureCode(call.getArgument(2));
+            return 1;
+        });
+        lenient().when(refundRepository.storeGatewayRefund(anyString(), anyString(), any(), any())).thenAnswer(call -> {
+            CommerceRefund r = find(call.getArgument(0)).orElse(null);
+            if (r == null || r.getGatewayRefundId() != null || !"IN_PROGRESS".equals(r.getStatus())) {
+                return 0;
+            }
+            r.setGatewayRefundId(call.getArgument(1));
+            r.setGatewayStatus(call.getArgument(2));
+            return 1;
+        });
         lenient().when(refundRepository.sumLiveOfReturn(anyString())).thenAnswer(call -> sum(call.getArgument(0),
                 false));
         lenient().when(refundRepository.sumProcessedOfReturn(anyString())).thenAnswer(call -> sum(call.getArgument(0),

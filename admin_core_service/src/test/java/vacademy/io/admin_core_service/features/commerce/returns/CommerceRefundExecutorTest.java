@@ -195,4 +195,61 @@ class CommerceRefundExecutorTest {
         verify(f.refundRepository).reschedule(eq(r.getId()), eq(now), any(), any());
         assertTrue(r.getFailureCode() == null);
     }
+
+    // ------------------------------------------------------------------ review follow-ups
+
+    @Test
+    void aRowFinishedWhileTheGatewayHadItIsNeverMovedFromHereAndIsAConflict() {
+        CommerceRefund r = f.pendingGateway("200.00");
+        captured(100000L, 0L);
+        when(f.gateway.createRefund(eq(INST), eq(PAYMENT), eq(20000L), eq(r.getId()), any())).thenAnswer(call -> {
+            // Meanwhile something failed the row (it must not happen; if it does, it is loud).
+            r.setStatus("FAILED");
+            return answer("pending", 20000L);
+        });
+        assertEquals(CommerceRefundExecutor.Result.CONFLICT, executor.execute(r.getId(), now));
+        assertEquals("FAILED", r.getStatus());
+        assertEquals(null, r.getGatewayRefundId(), "a finished row takes no gateway id");
+    }
+
+    @Test
+    void aProcessedAnswerForARowAlreadyFailedIsAConflictAndChangesNothing() {
+        CommerceRefund r = f.pendingGateway("200.00");
+        r.setStatus("IN_PROGRESS");
+        r.setGatewayRefundId("rfnd_1");
+        r.setClaimedAt(now);
+        when(f.gateway.fetchRefund(INST, PAYMENT, "rfnd_1")).thenAnswer(call -> {
+            r.setStatus("FAILED");
+            return answer("processed", 20000L);
+        });
+        assertEquals(CommerceRefundExecutor.Result.CONFLICT, executor.check(r.getId(), now));
+        assertEquals("FAILED", r.getStatus());
+    }
+
+    @Test
+    void anAnswerThatCannotBeStoredReschedulesTheRowInsteadOfThrowingEveryRun() {
+        CommerceRefund r = f.pendingGateway("200.00");
+        r.setStatus("IN_PROGRESS");
+        r.setClaimedAt(now);
+        when(f.gateway.fetchRefunds(INST, PAYMENT)).thenReturn(List.of(new CommercePaymentGateway.GatewayRefund(
+                "rfnd_dup", PAYMENT, 20000L, "INR", "processed", r.getId(), null, Instant.now())));
+        when(f.refundRepository.storeGatewayRefund(eq(r.getId()), eq("rfnd_dup"), any(), any())).thenThrow(
+                new org.springframework.dao.DataIntegrityViolationException("uq_commerce_refund_gateway_refund"));
+        assertEquals(CommerceRefundExecutor.Result.RETRY_LATER, executor.check(r.getId(), now));
+        assertEquals("IN_PROGRESS", r.getStatus());
+        verify(f.refundRepository).reschedule(eq(r.getId()), eq(now), any(), any());
+    }
+
+    @Test
+    void anAnswerThatCannotBeStoredAfterTheCreateLeavesTheRowToThePoll() {
+        CommerceRefund r = f.pendingGateway("200.00");
+        captured(100000L, 0L);
+        when(f.gateway.createRefund(eq(INST), eq(PAYMENT), eq(20000L), eq(r.getId()), any()))
+                .thenReturn(answer("pending", 20000L));
+        when(f.refundRepository.storeGatewayRefund(eq(r.getId()), any(), any(), any())).thenThrow(
+                new org.springframework.dao.DataIntegrityViolationException("uq_commerce_refund_gateway_refund"));
+        assertEquals(CommerceRefundExecutor.Result.CREATE_UNKNOWN, executor.execute(r.getId(), now));
+        assertEquals("IN_PROGRESS", r.getStatus());
+        verify(f.gateway, times(1)).createRefund(anyString(), anyString(), anyLong(), anyString(), any());
+    }
 }

@@ -101,4 +101,31 @@ class CommerceRefundWebhookServiceTest {
                 "processed"), gatewayOrder, INST));
         assertEquals(Outcome.NO_ENTITY, service.handle("refund.processed", null, gatewayOrder, INST));
     }
+
+    @Test
+    void aLateOppositeOutcomeOnAFinalRowIsAConflictNotAReplay() throws Exception {
+        CommerceRefund failed = f.pendingGateway("200.00");
+        failed.setStatus("FAILED");
+        failed.setGatewayRefundId("rfnd_1");
+        assertEquals(Outcome.CONFLICT, service.handle("refund.processed", entity("rfnd_1", null, 20000L, "processed"),
+                gatewayOrder, INST));
+        assertEquals("FAILED", failed.getStatus());
+
+        CommerceRefund notCreated = f.pendingGateway("100.00");
+        notCreated.setStatus("FAILED");
+        assertEquals(Outcome.CONFLICT, service.handle("refund.processed", entity("rfnd_5", notCreated.getId(), 10000L,
+                "processed"), gatewayOrder, INST), "found by its receipt; its id is not stored on a failed row");
+        assertEquals(null, notCreated.getGatewayRefundId());
+
+        CommerceRefund paid = f.pendingGateway("50.00");
+        paid.setStatus("PROCESSED");
+        when(f.refundRepository.findByGatewayVendorAndGatewayRefundId("RAZORPAY", "rfnd_6")).thenReturn(
+                Optional.of(paid));
+        paid.setGatewayRefundId("rfnd_6");
+        assertEquals(Outcome.CONFLICT, service.handle("refund.failed", entity("rfnd_6", null, 5000L, "failed"),
+                gatewayOrder, INST));
+        assertEquals("PROCESSED", paid.getStatus());
+        assertEquals(Outcome.REPLAY, service.handle("refund.processed", entity("rfnd_6", null, 5000L, "processed"),
+                gatewayOrder, INST));
+    }
 }

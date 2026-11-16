@@ -112,6 +112,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -185,6 +186,8 @@ class CommerceReturnsRefundsDatabaseProofIT {
     @Autowired private CommerceRefundPollJob pollJob;
     @Autowired private CommerceInvoiceRetryJob invoiceRetryJob;
     @Autowired private CommerceOrderRepository orderRepository;
+    @Autowired private vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentExceptionRepository
+            exceptionRepository;
     @Autowired private StockReconciliationJob reconciliationJob;
     @Autowired private PlatformTransactionManager transactionManager;
     @Autowired private ObjectMapper objectMapper;
@@ -213,6 +216,10 @@ class CommerceReturnsRefundsDatabaseProofIT {
     private final AtomicInteger gatewayRefundIds = new AtomicInteger();
     /** How the stubbed gateway answers a refund create: pending, processed or throw. */
     private volatile String createMode = "pending";
+    /** The buyer's network address of the next checkouts (each address has its own order limit). */
+    private volatile String clientIp = "127.0.0.1";
+    /** A slow gateway: each refund create takes this long. */
+    private volatile long createDelayMillis = 0;
     /** The status a refund read answers, by gateway refund id (default pending). */
     private final Map<String, String> refundStatus = new ConcurrentHashMap<>();
     /** The refunds a payment lists, by payment id. */
@@ -257,6 +264,9 @@ class CommerceReturnsRefundsDatabaseProofIT {
             Long amount = call.getArgument(1);
             String receipt = call.getArgument(2);
             creates.add(paymentId + "|" + amount + "|" + receipt);
+            if (createDelayMillis > 0) {
+                Thread.sleep(createDelayMillis);
+            }
             if ("throw".equals(createMode)) {
                 throw new vacademy.io.common.exceptions.VacademyException("read timed out");
             }
@@ -494,7 +504,7 @@ class CommerceReturnsRefundsDatabaseProofIT {
                         .email("buyer-" + phone + "@example.invalid").build())
                 .shippingAddress(CheckoutRequest.Address.builder().line1("1 Proof Road").city("Lucknow")
                         .pincode("226001").build())
-                .build(), "127.0.0.1");
+                .build(), clientIp);
     }
 
     private List<Map<String, Object>> itemLines(String orderId) {
@@ -629,6 +639,100 @@ class CommerceReturnsRefundsDatabaseProofIT {
             pool.shutdownNow();
         }
         return results;
+    }
+
+    /** Backends of this database waiting on a lock (a row lock held elsewhere). */
+    private long waitingOnLocks() {
+        return count("SELECT count(*) FROM pg_stat_activity WHERE datname = current_database() AND wait_event_type = "
+                + "'Lock' AND pid <> pg_backend_pid()");
+    }
+
+    private void awaitWaiting(long expected) {
+        long deadline = System.currentTimeMillis() + 30_000L;
+        long waiting = waitingOnLocks();
+        while (waiting < expected && System.currentTimeMillis() < deadline) {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(e);
+            }
+            waiting = waitingOnLocks();
+        }
+        assertEquals(expected, waiting, "every request is blocked on the row held by the side connection");
+    }
+
+    /**
+     * Holds {@code SELECT ... FOR UPDATE} on one row from a side connection, starts every task,
+     * waits until all of them are blocked on that row, then lets go: the tasks meet at the lock
+     * every time, not by chance.
+     */
+    private List<Object> behindRowLock(String table, String id, List<Callable<Object>> tasks) {
+        ExecutorService pool = Executors.newFixedThreadPool(Math.max(4, tasks.size()));
+        try (java.sql.Connection side = db.getDataSource().getConnection()) {
+            side.setAutoCommit(false);
+            try (java.sql.PreparedStatement lock = side.prepareStatement("SELECT id FROM " + table
+                    + " WHERE id = ? FOR UPDATE")) {
+                lock.setString(1, id);
+                assertTrue(lock.executeQuery().next(), "the row exists");
+            }
+            List<Future<Object>> futures = new ArrayList<>();
+            for (Callable<Object> task : tasks) {
+                futures.add(pool.submit(() -> {
+                    header();
+                    try {
+                        return task.call();
+                    } catch (Exception e) {
+                        return e;
+                    } finally {
+                        RequestContextHolder.resetRequestAttributes();
+                    }
+                }));
+            }
+            awaitWaiting(tasks.size());
+            side.rollback();
+            List<Object> results = new ArrayList<>();
+            for (Future<Object> future : futures) {
+                results.add(future.get(120, TimeUnit.SECONDS));
+            }
+            return results;
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    /** A gateway refund written PENDING (as the request writes it, before its executor runs). */
+    private String pendingGatewayRow(String orderId, BigDecimal amount) {
+        String paymentId = text("SELECT gateway_payment_id FROM commerce_gateway_order WHERE commerce_order_id = ? AND "
+                + "paying", orderId);
+        String clientKey = "PROOF:" + key();
+        return new TransactionTemplate(transactionManager).execute(tx -> refunds.insertInside(desk.lockOrder(inst,
+                orderId), new CommerceRefundService.NewRefund(
+                vacademy.io.admin_core_service.features.commerce.returns.enums.RefundKind.ORDER,
+                vacademy.io.admin_core_service.features.commerce.returns.enums.RefundSource.STAFF,
+                vacademy.io.admin_core_service.features.commerce.returns.enums.RefundMethod.GATEWAY,
+                vacademy.io.admin_core_service.features.commerce.returns.enums.RefundStatus.PENDING, amount, null, null,
+                paymentId, null, null, null, null, null, "proof refund", clientKey, actor)).getId());
+    }
+
+    /** What CommerceRefundService logs while {@code work} runs (the webhook thread included). */
+    private List<String> refundServiceLog(Runnable work) {
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(
+                CommerceRefundService.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            work.run();
+        } finally {
+            logger.detachAppender(appender);
+        }
+        synchronized (appender.list) {
+            return appender.list.stream().map(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage).toList();
+        }
     }
 
     private BigDecimal paid(String orderId) {
@@ -781,7 +885,10 @@ class CommerceReturnsRefundsDatabaseProofIT {
         BigDecimal p = paid(orderId);
         assertEquals(0, p.compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?", orderId)));
         BigDecimal part = p.multiply(new BigDecimal("0.6")).setScale(2, RoundingMode.DOWN);
-        List<Object> results = atOnce(List.of(
+        int createsBefore = creates.size();
+        createMode = "pending";
+        // Both requests are blocked on the order row (held from a side connection) before either goes on.
+        List<Object> results = behindRowLock("commerce_order", orderId, List.of(
                 () -> refund(orderId, null, part, "GATEWAY", null, key()),
                 () -> refund(orderId, null, part, "BANK_TRANSFER", null, key())));
         assertEquals(1, results.stream().filter(r -> r instanceof RefundDtos.RefundView).count(), results.toString());
@@ -789,6 +896,12 @@ class CommerceReturnsRefundsDatabaseProofIT {
         assertTrue(refused instanceof ConflictException
                 && ((ConflictException) refused).getMessage().startsWith("REFUND_ABOVE_DUE"), String.valueOf(refused));
         assertEquals(0, part.compareTo(money("SELECT refund_committed FROM commerce_order WHERE id = ?", orderId)));
+        RefundDtos.RefundView winner = (RefundDtos.RefundView) results.stream()
+                .filter(r -> r instanceof RefundDtos.RefundView).findFirst().orElseThrow();
+        assertEquals("GATEWAY".equals(winner.getMethod()) ? createsBefore + 1 : createsBefore, creates.size(),
+                "only the refund that was made reached the gateway; the refused one made no call");
+        assertEquals(1, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId),
+                "the refused request wrote no row");
         ledger(orderId);
 
         String many = paidOrder(Map.of(qtyA, 1));
@@ -798,7 +911,7 @@ class CommerceReturnsRefundsDatabaseProofIT {
         for (int i = 0; i < 8; i++) {
             eight.add(() -> refund(many, null, q, "BANK_TRANSFER", null, key()));
         }
-        List<Object> outcomes = atOnce(eight);
+        List<Object> outcomes = behindRowLock("commerce_order", many, eight);
         long made = outcomes.stream().filter(r -> r instanceof RefundDtos.RefundView).count();
         assertEquals(3, made, outcomes.toString());
         assertTrue(outcomes.stream().filter(r -> !(r instanceof RefundDtos.RefundView)).allMatch(r ->
@@ -834,9 +947,8 @@ class CommerceReturnsRefundsDatabaseProofIT {
         assertEquals(2, answers.stream().filter(a -> Boolean.TRUE.equals(a.getReplayed())).count());
         assertEquals(before + 1, creates.size(), "one gateway create");
 
-        // The executor twice at once, then the poll: still one create.
-        List<Object> runs = atOnce(List.of(() -> executor.execute(third.getId()), () -> executor.execute(third.getId())));
-        assertTrue(runs.stream().allMatch(r -> r == CommerceRefundExecutor.Result.NOT_CLAIMED), runs.toString());
+        // The executor on a row already sent: nothing; then the poll: still one create.
+        assertEquals(CommerceRefundExecutor.Result.NOT_CLAIMED, executor.execute(third.getId()));
         pollJob.runOnce(new Date(System.currentTimeMillis() + 3 * 60_000L));
         assertEquals(before + 1, creates.size());
         assertEquals("IN_PROGRESS", refundStatus(third.getId()));
@@ -847,6 +959,36 @@ class CommerceReturnsRefundsDatabaseProofIT {
         assertEquals(0, amount.compareTo(money("SELECT amount_refunded FROM commerce_order WHERE id = ?", orderId)));
         assertEquals("FULL", queryService.staffDetail(inst, orderId, null, true, true).getRefundState());
         ledger(orderId);
+
+        // The claim race on a fresh PENDING row: four executors blocked on the row, a slow
+        // gateway; exactly one claims it and exactly one create is sent.
+        String raced = paidOrder(Map.of(qtyA, 1));
+        move(raced, "CONFIRMED", "CANCELLED");
+        String pending = pendingGatewayRow(raced, paid(raced));
+        assertEquals("PENDING", refundStatus(pending));
+        int sent = creates.size();
+        createDelayMillis = 1500;
+        List<Object> claims;
+        try {
+            List<Callable<Object>> four = new ArrayList<>();
+            for (int i = 0; i < 4; i++) {
+                four.add(() -> executor.execute(pending));
+            }
+            claims = behindRowLock("commerce_refund", pending, four);
+        } finally {
+            createDelayMillis = 0;
+        }
+        assertEquals(3, claims.stream().filter(r -> r == CommerceRefundExecutor.Result.NOT_CLAIMED).count(),
+                claims.toString());
+        assertEquals(1, claims.stream().filter(r -> r == CommerceRefundExecutor.Result.PENDING_AT_GATEWAY).count(),
+                claims.toString());
+        assertEquals(sent + 1, creates.size(), "one create for the row");
+        assertTrue(creates.get(creates.size() - 1).endsWith("|" + pending));
+        assertEquals("IN_PROGRESS", refundStatus(pending));
+        assertNotNull(text("SELECT gateway_refund_id FROM commerce_refund WHERE id = ?", pending));
+        assertEquals(200, refundEvent("refund.processed", pending));
+        assertEquals("PROCESSED", refundStatus(pending));
+        ledger(raced);
     }
 
     // ------------------------------------------------------------------ 4. failed, then paid another way
@@ -867,9 +1009,13 @@ class CommerceReturnsRefundsDatabaseProofIT {
         assertEquals(0, BigDecimal.ZERO.compareTo(money("SELECT refund_committed FROM commerce_order WHERE id = ?",
                 orderId)));
         assertTrue(inQueue("REFUND_DUE", orderId), "the due is open again");
-        // A late processed event for the failed refund changes nothing.
-        assertEquals(200, refundEvent("refund.processed", gateway.getId()));
+        // A late processed event for the failed refund changes nothing, and is an alert (the buyer was paid).
+        List<String> logged = refundServiceLog(() -> assertEquals(200, refundEvent("refund.processed",
+                gateway.getId())));
         assertEquals("FAILED", refundStatus(gateway.getId()));
+        assertTrue(logged.stream().anyMatch(line -> line.startsWith("COMMERCE_ALERT refund_outcome_conflict")
+                && line.contains("refund=" + gateway.getId()) && line.contains("ours=FAILED")
+                && line.contains("gateway=processed")), logged.toString());
         ledger(orderId);
 
         RefundDtos.RefundView bank = refund(orderId, null, amount, "BANK_TRANSFER", "UTR" + run, key());
@@ -1081,23 +1227,19 @@ class CommerceReturnsRefundsDatabaseProofIT {
         snapshotLoader.evict(inst);
         String winner = paidOrder(Map.of(scarce, 1));
         assertEquals("CONFIRMED", status(winner));
-        payByWebhook(late.getOrderId());
+        String latePayment = payByWebhook(late.getOrderId());
         assertEquals(1, count("SELECT count(*) FROM commerce_order WHERE id = ? AND cancel_reason = 'OVERSOLD_PAID'",
                 late.getOrderId()));
         assertEquals(0, paid(late.getOrderId()).compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?",
                 late.getOrderId())), "all it paid is due back");
-        if (count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", late.getOrderId()) == 0) {
-            // The hook ran before the payment that paid was marked on its gateway row (same request): the
-            // exception row has no refund, and the poll's third step calls the hook again.
-            assertEquals(1, count("SELECT count(*) FROM commerce_payment_exception WHERE commerce_order_id = ? AND "
-                    + "kind = 'OVERSOLD_PAID' AND status = 'OPEN' AND refund_id IS NULL", late.getOrderId()));
-            int sent = creates.size();
-            pollJob.runOnce(new Date(System.currentTimeMillis() + 3 * 60_000L));
-            assertEquals(sent, creates.size(), "the retried hook only makes the row");
-        }
+        // Made by the webhook request itself (the paying payment is read as a value, not from the
+        // request's stale copy of the gateway row): no wait for the poll.
+        assertEquals(1, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", late.getOrderId()),
+                "the refund row exists right after the webhook");
         Map<String, Object> auto = db.queryForMap("SELECT * FROM commerce_refund WHERE order_id = ?", late.getOrderId());
         assertEquals("AUTO:OVERSOLD:" + late.getOrderId(), auto.get("idempotency_key"));
         assertEquals("PENDING", auto.get("status"));
+        assertEquals(latePayment, auto.get("gateway_payment_id"));
         assertEquals(auto.get("id"), text("SELECT refund_id FROM commerce_payment_exception WHERE commerce_order_id = ? "
                 + "AND kind = 'OVERSOLD_PAID'", late.getOrderId()));
         int before = creates.size();
@@ -1266,5 +1408,188 @@ class CommerceReturnsRefundsDatabaseProofIT {
                 .trackingUrl("https://www.indiapost.gov.in/track").build());
         db.update("UPDATE invoice SET cancelled_at = now() WHERE commerce_order_id = ?", orderId);
         return shipment;
+    }
+
+    // ------------------------------------------------------------------ 13. review follow-ups
+
+    /**
+     * The executor's claim commits between a staff cancel's read (PENDING) and its update: the
+     * cancel is refused, nothing is FAILED, the commitment stays, and the refund finishes.
+     */
+    @Test
+    @Order(14)
+    void aCancelRacingTheExecutorsClaimIsRefusedAndNothingIsFailed() {
+        clientIp = "127.0.0.14";
+        String orderId = paidOrder(Map.of(qtyA, 1));
+        move(orderId, "CONFIRMED", "CANCELLED");
+        BigDecimal amount = paid(orderId);
+        String refundId = pendingGatewayRow(orderId, amount);
+        BigDecimal committed = money("SELECT refund_committed FROM commerce_order WHERE id = ?", orderId);
+        assertEquals(0, amount.compareTo(committed));
+        Object answer;
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        try (java.sql.Connection side = db.getDataSource().getConnection()) {
+            side.setAutoCommit(false);
+            // The executor's claim (the same UPDATE), not yet committed.
+            try (java.sql.PreparedStatement claim = side.prepareStatement("UPDATE commerce_refund SET status = "
+                    + "'IN_PROGRESS', claimed_at = now(), attempt_count = attempt_count + 1, next_poll_at = now() + "
+                    + "interval '2 minutes' WHERE id = ? AND method = 'GATEWAY' AND status = 'PENDING'")) {
+                claim.setString(1, refundId);
+                assertEquals(1, claim.executeUpdate());
+            }
+            Future<Object> cancel = pool.submit(() -> {
+                header();
+                try {
+                    return refunds.cancel(admin, inst, refundId, RefundDtos.CancelRequest.builder()
+                            .clientRequestId(key()).reason("proof cancel").build());
+                } catch (Exception e) {
+                    return e;
+                } finally {
+                    RequestContextHolder.resetRequestAttributes();
+                }
+            });
+            // The cancel has read PENDING and waits on the refund row for its update.
+            awaitWaiting(1);
+            side.commit();
+            answer = cancel.get(60, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            throw new IllegalStateException(e);
+        } finally {
+            pool.shutdownNow();
+        }
+        assertTrue(answer instanceof ConflictException
+                && ((ConflictException) answer).getMessage().startsWith("REFUND_STATE_CHANGED"), String.valueOf(answer));
+        assertEquals("IN_PROGRESS", refundStatus(refundId));
+        assertEquals(0, count("SELECT count(*) FROM commerce_refund WHERE order_id = ? AND status = 'FAILED'", orderId),
+                "nothing is marked FAILED");
+        assertEquals(0, committed.compareTo(money("SELECT refund_committed FROM commerce_order WHERE id = ?", orderId)),
+                "the due is not reopened");
+        assertFalse(inQueue("REFUND_DUE", orderId));
+        assertEquals(0, count("SELECT count(*) FROM commerce_audit WHERE reference_id = ? AND kind = 'REFUND_CANCELLED'",
+                refundId));
+        ledger(orderId);
+
+        // The claimed refund goes on: the gateway has it by its receipt; the poll's check finishes it.
+        String paymentId = text("SELECT gateway_payment_id FROM commerce_refund WHERE id = ?", refundId);
+        Map<String, Object> found = new HashMap<>();
+        found.put("id", "rfnd_" + run + "raced");
+        found.put("payment_id", paymentId);
+        found.put("amount", amount.movePointRight(2).longValueExact());
+        found.put("status", "processed");
+        found.put("receipt", refundId);
+        listed.put(paymentId, List.of(found));
+        assertEquals(CommerceRefundExecutor.Result.PROCESSED, executor.check(refundId, new Date()));
+        assertEquals("PROCESSED", refundStatus(refundId));
+        ledger(orderId);
+    }
+
+    /**
+     * An oversold order whose payment A failed and payment B was captured on the same gateway
+     * order: the automatic refund is made by the webhook request, on B.
+     */
+    @Test
+    @Order(15)
+    void anOversoldOrderPaidBySecondAttemptIsRefundedOnThePaymentThatWasCaptured() {
+        clientIp = "127.0.0.15";
+        String scarceTwo = variant("scarce-two", "S2", "300.00", false);
+        receive(scarceTwo, 1);
+        snapshotLoader.evict(inst);
+        CheckoutDtos.Placed late = place(List.of(CartPriceRequest.Line.builder().variantId(scarceTwo).quantity(1)
+                .build()));
+        Map<String, Object> row = db.queryForMap("SELECT * FROM commerce_gateway_order WHERE commerce_order_id = ?",
+                late.getOrderId());
+        String gatewayOrderId = String.valueOf(row.get("gateway_order_id"));
+        long amount = ((Number) row.get("amount_minor")).longValue();
+        String failedA = "pay_" + UUID.randomUUID().toString().substring(0, 14);
+        Map<String, Object> failedEntity = paymentEntity(gatewayOrderId, failedA, amount, late.getOrderId());
+        failedEntity.put("status", "failed");
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("entity", "event");
+        root.put("event", "payment.failed");
+        root.put("payload", Map.of("payment", Map.of("entity", failedEntity)));
+        assertEquals(200, post(root));
+        assertEquals(failedA, text("SELECT gateway_payment_id FROM commerce_gateway_order WHERE id = ?", row.get("id")),
+                "the gateway row names the failed payment");
+
+        assertTrue(paymentService.onHoldExpired(late.getOrderId()));
+        snapshotLoader.evict(inst);
+        String winner = paidOrder(Map.of(scarceTwo, 1));
+        assertEquals("CONFIRMED", status(winner));
+        String capturedB = payByWebhook(late.getOrderId(), gatewayOrderId, amount);
+        assertEquals(1, count("SELECT count(*) FROM commerce_order WHERE id = ? AND cancel_reason = 'OVERSOLD_PAID'",
+                late.getOrderId()));
+        Map<String, Object> auto = db.queryForMap("SELECT * FROM commerce_refund WHERE order_id = ?", late.getOrderId());
+        assertEquals(capturedB, auto.get("gateway_payment_id"), "the refund is on the payment that was captured");
+        assertEquals("PENDING", auto.get("status"));
+        assertEquals(auto.get("id"), text("SELECT refund_id FROM commerce_payment_exception WHERE commerce_order_id = ? "
+                + "AND kind = 'OVERSOLD_PAID'", late.getOrderId()));
+        int before = creates.size();
+        createMode = "processed";
+        try {
+            pollJob.runOnce(new Date(System.currentTimeMillis() + 4 * 60_000L));
+        } finally {
+            createMode = "pending";
+        }
+        assertEquals(before + 1, creates.size());
+        assertTrue(creates.get(creates.size() - 1).startsWith(capturedB + "|"), creates.get(creates.size() - 1));
+        assertEquals("PROCESSED", refundStatus(String.valueOf(auto.get("id"))));
+        assertEquals("RESOLVED", text("SELECT status FROM commerce_payment_exception WHERE commerce_order_id = ? AND "
+                + "kind = 'OVERSOLD_PAID'", late.getOrderId()));
+        ledger(late.getOrderId());
+        noDrift("oversold paid by a second attempt");
+    }
+
+    /**
+     * Exception rows with nothing left to do are never read again, so 25 of them (older) do not
+     * keep a newer one out of the 20 the poll reads; an oversold order settled another way has its
+     * rows resolved.
+     */
+    @Test
+    @Order(16)
+    void exceptionRowsWithNothingLeftOwingAreNotRetriedAndDoNotBlockNewerOnes() {
+        // A paid order whose whole due staff refunded in cash before any automatic refund was made;
+        // its oversold rows (written, the hook's refund never made) are still OPEN.
+        clientIp = "127.0.0.16";
+        String settled = paidOrder(Map.of(qtyA, 1));
+        move(settled, "CONFIRMED", "CANCELLED");
+        assertEquals("PROCESSED", refund(settled, null, paid(settled), "CASH", null, key()).getStatus());
+        assertEquals(0, paid(settled).compareTo(money("SELECT amount_refunded FROM commerce_order WHERE id = ?",
+                settled)));
+        for (int i = 0; i < 25; i++) {
+            db.update("INSERT INTO commerce_payment_exception (id, institute_id, commerce_order_id, order_number, kind, "
+                    + "gateway_payment_id, amount, currency, status, detail, created_at) VALUES (?, ?, ?, 'STUCK', "
+                    + "'OVERSOLD_PAID', ?, 1.00, 'INR', 'OPEN', 'proof', now() - interval '1 day')",
+                    UUID.randomUUID().toString(), inst, settled, i == 0 ? "" : "stuck-" + run + "-" + i);
+        }
+        String zero = UUID.randomUUID().toString();
+        db.update("INSERT INTO commerce_payment_exception (id, institute_id, commerce_order_id, order_number, kind, "
+                + "gateway_payment_id, amount, currency, status, detail, created_at) VALUES (?, ?, ?, 'ZERO', "
+                + "'DUPLICATE_PAYMENT', ?, 0.00, 'INR', 'OPEN', 'proof', now() - interval '1 day')", zero, inst, settled,
+                "pay_zero" + run);
+        String newer = UUID.randomUUID().toString();
+        db.update("INSERT INTO commerce_payment_exception (id, institute_id, commerce_order_id, order_number, kind, "
+                + "gateway_payment_id, amount, currency, status, detail, created_at) VALUES (?, ?, ?, 'NEWER', "
+                + "'DUPLICATE_PAYMENT', ?, 5.00, 'INR', 'OPEN', 'proof', now() - interval '5 minutes')", newer, inst,
+                settled, "pay_newer" + run);
+        try {
+            List<String> read = new TransactionTemplate(transactionManager).execute(tx -> exceptionRepository
+                    .findUnrefunded(new Date(System.currentTimeMillis() - 120_000L), 20).stream()
+                    .map(e -> e.getId()).toList());
+            assertTrue(read.contains(newer), "the newer row is read: " + read);
+            assertFalse(read.contains(zero), "a duplicate of nothing is not retried");
+            assertEquals(0, count("SELECT count(*) FROM commerce_payment_exception WHERE id = ANY(?::varchar[]) AND "
+                    + "order_number = 'STUCK'", "{" + String.join(",", read) + "}"), "no row of the settled order");
+
+            // The hook called again for the settled order resolves its open rows and makes no refund.
+            long refundRows = count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", settled);
+            assertNull(refunds.autoOversold(inst, settled));
+            assertEquals(refundRows, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", settled));
+            assertEquals(25, count("SELECT count(*) FROM commerce_payment_exception WHERE order_number = 'STUCK' AND "
+                    + "commerce_order_id = ? AND status = 'RESOLVED' AND resolution_note LIKE 'Refunded otherwise%'",
+                    settled));
+            ledger(settled);
+        } finally {
+            db.update("DELETE FROM commerce_payment_exception WHERE id IN (?, ?)", zero, newer);
+        }
     }
 }

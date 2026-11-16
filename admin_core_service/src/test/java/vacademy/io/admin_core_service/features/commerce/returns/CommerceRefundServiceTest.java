@@ -318,6 +318,102 @@ class CommerceRefundServiceTest {
         assertTrue(e.getMessage().startsWith("REFUND_NOT_FOUND"));
     }
 
+    // ------------------------------------------------------------------ review follow-ups
+
+    @Test
+    void aCancelMovesOnlyAPendingRefund_aRefundClaimedMeanwhileIsRefusedAndKeepsItsCommitment() {
+        CommerceRefund claimed = f.pendingGateway("200.00");
+        // The cancel reads PENDING; the executor's claim commits before the cancel's update.
+        when(f.refundRepository.cancelPending(eq(claimed.getId()), any(), anyString(), any(), any())).thenAnswer(
+                call -> {
+                    claimed.setStatus("IN_PROGRESS");
+                    return 0;
+                });
+        ConflictException e = assertThrows(ConflictException.class, () -> f.service.cancel(RefundFixture.manager(),
+                INST, claimed.getId(), RefundDtos.CancelRequest.builder().clientRequestId("cancel-key-9")
+                        .reason("changed mind").build()));
+        assertTrue(e.getMessage().startsWith("REFUND_STATE_CHANGED"), e.getMessage());
+        assertEquals("IN_PROGRESS", claimed.getStatus());
+        assertEquals(0, new BigDecimal("200.00").compareTo(f.order.getRefundCommitted()), "still committed");
+        verify(f.refundRepository, never()).markFailed(anyString(), any(), anyString(), any(), any(), any());
+        verify(f.auditService, never()).record(any(), any(), any(), eq("REFUND_CANCELLED"), any(), any(), any(),
+                any(), any());
+    }
+
+    @Test
+    void theOversoldRefundTakesThePayingPaymentReadAsAValueNotAStaleRow() {
+        f.order.setStatus("CANCELLED");
+        f.order.setRefundDue(BigDecimal.ZERO.setScale(2));
+        // The managed row still names the payment that failed; the database names the one that paid.
+        f.paying.setGatewayPaymentId("pay_failed_a");
+        when(f.gatewayOrders.findPayingPaymentId(ORDER)).thenReturn(java.util.Optional.of("pay_captured_b"));
+        String id = f.service.autoOversold(INST, ORDER);
+        assertEquals("pay_captured_b", f.find(id).orElseThrow().getGatewayPaymentId());
+    }
+
+    @Test
+    void anOversoldOrderRefundedOtherwiseIsResolvedAndAPendingOtherRefundKeepsItOpen() {
+        f.order.setStatus("CANCELLED");
+        f.order.setRefundDue(new BigDecimal("1000.00"));
+        f.order.setRefundCommitted(new BigDecimal("1000.00"));
+        f.order.setAmountRefunded(BigDecimal.ZERO.setScale(2));
+        assertNull(f.service.autoOversold(INST, ORDER), "a bank transfer is still pending");
+        verify(f.exceptions, never()).resolveOversoldRefundedOtherwise(anyString(), anyString(), any());
+        f.order.setAmountRefunded(new BigDecimal("1000.00"));
+        assertNull(f.service.autoOversold(INST, ORDER));
+        verify(f.exceptions).resolveOversoldRefundedOtherwise(eq(ORDER), anyString(), any());
+        assertTrue(f.refunds.isEmpty());
+    }
+
+    @Test
+    void withCommerceOffNoAutomaticRefundIsMade() {
+        when(f.accessGuard.featureOn(eq(INST), any())).thenReturn(false);
+        f.order.setRefundDue(BigDecimal.ZERO.setScale(2));
+        assertNull(f.service.autoOversold(INST, ORDER));
+        assertNull(f.service.autoDuplicate(INST, ORDER, "pay_second", new BigDecimal("499.00")));
+        assertTrue(f.refunds.isEmpty());
+        verify(f.desk, never()).lockOrder(anyString(), anyString());
+        assertEquals(0, BigDecimal.ZERO.compareTo(f.order.getRefundDue()), "no due raised");
+    }
+
+    @Test
+    void adoptingAGatewayRefundWhoseReceiptIsOneOfOurRefundsIsRefused() {
+        CommerceRefund ours = f.pendingGateway("100.00");
+        ours.setStatus("IN_PROGRESS");
+        BigDecimal committed = f.order.getRefundCommitted();
+        when(f.gateway.fetchRefund(INST, PAYMENT, "rfnd_X")).thenReturn(new CommercePaymentGateway.GatewayRefund(
+                "rfnd_X", PAYMENT, 10000L, "INR", "processed", ours.getId(), "ARN", Instant.now()));
+        ConflictException e = assertThrows(ConflictException.class, () -> create(body("100.00", "GATEWAY")
+                .gatewayRefundId("rfnd_X")));
+        assertTrue(e.getMessage().startsWith("GATEWAY_REFUND_MISMATCH"), e.getMessage());
+        assertTrue(e.getMessage().contains(ours.getId()), e.getMessage());
+        assertEquals(1, f.refunds.size());
+        assertEquals(0, committed.compareTo(f.order.getRefundCommitted()));
+    }
+
+    @Test
+    void anOppositeOutcomeOnAFinalRowIsAConflictAndTheSameOutcomeIsNot() {
+        CommerceRefund failed = f.pendingGateway("100.00");
+        failed.setStatus("FAILED");
+        CommerceRefund processed = f.pendingGateway("50.00");
+        processed.setStatus("PROCESSED");
+        assertTrue(f.service.outcomeConflict(failed.getId(), "processed", "rfnd_1", "test"));
+        assertTrue(f.service.outcomeConflict(failed.getId(), "pending", "rfnd_1", "test"));
+        assertFalse(f.service.outcomeConflict(failed.getId(), "failed", "rfnd_1", "test"));
+        assertTrue(f.service.outcomeConflict(processed.getId(), "failed", "rfnd_2", "test"));
+        assertFalse(f.service.outcomeConflict(processed.getId(), "processed", "rfnd_2", "test"));
+    }
+
+    @Test
+    void theAnswerOfARouteIsTheRowAsStoredNotTheRequestsCopy() {
+        jakarta.persistence.EntityManager em = mock(jakarta.persistence.EntityManager.class);
+        when(em.contains(any())).thenReturn(true);
+        org.springframework.test.util.ReflectionTestUtils.setField(f.service, "entityManager", em);
+        CommerceRefund row = f.pendingGateway("100.00");
+        f.service.view(INST, row.getId(), false);
+        verify(em).refresh(row);
+    }
+
     private static CommercePaymentGateway.GatewayRefund gatewayRefund(String id, String payment, long amount,
                                                                      String status) {
         return new CommercePaymentGateway.GatewayRefund(id, payment, amount, "INR", status, null, "ARN",

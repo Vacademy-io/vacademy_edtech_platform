@@ -74,6 +74,18 @@ public class CommerceAccessGuard {
         }
     }
 
+    /**
+     * For work no person starts (jobs, automatic refunds): whether the institute has the
+     * feature. Never throws.
+     */
+    public boolean featureOn(String instituteId, CommerceFeature feature) {
+        try {
+            return feature != null && capabilityResolver.isFeatureGranted(instituteId, feature.key());
+        } catch (RuntimeException e) {
+            return false;
+        }
+    }
+
     /** The commerce roles the principal carries. Says nothing about membership. */
     public static Set<CommerceRole> rolesOf(CustomUserDetails user) {
         Set<String> names = authorityNames(user);

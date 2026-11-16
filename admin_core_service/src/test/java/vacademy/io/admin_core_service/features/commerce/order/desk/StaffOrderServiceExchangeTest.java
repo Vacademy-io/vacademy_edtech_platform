@@ -73,7 +73,12 @@ class StaffOrderServiceExchangeTest {
 
     @BeforeEach
     void setUp() {
-        f = new DeskFixture();
+        init(new DeskFixture());
+    }
+
+    private void init(DeskFixture fixture) {
+        f = fixture;
+        calls.clear();
         orderService = mock(CommerceOrderService.class);
         CommerceBuyerResolver buyerResolver = mock(CommerceBuyerResolver.class);
         CommerceCounterService counterService = mock(CommerceCounterService.class);
@@ -105,6 +110,15 @@ class StaffOrderServiceExchangeTest {
         });
         oldOrder = new CommerceOrder();
         oldOrder.setId("old-1");
+        returnAt(LOC);
+    }
+
+    /** The return being exchanged was received at {@code location}. */
+    private void returnAt(String location) {
+        CommerceReturn seen = new CommerceReturn();
+        seen.setId("ret-1");
+        seen.setLocationId(location);
+        when(exchange.readReturn(INST, "ret-1")).thenReturn(seen);
     }
 
     private void credit(String amount) {
@@ -207,5 +221,64 @@ class StaffOrderServiceExchangeTest {
                 request(null).build()));
         assertTrue(e.getMessage().startsWith("EXCHANGE_NOT_AVAILABLE"));
         verify(f.writer, never()).writeStaff(any());
+    }
+
+    // ------------------------------------------------------------------ location of the return (role matrix)
+
+    /**
+     * Through the real guard: the new order is priced at LOC; the return was received at
+     * {@code returnLocation}. "403 CODE" is the guard's refusal (nothing locked or written),
+     * "ok" means the order was written.
+     */
+    private String exchangeAs(String returnLocation, Set<String> assigned, String... authorities) {
+        vacademy.io.admin_core_service.features.capabilities.service.CapabilityResolver capabilities =
+                mock(vacademy.io.admin_core_service.features.capabilities.service.CapabilityResolver.class);
+        when(capabilities.isFeatureGranted(eq(INST), anyString())).thenReturn(true);
+        vacademy.io.admin_core_service.features.commerce.security.repository.CommerceStaffLocationRepository
+                staffLocations = mock(vacademy.io.admin_core_service.features.commerce.security.repository
+                .CommerceStaffLocationRepository.class);
+        for (String location : assigned) {
+            when(staffLocations.existsByInstituteIdAndUserIdAndLocationId(INST, "user-1", location)).thenReturn(true);
+        }
+        init(new DeskFixture(new vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard(
+                capabilities, staffLocations)));
+        returnAt(returnLocation);
+        credit("1060.00");
+        org.springframework.mock.web.MockHttpServletRequest http = new org.springframework.mock.web
+                .MockHttpServletRequest();
+        http.addHeader("clientId", INST);
+        org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+                new org.springframework.web.context.request.ServletRequestAttributes(http));
+        try {
+            service.create(DeskFixture.user(authorities), INST, request(null).build());
+            return "ok";
+        } catch (vacademy.io.admin_core_service.features.commerce.security.CommerceAccessDeniedException e) {
+            verify(exchange, never()).lock(any(), any());
+            verify(f.writer, never()).writeStaff(any());
+            verify(exchange, never()).apply(any(), any(), any(), any());
+            return "403 " + e.getCode();
+        } finally {
+            org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
+    void anExchangeChecksTheManagersLocationForTheReturnBeforeAnythingIsWritten() {
+        Map<String, String> matrix = new java.util.LinkedHashMap<>();
+        matrix.put("ADMIN, return elsewhere", exchangeAs("loc-y", Set.of(), "ADMIN"));
+        matrix.put("M at the new order's location only, return elsewhere",
+                exchangeAs("loc-y", Set.of(LOC), "COMMERCE_STORE_MANAGER"));
+        matrix.put("M at both locations", exchangeAs("loc-y", Set.of(LOC, "loc-y"), "COMMERCE_STORE_MANAGER"));
+        matrix.put("M, return at the same location", exchangeAs(LOC, Set.of(LOC), "COMMERCE_STORE_MANAGER"));
+        matrix.put("W at both locations", exchangeAs("loc-y", Set.of(LOC, "loc-y"), "COMMERCE_WAREHOUSE_STAFF"));
+        matrix.put("Ac at both locations", exchangeAs("loc-y", Set.of(LOC, "loc-y"), "COMMERCE_ACCOUNTANT"));
+        Map<String, String> expected = new java.util.LinkedHashMap<>();
+        expected.put("ADMIN, return elsewhere", "ok");
+        expected.put("M at the new order's location only, return elsewhere", "403 LOCATION_NOT_ALLOWED");
+        expected.put("M at both locations", "ok");
+        expected.put("M, return at the same location", "ok");
+        expected.put("W at both locations", "403 ROLE_NOT_ALLOWED");
+        expected.put("Ac at both locations", "403 ROLE_NOT_ALLOWED");
+        assertEquals(expected, matrix);
     }
 }

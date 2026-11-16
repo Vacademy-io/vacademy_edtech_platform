@@ -9,6 +9,7 @@ import vacademy.io.admin_core_service.features.commerce.order.payment.CommercePa
 import vacademy.io.admin_core_service.features.commerce.order.payment.CommercePaymentExceptionRepository;
 import vacademy.io.admin_core_service.features.commerce.returns.repository.CommerceRefundRepository;
 import vacademy.io.admin_core_service.features.commerce.returns.service.CommerceRefundExecutor;
+import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ class CommerceRefundPollJobTest {
     private CommerceRefundExecutor executor;
     private CommercePaymentExceptionRepository exceptions;
     private CommerceRefundHook hook;
+    private CommerceAccessGuard guard;
     private final AtomicLong clock = new AtomicLong(1_000_000L);
     private CommerceRefundPollJob job;
     private final Date now = new Date(1_800_000_000_000L);
@@ -47,8 +49,10 @@ class CommerceRefundPollJobTest {
         executor = mock(CommerceRefundExecutor.class);
         exceptions = mock(CommercePaymentExceptionRepository.class);
         hook = mock(CommerceRefundHook.class);
-        job = new CommerceRefundPollJob(refunds, executor, exceptions, hook, mock(PlatformTransactionManager.class),
-                clock::get);
+        guard = mock(CommerceAccessGuard.class);
+        when(guard.featureOn(anyString(), any())).thenReturn(true);
+        job = new CommerceRefundPollJob(refunds, executor, exceptions, hook, guard,
+                mock(PlatformTransactionManager.class), clock::get);
         when(executor.execute(anyString(), any())).thenReturn(CommerceRefundExecutor.Result.PROCESSED);
         when(executor.check(anyString(), any())).thenReturn(CommerceRefundExecutor.Result.PENDING_AT_GATEWAY);
     }
@@ -142,10 +146,10 @@ class CommerceRefundPollJobTest {
         duplicate.setGatewayPaymentId("pay_2");
         duplicate.setAmount(new BigDecimal("50.00"));
         duplicate.setCurrency("INR");
-        when(exceptions.findUnrefunded(any(), eq(20))).thenReturn(List.of(oversold, duplicate));
+        when(exceptions.findUnrefunded(any(), eq(100))).thenReturn(List.of(oversold, duplicate));
         job.runOnce(now);
         ArgumentCaptor<Date> createdBefore = ArgumentCaptor.forClass(Date.class);
-        verify(exceptions).findUnrefunded(createdBefore.capture(), eq(20));
+        verify(exceptions).findUnrefunded(createdBefore.capture(), eq(100));
         assertEquals(now.getTime() - 120_000, createdBefore.getValue().getTime());
         verify(hook).refundOversoldPaidOrder("i1", "o1", "ORD-1", new BigDecimal("100.00"), "INR");
         verify(hook).refundDuplicatePayment("i1", "o2", null, "order_rzp", "pay_2", new BigDecimal("50.00"), "INR");
@@ -161,5 +165,67 @@ class CommerceRefundPollJobTest {
         assertEquals(1, counts.get("errors"));
         when(refunds.findDuePending(any(), any(), anyInt())).thenThrow(new IllegalStateException("db down"));
         job.run();
+    }
+
+    @Test
+    void rowsOfAnInstituteWithoutCommerceGetNoGatewayCallNoHookAndAreDeferred() {
+        when(guard.featureOn(eq("off-shop"), any())).thenReturn(false);
+        List<CommerceRefundRepository.DueRefund> pending = List.of(row("p-off", "off-shop"), row("p-on", "on-shop"));
+        List<CommerceRefundRepository.DueRefund> inProgress = List.of(row("c-off", "off-shop"));
+        when(refunds.findDuePending(any(), any(), anyInt())).thenReturn(pending);
+        when(refunds.findDueInProgress(any(), anyInt())).thenReturn(inProgress);
+        CommercePaymentException off = new CommercePaymentException();
+        off.setKind("OVERSOLD_PAID");
+        off.setInstituteId("off-shop");
+        off.setCommerceOrderId("o-off");
+        when(exceptions.findUnrefunded(any(), anyInt())).thenReturn(List.of(off));
+        Map<String, Integer> counts = job.runOnce(now);
+        verify(executor).execute("p-on", now);
+        verify(executor, never()).execute(eq("p-off"), any());
+        verify(executor, never()).check(anyString(), any());
+        verifyNoInteractions(hook);
+        verify(refunds).deferPoll("p-off", new Date(now.getTime() + 3_600_000L));
+        verify(refunds).deferPoll("c-off", new Date(now.getTime() + 3_600_000L));
+        assertEquals(3, counts.get("skipped_commerce_off"));
+        verify(guard, times(1)).featureOn(eq("off-shop"), any());
+    }
+
+    @Test
+    void exceptionRowsOfInstitutesWithoutCommerceDoNotCrowdOutTheOthers() {
+        List<CommercePaymentException> rows = new ArrayList<>();
+        when(guard.featureOn(eq("off-shop"), any())).thenReturn(false);
+        for (int i = 0; i < 30; i++) {
+            CommercePaymentException e = new CommercePaymentException();
+            e.setKind("DUPLICATE_PAYMENT");
+            e.setInstituteId(i < 25 ? "off-shop" : "on-shop");
+            e.setCommerceOrderId("o" + i);
+            e.setGatewayPaymentId("pay_" + i);
+            e.setAmount(BigDecimal.TEN);
+            rows.add(e);
+        }
+        when(exceptions.findUnrefunded(any(), eq(100))).thenReturn(rows);
+        job.runOnce(now);
+        verify(hook, times(5)).refundDuplicatePayment(eq("on-shop"), anyString(), any(), any(), anyString(), any(),
+                any());
+        verify(hook, never()).refundDuplicatePayment(eq("off-shop"), anyString(), any(), any(), anyString(), any(),
+                any());
+    }
+
+    @Test
+    void atMostTwentyHookRetriesARun() {
+        List<CommercePaymentException> rows = new ArrayList<>();
+        for (int i = 0; i < 30; i++) {
+            CommercePaymentException e = new CommercePaymentException();
+            e.setKind("DUPLICATE_PAYMENT");
+            e.setInstituteId("i1");
+            e.setCommerceOrderId("o" + i);
+            e.setGatewayPaymentId("pay_" + i);
+            e.setAmount(BigDecimal.TEN);
+            rows.add(e);
+        }
+        when(exceptions.findUnrefunded(any(), eq(100))).thenReturn(rows);
+        job.runOnce(now);
+        verify(hook, times(20)).refundDuplicatePayment(anyString(), anyString(), any(), any(), anyString(), any(),
+                any());
     }
 }
