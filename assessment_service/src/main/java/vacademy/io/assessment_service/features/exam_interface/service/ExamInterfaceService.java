@@ -17,9 +17,15 @@ import java.util.regex.Pattern;
 /**
  * The only reader and writer of {@code assessment.exam_interface} (V68).
  * <p>
- * Shape: {@code {"v":1,"preset":"<id>","layout":"<variant>","strict":true|false}}. The
- * object is stored as sent, so keys added by newer admin builds survive a save. A preset
- * of {@code "default"} (or none) is stored as NULL: the default test screen.
+ * Shape: {@code {"v":1,"preset":"<id>","layout":"<variant>","strict":true|false,
+ * "passage_beside_question":true|false}}. The object is stored as sent, so keys added by
+ * newer admin builds survive a save. A preset of {@code "default"} (or none) is stored as
+ * NULL: the default test screen, unless {@code passage_beside_question} is true, which is
+ * a display option of the default screen and so is kept with it.
+ * <p>
+ * {@code passage_beside_question} (default off): on the default test screen, a question
+ * with a passage shows the passage on the left and the question on the right, on screens
+ * md and wider. Absent, null or false all mean today's stacked layout.
  * <p>
  * Writing validates and rejects bad input with a 400. Reading never throws: an
  * unreadable stored value is treated as NULL, because a learner who cannot open an
@@ -34,6 +40,9 @@ public class ExamInterfaceService {
 
     /** Preset that means "the default test screen"; stored as NULL. */
     public static final String DEFAULT_PRESET = "default";
+
+    /** Display option of the default screen: passage on the left, question on the right. */
+    public static final String PASSAGE_BESIDE_QUESTION = "passage_beside_question";
 
     /** Preset and layout ids: lowercase letters, digits and dashes, 1-40 chars. */
     private static final Pattern ID = Pattern.compile("^[a-z0-9-]{1,40}$");
@@ -57,12 +66,22 @@ public class ExamInterfaceService {
             throw invalid("exam_interface must be an object or null.");
         }
 
-        JsonNode preset = value.get("preset");
-        if (preset == null || preset.isNull()) return null;
-        if (!preset.isTextual() || !ID.matcher(preset.asText()).matches()) {
-            throw invalid("exam_interface.preset must be 1-40 lowercase letters, digits or dashes.");
+        JsonNode passageBeside = value.get(PASSAGE_BESIDE_QUESTION);
+        if (passageBeside != null && !passageBeside.isNull() && !passageBeside.isBoolean()) {
+            throw invalid("exam_interface." + PASSAGE_BESIDE_QUESTION + " must be true or false.");
         }
-        if (DEFAULT_PRESET.equals(preset.asText())) return null;
+        // The default screen is stored as NULL unless it carries a display option.
+        boolean keepForDefaultScreen = passageBesideQuestion(value);
+
+        JsonNode preset = value.get("preset");
+        if (preset == null || preset.isNull()) {
+            if (!keepForDefaultScreen) return null;
+        } else {
+            if (!preset.isTextual() || !ID.matcher(preset.asText()).matches()) {
+                throw invalid("exam_interface.preset must be 1-40 lowercase letters, digits or dashes.");
+            }
+            if (DEFAULT_PRESET.equals(preset.asText()) && !keepForDefaultScreen) return null;
+        }
 
         JsonNode layout = value.get("layout");
         if (layout != null && !layout.isNull()
@@ -91,6 +110,13 @@ public class ExamInterfaceService {
             throw invalid("exam_interface is larger than " + MAX_BYTES + " bytes.");
         }
         return json;
+    }
+
+    /** True only when the value is an object whose passage_beside_question is exactly true. */
+    public static boolean passageBesideQuestion(JsonNode value) {
+        if (value == null || !value.isObject()) return false;
+        JsonNode flag = value.get(PASSAGE_BESIDE_QUESTION);
+        return flag != null && flag.isBoolean() && flag.booleanValue();
     }
 
     /** Stored value as a JSON object, or null when unset or unreadable. Never throws. */

@@ -59,6 +59,33 @@ describe("useManualPaperDefaultScreen", () => {
     unmount();
   });
 
+  it("keeps the default screen's passage-beside option when it drops the theme", () => {
+    useAssessmentStore.getState().resetAssessment();
+    const withOption = paper() as { exam_interface: unknown };
+    withOption.exam_interface = { v: 1, preset: "jee-advanced", passage_beside_question: true };
+    useAssessmentStore.getState().setAssessment(withOption as never);
+    const unmount = mount("MANUAL");
+    expect(useAssessmentStore.getState().assessment?.exam_interface).toEqual({
+      passage_beside_question: true,
+    });
+    expect(answerCommitModeOf(useAssessmentStore.getState())).toBe("auto");
+    unmount();
+  });
+
+  it("leaves a default-screen paper with the option alone", () => {
+    useAssessmentStore.getState().resetAssessment();
+    const standard = paper() as { exam_interface: unknown };
+    standard.exam_interface = { v: 1, preset: "default", passage_beside_question: true };
+    useAssessmentStore.getState().setAssessment(standard as never);
+    const unmount = mount("MANUAL");
+    expect(useAssessmentStore.getState().assessment?.exam_interface).toEqual({
+      v: 1,
+      preset: "default",
+      passage_beside_question: true,
+    });
+    unmount();
+  });
+
   it("keeps the exam theme of an auto-checked paper", () => {
     useAssessmentStore.getState().resetAssessment();
     useAssessmentStore.getState().setAssessment(paper());

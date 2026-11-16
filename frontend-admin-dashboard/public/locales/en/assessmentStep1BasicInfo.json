@@ -253,6 +253,10 @@
         "calculator": {
             "label": "On-screen calculator",
             "description": "On, as in the real exam: learners get the scientific calculator in the test, even if the institute’s calculator setting is off."
+        },
+        "passageBeside": {
+            "label": "Show passage beside the question",
+            "description": "For questions with a passage, the passage sits on the left and the question on the right, each scrolling on its own. Learners can drag the divider. Phones keep the passage above the question."
         }
     }
 }

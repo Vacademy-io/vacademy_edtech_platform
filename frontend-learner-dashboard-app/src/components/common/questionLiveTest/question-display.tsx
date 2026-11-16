@@ -20,6 +20,8 @@ import { CodingQuestionDisplay } from "./otherQuestionTypes/CodingQuestionDispla
 import { CbeQuestionDisplay } from "./otherQuestionTypes/CbeQuestionDisplay";
 import { QuestionHtmlContent } from "./question-html-content";
 import { QuestionPassage } from "./question-passage";
+import { PassageSplitView } from "./passage-split-view";
+import { shouldSplitPassage } from "./passage-beside";
 import { useLiveTestUi } from "./live-test-ui-context";
 import { questionTypeLabel } from "./question-type-label";
 
@@ -52,7 +54,7 @@ function MetaChip({
 
 export function QuestionDisplay() {
   const { t } = useTranslation("questionTest");
-  const { settings } = useLiveTestUi();
+  const { settings, isCompact } = useLiveTestUi();
   const {
     currentQuestion,
     currentSection,
@@ -216,7 +218,17 @@ export function QuestionDisplay() {
     );
   }
 
-  return (
+  // "Show passage beside the question" (per test, default off): passage on the
+  // left, this column on the right (md and wider; phones keep it stacked).
+  const passageHtml = currentQuestion.parent_rich_text?.content;
+  const splitPassage = shouldSplitPassage({
+    examInterface: assessment?.exam_interface,
+    isCompact,
+    isCbe,
+    passageHtml,
+  });
+
+  const content = (
     <div className="mx-auto w-full max-w-4xl">
       {header}
 
@@ -225,7 +237,7 @@ export function QuestionDisplay() {
       {/* Comprehension passage for this question (backend: parent_rich_text).
           ExpandableParagraph above is a different thing — the assessment-wide
           "about" text fetched once from about_id — so it never showed passages. */}
-      <QuestionPassage html={currentQuestion.parent_rich_text?.content} />
+      {!splitPassage && <QuestionPassage html={passageHtml} />}
 
       {/* Tailwind's reset strips <p> margins — a multi-paragraph stem would
           otherwise render as one block with no breaks. */}
@@ -367,4 +379,13 @@ export function QuestionDisplay() {
       })()}
     </div>
   );
+
+  if (splitPassage && passageHtml) {
+    return (
+      <PassageSplitView passageHtml={passageHtml} questionId={currentQuestion.question_id}>
+        {content}
+      </PassageSplitView>
+    );
+  }
+  return content;
 }

@@ -82,4 +82,35 @@ describe('ExamInterfaceSettingsCard', () => {
         expect(screen.getByText('examInterface.manualDisabled')).toBeTruthy();
         expect(screen.queryByText('examInterface.strict.label')).toBeNull();
     });
+
+    it('offers "passage beside the question" (off) on the standard screen', () => {
+        render(<Harness examInterface={DEFAULT_EXAM_INTERFACE_FORM} />);
+        expect(screen.getByText('examInterface.passageBeside.label')).toBeTruthy();
+        expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('false');
+    });
+
+    it('shows the passage switch on when the stored value says so', () => {
+        render(<Harness examInterface={{ ...DEFAULT_EXAM_INTERFACE_FORM, passageBeside: true }} />);
+        expect(screen.getByRole('switch').getAttribute('aria-checked')).toBe('true');
+    });
+
+    it('keeps the passage switch for a teacher-checked paper (it uses the standard screen)', () => {
+        render(
+            <Harness
+                examInterface={{ choice: 'gate', strict: true, stored: null }}
+                manualEvaluation
+            />
+        );
+        expect(screen.getByText('examInterface.passageBeside.label')).toBeTruthy();
+    });
+
+    it('hides the passage switch for a themed screen and in OMR sheet mode', () => {
+        const { unmount } = render(
+            <Harness examInterface={{ choice: 'gate', strict: true, stored: null }} />
+        );
+        expect(screen.queryByText('examInterface.passageBeside.label')).toBeNull();
+        unmount();
+        render(<Harness examInterface={DEFAULT_EXAM_INTERFACE_FORM} omrMode />);
+        expect(screen.queryByText('examInterface.passageBeside.label')).toBeNull();
+    });
 });

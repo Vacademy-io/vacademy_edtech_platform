@@ -25,6 +25,7 @@ import NetworkStatus from "./network-status";
 import { QUESTION_TYPES } from "@/types/assessment";
 import { ProctorLayer } from "@/components/common/proctoring/ProctorLayer";
 import { renderedLayoutKind } from "./themes";
+import { shouldSplitPassage } from "./passage-beside";
 import { useExamSkinIsolation } from "./themes/use-exam-skin-isolation";
 import { ConsoleLayout } from "./layouts/ConsoleLayout";
 import { ExamSummaryModal } from "./widgets/ExamSummaryModal";
@@ -116,6 +117,16 @@ function DefaultLayout() {
   const isCbeQuestion =
     currentQuestion?.question_type === QUESTION_TYPES.CBE_RESPONSE;
   const cbeSplitScreen = isCbeQuestion && !isCompact;
+  // "Show passage beside the question" splits the area the same way (its two
+  // panes scroll themselves); same rule as QuestionDisplay.
+  const examInterface = useAssessmentStore((s) => s.assessment?.exam_interface);
+  const passageSplitScreen = shouldSplitPassage({
+    examInterface,
+    isCompact,
+    isCbe: isCbeQuestion,
+    passageHtml: currentQuestion?.parent_rich_text?.content,
+  });
+  const splitScreen = cbeSplitScreen || passageSplitScreen;
 
   // Give the spreadsheet the room: collapse the desktop rail while a CBE
   // question is open (the header toggle still brings it back), and reopen it
@@ -182,13 +193,13 @@ function DefaultLayout() {
             <main
               ref={questionScrollRef}
               className={cn(
-                cbeSplitScreen
-                  ? // The CBE split view scrolls its two panes itself.
+                splitScreen
+                  ? // The CBE / passage split views scroll their two panes themselves.
                     "h-full overflow-hidden"
                   : "h-full overflow-auto overscroll-contain px-4 py-5 md:px-8 md:py-7",
                 // Room to scroll the last option out from behind an open tool
                 // panel — it is docked over the canvas, not stacked below it.
-                toolPanel && !cbeSplitScreen && "pb-tool-dock",
+                toolPanel && !splitScreen && "pb-tool-dock",
               )}
             >
               <QuestionDisplay />

@@ -239,3 +239,72 @@ describe('GATE built-in calculator', () => {
         expect(examInterfaceFormFromWire(null).calculator).toBe(true);
     });
 });
+
+describe('show passage beside the question (passage_beside_question)', () => {
+    const standard = { ...DEFAULT_EXAM_INTERFACE_FORM };
+
+    it('is off by default, so the standard screen still saves null', () => {
+        expect(DEFAULT_EXAM_INTERFACE_FORM.passageBeside).toBe(false);
+        expect(examInterfaceWireFromForm(standard)).toBeNull();
+        // A form saved by an older build has no passageBeside at all.
+        expect(
+            examInterfaceWireFromForm({ choice: 'default', strict: true, stored: null })
+        ).toBeNull();
+    });
+
+    it('saves the standard screen with the option when it is on', () => {
+        expect(examInterfaceWireFromForm({ ...standard, passageBeside: true })).toEqual({
+            v: 1,
+            preset: 'default',
+            passage_beside_question: true,
+        });
+    });
+
+    it('keeps it for a teacher-checked paper, which uses the standard screen', () => {
+        expect(
+            examInterfaceWireFromForm(
+                { choice: 'gate', strict: true, passageBeside: true, stored: null },
+                { manualEvaluation: true }
+            )
+        ).toEqual({ v: 1, preset: 'default', passage_beside_question: true });
+    });
+
+    it('drops it for an OMR sheet exam (no screen)', () => {
+        expect(
+            examInterfaceWireFromForm({ ...standard, passageBeside: true }, { omrMode: true })
+        ).toBeNull();
+    });
+
+    it('never sends it with a themed screen, even if a stored value had it', () => {
+        const wire = examInterfaceWireFromForm({
+            choice: 'jee-advanced',
+            strict: true,
+            passageBeside: true,
+            stored: { v: 1, preset: 'jee-advanced', passage_beside_question: true },
+        });
+        expect(wire).toEqual({ v: 1, preset: 'jee-advanced', strict: true });
+        const custom = examInterfaceWireFromForm({
+            choice: EXAM_INTERFACE_CUSTOM_KEY,
+            strict: true,
+            stored: { v: 1, preset: 'neet', passage_beside_question: true },
+        });
+        expect(custom).not.toHaveProperty('passage_beside_question');
+    });
+
+    it('reads it back as on only when exactly true', () => {
+        expect(
+            examInterfaceFormFromWire({ v: 1, preset: 'default', passage_beside_question: true })
+        ).toEqual({ ...DEFAULT_EXAM_INTERFACE_FORM, passageBeside: true });
+        expect(examInterfaceFormFromWire({ passage_beside_question: true }).choice).toBe('default');
+        expect(examInterfaceFormFromWire({ passage_beside_question: 'yes' }).passageBeside).toBe(
+            false
+        );
+        expect(examInterfaceFormFromWire(null).passageBeside).toBe(false);
+        expect(examInterfaceFormFromWire({ v: 1, preset: 'gate' }).passageBeside).toBe(false);
+    });
+
+    it('round-trips: load, save unchanged, same wire', () => {
+        const wire = { v: 1, preset: 'default', passage_beside_question: true };
+        expect(examInterfaceWireFromForm(examInterfaceFormFromWire(wire))).toEqual(wire);
+    });
+});

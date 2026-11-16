@@ -26,6 +26,10 @@ import {
  * An OMR sheet exam is answered on paper, and a teacher-checked (MANUAL) paper is
  * answered by uploading an answer sheet, which only the standard screen offers; the
  * picker is disabled for both and the save sends the standard screen.
+ *
+ * "Show passage beside the question" is an option of the standard screen (the
+ * themed screens draw their own layout), so it shows only while the test uses
+ * the standard screen, and never for an OMR sheet exam.
  */
 export const ExamInterfaceSettingsCard = ({
     control,
@@ -44,6 +48,7 @@ export const ExamInterfaceSettingsCard = ({
     const choice = examInterface?.choice ?? 'default';
     const locked = omrMode || manualEvaluation;
     const themed = !locked && choice !== 'default';
+    const standardScreen = !omrMode && (manualEvaluation || choice === 'default');
 
     return (
         <div
@@ -111,6 +116,34 @@ export const ExamInterfaceSettingsCard = ({
                     </FormItem>
                 )}
             />
+
+            {standardScreen && (
+                <div className="flex flex-col gap-3 border-t border-slate-100 pt-3">
+                    <FormField
+                        control={control}
+                        name="examInterface.passageBeside"
+                        render={({ field }) => (
+                            <FormItem className="flex items-center justify-between gap-4 space-y-0">
+                                <div className="flex flex-col">
+                                    <FormLabel className="text-sm text-slate-900">
+                                        {t('examInterface.passageBeside.label')}
+                                    </FormLabel>
+                                    <span className="text-xs text-slate-500">
+                                        {t('examInterface.passageBeside.description')}
+                                    </span>
+                                </div>
+                                <FormControl>
+                                    <Switch
+                                        checked={field.value === true}
+                                        onCheckedChange={field.onChange}
+                                        aria-label={t('examInterface.passageBeside.label')}
+                                    />
+                                </FormControl>
+                            </FormItem>
+                        )}
+                    />
+                </div>
+            )}
 
             {themed && (
                 <div className="flex flex-col gap-3 border-t border-slate-100 pt-3">

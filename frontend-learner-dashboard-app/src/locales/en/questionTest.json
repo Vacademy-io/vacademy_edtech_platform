@@ -193,7 +193,9 @@
     },
     "questionPassage": {
         "label": "Passage",
-        "tapToRead": "Tap to read"
+        "tapToRead": "Tap to read",
+        "resizeLabel": "Resize passage and question panes",
+        "resizeValue": "Passage {{pct}}% of the width"
     },
     "questionStatus": {
         "answered": "Answered",

@@ -77,6 +77,8 @@ export const BasicInfoFormSchema = z.object({
             choice: z.string(),
             strict: z.boolean(),
             calculator: z.boolean().default(true),
+            // Standard screen: passage beside the question (passage_beside_question).
+            passageBeside: z.boolean().default(false),
             stored: z.record(z.unknown()).nullable(),
         })
         .default(DEFAULT_EXAM_INTERFACE_FORM),

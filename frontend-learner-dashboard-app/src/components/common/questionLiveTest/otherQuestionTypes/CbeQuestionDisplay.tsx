@@ -9,19 +9,10 @@
  *
  * Contract: docs/CBE_RESPONSE_QUESTION.md §4, §6 (Learner, Proctoring).
  */
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type KeyboardEvent as ReactKeyboardEvent,
-  type PointerEvent as ReactPointerEvent,
-  type ReactNode,
-} from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { DesktopTower, DotsSixVertical } from "@phosphor-icons/react";
+import { DesktopTower } from "@phosphor-icons/react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { CbeWorkspace } from "@/components/cbe/CbeWorkspace";
 import { CbeStringsProvider } from "@/components/cbe/cbe-strings";
@@ -34,17 +25,11 @@ import { cn } from "@/lib/utils";
 import { QuestionHtmlContent } from "../question-html-content";
 import { QuestionPassage } from "../question-passage";
 import { useLiveTestUi } from "../live-test-ui-context";
+import { useResizableSplit } from "../split/use-resizable-split";
+import { SplitDivider } from "../split/SplitDivider";
 
-/** Left (scenario) pane width, in % of the split, and its limits. */
-const SPLIT_MIN = 22;
-const SPLIT_MAX = 62;
-/** Pixel floors the % limits must respect (min-w-reg-250 / min-w-reg-400, divider w-3). */
-const SCENARIO_MIN_PX = 250;
-const ANSWER_MIN_PX = 400;
-const DIVIDER_PX = 12;
+/** Default scenario-pane width, in % of the split (limits: split/split-math.ts). */
 const SPLIT_DEFAULT = 40;
-const SPLIT_STEP = 2;
-const SPLIT_STEP_LARGE = 10;
 const SPLIT_STORAGE_KEY = "cbe-live-split-pct";
 
 const GRID_MIN_HEIGHT = 360;
@@ -57,43 +42,9 @@ const GRID_PANE_RESERVE = 92;
 const SCENARIO_TABLE_CLASSES =
   "[&_table]:my-3 [&_table]:w-full [&_td]:border [&_td]:border-neutral-200 [&_td]:px-2 [&_td]:py-1 [&_th]:border [&_th]:border-neutral-200 [&_th]:px-2 [&_th]:py-1";
 
-type SplitBounds = { min: number; max: number };
-const DEFAULT_BOUNDS: SplitBounds = { min: SPLIT_MIN, max: SPLIT_MAX };
-
-const clampSplit = (value: number, bounds: SplitBounds = DEFAULT_BOUNDS) =>
-  Math.min(bounds.max, Math.max(bounds.min, value));
-
-/** % limits for a split of `width` px, so neither pane drops below its minimum width. */
-const boundsForWidth = (width: number): SplitBounds => {
-  if (width <= 0) return DEFAULT_BOUNDS;
-  const max = Math.max(0, Math.min(SPLIT_MAX, ((width - DIVIDER_PX - ANSWER_MIN_PX) / width) * 100));
-  const min = Math.max(SPLIT_MIN, (SCENARIO_MIN_PX / width) * 100);
-  // Too narrow for both minimums: give the answer pane the room.
-  return max < min ? { min: max, max } : { min, max };
-};
-
-const readStoredSplit = (): number => {
-  try {
-    const stored = Number(window.localStorage.getItem(SPLIT_STORAGE_KEY));
-    return Number.isFinite(stored) && stored > 0 ? clampSplit(stored) : SPLIT_DEFAULT;
-  } catch {
-    return SPLIT_DEFAULT;
-  }
-};
-
-const storeSplit = (value: number) => {
-  try {
-    window.localStorage.setItem(SPLIT_STORAGE_KEY, String(Math.round(value)));
-  } catch {
-    /* private mode / blocked storage: the split just isn't remembered */
-  }
-};
-
 /** A passage counts as a scenario when it has visible text, an image or a table. */
 const hasVisibleHtml = (html: string | null | undefined): boolean =>
   !!html && (htmlToPlainText(html) !== "" || /<(img|table|svg)\b/i.test(html));
-
-const isRtl = () => typeof document !== "undefined" && document.documentElement.dir === "rtl";
 
 interface CbeQuestionDisplayProps {
   question: QuestionDto;
@@ -135,84 +86,12 @@ export function CbeQuestionDisplay({ question, header, intro }: CbeQuestionDispl
   const hasRequirement = hasVisibleHtml(requirementHtml);
 
   // --- split ---------------------------------------------------------------
-  const [storedSplit, setSplit] = useState<number>(() => readStoredSplit());
-  const [bounds, setBounds] = useState<SplitBounds>(DEFAULT_BOUNDS);
-  // The stored % re-clamped to what fits the current width.
-  const split = clampSplit(storedSplit, bounds);
-  const splitRef = useRef<HTMLDivElement>(null);
-  const draggingRef = useRef(false);
-
-  const updateSplit = useCallback(
-    (value: number) => {
-      const next = clampSplit(value, bounds);
-      setSplit(next);
-      storeSplit(next);
-    },
-    [bounds],
-  );
-
-  // Recompute the limits whenever the split container resizes.
-  useEffect(() => {
-    if (isCompact || !hasScenario) return;
-    const container = splitRef.current;
-    if (!container || typeof ResizeObserver === "undefined") return;
-    const measure = () => {
-      const next = boundsForWidth(container.getBoundingClientRect().width);
-      setBounds((prev) =>
-        Math.abs(prev.min - next.min) < 0.1 && Math.abs(prev.max - next.max) < 0.1 ? prev : next,
-      );
-    };
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, [isCompact, hasScenario]);
-
-  const splitFromPointer = (clientX: number) => {
-    const rect = splitRef.current?.getBoundingClientRect();
-    if (!rect || rect.width <= 0) return;
-    const fromStart = isRtl() ? rect.right - clientX : clientX - rect.left;
-    updateSplit((fromStart / rect.width) * 100);
-  };
-
-  const onDividerPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (event.button !== 0) return;
-    event.preventDefault();
-    draggingRef.current = true;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.currentTarget.focus();
-  };
-  const onDividerPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
-    if (draggingRef.current) splitFromPointer(event.clientX);
-  };
-  const onDividerPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
-    draggingRef.current = false;
-    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      event.currentTarget.releasePointerCapture(event.pointerId);
-    }
-  };
-  const onDividerKeyDown = (event: ReactKeyboardEvent<HTMLDivElement>) => {
-    const step = event.shiftKey ? SPLIT_STEP_LARGE : SPLIT_STEP;
-    // Arrows move the divider the way they point, in either text direction.
-    const towardEnd = isRtl() ? -step : step;
-    switch (event.key) {
-      case "ArrowRight":
-        updateSplit(split + towardEnd);
-        break;
-      case "ArrowLeft":
-        updateSplit(split - towardEnd);
-        break;
-      case "Home":
-        updateSplit(bounds.min);
-        break;
-      case "End":
-        updateSplit(bounds.max);
-        break;
-      default:
-        return;
-    }
-    event.preventDefault();
-  };
+  const splitState = useResizableSplit({
+    storageKey: SPLIT_STORAGE_KEY,
+    defaultPct: SPLIT_DEFAULT,
+    active: !isCompact && hasScenario,
+  });
+  const { splitRef, split } = splitState;
 
   // --- grid height: fill the answer pane on desktop ---------------------------
   const answerPaneRef = useRef<HTMLDivElement>(null);
@@ -337,28 +216,11 @@ export function CbeQuestionDisplay({ question, header, intro }: CbeQuestionDispl
         />
       </section>
 
-      <div
-        role="separator"
-        aria-orientation="vertical"
-        aria-label={t("cbe.resizeLabel")}
-        aria-valuenow={Math.round(split)}
-        aria-valuemin={Math.round(bounds.min)}
-        aria-valuemax={Math.round(bounds.max)}
-        aria-valuetext={t("cbe.resizeValue", { pct: Math.round(split) })}
-        tabIndex={0}
-        onPointerDown={onDividerPointerDown}
-        onPointerMove={onDividerPointerMove}
-        onPointerUp={onDividerPointerUp}
-        onPointerCancel={onDividerPointerUp}
-        onKeyDown={onDividerKeyDown}
-        onDoubleClick={() => updateSplit(SPLIT_DEFAULT)}
-        className={cn(
-          "group flex w-3 flex-none cursor-col-resize touch-none items-center justify-center border-x border-neutral-200 bg-neutral-100 transition-colors",
-          "hover:bg-primary-50 focus-visible:bg-primary-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary-300",
-        )}
-      >
-        <DotsSixVertical size={14} className="text-neutral-400 group-hover:text-primary-500" aria-hidden />
-      </div>
+      <SplitDivider
+        split={splitState}
+        label={t("cbe.resizeLabel")}
+        valueText={t("cbe.resizeValue", { pct: Math.round(split) })}
+      />
 
       <div
         ref={answerPaneRef}

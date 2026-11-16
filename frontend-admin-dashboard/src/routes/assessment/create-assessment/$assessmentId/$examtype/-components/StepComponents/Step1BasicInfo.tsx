@@ -675,6 +675,7 @@ const Step1BasicInfo: React.FC<StepContentProps> = ({
         watch('omrMode') === true ||
         (proctoringTier !== undefined && proctoringTier !== 'NONE') ||
         (watch('examInterface')?.choice ?? 'default') !== 'default' ||
+        watch('examInterface')?.passageBeside === true ||
         watch('assessmentPreview.checked') === true ||
         watch('switchSections') === false;
     useEffect(() => {
