@@ -32,6 +32,8 @@ class ExpandedAnnouncementApiTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
+    // Postgres-only email-stats SQL in the create response rolls the create back on H2.
+    @MockBean private vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository notificationLogRepository;
 
     @MockBean private RecipientResolutionService recipientResolutionService;
     @MockBean private AnnouncementDeliveryService announcementDeliveryService;
@@ -66,7 +68,7 @@ class ExpandedAnnouncementApiTest {
         medium.setConfig(Map.of("title","t","body","b"));
         req.setMediums(List.of(medium));
 
-        var res = mockMvc.perform(post("/notification-service/v1/announcements")
+        var res = mockMvc.perform(post("/notification-service/v1/announcements").with(AnnouncementTestAuth.admin("INST_X"))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isOk())

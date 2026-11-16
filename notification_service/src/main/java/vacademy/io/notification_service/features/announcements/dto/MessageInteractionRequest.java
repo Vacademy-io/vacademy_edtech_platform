@@ -19,7 +19,7 @@ public class MessageInteractionRequest {
     @NotBlank(message = "Recipient message ID is required")
     private String recipientMessageId;
     
-    @NotBlank(message = "User ID is required")
+    // Optional: the controller sets it from the caller's token and refuses any other id.
     private String userId;
     
     @NotNull(message = "Interaction type is required")

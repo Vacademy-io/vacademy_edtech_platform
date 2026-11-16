@@ -6,19 +6,22 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.notification_service.features.announcements.dto.CreateAnnouncementRequest;
 import vacademy.io.notification_service.features.announcements.entity.Announcement;
 import vacademy.io.notification_service.features.announcements.repository.AnnouncementRepository;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Caller checks for the admin-dashboard announcement endpoints (history list, stats,
+ * Caller checks for the admin-dashboard announcement endpoints (create, history list, stats,
  * recipients, approve/reject, delete, email configurations).
  *
- * <p>Other services create announcements service-to-service, so the security config does not
- * demand a token on these paths; each admin endpoint checks its caller here instead. The JWT
+ * <p>The security config requires a token on these paths; each endpoint then checks the caller's
+ * role in the target institute here. Other services create announcements through
+ * {@code /v1/announcements/admin/**} with service credentials instead. The JWT
  * filter builds the principal scoped to the institute in the {@code clientId} header — an empty
  * authority set means the caller holds no role there.
  *
@@ -47,6 +50,48 @@ public class AnnouncementAccessGuard {
         if (!memberAuthorities(user, clientId, instituteId).contains("ADMIN")) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "ADMIN_REQUIRED");
         }
+    }
+
+    /**
+     * Create from the admin dashboard (or another JWT caller): the caller must be staff of the
+     * request's institute, and the creator fields come from the token, not the body.
+     *
+     * <p>{@code createdByRole} decides the institute's approval step ("ADMIN" skips it) and which
+     * placements the creator may use, so a role the caller does not hold is never kept: a claimed
+     * ADMIN without the ADMIN role, or a blank role, is replaced by the caller's own staff role.
+     * Any other role the body names is kept, as the dashboard sends the sender's primary role.
+     */
+    public void prepareCreateRequest(CustomUserDetails user, String clientId, CreateAnnouncementRequest request) {
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "REQUEST_REQUIRED");
+        }
+        Set<String> authorities = memberAuthorities(user, clientId, request.getInstituteId());
+        if (authorities.stream().allMatch(LEARNER_ROLE_NAMES::contains)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "STAFF_REQUIRED");
+        }
+        request.setCreatedBy(user.getUserId());
+        request.setCreatedByRole(resolveCreatorRole(authorities, request.getCreatedByRole()));
+    }
+
+    static String resolveCreatorRole(Set<String> authorities, String requestedRole) {
+        String requested = requestedRole == null ? "" : requestedRole.trim();
+        boolean claimsAdmin = "ADMIN".equalsIgnoreCase(requested);
+        if (!requested.isEmpty() && (!claimsAdmin || authorities.contains("ADMIN"))) {
+            return requested;
+        }
+        if (!claimsAdmin && authorities.contains("ADMIN")) {
+            return "ADMIN";
+        }
+        for (String preferred : List.of("TEACHER", "FACULTY")) {
+            if (authorities.contains(preferred)) {
+                return preferred;
+            }
+        }
+        return authorities.stream()
+                .filter(a -> !LEARNER_ROLE_NAMES.contains(a) && !"ADMIN".equals(a))
+                .sorted()
+                .findFirst()
+                .orElse("TEACHER");
     }
 
     /** Staff of the institute that owns the announcement. */

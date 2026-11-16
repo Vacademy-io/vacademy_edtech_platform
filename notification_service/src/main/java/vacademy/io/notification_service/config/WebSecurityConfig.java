@@ -52,9 +52,8 @@ public class WebSecurityConfig {
             "/notification-service/webjars/swagger-ui/**",
             "/notification-service/v1/**",
 
-            // Announcement system APIs - OPEN for internal service communication
-            "/notification-service/v1/announcements/**",
-            "/notification-service/v1/user-messages/**",
+            // Announcement system APIs. /v1/announcements/** and /v1/user-messages/** are NOT
+            // listed here: see the explicit rules in securityFilterChain.
             "/notification-service/v1/message-replies/**",
             "/notification-service/v1/institute-settings/**",
             // SSE streaming endpoints
@@ -130,6 +129,19 @@ public class WebSecurityConfig {
                     authz.requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.POST, "/notification-service/v1/institute-settings")).authenticated();
                     authz.requestMatchers(AntPathRequestMatcher.antMatcher(HttpMethod.DELETE, "/notification-service/v1/institute-settings/**")).authenticated();
                     authz.requestMatchers(AntPathRequestMatcher.antMatcher("/notification-service/v1/institute-settings/all")).authenticated();
+
+                    // Announcements. Service-to-service creation lives under /admin/** and is
+                    // checked by the controller against the clientName + Signature headers (the
+                    // same client table InternalAuthFilter uses). Every other announcement route is
+                    // a dashboard call and needs a JWT; the controllers then check the caller's role
+                    // in the institute. All registered ahead of the broad "/notification-service/v1/**"
+                    // permitAll below, which would otherwise swallow them.
+                    authz.requestMatchers(AntPathRequestMatcher.antMatcher("/notification-service/v1/announcements/admin/**")).permitAll();
+                    authz.requestMatchers(AntPathRequestMatcher.antMatcher("/notification-service/v1/announcements")).authenticated();
+                    authz.requestMatchers(AntPathRequestMatcher.antMatcher("/notification-service/v1/announcements/**")).authenticated();
+                    // A user's own messages and interactions: the controller takes the user id
+                    // from the token and refuses any other id.
+                    authz.requestMatchers(AntPathRequestMatcher.antMatcher("/notification-service/v1/user-messages/**")).authenticated();
 
                     // Use AntPathRequestMatcher for Ant-style pattern matching (compatible with
                     // Spring 6)
