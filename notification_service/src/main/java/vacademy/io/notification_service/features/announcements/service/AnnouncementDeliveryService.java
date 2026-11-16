@@ -395,11 +395,13 @@ public class AnnouncementDeliveryService {
                     message.setStatus(MessageStatus.DELIVERED);
                     message.setSentAt(LocalDateTime.now());
                     message.setDeliveredAt(LocalDateTime.now());
-                    
-                    // Create email-specific notification log entry
-                        log.trace("Creating EMAIL notification log for announcement: {}, user: {}", 
-                            announcement.getId(), message.getUserId());
-                    createEmailNotificationLog(announcement, message, userEmail, "SUCCESS", null, resolvedFromAddress);
+
+                    // No log row here: the send's own EMAIL row (written by EmailService, with the
+                    // HTML, the subject and the SES events) is stamped with this announcement and
+                    // user, so it is the one row for this email. A second title-only row here
+                    // showed up as a separate, empty email on the learner's timeline, and Resend
+                    // on it mailed the bare campaign title. Failures below still get a row, since
+                    // no send exists to carry the reason.
 
                         batchSuccess++;
 

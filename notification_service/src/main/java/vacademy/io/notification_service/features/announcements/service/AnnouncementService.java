@@ -915,7 +915,11 @@ public class AnnouncementService {
         
         try {
             // 1. Find all EMAIL logs for this announcement
-            List<NotificationLog> emailLogs = notificationLogRepository.findBySourceIdAndNotificationType(announcementId, "EMAIL");
+            // Failed and pre-correlation sends are tracking rows keyed by source_id; current real
+            // sends carry the announcement id in correlation_id. The two sets never overlap.
+            List<NotificationLog> emailLogs = new ArrayList<>(
+                    notificationLogRepository.findBySourceIdAndNotificationType(announcementId, "EMAIL"));
+            emailLogs.addAll(notificationLogRepository.findByCorrelationIdAndNotificationType(announcementId, "EMAIL"));
             debug.put("totalEmailsSent", emailLogs.size());
             
             // Sample email logs

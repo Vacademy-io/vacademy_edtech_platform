@@ -18,7 +18,9 @@ import java.util.Objects;
  * <p>An announcement send writes TWO {@code EMAIL} rows for the same recipient within a second
  * or two: {@code AnnouncementDeliveryService} logs {@code source='announcement-service'} with the
  * campaign TITLE as body, and the actual SMTP send ({@code EmailService}, via unified-send) logs
- * a second row with the full HTML as body. In the inbox they showed as two "Sent" cards — one
+ * a second row with the full HTML as body. New successful sends no longer write the title row
+ * (the SMTP row carries the announcement id in correlation_id instead), so this pairing now
+ * applies to older sends and to FAILED rows, which never had a twin. In the inbox they showed as two "Sent" cards — one
  * whose text was just the title, one whose preview was the preheader padding. Here the
  * announcement row is folded into its twin, contributing the title as the thread subject.
  *
@@ -63,6 +65,16 @@ public final class EmailThreadMerger {
         boolean[] taken = new boolean[n];
         String[] derivedSubject = new String[n];
         boolean[] campaign = new boolean[n];
+
+        // Since the tracking row stopped being written for successful sends, a campaign email is a
+        // lone unified-send row stamped with its announcement id (correlation_id). Only
+        // announcement sends stamp that on a unified-send row, so it marks the campaign alone.
+        for (int i = 0; i < n; i++) {
+            NotificationLog nl = rows.get(i);
+            if (isUnifiedSendEmail(nl) && nl.getCorrelationId() != null && !nl.getCorrelationId().isBlank()) {
+                campaign[i] = true;
+            }
+        }
 
         for (int i = 0; i < n; i++) {
             NotificationLog ann = rows.get(i);

@@ -93,6 +93,46 @@ class UnifiedSendPlainLogSourceTest {
         assertThat(UnifiedSendService.PLAIN_LOG_SOURCE).isEqualTo("unified-send");
     }
 
+    /** correlationId and userId the send handed EmailService for the logged row. */
+    private String[] loggedAttribution(String optsSource, String sourceId, String userId) {
+        service.routeSync(UnifiedSendRequest.builder()
+                .instituteId(INSTITUTE)
+                .channel("EMAIL")
+                .recipients(List.of(UnifiedSendRequest.Recipient.builder().email(TO).userId(userId).build()))
+                .options(UnifiedSendRequest.SendOptions.builder()
+                        .emailSubject("Welcome").emailBody("<p>Hi</p>")
+                        .source(optsSource).sourceId(sourceId).build())
+                .build());
+        ArgumentCaptor<String> correlation = ArgumentCaptor.forClass(String.class);
+        ArgumentCaptor<String> user = ArgumentCaptor.forClass(String.class);
+        verify(emailService).sendHtmlEmail(eq(TO), anyString(), anyString(), anyString(), eq(INSTITUTE),
+                any(), any(), any(), correlation.capture(), user.capture(), any(), any(), any());
+        return new String[]{correlation.getValue(), user.getValue()};
+    }
+
+    @Test
+    @DisplayName("an announcement send stamps its announcement id and recipient on the one logged row")
+    void announcementSendCarriesItsCampaignAndUser() {
+        String[] logged = loggedAttribution("announcement-service", "ann-1", "user-1");
+        assertThat(logged[0]).isEqualTo("ann-1");
+        assertThat(logged[1]).isEqualTo("user-1");
+    }
+
+    @Test
+    void announcementSendDropsAnEmailPassedAsUserId() {
+        String[] logged = loggedAttribution("announcement-service", "ann-1", TO);
+        assertThat(logged[0]).isEqualTo("ann-1");
+        assertThat(logged[1]).isNull();
+    }
+
+    @Test
+    @DisplayName("other plain sends stay unattributed")
+    void otherSendsCarryNoAttribution() {
+        String[] logged = loggedAttribution("share-credentials", "something-1", "user-1");
+        assertThat(logged[0]).isNull();
+        assertThat(logged[1]).isNull();
+    }
+
     @Test
     void anyOtherCallerSourceIsAlsoUnifiedSend() {
         assertThat(UnifiedSendService.plainLogSource(null)).isEqualTo("unified-send");
