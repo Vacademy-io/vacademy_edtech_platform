@@ -118,6 +118,12 @@ public class QuizSlideService {
         if (dto.getShowAnswerAfterEachQuestion() != null) {
             quizSlide.setShowAnswerAfterEachQuestion(dto.getShowAnswerAfterEachQuestion());
         }
+        // The title column is otherwise write-once. A "Document + Quiz" slide keeps its
+        // document reference there, so accept a new marker (the admin replaced the
+        // document). Plain titles are still ignored, exactly as before.
+        if (DocumentQuizMarker.isMarker(dto.getTitle())) {
+            quizSlide.setTitle(dto.getTitle());
+        }
         addOrUpdateQuestionsInBulk(quizSlide, dto.getQuestions());
     }
 

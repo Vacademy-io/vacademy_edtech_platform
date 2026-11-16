@@ -40,6 +40,8 @@ import { ScratchProjectSlide } from "./scratch-project-slide";
 import { DiscussionSlide } from "./discussion/discussion-slide";
 import { SpreadsheetSlide } from "./spreadsheet/spreadsheet-slide";
 import { SplitScreenVideoSlide } from "./split-screen-video-slide";
+import { DocumentQuizSlide } from "./document-quiz-slide";
+import { parseDocumentQuizRef } from "./document-quiz-ref";
 import { useDoubtSidebarStore } from "@/stores/study-library/doubt-sidebar-store";
 import QuizViewer from "./quiz-viewer";
 import { LessonNextContext } from "./lesson-next-context";
@@ -1021,6 +1023,7 @@ export const SlideMaterial = ({
           const slideWithQuiz = activeItem as Slide & { quiz_slide?: unknown };
           const quizSlide = slideWithQuiz.quiz_slide as
             | {
+                title?: string | null;
                 questions?: unknown[];
                 time_limit_in_minutes?: number | null;
                 marks_per_question?: number;
@@ -1076,7 +1079,7 @@ export const SlideMaterial = ({
             };
           });
 
-          setContent(
+          const quizView = (
             <QuizViewer
               key={activeItem.id}
               slideId={activeItem.id}
@@ -1098,6 +1101,19 @@ export const SlideMaterial = ({
                 // Optionally handle quiz completion
               }}
             />
+          );
+          // Document + Quiz: the same quiz beside the slide's document.
+          const documentQuizRef = parseDocumentQuizRef(quizSlide?.title);
+          setContent(
+            documentQuizRef ? (
+              <DocumentQuizSlide
+                key={`document-quiz-${activeItem.id}`}
+                documentRef={documentQuizRef}
+                quiz={quizView}
+              />
+            ) : (
+              quizView
+            )
           );
           break;
         }

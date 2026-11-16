@@ -103,6 +103,8 @@ import type { DropdownItem } from '@/components/design-system/utils/types/dropdo
 import { useModulesWithChaptersStore } from '@/stores/study-library/use-modules-with-chapters-store';
 import { useStudyLibraryStore } from '@/stores/study-library/use-study-library-store';
 import QuizPreview from './QuizPreview';
+import { DocumentQuizPreview } from './document-quiz/document-quiz-preview';
+import { parseDocumentQuizRef } from './document-quiz/document-quiz-ref';
 import { createQuizSlidePayload } from './quiz/utils/api-helpers';
 import { getDisplaySettings, getDisplaySettingsFromCache } from '@/services/display-settings';
 import {
@@ -3133,7 +3135,7 @@ export const SlideMaterial = ({
         ) {
             try {
                 // For question slides, we don't need to parse data as it's already structured
-                setContent(
+                const quizPreview = (
                     <QuizPreview
                         activeItem={activeItem}
                         routeParams={{
@@ -3145,6 +3147,15 @@ export const SlideMaterial = ({
                             levelId,
                         }}
                     />
+                );
+                // Document + Quiz: the same quiz editor beside the slide's document.
+                const documentRef = parseDocumentQuizRef(activeItem.quiz_slide?.title);
+                setContent(
+                    documentRef ? (
+                        <DocumentQuizPreview documentRef={documentRef}>{quizPreview}</DocumentQuizPreview>
+                    ) : (
+                        quizPreview
+                    )
                 );
             } catch (error) {
                 console.error('Error loading quiz questions:', error);
@@ -4218,6 +4229,8 @@ export const SlideMaterial = ({
         ['PDF', 'PPT_ANIM'].includes(activeItem?.document_slide?.type ?? '')
             ? `${activeItem?.document_slide?.data ?? ''}|${activeItem?.document_slide?.published_data ?? ''}`
             : null;
+    // Null for every slide that is not a Document + Quiz, so plain quizzes never re-run.
+    const documentQuizFileId = parseDocumentQuizRef(activeItem?.quiz_slide?.title)?.fileId ?? null;
 
     useEffect(() => {
         setHeading(activeItem?.title || '');
@@ -4239,6 +4252,8 @@ export const SlideMaterial = ({
         activeItem?.video_slide?.published_url,
         // Reload the editor with the restored content after a history restore.
         historyRestoreNonce,
+        // Document + Quiz: re-render when the admin replaces the document.
+        documentQuizFileId,
     ]);
 
     // ⋯ menu entries for the relocated header actions, per slide type.

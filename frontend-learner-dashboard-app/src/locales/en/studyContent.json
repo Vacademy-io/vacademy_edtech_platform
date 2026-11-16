@@ -179,6 +179,13 @@
         "rightVideo": "Right: Video",
         "rightHtmlVideo": "Right: HTML Video"
     },
+    "documentQuiz": {
+        "documentTab": "Document",
+        "questionsTab": "Questions",
+        "resize": "Resize the document and questions",
+        "loading": "Loading document…",
+        "loadFailed": "Couldn’t load the document. You can still answer the questions."
+    },
     "liveClass": {
         "waitingRoom": "Waiting Room",
         "classHasEnded": "This class has ended",
