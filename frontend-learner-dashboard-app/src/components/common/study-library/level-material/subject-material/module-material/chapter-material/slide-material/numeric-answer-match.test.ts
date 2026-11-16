@@ -26,6 +26,13 @@ describe("numericToleranceVerdict", () => {
   it("counts the exact boundary despite floating point", () => {
     expect(numericToleranceVerdict("NUMERIC", quizKey([0.1], 1), 1.1)).toBe(true);
     expect(numericToleranceVerdict("NUMERIC", quizKey([100], 0.5), 99.5)).toBe(true);
+    expect(numericToleranceVerdict("NUMERIC", quizKey([10000000.1], 1), "10000001.1")).toBe(true);
+    expect(numericToleranceVerdict("NUMERIC", quizKey([0.3], 0.1), "0.2")).toBe(true);
+  });
+
+  it("does not accept just past the boundary, as the server would not", () => {
+    expect(numericToleranceVerdict("NUMERIC", quizKey([100000], 1), "100001.0001")).toBe(false);
+    expect(numericToleranceVerdict("NUMERIC", quizKey([1250], 1), "1251.000001")).toBe(false);
   });
 
   it("handles negative numbers", () => {

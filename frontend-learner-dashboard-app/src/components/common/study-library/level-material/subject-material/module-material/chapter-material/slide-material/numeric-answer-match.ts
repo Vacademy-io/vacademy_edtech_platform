@@ -47,11 +47,12 @@ export const readNumericToleranceKey = (
 
 /**
  * |given - answer| <= tolerance for any answer. The slack covers binary floating point
- * only (1.1 - 0.1 is 1.0000000000000002), far below any tolerance an author types.
+ * only (1.1 - 0.1 is 1.0000000000000002): a few units in the last place, so it never
+ * accepts an answer the server (which compares exact decimals) would mark wrong.
  */
 export const isWithinTolerance = (given: number, answers: number[], tolerance: number): boolean =>
   answers.some((answer) => {
-    const slack = 1e-9 * Math.max(1, Math.abs(answer), Math.abs(given), tolerance);
+    const slack = 8 * Number.EPSILON * Math.max(1, Math.abs(answer), Math.abs(given), tolerance);
     return Math.abs(given - answer) <= tolerance + slack;
   });
 

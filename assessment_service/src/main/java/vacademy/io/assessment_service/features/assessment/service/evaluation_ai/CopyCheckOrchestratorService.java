@@ -681,7 +681,16 @@ public class CopyCheckOrchestratorService {
             if (valid.isArray() && valid.size() > 0) {
                 List<String> values = new ArrayList<>();
                 valid.forEach(v -> values.add(v.asText()));
-                return String.join(" or ", values);
+                String accepted = String.join(" or ", values);
+                // A ± tolerance (accounting papers) widens the key; the grader must know
+                // it or it marks 1251 wrong where online grading accepts it.
+                JsonNode tolerance = data.path("tolerance");
+                if (tolerance.isNumber() && tolerance.doubleValue() > 0
+                        && Double.isFinite(tolerance.doubleValue())) {
+                    accepted += " (any answer within ± " + tolerance.decimalValue().stripTrailingZeros().toPlainString()
+                            + " of this is also correct)";
+                }
+                return accepted;
             }
 
             JsonNode answer = data.path("answer");
