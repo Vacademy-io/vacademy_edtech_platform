@@ -1698,7 +1698,7 @@ export function DashboardComponent() {
           : "flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
       }
     >
-      <div className="flex items-center gap-x-3">
+      <div className="flex items-center space-x-3 rtl:space-x-reverse">
         {/* Corporate drops the letter-avatar: the account avatar already
             sits in the top bar, and a second big initial disc beside the
             greeting is a consumer-app cue. */}
