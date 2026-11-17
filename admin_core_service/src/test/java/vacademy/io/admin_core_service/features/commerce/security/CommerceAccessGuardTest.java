@@ -302,4 +302,22 @@ class CommerceAccessGuardTest {
             assertTrue(registry.isFeature(feature.key()), feature.key() + " is not in catalog.json");
         }
     }
+    // ── Work no person starts: on, off, or not readable ──────────────────────
+
+    @Test
+    void featureStateTellsOnOffAndUnknownApart() {
+        assertEquals(CommerceAccessGuard.FeatureState.ON, guard.featureState(INSTITUTE, CommerceFeature.ORDERS));
+        assertTrue(guard.featureOn(INSTITUTE, CommerceFeature.ORDERS));
+        when(entitlements.findByInstituteIdOrderByKeyAsc(OTHER_INSTITUTE)).thenReturn(List.of());
+        assertEquals(CommerceAccessGuard.FeatureState.OFF, guard.featureState(OTHER_INSTITUTE,
+                CommerceFeature.ORDERS));
+        assertFalse(guard.featureOn(OTHER_INSTITUTE, CommerceFeature.ORDERS));
+        assertEquals(CommerceAccessGuard.FeatureState.OFF, guard.featureState(INSTITUTE, null));
+
+        CapabilityResolver failing = mock(CapabilityResolver.class);
+        when(failing.isFeatureGranted(any(), any())).thenThrow(new IllegalStateException("db down"));
+        CommerceAccessGuard broken = new CommerceAccessGuard(failing, staffLocations);
+        assertEquals(CommerceAccessGuard.FeatureState.UNKNOWN, broken.featureState(INSTITUTE, CommerceFeature.ORDERS));
+        assertFalse(broken.featureOn(INSTITUTE, CommerceFeature.ORDERS));
+    }
 }

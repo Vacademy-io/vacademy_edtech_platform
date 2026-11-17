@@ -128,4 +128,23 @@ class CommerceRefundWebhookServiceTest {
         assertEquals(Outcome.REPLAY, service.handle("refund.processed", entity("rfnd_6", null, 5000L, "processed"),
                 gatewayOrder, INST));
     }
+
+    @Test
+    void aGatewayRefundAdoptedAfterOurRowFailedIsFoundByItsIdBeforeItsReceipt() throws Exception {
+        CommerceRefund failed = f.pendingGateway("200.00");
+        failed.setStatus("FAILED");
+        failed.setFailureCode("GATEWAY_NOT_CREATED");
+        CommerceRefund adopted = f.pendingGateway("200.00");
+        adopted.setStatus("IN_PROGRESS");
+        adopted.setGatewayRefundId("rfnd_X");
+        when(f.refundRepository.findByGatewayVendorAndGatewayRefundId("RAZORPAY", "rfnd_X")).thenReturn(
+                Optional.of(adopted));
+        // The receipt still names the failed row: the gateway id wins.
+        assertEquals(Outcome.PROCESSED, service.handle("refund.processed", entity("rfnd_X", failed.getId(), 20000L,
+                "processed"), gatewayOrder, INST));
+        assertEquals("PROCESSED", adopted.getStatus());
+        assertEquals("FAILED", failed.getStatus());
+        assertEquals(Outcome.REPLAY, service.handle("refund.processed", entity("rfnd_X", failed.getId(), 20000L,
+                "processed"), gatewayOrder, INST));
+    }
 }

@@ -74,15 +74,36 @@ public class CommerceAccessGuard {
         }
     }
 
+    /** Whether an institute has a feature, as work no person starts sees it. */
+    public enum FeatureState {
+        /** Granted. */
+        ON,
+        /** Not granted. */
+        OFF,
+        /** The resolver failed: neither on nor off; the caller tries again later. */
+        UNKNOWN
+    }
+
     /**
      * For work no person starts (jobs, automatic refunds): whether the institute has the
      * feature. Never throws.
      */
     public boolean featureOn(String instituteId, CommerceFeature feature) {
+        return featureState(instituteId, feature) == FeatureState.ON;
+    }
+
+    /**
+     * As {@link #featureOn}, telling "off" apart from "could not be read" ({@link FeatureState#UNKNOWN}
+     * when the resolver throws). Never throws.
+     */
+    public FeatureState featureState(String instituteId, CommerceFeature feature) {
+        if (feature == null) {
+            return FeatureState.OFF;
+        }
         try {
-            return feature != null && capabilityResolver.isFeatureGranted(instituteId, feature.key());
+            return capabilityResolver.isFeatureGranted(instituteId, feature.key()) ? FeatureState.ON : FeatureState.OFF;
         } catch (RuntimeException e) {
-            return false;
+            return FeatureState.UNKNOWN;
         }
     }
 

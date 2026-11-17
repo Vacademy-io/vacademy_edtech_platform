@@ -41,8 +41,10 @@ import java.util.function.LongSupplier;
  *
  * <p>Only institutes with the commerce feature are served: a row of any other institute makes
  * no gateway call and gets no hook. Its refund row is left alone for {@link #FEATURE_OFF_DEFER}
- * (only its next poll time moves, so it never crowds out the others); its exception row is
- * skipped inside a read window of {@value #EXCEPTION_WINDOW} rows.
+ * (only its next poll time moves, so it never crowds out the others); its exception rows are
+ * skipped, read in pages of {@value #EXCEPTION_WINDOW} (at most {@value #EXCEPTION_PAGES} pages a
+ * run) so they never hide the rows behind them. When the feature cannot be read (the resolver
+ * failed) the row is only skipped this run: nothing is deferred, and the next run tries again.
  */
 @Slf4j
 @Component
@@ -58,6 +60,7 @@ public class CommerceRefundPollJob {
     static final Duration STUCK_ALERT_EVERY = Duration.ofHours(24);
     static final Duration FEATURE_OFF_DEFER = Duration.ofHours(1);
     static final int EXCEPTION_WINDOW = 100;
+    static final int EXCEPTION_PAGES = 5;
 
     private final CommerceRefundRepository refundRepository;
     private final CommerceRefundExecutor executor;
@@ -107,7 +110,8 @@ public class CommerceRefundPollJob {
         long started = clockMillis.getAsLong();
         Map<String, Integer> counts = new HashMap<>();
         Map<String, Integer> perInstitute = new HashMap<>();
-        Map<String, Boolean> commerceOn = new HashMap<>();
+        Map<String, CommerceAccessGuard.FeatureState> commerceOn = new HashMap<>();
+        java.util.Set<String> unknownWarned = new java.util.HashSet<>();
         int handled = 0;
 
         List<CommerceRefundRepository.DueRefund> pending = ownTransaction.execute(status ->
@@ -117,8 +121,7 @@ public class CommerceRefundPollJob {
             if (handled >= MAX_PER_RUN || overBudget(started)) {
                 break;
             }
-            if (!on(commerceOn, row.getInstituteId())) {
-                deferOff(row, now, counts);
+            if (!served(commerceOn, unknownWarned, row.getInstituteId(), counts, () -> deferOff(row, now, counts))) {
                 continue;
             }
             if (perInstitute.merge(row.getInstituteId(), 1, Integer::sum) > MAX_PER_INSTITUTE) {
@@ -142,8 +145,7 @@ public class CommerceRefundPollJob {
             if (handled >= MAX_PER_RUN || overBudget(started)) {
                 break;
             }
-            if (!on(commerceOn, row.getInstituteId())) {
-                deferOff(row, now, counts);
+            if (!served(commerceOn, unknownWarned, row.getInstituteId(), counts, () -> deferOff(row, now, counts))) {
                 continue;
             }
             if (perInstitute.merge(row.getInstituteId(), 1, Integer::sum) > MAX_PER_INSTITUTE) {
@@ -174,16 +176,42 @@ public class CommerceRefundPollJob {
         }
 
         if (!overBudget(started)) {
-            List<CommercePaymentException> unrefunded = ownTransaction.execute(status -> exceptions.findUnrefunded(
-                    new Date(now.getTime() - EXCEPTION_GRACE.toMillis()), EXCEPTION_WINDOW));
-            int retried = 0;
-            for (CommercePaymentException row : unrefunded == null ? List.<CommercePaymentException>of()
-                    : unrefunded) {
+            retryExceptions(now, started, commerceOn, unknownWarned, counts);
+        }
+        if (!counts.isEmpty()) {
+            log.info("COMMERCE_REFUND_POLL run {} ms={}", counts, clockMillis.getAsLong() - started);
+        }
+        return counts;
+    }
+
+    /**
+     * Oversold and duplicate rows without their refund, in keyset pages: until
+     * {@value #MAX_EXCEPTIONS} were retried, the budget ends, a page comes back short, or
+     * {@value #EXCEPTION_PAGES} pages were read.
+     */
+    private void retryExceptions(Date now, long started, Map<String, CommerceAccessGuard.FeatureState> commerceOn,
+                                 java.util.Set<String> unknownWarned, Map<String, Integer> counts) {
+        Date createdBefore = new Date(now.getTime() - EXCEPTION_GRACE.toMillis());
+        Date afterCreatedAt = new Date(0L);
+        String afterId = "";
+        int retried = 0;
+        boolean allSkippedLogged = false;
+        for (int page = 0; page < EXCEPTION_PAGES && retried < MAX_EXCEPTIONS && !overBudget(started); page++) {
+            Date pageAfter = afterCreatedAt;
+            String pageAfterId = afterId;
+            List<CommercePaymentException> rows = ownTransaction.execute(status -> exceptions.findUnrefunded(
+                    createdBefore, pageAfter, pageAfterId, EXCEPTION_WINDOW));
+            if (rows == null || rows.isEmpty()) {
+                break;
+            }
+            int skipped = 0;
+            for (CommercePaymentException row : rows) {
                 if (retried >= MAX_EXCEPTIONS || overBudget(started)) {
-                    break;
+                    return;
                 }
-                if (!on(commerceOn, row.getInstituteId())) {
-                    counts.merge("skipped_commerce_off", 1, Integer::sum);
+                if (!served(commerceOn, unknownWarned, row.getInstituteId(), counts, () -> counts.merge(
+                        "skipped_commerce_off", 1, Integer::sum))) {
+                    skipped++;
                     continue;
                 }
                 retried++;
@@ -197,17 +225,49 @@ public class CommerceRefundPollJob {
                 }
                 counts.merge("hook_retried", 1, Integer::sum);
             }
+            if (skipped == rows.size() && rows.size() == EXCEPTION_WINDOW && !allSkippedLogged) {
+                log.info("COMMERCE_REFUND_POLL exception_page_all_skipped rows={}", rows.size());
+                allSkippedLogged = true;
+            }
+            if (rows.size() < EXCEPTION_WINDOW) {
+                break;
+            }
+            CommercePaymentException last = rows.get(rows.size() - 1);
+            if (last.getCreatedAt() == null || last.getId() == null) {
+                break;
+            }
+            afterCreatedAt = last.getCreatedAt();
+            afterId = last.getId();
         }
-        if (!counts.isEmpty()) {
-            log.info("COMMERCE_REFUND_POLL run {} ms={}", counts, clockMillis.getAsLong() - started);
-        }
-        return counts;
     }
 
-    /** Whether the institute has the commerce feature; asked once per institute and run. */
-    private boolean on(Map<String, Boolean> cache, String instituteId) {
-        return cache.computeIfAbsent(instituteId == null ? "" : instituteId,
-                id -> accessGuard != null && accessGuard.featureOn(id, CommerceFeature.ORDERS));
+    /**
+     * Whether a row of this institute is served this run. The feature state is asked once per
+     * institute and run. OFF runs {@code whenOff}; UNKNOWN (the resolver failed) only skips the
+     * row, with one WARN per institute and run.
+     */
+    private boolean served(Map<String, CommerceAccessGuard.FeatureState> cache, java.util.Set<String> unknownWarned,
+                           String instituteId, Map<String, Integer> counts, Runnable whenOff) {
+        String id = instituteId == null ? "" : instituteId;
+        CommerceAccessGuard.FeatureState state = cache.computeIfAbsent(id, key -> {
+            if (accessGuard == null) {
+                return CommerceAccessGuard.FeatureState.OFF;
+            }
+            CommerceAccessGuard.FeatureState read = accessGuard.featureState(key, CommerceFeature.ORDERS);
+            return read == null ? CommerceAccessGuard.FeatureState.UNKNOWN : read;
+        });
+        if (state == CommerceAccessGuard.FeatureState.ON) {
+            return true;
+        }
+        if (state == CommerceAccessGuard.FeatureState.UNKNOWN) {
+            counts.merge("skipped_feature_unknown", 1, Integer::sum);
+            if (unknownWarned.add(id)) {
+                log.warn("COMMERCE_REFUND_POLL institute {} skipped this run: feature state unknown", id);
+            }
+            return false;
+        }
+        whenOff.run();
+        return false;
     }
 
     /** A refund row of an institute without commerce: no gateway call; looked at again later. */

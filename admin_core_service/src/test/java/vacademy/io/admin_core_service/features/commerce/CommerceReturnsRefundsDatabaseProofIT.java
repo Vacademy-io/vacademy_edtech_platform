@@ -1592,4 +1592,265 @@ class CommerceReturnsRefundsDatabaseProofIT {
             db.update("DELETE FROM commerce_payment_exception WHERE id IN (?, ?)", zero, newer);
         }
     }
+    // ------------------------------------------------------------------ WP-33 Part B (m1, m2, m3)
+
+    /** A signed refund event naming any gateway refund id and receipt, for a payment of the order. */
+    private int refundEventFor(String event, String orderId, String paymentId, String gatewayRefundId,
+                               String receipt, long amountMinor) {
+        String gatewayOrderId = text("SELECT gateway_order_id FROM commerce_gateway_order WHERE gateway_payment_id = ?",
+                paymentId);
+        Map<String, Object> entity = new LinkedHashMap<>();
+        entity.put("id", gatewayRefundId);
+        entity.put("entity", "refund");
+        entity.put("payment_id", paymentId);
+        entity.put("amount", amountMinor);
+        entity.put("currency", "INR");
+        entity.put("receipt", receipt);
+        entity.put("status", event.endsWith("processed") ? "processed" : "failed");
+        entity.put("acquirer_data", Map.of("arn", "ARN" + run));
+        Map<String, Object> root = new LinkedHashMap<>();
+        root.put("entity", "event");
+        root.put("event", event);
+        root.put("payload", Map.of(
+                "payment", Map.of("entity", paymentEntity(gatewayOrderId, paymentId, amountMinor, orderId)),
+                "refund", Map.of("entity", entity)));
+        return post(root);
+    }
+
+    /**
+     * m1. A refund whose create answer was lost, marked FAILED as never created after 15 minutes,
+     * that the gateway then shows processed: staff record (adopt) it once; the FAILED row stays;
+     * a second adoption and a replayed event change nothing.
+     */
+    @Test
+    @Order(17)
+    void proof16_ourRefundFailedAsNeverCreatedIsAdoptedOnceWhenTheGatewayShowsItProcessed() {
+        clientIp = "127.0.0.17";
+        String orderId = paidOrder(Map.of(qtyA, 1));
+        move(orderId, "CONFIRMED", "CANCELLED");
+        BigDecimal amount = paid(orderId);
+        long minor = amount.movePointRight(2).longValueExact();
+        createMode = "throw";
+        RefundDtos.RefundView lost;
+        try {
+            lost = refund(orderId, null, amount, "GATEWAY", null, key());
+        } finally {
+            createMode = "pending";
+        }
+        assertEquals("IN_PROGRESS", lost.getStatus());
+        Date claimed = db.queryForObject("SELECT claimed_at FROM commerce_refund WHERE id = ?", Date.class,
+                lost.getId());
+        pollJob.runOnce(new Date(claimed.getTime() + 15 * 60_000L + 1000));
+        assertEquals("FAILED", refundStatus(lost.getId()));
+        assertEquals("GATEWAY_NOT_CREATED", text("SELECT failure_code FROM commerce_refund WHERE id = ?",
+                lost.getId()));
+        assertTrue(inQueue("REFUND_DUE", orderId), "the due is open again");
+        ledger(orderId);
+
+        // The gateway did make it after all, with our refund id as its receipt.
+        String paymentId = text("SELECT gateway_payment_id FROM commerce_refund WHERE id = ?", lost.getId());
+        String gatewayId = "rfnd_" + run + "adopt";
+        Map<String, Object> shown = new HashMap<>();
+        shown.put("id", gatewayId);
+        shown.put("payment_id", paymentId);
+        shown.put("amount", minor);
+        shown.put("currency", "INR");
+        shown.put("status", "processed");
+        shown.put("receipt", lost.getId());
+        shown.put("acquirer_data", Map.of("arn", "ARN" + run));
+        doAnswer(call -> {
+            remoteReads.incrementAndGet();
+            if (gatewayId.equals(call.getArgument(1))) {
+                return shown;
+            }
+            Map<String, Object> other = new HashMap<>();
+            other.put("id", call.getArgument(1));
+            other.put("payment_id", call.getArgument(0));
+            other.put("status", refundStatus.getOrDefault((String) call.getArgument(1), "pending"));
+            other.put("amount", db.queryForObject("SELECT (amount * 100)::bigint FROM commerce_refund WHERE "
+                    + "gateway_refund_id = ?", Long.class, (String) call.getArgument(1)));
+            return other;
+        }).when(razorpay).fetchPaymentRefund(any(), any(), any());
+        List<String> logged = refundServiceLog(() -> assertEquals(200, refundEventFor("refund.processed", orderId,
+                paymentId, gatewayId, lost.getId(), minor)));
+        assertTrue(logged.stream().anyMatch(line -> line.contains("refund_outcome_conflict")
+                && line.contains(lost.getId())), "the late outcome is an alert: " + logged);
+        assertEquals("FAILED", refundStatus(lost.getId()));
+
+        RefundDtos.RefundView adopted = refunds.create(admin, inst, RefundDtos.CreateRefundRequest.builder()
+                .clientRequestId(key()).orderId(orderId).amount(amount).method("GATEWAY").gatewayRefundId(gatewayId)
+                .reason("proof adopt").build());
+        assertEquals("PROCESSED", adopted.getStatus());
+        assertEquals(gatewayId, text("SELECT gateway_refund_id FROM commerce_refund WHERE id = ?", adopted.getId()));
+        assertEquals(1, count("SELECT count(*) FROM commerce_refund WHERE order_id = ? AND status = 'PROCESSED'",
+                orderId));
+        assertEquals("FAILED", refundStatus(lost.getId()));
+        assertNull(text("SELECT gateway_refund_id FROM commerce_refund WHERE id = ?", lost.getId()),
+                "the FAILED row is not changed");
+        assertEquals(0, amount.compareTo(money("SELECT amount_refunded FROM commerce_order WHERE id = ?", orderId)));
+        assertFalse(inQueue("REFUND_DUE", orderId), "the order leaves the refund queue");
+        assertEquals(1, count("SELECT count(*) FROM commerce_audit WHERE kind = 'REFUND_CREATED' AND reference_id = ? "
+                + "AND new_value_json ->> 'adopts_failed_refund' = ?", adopted.getId(), lost.getId()));
+        ledger(orderId);
+
+        long rows = count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId);
+        assertThrows(ConflictException.class, () -> refunds.create(admin, inst, RefundDtos.CreateRefundRequest
+                .builder().clientRequestId(key()).orderId(orderId).amount(amount).method("GATEWAY")
+                .gatewayRefundId(gatewayId).reason("proof adopt again").build()));
+        assertEquals(200, refundEventFor("refund.processed", orderId, paymentId, gatewayId, lost.getId(), minor));
+        assertEquals(rows, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId));
+        assertEquals("PROCESSED", refundStatus(adopted.getId()));
+        assertEquals(0, amount.compareTo(money("SELECT amount_refunded FROM commerce_order WHERE id = ?", orderId)),
+                "raised once");
+        ledger(orderId);
+    }
+
+    /**
+     * m2. An oversold order paid twice whose automatic refund failed once (its transaction ended
+     * by an error while it waited for a lock): the extra-payment refund is paid out, the oversold
+     * row stays OPEN and is read again, and the next poll raises the due and refunds it.
+     */
+    @Test
+    @Order(18)
+    void proof17_anExtraPaymentRefundLeavesTheOversoldRowOpenUntilItsOwnRefund() throws Exception {
+        clientIp = "127.0.0.18";
+        String scarce2 = variant("scarce-m2", "SCM2", "300.00", false);
+        receive(scarce2, 1);
+        snapshotLoader.evict(inst);
+        CheckoutDtos.Placed late = place(List.of(CartPriceRequest.Line.builder().variantId(scarce2).quantity(1)
+                .build()));
+        Map<String, Object> first = db.queryForMap("SELECT * FROM commerce_gateway_order WHERE commerce_order_id = ?",
+                late.getOrderId());
+        long amount = ((Number) first.get("amount_minor")).longValue();
+        String secondGatewayOrder = "order_" + run + "m2dup";
+        db.update("INSERT INTO commerce_gateway_order (id, institute_id, commerce_order_id, vendor, gateway_order_id, "
+                + "key_id, amount_minor, currency, receipt, status, status_at) VALUES (?, ?, ?, 'RAZORPAY', ?, ?, ?, "
+                + "'INR', ?, 'CREATED', now())", UUID.randomUUID().toString(), inst, late.getOrderId(),
+                secondGatewayOrder, KEY_ID, amount, late.getOrderId());
+        assertTrue(paymentService.onHoldExpired(late.getOrderId()));
+        snapshotLoader.evict(inst);
+        assertEquals("CONFIRMED", status(paidOrder(Map.of(scarce2, 1))), "the stock went to another buyer");
+
+        // First payment: oversold. Its automatic refund waits on the refund table, held by a side
+        // connection, and that wait ends in an error (as a lock timeout would): rolled back whole.
+        ExecutorService pool = Executors.newSingleThreadExecutor();
+        Future<String> firstPayment;
+        try (java.sql.Connection side = db.getDataSource().getConnection()) {
+            side.setAutoCommit(false);
+            try (java.sql.Statement st = side.createStatement()) {
+                st.execute("LOCK TABLE commerce_refund IN ACCESS EXCLUSIVE MODE");
+            }
+            firstPayment = pool.submit(() -> payByWebhook(late.getOrderId(),
+                    String.valueOf(first.get("gateway_order_id")), amount));
+            awaitWaiting(1);
+            try (java.sql.Statement st = side.createStatement()) {
+                st.execute("SELECT pg_cancel_backend(pid) FROM pg_stat_activity WHERE datname = current_database() "
+                        + "AND wait_event_type = 'Lock' AND pid <> pg_backend_pid()");
+            }
+            side.rollback();
+        }
+        firstPayment.get(120, TimeUnit.SECONDS);
+        pool.shutdownNow();
+        String orderId = late.getOrderId();
+        assertEquals(1, count("SELECT count(*) FROM commerce_order WHERE id = ? AND status = 'CANCELLED' AND "
+                + "cancel_reason = 'OVERSOLD_PAID'", orderId));
+        assertEquals(0, BigDecimal.ZERO.compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?", orderId)),
+                "the automatic refund failed before its due was kept");
+        assertEquals(1, count("SELECT count(*) FROM commerce_payment_exception WHERE commerce_order_id = ? AND kind = "
+                + "'OVERSOLD_PAID' AND status = 'OPEN' AND refund_id IS NULL", orderId));
+        assertEquals(0, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId));
+
+        // Second payment: its extra-payment refund is made and paid out.
+        String secondPayment = payByWebhook(orderId, secondGatewayOrder, amount);
+        Map<String, Object> extra = db.queryForMap("SELECT * FROM commerce_refund WHERE order_id = ?", orderId);
+        assertEquals("EXTRA_PAYMENT", extra.get("kind"));
+        assertEquals(secondPayment, extra.get("gateway_payment_id"));
+        String oversoldRow = text("SELECT id FROM commerce_payment_exception WHERE commerce_order_id = ? AND kind = "
+                + "'OVERSOLD_PAID'", orderId);
+        createMode = "processed";
+        try {
+            // This run sends refunds only: the oversold row is dated after it (the database and the
+            // JVM may keep wall clocks of different zones, so the proof sets the dates).
+            db.update("UPDATE commerce_payment_exception SET created_at = now() + interval '1 day' WHERE id = ?",
+                    oversoldRow);
+            pollJob.runOnce(new Date(System.currentTimeMillis() + 60_000L));
+            assertEquals("PROCESSED", refundStatus(String.valueOf(extra.get("id"))));
+            assertEquals("OPEN", text("SELECT status FROM commerce_payment_exception WHERE commerce_order_id = ? AND "
+                    + "kind = 'OVERSOLD_PAID'", orderId), "an extra-payment refund does not settle the oversold row");
+            db.update("UPDATE commerce_payment_exception SET created_at = now() - interval '1 day' WHERE id = ?",
+                    oversoldRow);
+            Date later = new Date(System.currentTimeMillis() + 4 * 60_000L);
+            List<String> read = new TransactionTemplate(transactionManager).execute(tx -> exceptionRepository
+                    .findUnrefunded(new Date(later.getTime() - 120_000L), 100).stream().map(e -> e.getId()).toList());
+            assertTrue(read.contains(oversoldRow), "the poll reads it again: " + read);
+
+            pollJob.runOnce(later);
+            assertEquals(0, paid(orderId).compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?",
+                    orderId)), "the next poll raises the due");
+            String own = text("SELECT id FROM commerce_refund WHERE order_id = ? AND kind = 'ORDER'", orderId);
+            pollJob.runOnce(new Date(System.currentTimeMillis() + 6 * 60_000L));
+            assertEquals("PROCESSED", refundStatus(own));
+            assertEquals("RESOLVED", text("SELECT status FROM commerce_payment_exception WHERE id = ?", oversoldRow));
+            assertEquals(0, paid(orderId).compareTo(money("SELECT amount_refunded FROM commerce_order WHERE id = ?",
+                    orderId)));
+        } finally {
+            createMode = "pending";
+        }
+        ledger(orderId);
+    }
+
+    /**
+     * m3. 120 older exception rows of an institute without commerce come before one row of this
+     * shop: the poll reads on in keyset pages and retries this shop's row; one line says a whole
+     * page was skipped, naming no other institute.
+     */
+    @Test
+    @Order(19)
+    void proof18_rowsOfAnInstituteWithoutCommerceDoNotHideANewerRow() {
+        clientIp = "127.0.0.19";
+        String orderId = paidOrder(Map.of(credit, 1));
+        String offShop = UUID.randomUUID().toString();
+        List<String> inserted = new ArrayList<>();
+        for (int i = 0; i < 120; i++) {
+            String id = UUID.randomUUID().toString();
+            inserted.add(id);
+            db.update("INSERT INTO commerce_payment_exception (id, institute_id, commerce_order_id, order_number, kind, "
+                    + "gateway_payment_id, amount, currency, status, detail, created_at) VALUES (?, ?, ?, 'OFF', "
+                    + "'DUPLICATE_PAYMENT', ?, 1.00, 'INR', 'OPEN', 'proof', now() - interval '2 days' + ? * "
+                    + "interval '1 second')", id, offShop, orderId, "pay_off" + run + i, i);
+        }
+        String mine = UUID.randomUUID().toString();
+        String myPayment = "pay_m3" + run;
+        db.update("INSERT INTO commerce_payment_exception (id, institute_id, commerce_order_id, order_number, kind, "
+                + "gateway_payment_id, amount, currency, status, detail, created_at) VALUES (?, ?, ?, 'MINE', "
+                + "'DUPLICATE_PAYMENT', ?, 1.00, 'INR', 'OPEN', 'proof', now() - interval '1 day')", mine, inst,
+                orderId, myPayment);
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory.getLogger(
+                CommerceRefundPollJob.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        Map<String, Integer> counts;
+        try {
+            counts = pollJob.runOnce(new Date());
+        } finally {
+            logger.detachAppender(appender);
+        }
+        assertEquals(120, counts.get("skipped_commerce_off"), String.valueOf(counts));
+        assertTrue(counts.getOrDefault("hook_retried", 0) >= 1, String.valueOf(counts));
+        String made = text("SELECT refund_id FROM commerce_payment_exception WHERE id = ?", mine);
+        assertNotNull(made, "this shop's row got its refund");
+        assertEquals("AUTO:DUP:" + myPayment, text("SELECT idempotency_key FROM commerce_refund WHERE id = ?", made));
+        assertEquals(120, count("SELECT count(*) FROM commerce_payment_exception WHERE institute_id = ? AND status = "
+                + "'OPEN' AND refund_id IS NULL", offShop), "the other institute's rows are untouched");
+        List<String> lines;
+        synchronized (appender.list) {
+            lines = appender.list.stream().map(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage).toList();
+        }
+        assertEquals(1, lines.stream().filter(l -> l.equals("COMMERCE_REFUND_POLL exception_page_all_skipped rows=100"))
+                .count(), String.valueOf(lines));
+        assertTrue(lines.stream().noneMatch(l -> l.contains("exception_page") && l.contains(offShop)));
+        db.update("DELETE FROM commerce_payment_exception WHERE institute_id = ?", offShop);
+    }
 }

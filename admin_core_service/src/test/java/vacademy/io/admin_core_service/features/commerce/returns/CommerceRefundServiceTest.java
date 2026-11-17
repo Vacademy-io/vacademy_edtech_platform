@@ -368,6 +368,8 @@ class CommerceRefundServiceTest {
     @Test
     void withCommerceOffNoAutomaticRefundIsMade() {
         when(f.accessGuard.featureOn(eq(INST), any())).thenReturn(false);
+        when(f.accessGuard.featureState(eq(INST), any())).thenReturn(
+                vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard.FeatureState.OFF);
         f.order.setRefundDue(BigDecimal.ZERO.setScale(2));
         assertNull(f.service.autoOversold(INST, ORDER));
         assertNull(f.service.autoDuplicate(INST, ORDER, "pay_second", new BigDecimal("499.00")));
@@ -412,6 +414,149 @@ class CommerceRefundServiceTest {
         CommerceRefund row = f.pendingGateway("100.00");
         f.service.view(INST, row.getId(), false);
         verify(em).refresh(row);
+    }
+
+    // ---------------------------------------------------------------- WP-32 follow-ups (m1, m2, m4, m5)
+
+    /** One of our gateway refunds that we marked FAILED; its amount is no longer committed. */
+    private CommerceRefund failedOurs(String amount, String code) {
+        CommerceRefund r = f.pendingGateway(amount);
+        r.setStatus("FAILED");
+        r.setFailureCode(code);
+        f.order.setRefundCommitted(f.order.getRefundCommitted().subtract(r.getAmount()));
+        return r;
+    }
+
+    private void gatewayShows(String gatewayId, String receipt, long amountMinor) {
+        when(f.gateway.fetchRefund(INST, PAYMENT, gatewayId)).thenReturn(new CommercePaymentGateway.GatewayRefund(
+                gatewayId, PAYMENT, amountMinor, "INR", "processed", receipt, "ARN", Instant.now()));
+    }
+
+    @Test
+    void m1_ourRefundMarkedFailedWithoutAGatewayIdIsAdoptedAsANewRowAndTheFailedRowStays() {
+        CommerceRefund failed = failedOurs("100.00", "GATEWAY_NOT_CREATED");
+        gatewayShows("rfnd_X", failed.getId(), 10000L);
+
+        RefundDtos.RefundView adopted = create(body("100.00", "GATEWAY").gatewayRefundId("rfnd_X"));
+        assertEquals("PROCESSED", adopted.getStatus());
+        assertEquals("rfnd_X", adopted.getGatewayRefundId());
+        assertEquals(2, f.refunds.size());
+        assertEquals("FAILED", failed.getStatus());
+        assertNull(failed.getGatewayRefundId());
+        assertEquals(0, new BigDecimal("100.00").compareTo(f.order.getAmountRefunded()));
+        org.mockito.ArgumentCaptor<String> detail = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(f.auditService).record(eq(INST), anyString(), any(), eq("REFUND_CREATED"), eq("REFUND"),
+                eq(adopted.getId()), any(), detail.capture(), any());
+        assertTrue(detail.getValue().contains("\"adopts_failed_refund\":\"" + failed.getId() + "\""),
+                detail.getValue());
+        verify(f.executor, never()).execute(anyString());
+    }
+
+    @Test
+    void m1_ourRefundInAnyOtherStateOrWithAGatewayIdOrOfAnotherOrderIsNotAdopted() {
+        for (String state : new String[] {"PENDING", "IN_PROGRESS", "PROCESSED"}) {
+            CommerceRefund ours = f.pendingGateway("10.00");
+            ours.setStatus(state);
+            gatewayShows("rfnd_" + state, ours.getId(), 10000L);
+            ConflictException e = assertThrows(ConflictException.class, () -> create(body("100.00", "GATEWAY")
+                    .gatewayRefundId("rfnd_" + state)), state);
+            assertTrue(e.getMessage().startsWith("GATEWAY_REFUND_MISMATCH"), e.getMessage());
+        }
+        CommerceRefund withId = failedOurs("10.00", "GATEWAY_FAILED");
+        withId.setGatewayRefundId("rfnd_known");
+        gatewayShows("rfnd_A", withId.getId(), 10000L);
+        assertTrue(assertThrows(ConflictException.class, () -> create(body("100.00", "GATEWAY")
+                .gatewayRefundId("rfnd_A"))).getMessage().startsWith("GATEWAY_REFUND_MISMATCH"));
+
+        CommerceRefund otherOrder = failedOurs("10.00", "GATEWAY_NOT_CREATED");
+        otherOrder.setOrderId("order-other");
+        gatewayShows("rfnd_B", otherOrder.getId(), 10000L);
+        assertTrue(assertThrows(ConflictException.class, () -> create(body("100.00", "GATEWAY")
+                .gatewayRefundId("rfnd_B"))).getMessage().startsWith("GATEWAY_REFUND_MISMATCH"));
+        assertEquals(5, f.refunds.size(), "nothing new was written");
+        verify(f.auditService, never()).record(anyString(), anyString(), any(), eq("REFUND_CREATED"), anyString(),
+                anyString(), any(), any(), any());
+    }
+
+    @Test
+    void m2_anExtraPaymentRefundNeverResolvesTheOversoldRow() {
+        f.order.setRefundDue(BigDecimal.ZERO.setScale(2));
+        CommerceRefund extra = f.pendingGateway("499.00");
+        extra.setKind("EXTRA_PAYMENT");
+        f.order.setRefundCommitted(BigDecimal.ZERO.setScale(2));
+        assertTrue(f.service.markProcessed(extra.getId(), CommerceRefundService.Facts.gateway("processed", "ARN")));
+        verify(f.exceptions).resolveByRefund(eq(extra.getId()), anyString(), any());
+        verify(f.exceptions, never()).resolveOversoldRefundedOtherwise(anyString(), anyString(), any());
+    }
+
+    @Test
+    void m2_anOrderRefundResolvesTheOversoldRowOnlyWhenTheDueReachedWhatWasPaid() {
+        // due 600 < paid 1000: settled for the due, not for the oversold row.
+        CommerceRefund part = f.pendingGateway("600.00");
+        assertTrue(f.service.markProcessed(part.getId(), CommerceRefundService.Facts.gateway("processed", "ARN")));
+        verify(f.exceptions).resolveRefundDue(eq(ORDER), any());
+        verify(f.exceptions, never()).resolveOversoldRefundedOtherwise(anyString(), anyString(), any());
+
+        // due = paid = refunded.
+        f.order.setRefundDue(new BigDecimal("1000.00"));
+        CommerceRefund rest = f.pendingGateway("400.00");
+        assertTrue(f.service.markProcessed(rest.getId(), CommerceRefundService.Facts.gateway("processed", "ARN")));
+        verify(f.exceptions).resolveOversoldRefundedOtherwise(eq(ORDER), anyString(), any());
+    }
+
+    @Test
+    void m4_anUnreadableFeatureStateMakesNoAutomaticRefundAndRaisesNoCommerceOffAlert() {
+        when(f.accessGuard.featureState(eq(INST), any())).thenReturn(
+                vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard.FeatureState.UNKNOWN);
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
+                .getLogger(CommerceRefundService.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        try {
+            assertNull(f.service.autoOversold(INST, ORDER));
+            assertNull(f.service.autoDuplicate(INST, ORDER, "pay_second", new BigDecimal("499.00")));
+        } finally {
+            logger.detachAppender(appender);
+        }
+        verify(f.desk, never()).lockOrder(anyString(), anyString());
+        assertTrue(f.refunds.isEmpty());
+        assertTrue(appender.list.stream().noneMatch(e -> e.getFormattedMessage().contains("COMMERCE_ALERT")));
+        assertEquals(2, appender.list.stream().filter(e -> e.getFormattedMessage()
+                .contains("feature state unknown; retried later")).count());
+
+        // The resolver answers again: the refund is made.
+        when(f.accessGuard.featureState(eq(INST), any())).thenReturn(
+                vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard.FeatureState.ON);
+        assertNotNull(f.service.autoDuplicate(INST, ORDER, "pay_second", new BigDecimal("499.00")));
+    }
+
+    @Test
+    void m5_aPendingAnswerAfterTheGatewaysOwnFailureIsStaleNotAConflict() {
+        ch.qos.logback.classic.Logger logger = (ch.qos.logback.classic.Logger) org.slf4j.LoggerFactory
+                .getLogger(CommerceRefundService.class);
+        ch.qos.logback.core.read.ListAppender<ch.qos.logback.classic.spi.ILoggingEvent> appender =
+                new ch.qos.logback.core.read.ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        CommerceRefund gatewayFailed = failedOurs("100.00", "GATEWAY_FAILED");
+        CommerceRefund notCreated = failedOurs("50.00", "GATEWAY_NOT_CREATED");
+        try {
+            assertFalse(f.service.outcomeConflict(gatewayFailed.getId(), "pending", "rfnd_1", "poll"));
+            assertFalse(f.service.outcomeConflict(gatewayFailed.getId(), "created", "rfnd_1", "poll"));
+            assertEquals(0, appender.list.stream().filter(e -> e.getFormattedMessage().contains("COMMERCE_ALERT"))
+                    .count());
+            assertEquals(2, appender.list.stream().filter(e -> e.getFormattedMessage()
+                    .equals("refund_outcome_stale refund=" + gatewayFailed.getId())).count());
+
+            assertTrue(f.service.outcomeConflict(notCreated.getId(), "pending", "rfnd_2", "poll"));
+            assertTrue(f.service.outcomeConflict(gatewayFailed.getId(), "processed", "rfnd_1", "poll"));
+            assertEquals(2, appender.list.stream().filter(e -> e.getFormattedMessage()
+                    .contains("COMMERCE_ALERT refund_outcome_conflict")).count());
+        } finally {
+            logger.detachAppender(appender);
+        }
     }
 
     private static CommercePaymentGateway.GatewayRefund gatewayRefund(String id, String payment, long amount,

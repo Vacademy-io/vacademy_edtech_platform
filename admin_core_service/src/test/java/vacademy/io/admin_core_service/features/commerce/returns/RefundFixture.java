@@ -108,6 +108,7 @@ class RefundFixture {
         lenient().when(executorProvider.getIfAvailable()).thenReturn(executor);
         if (org.mockito.Mockito.mockingDetails(guard).isMock()) {
             lenient().when(guard.featureOn(anyString(), any())).thenReturn(true);
+            lenient().when(guard.featureState(anyString(), any())).thenReturn(CommerceAccessGuard.FeatureState.ON);
         }
         lenient().when(clock.today(anyString())).thenReturn(today);
         lenient().when(requestGuard.run(any(), any(), any())).thenAnswer(call -> new CommerceRequestGuard.Outcome<>(
