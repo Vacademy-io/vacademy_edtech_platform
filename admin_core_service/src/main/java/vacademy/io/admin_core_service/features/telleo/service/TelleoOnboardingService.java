@@ -153,7 +153,7 @@ public class TelleoOnboardingService {
         return status(instituteId);
     }
 
-    /** "Call me now": the draft agent rings the phone verified at sign-up. */
+    /** "Call me now": the draft agent rings the phone given at sign-up. */
     public AiCallResponseDTO callMe(String instituteId, String userName, String actorUserId) {
         TelleoTrialService.TrialInfo trial = requireTelleo(instituteId);
         String agentId = row(instituteId).map(Row::agentId).orElse(null);
@@ -161,7 +161,7 @@ public class TelleoOnboardingService {
             throw new VacademyException(HttpStatus.CONFLICT, "Your agent is not ready yet.");
         }
         if (trial.phoneE164() == null) {
-            throw new VacademyException(HttpStatus.CONFLICT, "No verified phone number on this account.");
+            throw new VacademyException(HttpStatus.CONFLICT, "No phone number on this account.");
         }
         return testCallService.place(instituteId, agentId,
                 new AiAgentTestCallService.TestCallInput(trial.phoneE164(), userName, null), actorUserId);
