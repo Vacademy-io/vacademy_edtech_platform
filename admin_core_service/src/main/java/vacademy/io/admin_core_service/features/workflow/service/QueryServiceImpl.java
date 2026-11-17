@@ -468,11 +468,18 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 mapping.put("packageSessionId", String.valueOf(row[7]));
 
                 // --- ENROLLED DATE SELECTION ---
+                // Index 9 is the trial flag, never a date, so there is no second date to
+                // fall back to. The old fallback read past the end of the row and threw
+                // ArrayIndexOutOfBounds, which the catch below turned into an error map,
+                // dropping the whole roster for every learner in that run.
                 Date enrolledDate = (row[8] instanceof Date d) ? d : null;
-                if (enrolledDate == null) {
-                    enrolledDate = (row[9] instanceof Date d) ? d : null;
-                }
                 mapping.put("enrolledDate", enrolledDate);
+
+                // --- TRIAL FLAG ---
+                // Read from the plan this mapping was created under. Left null when the
+                // mapping carries no user_plan_id, so a condition testing isTrial == false
+                // is simply not satisfied and the workflow keeps the rule it used before.
+                mapping.put("isTrial", (row[9] instanceof Boolean b) ? b : null);
 
                 // --- EARNING DAY LOGIC ---
                 long learningDay = 0;

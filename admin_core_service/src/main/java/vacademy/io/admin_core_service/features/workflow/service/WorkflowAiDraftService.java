@@ -638,7 +638,8 @@ public class WorkflowAiDraftService {
             DELAY chain. Build ONE SCHEDULED (cron) workflow instead: \
             [1] TRIGGER named "Workflow settings" — every editable setting (link bases, timings \
             text, batch id lists) as outputDataPoints rows; \
-            [2] QUERY getSSIGMByStatusAndPackageSessionIds — the roster with enrolledDate/expiryDate; \
+            [2] QUERY getSSIGMByStatusAndPackageSessionIds — the roster with enrolledDate/expiryDate/isTrial \
+            (isTrial, not enrolledDate, is what separates a trial learner from a paying member); \
             [3] one SEND_WHATSAPP node PER DAY, named "Day N message — <topic>", chained \
             day1 -> day2 -> ... -> dayN -> end. Each day node self-filters the roster (see the \
             per-day 'on' expression in catalog.generationRules) and carries node-level \
