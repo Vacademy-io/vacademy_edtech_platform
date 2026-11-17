@@ -381,7 +381,7 @@ function ProductEditorForm({
                     </div>
                 </div>
 
-                <div className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
+                <div data-assistant-fab="avoid-phone" className="sticky bottom-0 z-10 -mx-4 flex flex-col gap-2 border-t border-border bg-background p-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-start gap-2" aria-live="polite">
                         {formError ? (
                             <>

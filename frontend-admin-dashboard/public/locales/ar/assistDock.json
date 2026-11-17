@@ -10,5 +10,11 @@
     "adminApp": "تطبيق الإدارة",
     "tutorials": "الدروس التعليمية",
     "closeTutorials": "إغلاق الدروس التعليمية",
-    "noTutorialsForThisPage": "لا توجد دروس تعليمية لهذه الصفحة بعد."
+    "noTutorialsForThisPage": "لا توجد دروس تعليمية لهذه الصفحة بعد.",
+    "assistantFab": {
+        "label": "فتح المساعد",
+        "tooltip": "اسأل المساعد",
+        "hint": "اسأل المساعد",
+        "dismissHint": "إخفاء التلميح"
+    }
 }

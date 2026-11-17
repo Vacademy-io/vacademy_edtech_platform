@@ -10,5 +10,11 @@
     "adminApp": "Admin App",
     "tutorials": "Tutorials",
     "closeTutorials": "Close tutorials",
-    "noTutorialsForThisPage": "No tutorials for this page yet."
+    "noTutorialsForThisPage": "No tutorials for this page yet.",
+    "assistantFab": {
+        "label": "Open the assistant",
+        "tooltip": "Ask the assistant",
+        "hint": "Ask the assistant",
+        "dismissHint": "Dismiss hint"
+    }
 }

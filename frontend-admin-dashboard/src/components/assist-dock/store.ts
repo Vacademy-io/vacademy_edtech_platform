@@ -43,6 +43,11 @@ interface AssistDockState {
      *  stay in lockstep with the rail itself. */
     dockVisible: boolean | null;
     setDockVisible: (dockVisible: boolean) => void;
+    /** Whether the floating assistant button is offered on this page (set by
+     *  AssistantFab). Ignores the moments it steps aside while a panel is open,
+     *  so layouts that leave room for it don't shift on open/close. */
+    assistantFabEnabled: boolean;
+    setAssistantFabEnabled: (enabled: boolean) => void;
 }
 
 export const useAssistDock = create<AssistDockState>((set) => ({
@@ -57,6 +62,8 @@ export const useAssistDock = create<AssistDockState>((set) => ({
     closeTutorial: () => set({ activeTutorial: null }),
     dockVisible: null,
     setDockVisible: (dockVisible) => set({ dockVisible }),
+    assistantFabEnabled: false,
+    setAssistantFabEnabled: (assistantFabEnabled) => set({ assistantFabEnabled }),
     minimized: readMinimized(),
     setMinimized: (minimized) => {
         try {

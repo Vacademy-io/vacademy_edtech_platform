@@ -587,7 +587,7 @@ function EvalezyAssessmentPage() {
                         </div>
                     )}
 
-                    <div className="pb-safe-3 sticky bottom-0 -mx-4 flex flex-col gap-2 border-t border-neutral-200 bg-white px-4 py-3 sm:static sm:mx-0 sm:rounded-lg sm:border">
+                    <div data-assistant-fab="avoid-phone" className="pb-safe-3 sticky bottom-0 -mx-4 flex flex-col gap-2 border-t border-neutral-200 bg-white px-4 py-3 sm:static sm:mx-0 sm:rounded-lg sm:border">
                         <div
                             className={cn(
                                 'flex flex-wrap items-center justify-between gap-2 text-caption',

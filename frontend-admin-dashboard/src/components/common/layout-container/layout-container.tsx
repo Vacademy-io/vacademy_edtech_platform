@@ -10,6 +10,7 @@ import { InternalSidebarComponent } from './internal-sidebar/internalSidebarComp
 import { getDisplaySettingsFromCache } from '@/services/display-settings';
 import { getActiveRoleDisplaySettingsKey } from '@/lib/auth/instituteUtils';
 import { useAssistDockVisible } from '@/components/assist-dock/visibility';
+import { useAssistDock } from '@/components/assist-dock/store';
 import { useIsMobile, useIsTablet } from '@/hooks/use-mobile';
 import { hasFacultyAssignedPermission } from '@/lib/auth/facultyAccessUtils';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
@@ -71,6 +72,7 @@ export const LayoutContainer = ({
     // for this role — shares AssistDock's own resolution so the reserved right
     // gutter collapses exactly when the rail is hidden.
     const showAssistDock = useAssistDockVisible();
+    const assistantFabEnabled = useAssistDock((s) => s.assistantFabEnabled);
     const allowListOnly = useNavSnapshotStore((s) => s.snapshot?.allowListOnly === true);
 
     // Track previous sidebar config to detect actual changes vs re-renders
@@ -177,6 +179,10 @@ export const LayoutContainer = ({
                             intrnalMargin
                                 ? 'flex flex-1 flex-col p-2 sm:p-3 md:p-4 lg:m-7'
                                 : 'm-0',
+                            // Below md the floating assistant button sits over the
+                            // bottom-right corner; extra bottom room lets the last
+                            // actions on the page scroll clear of it.
+                            intrnalMargin && assistantFabEnabled && 'pb-20 sm:pb-20',
                             'overflow-x-hidden',
                             className
                         )}

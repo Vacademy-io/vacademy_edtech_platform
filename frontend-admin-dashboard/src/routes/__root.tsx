@@ -22,6 +22,7 @@ import {
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { VacademyAssistant } from '@/components/vacademy-assistant/VacademyAssistant';
 import { AssistDock } from '@/components/assist-dock/AssistDock';
+import { AssistantFab } from '@/components/assist-dock/AssistantFab';
 import { FollowUpReminderDialog } from '@/components/shared/leads/followup-reminders';
 import { QuickSettingsDialog } from '@/components/settings/quick-access/QuickSettingsDialog';
 import { EVALEZY_HOME, evalezyPathFor, isEvalezyMode } from '@/lib/evalezy-mode';
@@ -240,6 +241,8 @@ export const Route = createRootRouteWithContext<{
                 <Outlet />
                 <AssistDock />
                 <VacademyAssistant />
+                {/* One-click assistant button, bottom right; hides while a panel is open. */}
+                <AssistantFab />
                 {/* Global centered follow-up reminder — pops when one is due. */}
                 <FollowUpReminderDialog />
                 {/* Quick-access settings popup — inert until a caller opens one. */}

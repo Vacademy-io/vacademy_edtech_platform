@@ -2171,7 +2171,7 @@ const PDFEvaluator = ({
                 )}
 
             {/* Bottom floating page + zoom controls */}
-            <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30 flex justify-center">
+            <div data-assistant-fab="avoid-phone" className="pointer-events-none fixed inset-x-0 bottom-4 z-30 flex justify-center">
                 <div className="pointer-events-auto flex items-center gap-1 rounded-full border border-neutral-200 bg-white px-2 py-1 shadow-lg">
                     <button
                         onClick={handleUndo}

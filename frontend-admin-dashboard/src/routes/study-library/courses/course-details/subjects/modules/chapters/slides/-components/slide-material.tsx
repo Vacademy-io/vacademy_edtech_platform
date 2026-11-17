@@ -4971,6 +4971,7 @@ export const SlideMaterial = ({
                 prevent accidental destructive clicks. */}
             {!isLearnerView && activeSlideHasRealChanges && (
                 <div
+                    data-assistant-fab="avoid-phone"
                     role="region"
                     aria-label={t('ui.unsavedChanges')}
                     className="fixed bottom-6 left-1/2 z-40 flex -translate-x-1/2 items-center gap-3 rounded-full border border-warning-300 bg-white/95 py-1.5 pl-4 pr-2 shadow-xl backdrop-blur animate-in fade-in slide-in-from-bottom-2"

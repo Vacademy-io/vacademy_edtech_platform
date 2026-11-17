@@ -71,7 +71,7 @@ export function SendForApprovalButton({
 
     return (
         <>
-            <div className="pointer-events-auto fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-[calc(1.5rem+env(safe-area-inset-right))] z-[80]">
+            <div data-assistant-fab="avoid" className="pointer-events-auto fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-[calc(1.5rem+env(safe-area-inset-right))] z-[80]">
                 <div className="flex flex-col gap-2 rounded-xl border border-neutral-200 bg-white/90 p-2 shadow-xl backdrop-blur supports-[backdrop-filter]:bg-white/70">
                     {/* Preview Changes Button */}
                     <MyButton
