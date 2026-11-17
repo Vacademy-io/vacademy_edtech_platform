@@ -176,6 +176,7 @@
                 "group": "LMS",
                 "pages": [
                   "mcp-server/tools/identity",
+                  "mcp-server/tools/help",
                   "mcp-server/tools/institute",
                   "mcp-server/tools/website",
                   "mcp-server/tools/lead-forms",

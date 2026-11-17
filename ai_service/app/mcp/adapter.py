@@ -211,7 +211,9 @@ async def call_tool(
     ctx = ToolContext(
         db=db,
         principal=principal,
-        keys=(),  # embeddings-only; none of the exposed tools need API keys
+        # No keys from the client, ever. A tool that embeds (search_help_knowledge)
+        # resolves the server's own key when it runs.
+        keys=(),
         bearer_token=platform_token,
         images_as_content=True,  # image fields become ImageContent below
         via_mcp=True,  # mcp_only tools (design_import, website_publish) run only here

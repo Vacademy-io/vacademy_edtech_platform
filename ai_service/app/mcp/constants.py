@@ -30,6 +30,7 @@ MCP_SETTINGS_PATH = "/settings?selectedTab=mcpServer"
 #: settings tab has one toggle per feature to manage per role.
 MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
     "whoami",               # READ:  the caller's own identity + institute profile; always on, no toggle
+    "search_help_knowledge",  # READ:  product how-to articles (steps + a link on the institute's admin portal)
     "get_institute_overview",
     "website",              # READ:  sites, pages, courses/campaigns to link, analytics, audit
     "website_edit",         # WRITE: draft-only — every change lands as a draft the admin publishes
@@ -244,6 +245,7 @@ MCP_ALLOWED_WRITE_TOOLS: Dict[str, str] = {
 #: the settings UI so the FE never hardcodes a catalogue that can drift.
 MCP_TOOL_GROUP_LABELS: Dict[str, str] = {
     "identity": "Who is connected",
+    "search_help_knowledge": "How-to help",
     "institute_overview": "Institute stats",
     "website_builder": "Website: view",
     "website_builder_edits": "Website: edit drafts",
@@ -291,6 +293,10 @@ MCP_TOOL_GROUP_LABELS: Dict[str, str] = {
 #: a wall of text next to a toggle.
 MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
     "identity": "The connected user's name and contact details, and the institute's name, logo and theme. Always on.",
+    "search_help_knowledge": (
+        "Step-by-step instructions for how and where to do things in the admin portal, with a link to the right "
+        "page on your admin portal. Product help only: it reads none of your institute's data."
+    ),
     "institute_overview": "The institute's profile (name, logo, theme, terminology), outstanding fees, classes live now and active learner counts.",
     "website_builder": (
         "See the institute's websites: pages and what each section shows, traffic, lead-capture "
@@ -510,6 +516,7 @@ MCP_TOOL_GROUP_SUMMARIES: Dict[str, str] = {
 #: one row per area (Off / View / Edit) instead of one toggle per tool.
 MCP_TOOL_AREAS: Dict[str, Dict[str, str]] = {
     "identity": {"label": "Who is connected", "summary": "Name, contact details and the institute's branding."},
+    "help": {"label": "How-to help", "summary": "Step-by-step how-tos for the admin portal, with links."},
     "institute": {"label": "Institute stats", "summary": "Profile, outstanding fees, live classes, learner counts."},
     "website": {"label": "Website", "summary": "Pages, sections, theme, SEO and site traffic."},
     "lead_forms": {"label": "Lead forms", "summary": "Lead campaigns, their form fields and leads received."},
@@ -546,6 +553,7 @@ MCP_TOOL_AREAS: Dict[str, Dict[str, str]] = {
 #:   sub_label: the edit's own name, shown when an area has several edits
 MCP_TOOL_PLACEMENT: Dict[str, Dict[str, str]] = {
     "identity": {"area": "identity", "level": "view"},
+    "search_help_knowledge": {"area": "help", "level": "view"},
     "institute_overview": {"area": "institute", "level": "view"},
     "website_builder": {"area": "website", "level": "view"},
     "website_builder_edits": {"area": "website", "level": "edit", "risk": "drafts", "sub_label": "Build and edit pages"},

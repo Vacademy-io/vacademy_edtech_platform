@@ -156,11 +156,16 @@ _SEARCH_HELP_KNOWLEDGE_SCHEMA: Dict[str, Any] = {
     "function": {
         "name": "search_help_knowledge",
         "description": (
-            "Search Vacademy's how-to knowledge base for step-by-step instructions on "
-            "how and where to perform a task in the admin portal (e.g. 'how do I create a "
-            "course', 'where do I add a learner to a batch'). Use this for any "
-            "how-to / where-to question before answering. Returns matching help articles "
-            "with their steps and the in-app route to navigate to."
+            "Search the product's how-to knowledge base for step-by-step instructions on "
+            "how and where to do a task in the admin portal (e.g. 'how do I create a "
+            "course', 'where do I add a learner to a batch', 'where do I find the payment "
+            "settings'). Use it for any how-to / where-to question, or to find where a "
+            "feature lives, before answering. Returns the matching documented articles: "
+            "each with its steps and the page to open (route_path); a result may also "
+            "carry url, a full link to that page on the institute's own admin portal, "
+            "which you should give the user when present. Answer only from what it returns. "
+            "When nothing matches, say there is no documented procedure for it and never "
+            "invent steps, menu names or links."
         ),
         "parameters": {
             "type": "object",
@@ -176,6 +181,36 @@ _SEARCH_HELP_KNOWLEDGE_SCHEMA: Dict[str, Any] = {
 }
 
 
+_HELP_UNAVAILABLE = {"results": [], "note": "Help search is temporarily unavailable."}
+
+
+def _help_embedding_keys(ctx: ToolContext) -> tuple:
+    """
+    The keys that embed the help query, always resolved on the server.
+
+    The in-product assistant hands its pre-resolved keys in ``ctx.keys``. A caller
+    without them (the MCP adapter) gets the same resolution here: the server's key
+    store for this institute and user, then the platform default. Tool arguments
+    never carry keys.
+    """
+    keys = tuple(ctx.keys or ())
+    if len(keys) == 3:
+        return keys
+    from .api_key_resolver import ApiKeyResolver
+
+    return tuple(ApiKeyResolver(ctx.db).resolve_keys(
+        institute_id=ctx.principal.institute_id, user_id=ctx.principal.user_id,
+    ))
+
+
+def _help_link(base: Optional[str], route_path: Any) -> Optional[str]:
+    """``base`` + an article's route, or None when either cannot make a working link."""
+    path = str(route_path or "").strip()
+    if not base or not path.startswith("/") or path.startswith("//") or "$" in path:
+        return None  # a "$videoId"-style placeholder needs a record the article cannot name
+    return base.rstrip("/") + path
+
+
 async def _execute_search_help_knowledge(args: Dict[str, Any], ctx: ToolContext) -> str:
     """Role-scoped retrieval over the 'help_knowledge' corpus in pgvector."""
     query = str((args or {}).get("query") or "").strip()
@@ -187,7 +222,16 @@ async def _execute_search_help_knowledge(args: Dict[str, Any], ctx: ToolContext)
     from .rag_service import RAGService
 
     try:
-        embedding_service = EmbeddingService(_StaticKeyResolver(ctx.keys))
+        keys = _help_embedding_keys(ctx)
+    except Exception as e:  # noqa: BLE001 — the reason is logged, never the keys
+        logger.warning("search_help_knowledge key lookup failed: %s", type(e).__name__)
+        return json.dumps(_HELP_UNAVAILABLE)
+    if len(keys) != 3 or not keys[0]:
+        logger.warning("search_help_knowledge has no embedding key for institute=%s", ctx.principal.institute_id)
+        return json.dumps(_HELP_UNAVAILABLE)
+
+    try:
+        embedding_service = EmbeddingService(_StaticKeyResolver(keys))
         rag = RAGService(ctx.db, embedding_service)
         # Search BOTH the product-wide global corpus and any institute-specific
         # help, then merge. This makes retrieval robust to which institute the
@@ -210,8 +254,8 @@ async def _execute_search_help_knowledge(args: Dict[str, Any], ctx: ToolContext)
                     merged[k] = r
         rows = sorted(merged.values(), key=lambda r: r.get("similarity_score") or 0, reverse=True)[:5]
     except Exception as e:  # never leak internals to the model
-        logger.warning("search_help_knowledge failed: %s", e)
-        return json.dumps({"results": [], "note": "Help search is temporarily unavailable."})
+        logger.warning("search_help_knowledge failed: %s", type(e).__name__)
+        return json.dumps(_HELP_UNAVAILABLE)
 
     if not rows:
         return json.dumps({
@@ -229,7 +273,37 @@ async def _execute_search_help_knowledge(args: Dict[str, Any], ctx: ToolContext)
             "steps": r.get("content_text"),
             "similarity": r.get("similarity_score"),
         })
-    return json.dumps({"results": results})
+    if not ctx.via_mcp:
+        # The dashboard turns route_path into an in-app link itself.
+        return json.dumps({"results": results})
+
+    # An AI app outside the dashboard needs a full link, on the institute's OWN
+    # admin portal (white-label domains included), else the platform dashboard,
+    # as the other MCP links do.
+    from ..config import get_settings
+    from ..mcp.institute_scope import admin_portal_base
+
+    try:
+        base = admin_portal_base(ctx.db, ctx.principal.institute_id, get_settings().admin_dashboard_url)
+    except Exception:  # noqa: BLE001
+        base = None
+    for item in results:
+        url = _help_link(base, item["route_path"])
+        if url:
+            item["url"] = url
+    out: Dict[str, Any] = {"results": results}
+    if base:
+        out["admin_portal_url"] = base
+        out["note"] = (
+            "Give the user the steps, then the result's url as a link. A result without url opens on a "
+            "specific record: tell the user which page to start from instead of inventing a link."
+        )
+    else:
+        out["note"] = (
+            "This institute's admin portal address is not on record, so results carry route_path only: "
+            "give the steps and tell the user to open that path on their admin portal. Do not invent a domain."
+        )
+    return json.dumps(out)
 
 
 # ──────────────────────────────────────────────────────────────────────────
