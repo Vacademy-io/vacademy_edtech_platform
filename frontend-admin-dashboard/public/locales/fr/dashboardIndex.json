@@ -116,10 +116,31 @@
                 "label": "Aide pour une tâche",
                 "prompt": "Comment créer un cours ?",
                 "promptGeneral": "Comment ajouter un membre à l'équipe ?"
+            },
+            "crmNewLeads": {
+                "label": "Nouveaux prospects de la semaine",
+                "prompt": "Combien de prospects sont arrivés cette semaine ?"
+            },
+            "crmFirstContact": {
+                "label": "En attente d’un premier contact",
+                "prompt": "Quels prospects attendent le plus longtemps un premier contact ?"
+            },
+            "crmFeesDue": {
+                "label": "Frais dus cette semaine",
+                "prompt": "Qui doit des frais cette semaine ?"
             }
         },
         "instituteName": "Chatbot de l’établissement {{instituteName}}",
-        "helpDescription": "Demandez-moi comment ou où effectuer une tâche dans votre espace d’administration."
+        "helpDescription": "Demandez-moi comment ou où effectuer une tâche dans votre espace d’administration.",
+        "crmCopy": {
+            "crm_leads": "Prospects et demandes",
+            "crm_calls": "Appels et rappels",
+            "crm_meetings": "Rendez-vous et pages de réservation",
+            "crm_messages": "Messages des prospects",
+            "crm_reports": "Rapports CRM",
+            "crm_collections": "Admissions, sommes dues et encaissements",
+            "admissionsNoFeePlan": "Admissions du mois sans plan de frais"
+        }
     },
     "quickActions": {
         "title": "Actions rapides"

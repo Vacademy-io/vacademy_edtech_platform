@@ -54,7 +54,8 @@ describe('dashboard assistant starters', () => {
 
     it('CRM-only without finance: no fee, learner, evaluation, class or batch chips', () => {
         const picked = keys(pickStarters(everything, crmNoFinance));
-        expect(picked).toEqual(['announcement', 'help']);
+        expect(picked).toEqual(['announcement', 'crmNewLeads', 'crmFirstContact', 'help']);
+        expect(picked).not.toContain('crmFeesDue');
         expect(picked).not.toContain('overview'); // "Check pending fees" (generic group)
         expect(starterPromptKey('help', crmNoFinance)).toBe(
             'assistant.starters.help.promptGeneral'
@@ -102,5 +103,50 @@ describe('dashboard assistant starters', () => {
             )
         ).toEqual([]);
         expect(pickStarters(undefined, FULL_ENTITLEMENT)).toEqual([]);
+    });
+
+    it('offers the CRM chips only when the capabilities include the CRM groups', () => {
+        const crmReads: AssistantCapabilities = {
+            groups: [
+                { key: 'crm_reports', mode: 'READ', tools: ['crm_reports'] },
+                { key: 'crm_collections', mode: 'READ', tools: ['crm_collections'] },
+            ],
+        };
+        expect(keys(pickStarters(crmReads, FULL_ENTITLEMENT))).toEqual([
+            'crmNewLeads',
+            'crmFirstContact',
+            'crmFeesDue',
+        ]);
+        expect(
+            keys(
+                pickStarters(
+                    {
+                        groups: [
+                            {
+                                key: 'search_help_knowledge',
+                                mode: 'READ',
+                                tools: ['search_help_knowledge'],
+                            },
+                        ],
+                    },
+                    FULL_ENTITLEMENT
+                )
+            )
+        ).toEqual(['help']);
+    });
+
+    it('hides the CRM chips when the plan has no CRM module', () => {
+        const noCrm = createEntitlement({
+            catalog,
+            can: canForModules(catalog, ['lms', 'finance', 'communications']),
+            staticItems: [],
+        });
+        const crmGroups: AssistantCapabilities = {
+            groups: [
+                { key: 'crm_reports', mode: 'READ', tools: ['crm_reports'] },
+                { key: 'crm_collections', mode: 'READ', tools: ['crm_collections'] },
+            ],
+        };
+        expect(pickStarters(crmGroups, noCrm)).toEqual([]);
     });
 });

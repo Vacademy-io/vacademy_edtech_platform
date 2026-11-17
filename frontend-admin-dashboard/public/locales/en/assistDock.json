@@ -12,8 +12,8 @@
     "closeTutorials": "Close tutorials",
     "noTutorialsForThisPage": "No tutorials for this page yet.",
     "assistantFab": {
-        "label": "Open the assistant",
-        "tooltip": "Ask the assistant",
+        "label": "Open {{chatbotName}}",
+        "tooltip": "Ask {{chatbotName}}",
         "hint": "Ask the assistant",
         "dismissHint": "Dismiss hint"
     }

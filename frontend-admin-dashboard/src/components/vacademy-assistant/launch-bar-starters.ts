@@ -1,9 +1,11 @@
 import {
     ClipboardText,
+    Hourglass,
     MagnifyingGlass,
     Megaphone,
     Money,
     Question,
+    UserPlus,
     UsersThree,
     VideoCamera,
     type Icon,
@@ -38,6 +40,10 @@ export const STARTERS: readonly LaunchBarStarter[] = [
     { key: 'schedule', group: 'schedule', tool: 'get_class_schedule', Icon: VideoCamera },
     { key: 'payments', group: 'payments', tool: 'get_fee_dues', Icon: Money },
     { key: 'batch', group: 'batch_data', tool: 'list_batch_learners', Icon: UsersThree },
+    // CRM reads: only for users the capabilities endpoint gives the CRM groups.
+    { key: 'crmNewLeads', group: 'crm_reports', tool: 'crm_reports', Icon: UserPlus },
+    { key: 'crmFirstContact', group: 'crm_reports', tool: 'crm_reports', Icon: Hourglass },
+    { key: 'crmFeesDue', group: 'crm_collections', tool: 'crm_collections', Icon: Money },
     { key: 'help', group: 'search_help_knowledge', tool: 'search_help_knowledge', Icon: Question },
 ];
 
@@ -63,6 +69,11 @@ export const STARTER_FEATURES: Readonly<Record<string, readonly string[]>> = {
     payments: ['finance.fees'],
     // list_batch_learners
     batch: ['lms.batches'],
+    // crm_reports(overview / sla_breaches)
+    crmNewLeads: ['crm.leads'],
+    crmFirstContact: ['crm.leads'],
+    // crm_collections(who_owes) — installments and invoices
+    crmFeesDue: ['crm.leads', 'finance.fees'],
 };
 
 /**

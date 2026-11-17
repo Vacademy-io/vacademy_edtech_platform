@@ -4,10 +4,13 @@ import { createInstance } from 'i18next';
 import { I18nextProvider } from 'react-i18next';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import copy from '../../../../../public/locales/en/assistDock.json';
+import dashboardCopy from '../../../../../public/locales/en/dashboardIndex.json';
 import { AssistantFab } from '../../AssistantFab';
 import { useAssistDock } from '../../store';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import type { AssistantCapabilities } from '@/components/vacademy-assistant/types';
+import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
+import type { InstituteDetailsType } from '@/schemas/student/student-list/institute-schema';
 
 const session = vi.hoisted(() => {
     // Node's unconfigured Web Storage global shadows happy-dom's, leaving
@@ -46,7 +49,7 @@ vi.mock('@tanstack/react-router', () => ({
 const i18n = createInstance();
 void i18n.init({
     lng: 'en',
-    resources: { en: { assistDock: copy } },
+    resources: { en: { assistDock: copy, dashboardIndex: dashboardCopy } },
     interpolation: { escapeValue: false },
 });
 
@@ -54,7 +57,10 @@ const enabledCapabilities: AssistantCapabilities = {
     groups: [{ key: 'search_help_knowledge', mode: 'READ', tools: ['search_help_knowledge'] }],
 };
 
-const fabLabel = copy.assistantFab.label;
+// No institute details loaded: the panel's generic name.
+const fabLabel = i18n.t('assistDock:assistantFab.label', {
+    chatbotName: dashboardCopy.assistant.name,
+});
 const hintText = copy.assistantFab.hint;
 
 function mount(capabilities?: AssistantCapabilities) {
@@ -72,6 +78,7 @@ function mount(capabilities?: AssistantCapabilities) {
 beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    useInstituteDetailsStore.setState({ instituteDetails: null });
     session.token = 'token';
     session.expired = false;
     session.pathname = '/dashboard';
@@ -90,6 +97,19 @@ describe('assistant floating button', () => {
         fireEvent.click(screen.getByRole('button', { name: fabLabel }));
         expect(useAssistDock.getState().panel).toBe('assistant');
         expect(screen.queryByRole('button', { name: fabLabel })).not.toBeInTheDocument();
+    });
+
+    it('names the assistant as the panel header does', async () => {
+        expect(fabLabel).toBe('Open Institute Chatbot');
+        useInstituteDetailsStore.setState({
+            instituteDetails: { institute_name: ' Acme Academy ' } as InstituteDetailsType,
+        });
+        mount(enabledCapabilities);
+        const button = screen.getByRole('button', { name: 'Open Acme Academy Institute Chatbot' });
+        fireEvent.focus(button);
+        expect(
+            (await screen.findAllByText('Ask Acme Academy Institute Chatbot')).length
+        ).toBeGreaterThan(0);
     });
 
     it('opens the panel while the rail is collapsed to its pull-tab', () => {

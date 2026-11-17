@@ -44,9 +44,14 @@ const PUBLIC_PREFIXES = [
     '/vim/waitlist',
 ];
 
+interface CapabilityCopy {
+    blurb: string;
+    suggestions: string[];
+}
+
 /** Capability-group → human blurb + example prompts (role-accurate: only the
  * groups the /capabilities endpoint returns for THIS user are shown). */
-export const CAPABILITY_COPY: Record<string, { blurb: string; suggestions: string[] }> = {
+export const CAPABILITY_COPY: Record<string, CapabilityCopy> = {
     search_help_knowledge: {
         blurb: 'How-to guidance',
         suggestions: ['How do I create a course?', 'How do I invite a team member?'],
@@ -91,6 +96,56 @@ const FALLBACK_SUGGESTIONS = [
     'How do I invite a team member?',
 ];
 
+/** CRM groups → i18n keys (dashboardIndex) for the blurb and example prompts. */
+export const CRM_CAPABILITY_COPY_KEYS: Record<string, CapabilityCopy> = {
+    crm_leads: { blurb: 'assistant.crmCopy.crm_leads', suggestions: [] },
+    crm_calls: { blurb: 'assistant.crmCopy.crm_calls', suggestions: [] },
+    crm_meetings: { blurb: 'assistant.crmCopy.crm_meetings', suggestions: [] },
+    crm_messages: { blurb: 'assistant.crmCopy.crm_messages', suggestions: [] },
+    crm_reports: {
+        blurb: 'assistant.crmCopy.crm_reports',
+        suggestions: [
+            'assistant.starters.crmNewLeads.prompt',
+            'assistant.starters.crmFirstContact.prompt',
+        ],
+    },
+    crm_collections: {
+        blurb: 'assistant.crmCopy.crm_collections',
+        suggestions: [
+            'assistant.starters.crmFeesDue.prompt',
+            'assistant.crmCopy.admissionsNoFeePlan',
+        ],
+    },
+};
+
+/**
+ * Blurbs and example prompts for the groups the capabilities endpoint returned,
+ * in its order; at most five prompts.
+ */
+export function capabilityCopyFor(
+    groups: string[],
+    t: (key: string) => string
+): { capabilityBlurbs: string[]; suggestions: string[] } {
+    if (groups.length === 0) {
+        return { capabilityBlurbs: [], suggestions: FALLBACK_SUGGESTIONS };
+    }
+    const blurbs: string[] = [];
+    const sugg: string[] = [];
+    for (const key of groups) {
+        const copy = CAPABILITY_COPY[key];
+        if (copy) {
+            blurbs.push(copy.blurb);
+            sugg.push(...copy.suggestions);
+            continue;
+        }
+        const keys = CRM_CAPABILITY_COPY_KEYS[key];
+        if (!keys) continue;
+        blurbs.push(t(keys.blurb));
+        sugg.push(...keys.suggestions.map((k) => t(k)));
+    }
+    return { capabilityBlurbs: blurbs, suggestions: sugg.slice(0, 5) };
+}
+
 export function VacademyAssistant() {
     const { t } = useTranslation('dashboardIndex');
     const chatbotName = useInstituteChatbotName();
@@ -129,21 +184,10 @@ export function VacademyAssistant() {
         staleTime: 5 * 60 * 1000,
     });
 
-    const { capabilityBlurbs, suggestions } = useMemo(() => {
-        const groups = capabilities?.groups?.map((g) => g.key) ?? [];
-        if (groups.length === 0) {
-            return { capabilityBlurbs: [] as string[], suggestions: FALLBACK_SUGGESTIONS };
-        }
-        const blurbs: string[] = [];
-        const sugg: string[] = [];
-        for (const key of groups) {
-            const copy = CAPABILITY_COPY[key];
-            if (!copy) continue;
-            blurbs.push(copy.blurb);
-            sugg.push(...copy.suggestions);
-        }
-        return { capabilityBlurbs: blurbs, suggestions: sugg.slice(0, 5) };
-    }, [capabilities]);
+    const { capabilityBlurbs, suggestions } = useMemo(
+        () => capabilityCopyFor(capabilities?.groups?.map((g) => g.key) ?? [], (key) => t(key)),
+        [capabilities, t]
+    );
 
     // A help answer can include a route link (e.g. [Open Courses](/study-library/courses));
     // navigate in-app and collapse the panel so the user lands on the page.

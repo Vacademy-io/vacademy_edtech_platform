@@ -5,10 +5,16 @@
  */
 import { describe, expect, it } from 'vitest';
 import copy from '../../../../public/locales/en/settingsAssistantTools.json';
+import hiCopy from '../../../../public/locales/hi/settingsAssistantTools.json';
+import frCopy from '../../../../public/locales/fr/settingsAssistantTools.json';
+import arCopy from '../../../../public/locales/ar/settingsAssistantTools.json';
+import { createEntitlement, FULL_ENTITLEMENT } from '@/lib/capabilities/entitlement';
+import { canAllExcept, canForModules, loadRealCatalog } from '@/lib/capabilities/test-support';
 import {
     ASSISTANT_TOOL_CATALOG,
     NON_LEARNER_SYSTEM_ROLES,
     defaultAssistantToolsSetting,
+    entitledAssistantTools,
 } from './assistant-tools';
 
 const CRM_READ_GROUPS = [
@@ -51,5 +57,74 @@ describe('Assistant settings catalog', () => {
             expect(tools[key]?.label, key).toBeTruthy();
             expect(tools[key]?.description, key).toBeTruthy();
         }
+    });
+
+    it('has a label and description for every group in every language', () => {
+        for (const [lng, locale] of Object.entries({
+            en: copy,
+            hi: hiCopy,
+            fr: frCopy,
+            ar: arCopy,
+        })) {
+            const tools = locale.tools as Record<string, { label?: string; description?: string }>;
+            for (const { key } of ASSISTANT_TOOL_CATALOG) {
+                expect(tools[key]?.label, `${lng} ${key}`).toBeTruthy();
+                expect(tools[key]?.description, `${lng} ${key}`).toBeTruthy();
+            }
+        }
+    });
+});
+
+describe('Assistant settings and the institute plan', () => {
+    const catalog = loadRealCatalog();
+    const keys = (list: { key: string }[]) => list.map((t) => t.key);
+
+    it('every assistant group in the capability catalogue is a group listed here', () => {
+        const listed = new Set(keys(ASSISTANT_TOOL_CATALOG));
+        const governed = catalog.modules.flatMap((m) =>
+            m.features.flatMap((f) => f.governs.assistant_groups)
+        );
+        expect(governed.filter((g) => !listed.has(g))).toEqual([]);
+        for (const key of CRM_READ_GROUPS) expect(governed, key).toContain(key);
+    });
+
+    it('lists every group when the institute is not on managed modules', () => {
+        expect(keys(entitledAssistantTools(FULL_ENTITLEMENT))).toEqual(
+            keys(ASSISTANT_TOOL_CATALOG)
+        );
+    });
+
+    it('does not list the CRM groups for a plan without the CRM module', () => {
+        const noCrm = createEntitlement({
+            catalog,
+            can: canForModules(catalog, ['lms', 'assessments', 'live_classes', 'finance']),
+            staticItems: [],
+        });
+        const listed = keys(entitledAssistantTools(noCrm));
+        for (const key of CRM_READ_GROUPS) expect(listed).not.toContain(key);
+        expect(listed).toContain('learner_data');
+        expect(listed).toContain('payments');
+    });
+
+    it('lists the CRM groups for a plan with the CRM module', () => {
+        const crm = createEntitlement({
+            catalog,
+            can: canForModules(catalog, ['crm', 'finance']),
+            staticItems: [],
+        });
+        const listed = keys(entitledAssistantTools(crm));
+        for (const key of CRM_READ_GROUPS) expect(listed).toContain(key);
+        expect(listed).not.toContain('batch_data');
+    });
+
+    it('lists the call group only while calling is on', () => {
+        const noCalling = createEntitlement({
+            catalog,
+            can: canAllExcept(['crm.calling']),
+            staticItems: [],
+        });
+        const listed = keys(entitledAssistantTools(noCalling));
+        expect(listed).not.toContain('crm_calls');
+        expect(listed).toContain('crm_leads');
     });
 });

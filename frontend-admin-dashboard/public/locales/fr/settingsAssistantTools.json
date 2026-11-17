@@ -75,6 +75,38 @@
         "announcements": {
             "label": "Annonces",
             "description": "Consultez les annonces planifiées/passées, et PROPOSEZ d'en envoyer une à des groupes, des rôles ou des apprenants spécifiques — l'envoi nécessite toujours d'appuyer sur Confirmer sur une carte. Activé par défaut pour les administrateurs."
+        },
+        "workflows": {
+            "label": "Automatisations : consultation",
+            "description": "Consulter les automatisations (workflows) de l’établissement : le déclencheur ou la planification de chacune, ses nœuds, les exécutions récentes et les résultats par nœud, ainsi que le catalogue de création et les groupes, campagnes de prospects et modèles qu’une automatisation peut utiliser. Lecture seule. Activé par défaut pour les administrateurs."
+        },
+        "workflows_edits": {
+            "label": "Automatisations : brouillons",
+            "description": "Permettre à l’assistant de créer des automatisations par conversation — composer le workflow, le vérifier selon les règles de l’éditeur, l’enregistrer en BROUILLON et créer les nouveaux modèles e-mail et WhatsApp nécessaires (les modèles WhatsApp sont envoyés à Meta pour approbation). Un brouillon ne s’exécute jamais tant que vous ne l’ouvrez pas dans l’éditeur pour le publier ; les automatisations publiées et les modèles existants ne peuvent être ni modifiés ni supprimés d’ici. N’utilise aucun crédit IA. Désactivé par défaut."
+        },
+        "crm_leads": {
+            "label": "Prospects CRM : consultation",
+            "description": "Rechercher des prospects et des demandes, voir le détail d’un prospect, son historique et les relances du jour, et exporter une liste sous forme de lien de téléchargement privé. Chacun ne voit que les prospects que le CRM lui montre. Lecture seule. Activé par défaut pour les administrateurs et les conseillers."
+        },
+        "crm_calls": {
+            "label": "Appels CRM : consultation",
+            "description": "Voir les journaux d’appels, les transcriptions, les rappels à effectuer, les appels entrants manqués et l’état des appels IA. Lecture seule. Activé par défaut pour les administrateurs et les conseillers."
+        },
+        "crm_meetings": {
+            "label": "Rendez-vous CRM : consultation",
+            "description": "Voir vos rendez-vous et ceux de votre équipe, les rendez-vous d’un prospect, les créneaux libres et les pages de réservation. Lecture seule. Activé par défaut pour les administrateurs et les conseillers."
+        },
+        "crm_messages": {
+            "label": "Messages CRM : consultation",
+            "description": "Voir l’historique WhatsApp et e-mail d’un prospect, la boîte de réception, les modèles approuvés et les escalades. Lecture seule. Activé par défaut pour les administrateurs et les conseillers."
+        },
+        "crm_reports": {
+            "label": "Rapports CRM : consultation",
+            "description": "Répondre aux questions à partir des rapports du CRM — sources, entonnoir, performance des conseillers, relances, SLA, chiffre d’affaires et rapports personnalisés — chacun avec sa période et sa définition. Lecture seule. Activé par défaut pour les administrateurs et les conseillers."
+        },
+        "crm_collections": {
+            "label": "Paiements CRM : consultation",
+            "description": "Voir les admissions, les sommes dues par un prospect, qui doit quoi, ce qui arrive à échéance et les encaissements. Lecture seule. Activé par défaut pour les administrateurs et les conseillers."
         }
     },
     "presets": {

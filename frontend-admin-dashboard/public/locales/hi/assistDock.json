@@ -12,8 +12,8 @@
     "closeTutorials": "ट्यूटोरियल बंद करें",
     "noTutorialsForThisPage": "इस पेज के लिए अभी कोई ट्यूटोरियल नहीं है।",
     "assistantFab": {
-        "label": "सहायक खोलें",
-        "tooltip": "सहायक से पूछें",
+        "label": "{{chatbotName}} खोलें",
+        "tooltip": "{{chatbotName}} से पूछें",
         "hint": "सहायक से पूछें",
         "dismissHint": "संकेत हटाएं"
     }

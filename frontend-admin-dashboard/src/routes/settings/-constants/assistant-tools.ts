@@ -4,6 +4,8 @@
 // (ai_service app/services/assistant_tool_registry.py :: ASSISTANT_TOOLS).
 // Phase-2/3 tools are added here as they ship.
 
+import type { Entitlement } from '@/lib/capabilities/entitlement';
+
 export const ASSISTANT_TOOLS_SETTING_KEY = 'ASSISTANT_TOOLS_SETTING';
 
 export interface AssistantToolCatalogEntry {
@@ -242,6 +244,16 @@ export const ASSISTANT_TOOL_CATALOG: AssistantToolCatalogEntry[] = [
         defaultRoles: ['ADMIN'],
     },
 ];
+
+/**
+ * The groups this institute's plan includes. A group tied to a module in the
+ * capability catalogue (`governs.assistant_groups`) is listed only while that
+ * feature is on; ungoverned groups and non-managed institutes see every group.
+ * Saved values of unlisted groups are left as they are.
+ */
+export function entitledAssistantTools(entitlement: Entitlement): AssistantToolCatalogEntry[] {
+    return ASSISTANT_TOOL_CATALOG.filter((tool) => entitlement.isAssistantGroupEntitled(tool.key));
+}
 
 /** One-click role presets for the settings screen — sensible grants per role. */
 export const ASSISTANT_ROLE_PRESETS: Array<{

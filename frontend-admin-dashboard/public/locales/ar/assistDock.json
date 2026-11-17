@@ -12,8 +12,8 @@
     "closeTutorials": "إغلاق الدروس التعليمية",
     "noTutorialsForThisPage": "لا توجد دروس تعليمية لهذه الصفحة بعد.",
     "assistantFab": {
-        "label": "فتح المساعد",
-        "tooltip": "اسأل المساعد",
+        "label": "فتح {{chatbotName}}",
+        "tooltip": "اسأل {{chatbotName}}",
         "hint": "اسأل المساعد",
         "dismissHint": "إخفاء التلميح"
     }

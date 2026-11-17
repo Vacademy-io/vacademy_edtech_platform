@@ -76,6 +76,14 @@
             "label": "Announcements",
             "description": "See planned/past announcements, and PROPOSE sending one to batches, roles, or specific learners — sending always requires pressing Confirm on a card. On by default for Admins."
         },
+        "workflows": {
+            "label": "Automations: view",
+            "description": "See the institute’s automations (workflows): each one’s trigger or schedule, its nodes, recent runs and per-node results, plus the authoring catalog and the batches, lead campaigns and templates an automation can reference. Read-only. On by default for Admins."
+        },
+        "workflows_edits": {
+            "label": "Automations: draft",
+            "description": "Let the assistant build automations by conversation — compose the workflow, check it against the builder’s rules, save it as a DRAFT, and create the new email and WhatsApp templates it needs (WhatsApp templates are sent to Meta for approval). A draft never runs until you open it in the builder and publish it; published automations and existing templates cannot be changed or removed from here. Uses no AI credits. Off by default."
+        },
         "crm_leads": {
             "label": "CRM leads: view",
             "description": "Find leads and enquiries, see a lead’s details, timeline and today’s follow-ups, and export a list as a private download link. Each person sees only the leads the CRM shows them. Read-only. On by default for Admins and Counsellors."

@@ -10,6 +10,7 @@ import { getInstituteId } from '@/constants/helper';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { ASSISTANT_CAPABILITIES } from '@/constants/urls';
 import type { AssistantCapabilities } from '@/components/vacademy-assistant/types';
+import { useInstituteChatbotName } from '@/components/vacademy-assistant/useInstituteChatbotName';
 import { useAssistDock } from './store';
 import { useAssistDockVisible } from './visibility';
 
@@ -102,6 +103,8 @@ function readHintSeen(): boolean {
  */
 export function AssistantFab() {
     const { t } = useTranslation('assistDock');
+    // The same name the assistant panel's header shows (from the loaded institute details).
+    const chatbotName = useInstituteChatbotName();
     const pathname = useRouterState({ select: (s) => s.location.pathname });
     const panel = useAssistDock((s) => s.panel);
     const tutorialOpen = useAssistDock((s) => s.activeTutorial !== null);
@@ -190,14 +193,16 @@ export function AssistantFab() {
                         <TooltipTrigger asChild>
                             <button
                                 type="button"
-                                aria-label={t('assistantFab.label')}
+                                aria-label={t('assistantFab.label', { chatbotName })}
                                 onClick={openAssistant}
                                 className="pointer-events-auto flex size-12 items-center justify-center rounded-full bg-primary-500 text-white shadow-lg transition-colors hover:bg-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300 focus-visible:ring-offset-2 md:size-10"
                             >
                                 <Sparkle size={22} weight="fill" />
                             </button>
                         </TooltipTrigger>
-                        <TooltipContent side="left">{t('assistantFab.tooltip')}</TooltipContent>
+                        <TooltipContent side="left">
+                            {t('assistantFab.tooltip', { chatbotName })}
+                        </TooltipContent>
                     </Tooltip>
                 </TooltipProvider>
             </div>

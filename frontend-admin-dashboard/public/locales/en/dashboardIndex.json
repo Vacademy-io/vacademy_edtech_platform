@@ -116,10 +116,31 @@
                 "label": "Help with a task",
                 "prompt": "How do I create a course?",
                 "promptGeneral": "How do I add a team member?"
+            },
+            "crmNewLeads": {
+                "label": "New leads this week",
+                "prompt": "How many leads came in this week?"
+            },
+            "crmFirstContact": {
+                "label": "Waiting for first contact",
+                "prompt": "Which leads are waiting longest for first contact?"
+            },
+            "crmFeesDue": {
+                "label": "Fees due this week",
+                "prompt": "Who owes fees this week?"
             }
         },
         "instituteName": "{{instituteName}} Institute Chatbot",
-        "helpDescription": "Ask me how or where to do anything in your admin workspace."
+        "helpDescription": "Ask me how or where to do anything in your admin workspace.",
+        "crmCopy": {
+            "crm_leads": "Leads and enquiries",
+            "crm_calls": "Calls and callbacks",
+            "crm_meetings": "Meetings and booking pages",
+            "crm_messages": "Lead messages",
+            "crm_reports": "CRM reports",
+            "crm_collections": "Admissions, dues and collections",
+            "admissionsNoFeePlan": "Admissions this month missing a fee plan"
+        }
     },
     "quickActions": {
         "title": "Quick actions"

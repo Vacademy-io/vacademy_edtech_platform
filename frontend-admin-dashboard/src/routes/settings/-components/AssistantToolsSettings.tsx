@@ -10,16 +10,17 @@ import { MyButton } from '@/components/design-system/button';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { GET_INSITITUTE_SETTINGS } from '@/constants/urls';
 import { getCurrentInstituteId } from '@/lib/auth/instituteUtils';
+import { useEntitlement } from '@/lib/capabilities/use-entitlement';
 import {
     getAllRoles,
     type CustomRole,
 } from '@/routes/manage-custom-teams/-services/custom-team-services';
 import {
     ASSISTANT_ROLE_PRESETS,
-    ASSISTANT_TOOL_CATALOG,
     ASSISTANT_TOOLS_SETTING_KEY,
     NON_LEARNER_SYSTEM_ROLES,
     defaultAssistantToolsSetting,
+    entitledAssistantTools,
     type AssistantToolsSettingData,
 } from '../-constants/assistant-tools';
 
@@ -62,6 +63,9 @@ const saveSettings = async (data: AssistantToolsSettingData): Promise<void> => {
 export default function AssistantToolsSettings() {
     const { t } = useTranslation('settingsAssistantTools');
     const queryClient = useQueryClient();
+    const entitlement = useEntitlement();
+    // Groups outside the institute's plan are not listed (their saved values are kept).
+    const tools = useMemo(() => entitledAssistantTools(entitlement), [entitlement]);
     const [settings, setSettings] = useState<AssistantToolsSettingData>(
         defaultAssistantToolsSetting
     );
@@ -130,14 +134,15 @@ export default function AssistantToolsSettings() {
         settings.role_overrides[role]?.enabled_tools.includes(key) ?? false;
 
     /** One-click preset: grant the given tool groups to a role (additive). */
-    const applyPreset = (role: string, tools: string[]) => {
+    const applyPreset = (role: string, presetTools: string[]) => {
+        const listed = presetTools.filter((key) => tools.some((tool) => tool.key === key));
         setSettings((prev) => {
             const current = prev.role_overrides[role]?.enabled_tools ?? [];
             return {
                 ...prev,
                 role_overrides: {
                     ...prev.role_overrides,
-                    [role]: { enabled_tools: Array.from(new Set([...current, ...tools])) },
+                    [role]: { enabled_tools: Array.from(new Set([...current, ...listed])) },
                 },
             };
         });
@@ -181,7 +186,7 @@ export default function AssistantToolsSettings() {
                     <CardDescription>{t('capabilities.description')}</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {ASSISTANT_TOOL_CATALOG.map((tool) => (
+                    {tools.map((tool) => (
                         <div key={tool.key} className="flex items-start gap-3">
                             <Switch
                                 id={`tool-${tool.key}`}
@@ -249,7 +254,7 @@ export default function AssistantToolsSettings() {
 
                                 {customized && (
                                     <div className="space-y-2 border-t border-neutral-100 pt-3">
-                                        {ASSISTANT_TOOL_CATALOG.map((tool) => (
+                                        {tools.map((tool) => (
                                             <label
                                                 key={tool.key}
                                                 className="flex items-center gap-2"
