@@ -35,7 +35,7 @@ type State =
 function ClassroomPage() {
   const { scheduleId } = Route.useSearch();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t } = useTranslation("study");
   const [state, setState] = useState<State>({ kind: "loading" });
   const [frameLoaded, setFrameLoaded] = useState(false);
   const [slow, setSlow] = useState(false);

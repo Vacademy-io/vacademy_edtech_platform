@@ -878,7 +878,10 @@ const RootComponent = () => {
   // else's website: nothing of the app's own chrome may paint in it.
   const isSiteAssistantEmbed = pathname.startsWith("/site-assistant-embed");
   const suppressAppChrome = (isLiveTestActive && hideLiveTestChrome) || isSiteAssistantEmbed;
-  const hideChatbot = pathname.startsWith("/admission") || isLiveTestActive || isSiteAssistantEmbed;
+  // The in-app live class fills the screen; the bubble would sit on BBB's own buttons.
+  const isInAppLiveClass = pathname.startsWith("/study-library/live-class/classroom");
+  const hideChatbot =
+    pathname.startsWith("/admission") || isLiveTestActive || isSiteAssistantEmbed || isInAppLiveClass;
 
   // ── Sentry: tag events with the current route. Navigation breadcrumbs
   // come from the SDK's built-in history instrumentation; a custom one here
