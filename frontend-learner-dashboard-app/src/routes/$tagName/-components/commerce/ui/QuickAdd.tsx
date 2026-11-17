@@ -4,7 +4,7 @@
  * have to leave the listing to choose a size. Goods sold by length still open the product
  * page, where the length picker is.
  */
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import type { ProductCard } from '../api/types';
 import { sendCommerceEvent } from '../logic/events';
@@ -14,6 +14,7 @@ import { quantityRules, stockView } from '../logic/stock';
 import { useCommerceCart } from '../state/cart-store';
 import { OptionPicker } from './Options';
 import { ErrorState, Layer, PriceText } from './primitives';
+import { CardAddContext } from './card-add';
 import { useProduct } from './queries';
 import { ShopLink, useCommerceSite } from './site';
 
@@ -24,6 +25,7 @@ export const QuickAddSheet: React.FC<{ product: ProductCard; to: string; open: b
     const detail = query.data;
     const add = useCommerceCart((s) => s.add);
     const openDrawer = useCommerceCart((s) => s.openDrawer);
+    const addMode = useContext(CardAddContext);
     const options = useMemo(() => detail?.options || [], [detail]);
     const variants = useMemo(() => [...(detail?.variants || [])].sort((a, b) => a.position - b.position), [detail]);
     const [selection, setSelection] = useState<Selection>({});
@@ -61,8 +63,9 @@ export const QuickAddSheet: React.FC<{ product: ProductCard; to: string; open: b
             item: { id: variant.sku || variant.id, name: detail.name, unitPrice: price?.amount, quantity: rules.step, qtyScale: detail.qty_scale, variant: variant.label },
             currency: price?.currency,
         });
+        if (addMode) addMode.onAdded(product.id);
         onClose();
-        openDrawer();
+        if (!addMode) openDrawer();
     };
 
     const thumb = thumbUrl(variant?.image || product.image);

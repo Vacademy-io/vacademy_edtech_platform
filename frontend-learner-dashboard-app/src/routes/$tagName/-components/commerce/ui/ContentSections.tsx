@@ -36,37 +36,33 @@ import type { MessageKey } from '../i18n';
 import { ShopHead } from './Head';
 import { useCategoryTree } from './queries';
 import { ShopLink, useCommerceSite, useShopNavigate, whatsappLink } from './site';
+import { useText } from './text';
 
 type Section = React.FC<{ props: Props }>;
-
-/** Authored text in the visitor's language. */
-const useText = () => {
-    const { siteT } = useCommerceSite();
-    return (value: unknown, max?: number) => siteT(str(value, max));
-};
 
 const contact = (method: 'whatsapp' | 'call' | 'email' | 'directions', placement: string) => () =>
     sendCommerceEvent({ name: 'contact', method, placement });
 
 /** A link from page data: a page of this site, an anchor, or an outside address (new tab). */
-export const ActionLink: React.FC<{ to: string; className?: string; children: React.ReactNode; onClick?: () => void }> = ({
+export const ActionLink: React.FC<{ to: string; className?: string; children: React.ReactNode; onClick?: () => void; label?: string }> = ({
     to,
     className,
     children,
     onClick,
+    label,
 }) => {
     const kind = linkKind(to);
     if (kind === 'invalid') return null;
     if (kind === 'site') {
         return (
-            <ShopLink to={siteRoute(to)} className={className} onClick={onClick}>
+            <ShopLink to={siteRoute(to)} className={className} onClick={onClick} aria-label={label}>
                 {children}
             </ShopLink>
         );
     }
     const web = /^https?:/i.test(to);
     return (
-        <a href={to} className={className} onClick={onClick} {...(web ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
+        <a href={to} className={className} onClick={onClick} aria-label={label} {...(web ? { target: '_blank', rel: 'noopener noreferrer' } : {})}>
             {children}
         </a>
     );
@@ -83,7 +79,7 @@ const CtaButton: React.FC<{ value: Cta | null; primary?: boolean; className?: st
 };
 
 /** Eyebrow, heading, intro and a "see all" link, as every block opens. */
-const Intro: React.FC<{ props: Props; level?: 1 | 2; center?: boolean; link?: boolean }> = ({ props, level = 2, center, link = true }) => {
+export const Intro: React.FC<{ props: Props; level?: 1 | 2; center?: boolean; link?: boolean }> = ({ props, level = 2, center, link = true }) => {
     const tx = useText();
     const eyebrow = tx(props.eyebrow, 80);
     const title = tx(props.title, 200);
@@ -108,7 +104,7 @@ const Intro: React.FC<{ props: Props; level?: 1 | 2; center?: boolean; link?: bo
 /** An address the Img below will draw: an absolute http(s) URL or a site path. */
 const isPicture = (src: string): boolean => /^https?:\/\//i.test(src) || (src.startsWith('/') && !src.startsWith('//'));
 
-const Img: React.FC<{ src: string; alt?: string; className?: string; eager?: boolean; width?: number; height?: number }> = ({
+export const Img: React.FC<{ src: string; alt?: string; className?: string; eager?: boolean; width?: number; height?: number }> = ({
     src,
     alt = '',
     className,

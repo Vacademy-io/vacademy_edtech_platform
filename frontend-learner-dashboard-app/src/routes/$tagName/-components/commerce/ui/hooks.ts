@@ -184,6 +184,34 @@ export const useOnline = (): boolean => {
     return online;
 };
 
+/** True when the visitor asked for less motion; read at the first render, followed after. */
+export const useReducedMotion = (): boolean => useMediaQuery('(prefers-reduced-motion: reduce)');
+
+/** True while the media query matches (false where there is no matchMedia). */
+export const useMediaQuery = (query: string): boolean => {
+    const [matches, setMatches] = useState(() => typeof window !== 'undefined' && !!window.matchMedia?.(query).matches);
+    useEffect(() => {
+        const list = typeof window !== 'undefined' ? window.matchMedia?.(query) : undefined;
+        if (!list) return;
+        const update = () => setMatches(list.matches);
+        update();
+        list.addEventListener?.('change', update);
+        return () => list.removeEventListener?.('change', update);
+    }, [query]);
+    return matches;
+};
+
+/** True while the tab is in the background (another tab, a locked phone). */
+export const usePageHidden = (): boolean => {
+    const [hidden, setHidden] = useState(() => typeof document !== 'undefined' && document.visibilityState === 'hidden');
+    useEffect(() => {
+        const update = () => setHidden(document.visibilityState === 'hidden');
+        document.addEventListener('visibilitychange', update);
+        return () => document.removeEventListener('visibilitychange', update);
+    }, []);
+    return hidden;
+};
+
 /** Pinch-zoom allowed while a shop root is on screen (logic/viewport.ts). */
 export const useZoomableViewport = (): void => {
     useEffect(() => holdZoomableViewport(), []);

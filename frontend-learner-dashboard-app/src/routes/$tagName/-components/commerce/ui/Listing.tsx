@@ -24,12 +24,13 @@ import {
     type FacetState,
 } from '../state/facet-url';
 import { withQuery } from '../routes';
-import { stickyListingToolbar } from '../config';
+import { listingFilterColumn, stickyListingToolbar } from '../config';
 import { ShopHead, useEdgePage } from './Head';
 import { EmptyState, ErrorState, GridSkeleton, Layer, isNotFound, useIsNarrow } from './primitives';
 import { ProductGrid } from './ProductCard';
 import { ReassuranceRows } from './Product';
 import { menuCategories, useCategoryTree, useProductPages } from './queries';
+import { useShopFlag } from './shop-flags';
 import { ShopLink, useCommerceSite, useShopNavigate, whatsappLink } from './site';
 
 /** The listing's state, read from and written to the address (replace, so Back leaves the listing). */
@@ -238,6 +239,9 @@ export const ListingView: React.FC<{
     const currency = products[0]?.price?.currency || 'INR';
     const active = activeFacetCount(state);
     const hasFilters = !!facets && ((facets.attributes || []).length > 0 || (facets.price?.bands || []).length > 0);
+    // Whether this shop's listings have filters, as this device last saw (a shop without price bands
+    // or filterable attributes has none, on every listing).
+    const knownFilters = useShopFlag('filters', first ? hasFilters : undefined);
     const inStock = facets?.availability?.in_stock ?? null;
     const soldOut = facets?.availability?.out_of_stock ?? 0;
 
@@ -284,13 +288,27 @@ export const ListingView: React.FC<{
     const panel = <FilterPanel facets={facets} state={state} onChange={setState} currency={currency} />;
     const loading = query.isPending;
     const refreshing = query.isPlaceholderData;
+    // On a desktop the filter column of a shop known to have filters is there from the first paint
+    // (a skeleton until the first page answers), so the grid does not jump sideways when the
+    // filters arrive. A shop without filters, or one not seen yet on this device, holds no column.
+    // A site can say it outright (templates.collection.filterColumn), which also covers the first visit.
+    const configured = listingFilterColumn(config);
+    const sidebar = hasFilters || (loading && (configured ?? knownFilters) === true);
 
     return (
-        <div className={cn('cmx-listing', hasFilters && 'cmx-listing--sidebar')}>
-            {hasFilters && !narrow && (
-                <aside aria-label={t('listing.filters')} className="hidden lg:block">
+        <div className={cn('cmx-listing', sidebar && 'cmx-listing--sidebar')}>
+            {sidebar && !narrow && (
+                <aside aria-label={t('listing.filters')} className="hidden lg:block" aria-busy={loading || undefined}>
                     <h2 className="cmx-h3 mb-2">{t('listing.filters')}</h2>
-                    {panel}
+                    {hasFilters ? (
+                        panel
+                    ) : (
+                        <div className="flex flex-col gap-3 pt-3" aria-hidden="true">
+                            {Array.from({ length: 4 }, (_, i) => (
+                                <div key={i} className="cmx-skel h-6 w-3/4" />
+                            ))}
+                        </div>
+                    )}
                 </aside>
             )}
             <div className="flex min-w-0 flex-col gap-4">
@@ -331,7 +349,7 @@ export const ListingView: React.FC<{
                 </div>
                 <ActivePills facets={facets} state={state} onChange={setState} currency={currency} />
                 {loading ? (
-                    <GridSkeleton count={8} className={hasFilters ? 'cmx-grid--with-sidebar' : undefined} />
+                    <GridSkeleton count={8} className={sidebar ? 'cmx-grid--with-sidebar' : undefined} />
                 ) : products.length === 0 ? (
                     active > 0 ? (
                         <EmptyState title={t('listing.emptyFiltered.title')} body={t('listing.emptyFiltered.body')}>
@@ -472,7 +490,8 @@ export const CollectionTemplate: React.FC<{ slug: string; sections: readonly str
                             <div className="cmx-skel h-4 w-40" />
                         </div>
                     )}
-                    {tree.isLoading ? <div className="cmx-skel h-9 w-2/3" aria-hidden="true" /> : <h1 className="cmx-h1">{name || slug}</h1>}
+                    {/* As tall as the H1's line (34px, 44px from 1024px), so the listing below does not move when the name arrives. */}
+                    {tree.isLoading ? <div className="cmx-skel h-9 w-2/3 lg:h-11" aria-hidden="true" /> : <h1 className="cmx-h1">{name || slug}</h1>}
                     <p className="cmx-small cmx-muted">
                         {counts && counts.inStock !== null ? t('listing.inStockCount', { count: counts.inStock }) : '\u00a0'}
                         {promise && counts ? ` · ${promise}` : ''}

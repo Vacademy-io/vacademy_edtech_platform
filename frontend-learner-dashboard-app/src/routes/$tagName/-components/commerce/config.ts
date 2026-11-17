@@ -75,6 +75,31 @@ export interface CommerceCategoryBar {
     collapseHeaderOnScroll: boolean;
 }
 
+/**
+ * Where the cart's "You may also like" row takes its products from:
+ *   bestsellers   the shop's hand-kept "bestsellers" collection (the shop's recommended order when
+ *                 the site has no such collection);
+ *   collection    one named collection ("collection:<slug>");
+ *   same-category the category of the product added last;
+ *   under-price   the whole shop at or under `maxPrice`.
+ */
+export type CartRecommendationSource =
+    | { kind: 'bestsellers' }
+    | { kind: 'collection'; slug: string }
+    | { kind: 'same-category' }
+    | { kind: 'under-price' };
+
+/** globalSettings.commerce.cart.recommendations. Off unless a site sets enabled: true. */
+export interface CartRecommendations {
+    source: CartRecommendationSource;
+    /** Only products at or under this price (rupees); null = any price. Required by under-price. */
+    maxPrice: number | null;
+    /** How many cards, 2 to 12 (default 4). */
+    limit: number;
+    /** The row's heading in the site's base language ("" = the shop's own words). */
+    title: string;
+}
+
 /** Pages that never show the category bar, whatever the site lists: the shopper stays on the form. */
 export const CATEGORY_BAR_NEVER = ['checkout', 'order', 'track', 'track-order', 'account'] as const;
 
@@ -109,6 +134,8 @@ export interface CommerceConfig {
     floatingWhatsApp: boolean;
     /** The category bar in the site header; null = off (the default). */
     categoryBar: CommerceCategoryBar | null;
+    /** "You may also like" on the cart page and in the cart drawer; null = off (the default). */
+    cartRecommendations: CartRecommendations | null;
     /** Per template, sections switched off ({ product: { pincode: false } }). */
     templates: Record<string, CommerceTemplateSwitches>;
     /** The checkout pages exist for this site (a later package turns it on). */
@@ -162,6 +189,34 @@ const parseCategoryBar = (value: unknown): CommerceCategoryBar | null => {
     };
 };
 
+const COLLECTION_SLUG = /^[a-z0-9][a-z0-9-]{0,159}$/;
+
+const parseCartRecommendations = (value: unknown): CartRecommendations | null => {
+    const cart = isRecord(value) ? value : null;
+    const raw = cart && isRecord(cart.recommendations) ? cart.recommendations : null;
+    if (!raw || raw.enabled !== true) return null;
+    const max = Number(raw.maxPrice);
+    const maxPrice = Number.isFinite(max) && max > 0 && max <= 10_000_000 ? max : null;
+    const name = text(raw.source, 180).toLowerCase();
+    let source: CartRecommendationSource = { kind: 'bestsellers' };
+    if (name.startsWith('collection:')) {
+        const slug = name.slice('collection:'.length).trim();
+        if (COLLECTION_SLUG.test(slug)) source = { kind: 'collection', slug };
+    } else if (name === 'same-category') {
+        source = { kind: 'same-category' };
+    } else if (name === 'under-price' && maxPrice !== null) {
+        // "Under ₹X" without an X is not a list: the bestsellers instead.
+        source = { kind: 'under-price' };
+    }
+    const limit = Number(raw.limit);
+    return {
+        source,
+        maxPrice,
+        limit: Number.isInteger(limit) && limit >= 2 && limit <= 12 ? limit : 4,
+        title: text(raw.title, 80),
+    };
+};
+
 export const DEFAULT_COMMERCE_LOCALES = ['hi', 'en'];
 export const DEFAULT_PAGE_SIZE = 24;
 
@@ -181,6 +236,7 @@ const disabled = (): CommerceConfig => ({
     announcement: null,
     floatingWhatsApp: false,
     categoryBar: null,
+    cartRecommendations: null,
     templates: {},
     checkout: false,
     redirects: false,
@@ -268,6 +324,7 @@ export const parseCommerceConfig = (globalSettings: unknown): CommerceConfig => 
                 : null,
         floatingWhatsApp: raw.floatingWhatsApp === true,
         categoryBar: parseCategoryBar(raw.categoryBar),
+        cartRecommendations: parseCartRecommendations(raw.cart),
         templates,
         checkout: raw.checkout === true,
         redirects: raw.redirects === true,
@@ -303,6 +360,16 @@ export const categoryBarPhotosOn = (config: Pick<CommerceConfig, 'enabled' | 'ca
 /** Listings keep Filter·Sort pinned under the header (templates.collection.stickyToolbar). Off by default. */
 export const stickyListingToolbar = (config: Pick<CommerceConfig, 'templates'>): boolean =>
     config.templates.collection?.stickyToolbar === true;
+
+/**
+ * Whether the desktop filter column is held from a listing's first paint
+ * (templates.collection.filterColumn): true = always (a shop that set price bands or filterable
+ * attributes), false = never, null = as this device last saw the shop's listings.
+ */
+export const listingFilterColumn = (config: Pick<CommerceConfig, 'templates'>): boolean | null => {
+    const value = config.templates.collection?.filterColumn;
+    return typeof value === 'boolean' ? value : null;
+};
 
 /** Built-in sections of a template in order, minus the ones the site switched off. */
 export const templateSections = <T extends string>(

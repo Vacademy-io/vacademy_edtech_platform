@@ -548,6 +548,11 @@ header[data-cmx-bar] { transition: transform 200ms ease-out; }
 .cmx-totals dd { margin: 0; font-variant-numeric: tabular-nums; }
 .cmx-totals__total { font-weight: 600; font-size: 1.0625em; padding-top: 8px; border-top: 1px solid var(--cmx-line); }
 .cmx-totals__total dt { color: var(--cmx-ink); }
+/* The free-delivery bar: one line and the meter, one fixed height, held while the cart is priced. */
+.cmx-freebar { box-sizing: border-box; min-height: 60px; justify-content: center; gap: 0; }
+.cmx-freebar__text { display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* While re-pricing, the old totals stay where they are, dimmed. */
+[aria-busy="true"] > .cmx-totals { opacity: 0.6; transition: opacity var(--cmx-dur) var(--cmx-ease); }
 .cmx-meter { height: 6px; border-radius: 999px; background: var(--cmx-band); overflow: hidden; margin-top: 6px; }
 .cmx-meter > span { display: block; height: 100%; background: var(--cmx-success); border-radius: inherit; width: calc(var(--cmx-meter, 0) * 1%); transition: width 300ms var(--cmx-ease); }
 .cmx-cartpage { display: grid; gap: 24px; }
@@ -821,6 +826,104 @@ textarea.cmx-input { min-height: 96px; resize: vertical; }
 .cmx-404 { display: grid; gap: 20px; justify-items: center; text-align: center; max-width: 640px; margin: 0 auto; }
 .cmx-404__art { width: min(280px, 70vw); aspect-ratio: 1 / 1; border-radius: 999px; }
 .cmx-404 form { display: flex; gap: 8px; width: 100%; max-width: 480px; }
+
+/* ── listing: the filter column on a desktop ───────────────────── */
+/* Where the column shows, its filters are there: the toolbar's Filter button (which opens the phone sheet) is not. */
+@media (min-width: 1024px) { .cmx-listing--sidebar .cmx-toolbar .cmx-toolbar__filter { display: none; } }
+
+/* ── news carousel (commerceNewsCarousel) ───────────────────────── */
+.cmx-news__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.cmx-news__head > .cmx-intro { flex: 1; min-width: 0; margin-bottom: 0; }
+.cmx-news__nav { display: flex; gap: 8px; flex: none; }
+.cmx-news__btn { border: 1px solid var(--cmx-line-strong); }
+/* `perView` cards in view (1 · 2 · 3 by default), a swipe row with snap points; never wider than the page. */
+.cmx-news {
+    --cmx-news-n: 1; --cmx-news-gap: 12px;
+    display: grid; grid-auto-flow: column; gap: var(--cmx-news-gap); list-style: none;
+    grid-auto-columns: calc((100% - (var(--cmx-news-n) - 1) * var(--cmx-news-gap)) / var(--cmx-news-n));
+    margin: 16px 0 0; padding: 2px 0 8px; overflow-x: auto; scroll-snap-type: x mandatory;
+    scrollbar-width: none; overscroll-behavior-x: contain;
+}
+.cmx-news::-webkit-scrollbar { display: none; }
+.cmx-news--p2 { --cmx-news-n: 2; } .cmx-news--p3 { --cmx-news-n: 3; } .cmx-news--p4 { --cmx-news-n: 4; }
+@media (min-width: 640px) {
+    .cmx-news { --cmx-news-gap: 16px; }
+    .cmx-news--t1 { --cmx-news-n: 1; } .cmx-news--t2 { --cmx-news-n: 2; } .cmx-news--t3 { --cmx-news-n: 3; } .cmx-news--t4 { --cmx-news-n: 4; }
+}
+@media (min-width: 1024px) {
+    .cmx-news { --cmx-news-gap: 24px; margin-top: 20px; }
+    .cmx-news--d1 { --cmx-news-n: 1; } .cmx-news--d2 { --cmx-news-n: 2; } .cmx-news--d3 { --cmx-news-n: 3; } .cmx-news--d4 { --cmx-news-n: 4; }
+}
+.cmx-news__item { scroll-snap-align: start; min-width: 0; }
+.cmx-news__card { position: relative; height: 100%; }
+.cmx-news__img { aspect-ratio: 4 / 3; border-radius: 0; }
+.cmx-news--r-3-2 .cmx-news__img { aspect-ratio: 3 / 2; } .cmx-news--r-16-9 .cmx-news__img { aspect-ratio: 16 / 9; }
+.cmx-news--r-1-1 .cmx-news__img { aspect-ratio: 1 / 1; } .cmx-news--r-4-5 .cmx-news__img { aspect-ratio: 4 / 5; }
+.cmx-news__img > img { object-position: var(--cmx-news-pos, 50% 50%); }
+/* A press clipping shows whole, on the card's own background. */
+.cmx-news__img--contain { background: var(--cmx-surface); }
+.cmx-news__img--contain > img { object-fit: contain; }
+/* The one link of a card covers the card: the whole card is the tap target. */
+.cmx-news__more::after { content: ""; position: absolute; inset: 0; }
+.cmx-news__card:has(.cmx-news__more:focus-visible) { outline: 2px solid var(--cmx-link); outline-offset: 2px; }
+.cmx-news__more:focus-visible { outline: none; }
+.cmx-news__dots { justify-content: center; margin-top: 4px; }
+
+/* A section opened at its anchor (news#<id>) starts below the fixed header, not under it. */
+.cmx-section[id] { scroll-margin-top: calc(var(--cmx-head-bottom, 64px) + 12px); }
+
+/* ── rotating banner (commerceBannerCarousel) ───────────────────── */
+/* The box has its height from the first paint (an aspect ratio per breakpoint): nothing below it moves. */
+.cmx-bx__view { position: relative; overflow: hidden; margin: 0 -16px; aspect-ratio: var(--cmx-bx-m, 4 / 5); background: var(--cmx-band); }
+@media (min-width: 640px) { .cmx-bx__view { margin: 0; aspect-ratio: var(--cmx-bx-d, 21 / 9); border-radius: var(--cmx-radius-card); } }
+.cmx-bx__track { position: relative; display: flex; height: 100%; margin: 0; padding: 0; list-style: none; }
+.cmx-bx--slide .cmx-bx__track { transition: transform var(--cmx-bx-ms, 500ms) var(--cmx-ease); will-change: transform; }
+.cmx-bx__slide { position: relative; flex: 0 0 100%; height: 100%; overflow: hidden; }
+/* Fade: the slides lie on top of each other and only their opacity changes. */
+.cmx-bx--fade .cmx-bx__slide { position: absolute; inset: 0; opacity: 0; transition: opacity var(--cmx-bx-ms, 500ms) var(--cmx-ease); }
+.cmx-bx--fade .cmx-bx__slide--on { opacity: 1; z-index: 1; }
+.cmx-bx__track--still, .cmx-bx__track--still .cmx-bx__slide { transition: none; }
+.cmx-bx__media { position: absolute; inset: 0; display: block; }
+.cmx-bx__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+/* Live words over the picture, on a shade that keeps them readable on any picture. */
+.cmx-bx__copy {
+    position: absolute; inset-inline: 0; bottom: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+    padding: 48px 16px 20px; color: hsl(0 0% 100%);
+    background: linear-gradient(to top, hsl(0 0% 0% / 0.62), hsl(0 0% 0% / 0.28) 60%, transparent);
+}
+.cmx-bx__copy--center { align-items: center; text-align: center; }
+.cmx-bx__copy--end { align-items: flex-end; text-align: end; }
+.cmx-bx__copy--dark { color: var(--cmx-ink); background: linear-gradient(to top, hsl(0 0% 100% / 0.85), hsl(0 0% 100% / 0.4) 60%, transparent); }
+@media (min-width: 640px) { .cmx-bx__copy { padding: 64px 56px 28px; } }
+.cmx-bx__headline {
+    margin: 0; max-width: 760px; font-family: var(--cmx-font-display); font-weight: 600; font-size: 22px; line-height: 28px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+@media (min-width: 1024px) { .cmx-bx__headline { font-size: 32px; line-height: 40px; } }
+.cmx-bx__text { margin: 0; max-width: 640px; font-size: 0.9375em; line-height: 1.45; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cmx-bx__arrow {
+    position: absolute; top: 50%; z-index: 2; display: inline-flex; align-items: center; justify-content: center;
+    width: var(--cmx-tap); height: var(--cmx-tap); margin-top: -22px; border: 0; border-radius: 999px; cursor: pointer;
+    background: hsl(0 0% 100% / 0.82); color: var(--cmx-ink); box-shadow: 0 1px 4px hsl(0 0% 0% / 0.2);
+}
+.cmx-bx__arrow--prev { inset-inline-start: 8px; }
+.cmx-bx__arrow--next { inset-inline-end: 8px; }
+.cmx-bx__bar { display: flex; align-items: center; justify-content: center; gap: 4px; height: 44px; margin-top: 8px; }
+.cmx-bx__dots { display: flex; list-style: none; margin: 0; padding: 0; }
+.cmx-bx__dot { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
+.cmx-bx__dot > span { width: 8px; height: 8px; border-radius: 999px; background: var(--cmx-line-strong); transition: width var(--cmx-dur) var(--cmx-ease), background-color var(--cmx-dur) var(--cmx-ease); }
+.cmx-bx__dot[aria-current="true"] > span { width: 20px; background: var(--cmx-primary); }
+.cmx-bx__toggle { color: var(--cmx-ink); }
+
+/* ── cart: "You may also like" ──────────────────────────────────── */
+/* In the drawer the row always swipes, two cards and a bit in view, whatever the screen. */
+.cmx-recs--drawer { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--cmx-line); }
+.cmx-recs--drawer .cmx-head { margin-bottom: 8px; }
+.cmx-recs--drawer .cmx-card__quick-icon { display: none; }
+.cmx-recs--drawer .cmx-rail {
+    grid-auto-flow: column; grid-auto-columns: 44%; grid-template-columns: none; gap: 12px; overflow-x: auto;
+    margin: 0 -16px; padding: 2px 16px 8px; scroll-padding-inline: 16px;
+}
 
 @media (prefers-reduced-motion: reduce) {
     .cmx *, .cmx *::before, .cmx *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }

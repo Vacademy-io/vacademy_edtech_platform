@@ -8,6 +8,7 @@
 import React, { Suspense, lazy } from 'react';
 import { RouteMatcher } from '../../-services/route-matcher';
 import { categoryBarOn, categoryBarPhotosOn, isCommerceEnabled, parseCommerceConfig } from './config';
+import { bannerBox, ratioCss } from './logic/banner-box';
 import { commercePageKey, siteSegments } from './routes';
 
 const entry = () => import('./entry');
@@ -31,6 +32,29 @@ const FALLBACK_HEIGHT: Record<string, string> = {
     commerceAnnouncementBar: 'min-h-11',
     commerceWhatsAppButton: '',
     commerceProductGrid: 'min-h-screen',
+    commerceNewsCarousel: 'min-h-96',
+};
+
+/**
+ * The rotating banner's exact box (commerceBannerCarousel), from the same props and the same
+ * reader its stylesheet uses: the section's padding, the shell's width, the picture's aspect
+ * ratio below and above 640 px, and the row of dots and the pause button.
+ */
+const BannerFallback: React.FC<{ props: Record<string, unknown> }> = ({ props }) => {
+    const banner = bannerBox(props);
+    if (banner.slides === 0) return null;
+    return (
+        <div className="py-8 md:py-12" aria-hidden="true">
+            <div
+                className="mx-auto w-full px-4 lg:px-8"
+                // The ratios are the section's own props (dynamic), the width the site's theme value.
+                style={{ maxWidth: 'var(--catalogue-content-max, 1216px)', ['--cmx-bx-m' as string]: ratioCss(banner.ratioPhone), ['--cmx-bx-d' as string]: ratioCss(banner.ratio) }} // design-lint-ignore
+            >
+                <div className="-mx-4 aspect-[var(--cmx-bx-m)] bg-catalogue-bg-muted sm:mx-0 sm:aspect-[var(--cmx-bx-d)] sm:rounded-lg" />
+                {banner.bar && <div className="mt-2 h-11" />}
+            </div>
+        </div>
+    );
 };
 
 /** A `commerce*` section of an authored page. Renders nothing on a site without a shop. */
@@ -38,8 +62,17 @@ export const CommerceSectionSlot: React.FC<SiteProps & { type: string; props: Re
     if (!isCommerceEnabled(props.globalSettings)) return null;
     return (
         // The section's place is held while the shop's code loads, so the page below does not
-        // jump: a strip is short, a rail or a grid of tiles is a card tall, a floating button none.
-        <Suspense fallback={<div className={FALLBACK_HEIGHT[props.type] ?? 'min-h-72'} aria-hidden="true" />}>
+        // jump: a strip is short, a rail or a grid of tiles is a card tall, a floating button none,
+        // and the banner its exact box.
+        <Suspense
+            fallback={
+                props.type === 'commerceBannerCarousel' ? (
+                    <BannerFallback props={props.props} />
+                ) : (
+                    <div className={FALLBACK_HEIGHT[props.type] ?? 'min-h-72'} aria-hidden="true" />
+                )
+            }
+        >
             <LazyCommerceSection {...props} />
         </Suspense>
     );

@@ -16,7 +16,9 @@ import { useCommerceCart } from '../state/cart-store';
 import type { MessageKey } from '../i18n';
 import { useOnline } from './hooks';
 import { EmptyState, ErrorState, Layer, QuantityStepper, unitLabel } from './primitives';
+import { CartRecommendations } from './CartRecommendations';
 import { ProductRail } from './ProductCard';
+import { useShopFlag } from './shop-flags';
 import { useCartPrice, useProductRail } from './queries';
 import { ShopLink, useCommerceSite, whatsappLink } from './site';
 
@@ -201,17 +203,37 @@ export const CartTotals: React.FC<{ price: CartPrice }> = ({ price }) => {
     );
 };
 
-/** "Add ₹X more for free delivery", hidden when the seller sets no free-delivery amount. */
+/** True when the server's answer carries a free-delivery amount (the bar shows). */
+const hasFreeBar = (price: CartPrice): boolean => typeof price.shipping?.free_above === 'number' && price.shipping.free_above > 0;
+
+/**
+ * Whether this shop's carts show the free-delivery bar, as the last price answer said (any cart,
+ * any page: the drawer prices the cart after every add). Until the first answer the bar's room
+ * is held, so the lines under it do not move when the price arrives; a shop without the bar
+ * learns that on its first answer and holds nothing after.
+ */
+const useFreeBarExpected = (price: CartPrice | undefined): boolean => useShopFlag('freebar', price ? hasFreeBar(price) : undefined) !== false;
+
+/** The bar's room while the cart is priced: the same fixed height as the bar. */
+const FreeDeliveryHold: React.FC = () => (
+    <div className="cmx-note cmx-freebar flex-col" aria-hidden="true" data-testid="cmx-freebar-hold">
+        <span className="cmx-skel block h-4 w-2/3" />
+        <span className="cmx-skel cmx-meter block w-full" />
+    </div>
+);
+
+/** "Add ₹X more for free delivery", hidden when the seller sets no free-delivery amount. One line, fixed height. */
 const FreeDeliveryBar: React.FC<{ price: CartPrice }> = ({ price }) => {
     const { t } = useCommerceSite();
     const shipping = price.shipping;
-    if (!shipping || typeof shipping.free_above !== 'number' || shipping.free_above <= 0) return null;
+    if (!shipping || !hasFreeBar(price)) return null;
+    const freeAbove = shipping.free_above as number;
     const remaining = typeof shipping.remaining_for_free === 'number' ? shipping.remaining_for_free : 0;
     const reached = shipping.free || remaining <= 0;
-    const percent = reached ? 100 : Math.max(4, Math.min(100, Math.round((1 - remaining / shipping.free_above) * 100)));
+    const percent = reached ? 100 : Math.max(4, Math.min(100, Math.round((1 - remaining / freeAbove) * 100)));
     return (
-        <div className="cmx-note flex-col" role="status">
-            <span>
+        <div className="cmx-note cmx-freebar flex-col" role="status">
+            <span className="cmx-freebar__text">
                 {reached
                     ? t('cart.freeDelivery.reached')
                     : t('cart.freeDelivery.remaining', { amount: formatMoney(remaining, price.currency) })}
@@ -238,6 +260,7 @@ export const CartLines: React.FC<{
     const { t } = useCommerceSite();
     const lastAdded = useCommerceCart((s) => s.lastAdded);
     const { cart, price, error, refetch } = view;
+    const expectBar = useFreeBarExpected(price);
     const priced = new Map((price?.lines || []).map((l) => [l.line_ref, l]));
     const problems = new Map((price?.unavailable || []).map((l) => [l.line_ref, l]));
     const priceChanges = (price?.changes || []).filter(
@@ -251,7 +274,7 @@ export const CartLines: React.FC<{
                     {t('cart.added')}
                 </p>
             )}
-            {price && <FreeDeliveryBar price={price} />}
+            {price ? <FreeDeliveryBar price={price} /> : expectBar && !error ? <FreeDeliveryHold /> : null}
             {priceChanges.map((change) => {
                 const line = cart.lines.find((l) => l.variantId === change.line_ref);
                 if (!line) return null;
@@ -311,17 +334,29 @@ export const CartSummary: React.FC<{ view: ReturnType<typeof useCartView>; onNav
             {price ? (
                 <CartTotals price={price} />
             ) : error ? null : (
-                <div className="flex flex-col gap-2" aria-hidden="true">
-                    <div className="cmx-skel h-4 w-full" />
-                    <div className="cmx-skel h-4 w-full" />
-                    <div className="cmx-skel h-6 w-full" />
-                </div>
+                // The totals' own rows and words with the amounts still to come, so the box keeps its height.
+                <dl className="cmx-totals" aria-hidden="true">
+                    {[t('cart.subtotal'), t('cart.delivery')].map((label) => (
+                        <div key={label}>
+                            <dt>{label}</dt>
+                            <dd>
+                                <span className="cmx-skel inline-block h-4 w-16 align-middle" />
+                            </dd>
+                        </div>
+                    ))}
+                    <div className="cmx-totals__total">
+                        <dt>{t('cart.total')}</dt>
+                        <dd>
+                            <span className="cmx-skel inline-block h-5 w-20 align-middle" />
+                        </dd>
+                    </div>
+                    <p className="cmx-small cmx-muted">{t('price.inclTax')}</p>
+                </dl>
             )}
-            {pending && (
-                <p className="cmx-small cmx-muted" role="status">
-                    {t('cart.pricing')}
-                </p>
-            )}
+            {/* Said, not drawn: a line that comes and goes with every re-price would move the button. */}
+            <p className="cmx-sr" role="status">
+                {pending ? t('cart.pricing') : ''}
+            </p>
             {error && price ? (
                 <p className="cmx-small cmx-bad" role="alert">
                     {t('cart.priceError')}{' '}
@@ -452,7 +487,14 @@ export const CartDrawer: React.FC = () => {
             footer={empty ? undefined : <CartSummary view={view} onNavigate={close} />}
         >
             <div className="cmx-layer__body">
-                {empty ? <CartEmpty onNavigate={close} /> : <CartLines view={view} onNavigate={close} />}
+                {empty ? (
+                    <CartEmpty onNavigate={close} />
+                ) : (
+                    <>
+                        <CartLines view={view} onNavigate={close} />
+                        <CartRecommendations variant="drawer" onNavigate={close} />
+                    </>
+                )}
             </div>
         </Layer>
     );
@@ -482,6 +524,7 @@ export const CartPage: React.FC = () => {
                     </aside>
                 </div>
             )}
+            {view.hydrated && count > 0 && <CartRecommendations variant="page" />}
         </div>
     );
 };
