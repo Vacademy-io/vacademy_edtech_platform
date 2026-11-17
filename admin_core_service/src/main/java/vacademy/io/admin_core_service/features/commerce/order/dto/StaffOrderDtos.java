@@ -57,6 +57,9 @@ public final class StaffOrderDtos {
         private String refundState;
         /** NONE, IN_PROGRESS, PART or FULL. */
         private String returnState;
+        // Order desk screens (WP-34)
+        /** What the courier collects on a cash-on-delivery order; null for other orders. */
+        private BigDecimal codAmount;
     }
 
     @Data
@@ -169,6 +172,8 @@ public final class StaffOrderDtos {
         private String orderLineId;
         private int quantity;
         private List<String> pieceCodes;
+        /** The ids of the same pieces, in the order of {@code pieceCodes} (WP-34); null when the codes are. */
+        private List<String> pieceIds;
     }
 
     @Data
@@ -209,6 +214,12 @@ public final class StaffOrderDtos {
         private String priceOverrideBy;
         private BigDecimal cancelledValue;
         private BigDecimal costTotal;
+        // Order desk screens (WP-34): the variant's stock facts, so the pack station knows which
+        // lines need a piece scan. Null for a shipping or COD line, or a variant no longer in the shop.
+        /** PIECE or QUANTITY. */
+        private String stockMode;
+        /** TRACKED or UNTRACKED. */
+        private String stockPolicy;
     }
 
     @Data

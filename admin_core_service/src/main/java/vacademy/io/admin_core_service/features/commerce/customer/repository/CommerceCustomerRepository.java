@@ -107,4 +107,88 @@ public interface CommerceCustomerRepository extends JpaRepository<CommerceCustom
               AND o.status IN ('COD_PENDING_CONFIRMATION', 'CONFIRMED', 'PACKED', 'SHIPPED')
             """, nativeQuery = true)
     long countOpenCodOrders(@Param("instituteId") String instituteId, @Param("phone") String phone);
+
+    // -- Staff customer views (WP-34), read-only --
+
+    /**
+     * A customer as the staff list and profile show it, with what their orders add up to. Orders
+     * still waiting for payment do not count; a cancelled order counts only when money was paid.
+     * {@code dues} mirrors the DUES queue of the order desk (staff orders on credit); money a
+     * courier still owes on a cash-on-delivery order is not a due.
+     */
+    interface StaffRow {
+        String getId();
+
+        String getName();
+
+        String getPhone();
+
+        String getEmail();
+
+        Integer getCodRefusals();
+
+        Boolean getMarketingConsent();
+
+        Date getConsentAt();
+
+        String getConsentSource();
+
+        String getNotes();
+
+        Date getAnonymisedAt();
+
+        Date getCreatedAt();
+
+        Long getOrdersCount();
+
+        java.math.BigDecimal getTotalSpent();
+
+        java.math.BigDecimal getDues();
+
+        Date getLastOrderAt();
+    }
+
+    String STAFF_ROW = """
+            SELECT c.id AS id, c.name AS name, c.phone AS phone, c.email AS email, c.cod_refusals AS codRefusals,
+                   c.marketing_consent AS marketingConsent, c.consent_at AS consentAt,
+                   c.consent_source AS consentSource, c.notes AS notes, c.anonymised_at AS anonymisedAt,
+                   c.created_at AS createdAt,
+                   COALESCE(a.orders_count, 0) AS ordersCount, COALESCE(a.total_spent, 0) AS totalSpent,
+                   COALESCE(a.dues, 0) AS dues, a.last_order_at AS lastOrderAt
+            FROM commerce_customer c
+            LEFT JOIN LATERAL (
+                SELECT COUNT(*) FILTER (WHERE o.status <> 'PENDING_PAYMENT'
+                                          AND NOT (o.status = 'CANCELLED' AND o.amount_paid = 0)) AS orders_count,
+                       SUM(o.amount_paid - o.amount_refunded) FILTER (WHERE o.status <> 'PENDING_PAYMENT') AS total_spent,
+                       SUM(o.total - o.amount_paid) FILTER (WHERE o.channel = 'ADMIN'
+                                          AND o.payment_status IN ('UNPAID', 'PARTIALLY_PAID')
+                                          AND o.status NOT IN ('CANCELLED', 'RTO')) AS dues,
+                       MAX(o.created_at) FILTER (WHERE o.status <> 'PENDING_PAYMENT') AS last_order_at
+                FROM commerce_order o
+                WHERE o.institute_id = c.institute_id AND o.customer_id = c.id) a ON TRUE
+            """;
+
+    /** The search of the staff list: an exact (normalised) phone or part of the name; both null = every customer. */
+    String STAFF_FILTER = """
+            c.institute_id = :instituteId
+              AND (CAST(:phone AS VARCHAR) IS NULL AND CAST(:namePattern AS VARCHAR) IS NULL
+                   OR c.phone = CAST(:phone AS VARCHAR)
+                   OR LOWER(c.name) LIKE CAST(:namePattern AS VARCHAR))
+            """;
+
+    /** One page of the staff list: the latest buyers first, then the newest rows. */
+    @Query(value = STAFF_ROW + " WHERE " + STAFF_FILTER
+            + " ORDER BY a.last_order_at DESC NULLS LAST, c.created_at DESC, c.id LIMIT :limit OFFSET :offset",
+            nativeQuery = true)
+    java.util.List<StaffRow> staffSearch(@Param("instituteId") String instituteId, @Param("phone") String phone,
+                                         @Param("namePattern") String namePattern, @Param("limit") int limit,
+                                         @Param("offset") long offset);
+
+    @Query(value = "SELECT COUNT(*) FROM commerce_customer c WHERE " + STAFF_FILTER, nativeQuery = true)
+    long staffCount(@Param("instituteId") String instituteId, @Param("phone") String phone,
+                    @Param("namePattern") String namePattern);
+
+    /** One customer of the institute for the staff profile; empty for another institute's customer. */
+    @Query(value = STAFF_ROW + " WHERE c.institute_id = :instituteId AND c.id = :id", nativeQuery = true)
+    Optional<StaffRow> findStaffRow(@Param("instituteId") String instituteId, @Param("id") String id);
 }

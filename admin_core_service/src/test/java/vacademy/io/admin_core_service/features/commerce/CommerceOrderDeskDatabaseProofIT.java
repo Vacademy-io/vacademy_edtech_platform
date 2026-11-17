@@ -589,6 +589,15 @@ class CommerceOrderDeskDatabaseProofIT {
         pack(orderId, pieceCodes(pieceA, 1));
         String piece = text("SELECT id FROM commerce_piece WHERE order_line_id = ?", lineOf(orderId));
         assertEquals("RESERVED", text("SELECT status FROM commerce_piece WHERE id = ?", piece));
+        // WP-34 B1: the staff detail says the line needs a piece scan and names the packed piece by id.
+        StaffOrderDtos.StaffOrderDetail packedDetail = queryService.staffDetail(inst, orderId);
+        StaffOrderDtos.StaffOrderLine packedLine = packedDetail.getLines().stream()
+                .filter(l -> "ITEM".equals(l.getLineType())).findFirst().orElseThrow();
+        assertEquals("PIECE", packedLine.getStockMode());
+        StaffOrderDtos.StaffShipmentLine packedShipmentLine = packedDetail.getShipments().stream()
+                .filter(s -> !"CANCELLED".equals(s.getStatus())).findFirst().orElseThrow().getLines().get(0);
+        assertEquals(packedLine.getQuantity(), packedShipmentLine.getPieceIds().size());
+        assertEquals(List.of(piece), packedShipmentLine.getPieceIds());
         ship(orderId, key());
         assertEquals("SOLD", text("SELECT status FROM commerce_piece WHERE id = ?", piece));
         int afterShip = slots(pieceA);
