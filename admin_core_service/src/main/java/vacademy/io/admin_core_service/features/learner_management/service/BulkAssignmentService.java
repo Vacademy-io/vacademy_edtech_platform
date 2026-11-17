@@ -1849,6 +1849,7 @@ public class BulkAssignmentService {
             NewUserDTO newUserData = (userId != null) ? newUserDataMap.get(userId) : null;
             if (newUserData != null && !extraDetailsSavedForUsers.contains(userId)) {
                 saveLearnerExtraDetails(newUserData, userId);
+                saveLearnerRegion(newUserData, userId);
                 extraDetailsSavedForUsers.add(userId);
             }
 
@@ -1907,6 +1908,26 @@ public class BulkAssignmentService {
             log.warn("Failed to save learner extra details for userId={}: {}",
                     userId, e.getMessage());
             // Non-blocking: extra details save failure doesn't fail the enrollment
+        }
+    }
+
+    /**
+     * Saves the region (state) from the CSV / manual row on the learner's profile.
+     * <p>
+     * createNewUser sends the region to the auth service, but auth has no region column,
+     * so the user details read back from it carry none and the student row was created
+     * without it. Fills the region only when the profile has none, so a region already
+     * saved for an existing learner is never replaced.
+     */
+    private void saveLearnerRegion(NewUserDTO newUser, String userId) {
+        if (!StringUtils.hasText(newUser.getRegion())) {
+            return;
+        }
+        try {
+            learnerService.fillRegionIfBlank(userId, newUser.getRegion());
+        } catch (Exception e) {
+            log.warn("Failed to save region for userId={}: {}", userId, e.getMessage());
+            // Non-blocking: a region save failure doesn't fail the enrollment
         }
     }
 
