@@ -84,7 +84,7 @@ const resetUrl = () => {
 
 const urlValues = (param: string) => {
     const calls = replaceState.mock.calls;
-    const last = calls.length > 0 ? calls[calls.length - 1][2] : undefined;
+    const last = calls[calls.length - 1]?.[2];
     if (!last) return [];
     return new URL(String(last), 'http://localhost').searchParams.getAll(param);
 };
