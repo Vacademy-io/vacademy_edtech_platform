@@ -1,6 +1,10 @@
 import { useStudentFilters } from '@/routes/manage-students/students-list/-hooks/useStudentFilters';
 import { useStudentTable } from '@/routes/manage-students/students-list/-hooks/useStudentTable';
 import { useStudentCounts } from '@/routes/manage-students/students-list/-hooks/useStudentCounts';
+import {
+    useLearnerLocationFilters,
+    withLocationFiltersAfterGender,
+} from '@/routes/manage-students/students-list/-hooks/useLearnerLocationFilters';
 import { InviteFormProvider } from '@/routes/manage-students/invite/-context/useInviteFormContext';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { EmptyStudentListImage } from '@/assets/svgs';
@@ -139,6 +143,7 @@ const Students = ({
         handleClearSearch,
         setAppliedFilters,
         handleSessionChange,
+        setColumnFilters,
     } = useStudentFilters();
     // In a sub-org portal, scope the learner list to the selected sub-org. Sub-org
     // learners are enrolled under the HOST institute id (which institute_ids already
@@ -199,10 +204,23 @@ const Students = ({
         staleTime: 1000 * 60 * 5,
     });
 
+    // City / Region chips, the same ones (and the same "Manage filters" switches) as the
+    // Learner List page. Like there, a role whose City / Region column is hidden gets no
+    // chip for it, so the values and counts stay out of its view.
+    const locationFilters = useLearnerLocationFilters({
+        instituteId,
+        appliedFilters: baseAppliedFilters,
+        setColumnFilters,
+        setAppliedFilters,
+    }).filter((f) => !roleHiddenColumns.has(f.id === 'cities' ? 'city' : 'region'));
+
     const { t: tAllFilters } = useTranslation('manageStudentsAllFilters');
     const filters = [
-        ...GetFilterData(tAllFilters, instituteDetails, currentSession?.id).filter(
-            (filter) => filter.id !== 'batch'
+        ...withLocationFiltersAfterGender(
+            GetFilterData(tAllFilters, instituteDetails, currentSession?.id).filter(
+                (filter) => filter.id !== 'batch'
+            ),
+            locationFilters
         ),
         ...(invitesForFilter && invitesForFilter.length > 0
             ? [{ id: 'enroll_invite_ids', title: getTerminology(OtherTerms.Invite, SystemTerms.Invite), filterList: invitesForFilter }]
