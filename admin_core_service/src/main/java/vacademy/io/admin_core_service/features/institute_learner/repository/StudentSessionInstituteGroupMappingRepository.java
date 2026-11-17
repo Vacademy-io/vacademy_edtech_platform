@@ -127,6 +127,16 @@ public interface StudentSessionInstituteGroupMappingRepository
                                     @Param("instituteId") String instituteId,
                                     @Param("statuses") List<String> statuses);
 
+  /**
+   * Workflow roster: one row per mapping, carrying the learner contact fields that the
+   * notification nodes need.
+   *
+   * <p>Index 9 is is_trial, taken from the plan the mapping was created under. Day based
+   * workflows used to infer trial state from enrolled_date, which resets every time a
+   * returning learner enrols again, so a paid renewal looked like a brand new trial. The
+   * join is on the user_plan primary key, so it cannot multiply rows, and it is a LEFT
+   * join so mappings that carry no user_plan_id still come back, with is_trial null.
+   */
   @Query(value = """
       SELECT
           ssigm.id AS mapping_id,                 -- Index 0
@@ -137,9 +147,11 @@ public interface StudentSessionInstituteGroupMappingRepository
           s.email AS email,                       -- Index 5
           s.username AS username,                 -- Index 6
           ssigm.package_session_id,               -- Index 7
-          ssigm.enrolled_date AS enrolled_date    -- Index 8
+          ssigm.enrolled_date AS enrolled_date,   -- Index 8
+          up.is_trial AS is_trial                 -- Index 9
       FROM student_session_institute_group_mapping ssigm
       JOIN student s ON s.user_id = ssigm.user_id
+      LEFT JOIN user_plan up ON up.id = ssigm.user_plan_id
       WHERE ssigm.package_session_id IN (:psIds)
         AND ssigm.status IN (:statuses)
       """, nativeQuery = true)
