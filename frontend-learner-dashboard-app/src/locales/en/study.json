@@ -433,9 +433,7 @@
             "title": "Live class",
             "leave": "Leave",
             "leaveConfirm": "Leave the class?",
-            "openInBrowser": "Open in browser",
             "loading": "Connecting to your class…",
-            "slow": "Taking longer than usual? You can open the class in your browser instead.",
             "error": "We couldn't open your class.",
             "retry": "Try again"
         }

@@ -2,7 +2,11 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <!-- Electron helper processes inherit the parent's sandbox. -->
+  <!-- Electron helper processes inherit the parent's sandbox — INCLUDING its camera,
+       microphone and network entitlements (the audio/video capture services run in
+       helpers). Apple's rule for com.apple.security.inherit: the child must carry
+       EXACTLY app-sandbox + inherit; any other sandbox key makes the system abort the
+       helper at launch. So never add device.camera / audio-input here. -->
   <key>com.apple.security.app-sandbox</key>
   <true/>
   <key>com.apple.security.inherit</key>

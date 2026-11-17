@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { shellCanHostLiveClass } from "@/lib/live-class/native-live-class";
 
 /**
  * In-app BBB classroom helpers (shared by the join helper and the class view).
@@ -16,41 +17,18 @@ export function liveClassClient(): "web" | "android" | "ios" | "electron" {
 }
 
 /**
- * Can this device show a live class inside the app? Web only for now: Android
- * needs a native release (keep-awake, lock-screen audio, PiP) and iOS/desktop
- * follow after device tests — even if the backend were misconfigured to allow
- * them, the app refuses until it ships that support.
+ * Can this device show a live class inside the app? Web always; Android, iOS and
+ * desktop only when the installed shell carries the native live-class support
+ * (an app store / installer update). An older shell keeps opening classes
+ * outside, even though it runs the new JS — see native-live-class.ts.
  */
 export function canHostClassInApp(): boolean {
   if (typeof window === "undefined") return false;
-  if (Capacitor.getPlatform() !== "web") return false;
   if (!window.isSecureContext) return false;
   if (!navigator.mediaDevices) return false;
   // Never nest: the learner portal itself inside a frame (e.g. admin preview).
   if (window.self !== window.top) return false;
-  // The learner chose "Open in browser" recently on this device.
-  try {
-    const until = Number(localStorage.getItem(EXTERNAL_UNTIL_KEY) || 0);
-    if (until > Date.now()) return false;
-  } catch {
-    // storage blocked — ignore
-  }
-  return true;
-}
-
-const EXTERNAL_UNTIL_KEY = "vx.bbb.externalUntil";
-const EXTERNAL_DAYS = 7;
-
-/** "Open in browser" sticks for a week on this device. */
-export function preferExternalForAWeek(): void {
-  try {
-    localStorage.setItem(
-      EXTERNAL_UNTIL_KEY,
-      String(Date.now() + EXTERNAL_DAYS * 24 * 60 * 60 * 1000)
-    );
-  } catch {
-    // storage blocked — the choice just won't persist
-  }
+  return shellCanHostLiveClass();
 }
 
 type PendingJoin = { scheduleId: string; joinUrl: string; title?: string };
@@ -70,6 +48,9 @@ export function takeClassroomJoin(scheduleId: string): PendingJoin | null {
 
 /** Message the class's exit page posts from inside the frame (see index.html). */
 export const BBB_EXIT_MESSAGE = "vacademy:bbb-exit";
+
+/** Message the Vacademy PiP plugin posts from inside the frame when the app must do PiP (Android). */
+export const BBB_PIP_MESSAGE = "vacademy:bbb-pip";
 
 /** Everything the frame may need; the class view sets no sandbox. */
 export const BBB_FRAME_ALLOW = [

@@ -2,22 +2,35 @@ import { createFileRoute, useBlocker, useNavigate } from "@tanstack/react-router
 import { z } from "zod";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ArrowSquareOut, CircleNotch, SignOut, WarningCircle } from "@phosphor-icons/react";
+import { Capacitor } from "@capacitor/core";
+import { CircleNotch, SignOut, WarningCircle } from "@phosphor-icons/react";
 import { MyButton } from "@/components/design-system/button";
+import { registerBackGuard } from "@/lib/back-guard";
 import {
   BBB_EXIT_MESSAGE,
   BBB_FRAME_ALLOW,
+  BBB_PIP_MESSAGE,
   canHostClassInApp,
-  preferExternalForAWeek,
   takeClassroomJoin,
 } from "@/lib/live-class/bbb-classroom";
 import { fetchBbbJoin, openBbbExternally } from "@/lib/live-class/bbb-join";
+import {
+  VacademyLiveClass,
+  enterNativeClass,
+  enterNativePictureInPicture,
+  exitNativeClass,
+  prepareNativeClass,
+} from "@/lib/live-class/native-live-class";
 
 /**
- * In-app BBB class view (web pilot). The class runs in a full-screen frame with
- * a thin bar for "Open in browser" and "Leave". No polling queries live here on
- * purpose: one failed background refetch must never replace a running class
- * with an error card.
+ * In-app BBB class view (web, and the Android / iOS / desktop apps that carry
+ * the native live-class support). The class runs in a full-screen frame under a
+ * thin bar with "Leave". Learners get no "open in browser" option (owner
+ * decision); picture-in-picture comes from the Vacademy PiP plugin inside the
+ * class, or — on Android — from the app itself.
+ *
+ * No polling queries live here on purpose: one failed background refetch must
+ * never replace a running class with an error card.
  */
 export const Route = createFileRoute("/study-library/live-class/classroom/")({
   validateSearch: z.object({ scheduleId: z.string() }),
@@ -25,7 +38,6 @@ export const Route = createFileRoute("/study-library/live-class/classroom/")({
 });
 
 const LIST = "/study-library/live-class";
-const SLOW_LOAD_MS = 25_000;
 
 type State =
   | { kind: "loading" }
@@ -38,7 +50,7 @@ function ClassroomPage() {
   const { t } = useTranslation("study");
   const [state, setState] = useState<State>({ kind: "loading" });
   const [frameLoaded, setFrameLoaded] = useState(false);
-  const [slow, setSlow] = useState(false);
+  const [inPip, setInPip] = useState(false);
   const frameRef = useRef<HTMLIFrameElement | null>(null);
   // Set before any navigation we start ourselves, so the blocker lets it through.
   const allowLeaveRef = useRef(false);
@@ -46,74 +58,116 @@ function ClassroomPage() {
   const leaveTo = useCallback(
     (to: string) => {
       allowLeaveRef.current = true;
-      navigate({ to });
+      navigate({ to: to as never });
     },
     [navigate]
   );
 
   // Get the join URL: handed over in memory by the join helper, or (after a
-  // reload) fetched again. If the class can't be shown here, open it outside.
+  // reload) fetched again. Native shells get mic/camera permission first, so
+  // BBB's own requests inside the frame are already granted.
   const load = useCallback(async () => {
     setState({ kind: "loading" });
+    let joinUrl: string | undefined;
+    let title: string | undefined;
     const handed = takeClassroomJoin(scheduleId);
     if (handed) {
-      setState({ kind: "ready", url: handed.joinUrl, title: handed.title });
+      joinUrl = handed.joinUrl;
+      title = handed.title;
+    } else {
+      try {
+        const res = await fetchBbbJoin(scheduleId);
+        joinUrl = res.data?.joinUrl;
+        if (joinUrl && !(res.data?.openMode === "IN_APP" && canHostClassInApp())) {
+          // Not an in-app class (or this device can't host one): today's behaviour.
+          await openBbbExternally(joinUrl);
+          leaveTo(LIST);
+          return;
+        }
+      } catch {
+        joinUrl = undefined;
+      }
+    }
+    if (!joinUrl) {
+      setState({ kind: "error" });
       return;
     }
-    try {
-      const res = await fetchBbbJoin(scheduleId);
-      const url: string | undefined = res.data?.joinUrl;
-      if (!url) {
-        setState({ kind: "error" });
-        return;
-      }
-      if (res.data?.openMode === "IN_APP" && canHostClassInApp()) {
-        setState({ kind: "ready", url });
-      } else {
-        await openBbbExternally(url);
-        leaveTo(LIST);
-      }
-    } catch {
-      setState({ kind: "error" });
-    }
+    await prepareNativeClass();
+    setState({ kind: "ready", url: joinUrl, title });
   }, [scheduleId, leaveTo]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  // A slow first load (the class app is large on mobile data) offers the
-  // browser instead of leaving the learner staring at a spinner.
+  // Native class mode (screen on, audio when locked, auto-PiP) for as long as
+  // the class is on screen.
   useEffect(() => {
-    if (state.kind !== "ready" || frameLoaded) return;
-    setSlow(false);
-    const timer = window.setTimeout(() => setSlow(true), SLOW_LOAD_MS);
-    return () => window.clearTimeout(timer);
-  }, [state, frameLoaded]);
+    if (state.kind !== "ready") return;
+    void enterNativeClass(state.title);
+    return () => {
+      void exitNativeClass();
+    };
+  }, [state]);
 
-  // BBB's leave/ended page carries vxBbbExit=1; index.html inside the frame
-  // posts this message instead of loading the whole portal in the frame.
+  // Android tells us when the app shrinks into its PiP window: show only the class.
+  useEffect(() => {
+    if (Capacitor.getPlatform() !== "android") return;
+    let remove: (() => Promise<void>) | undefined;
+    VacademyLiveClass.addListener("pictureInPictureChanged", (s) => setInPip(!!s?.active))
+      .then((h) => {
+        remove = h.remove;
+      })
+      .catch(() => undefined);
+    return () => {
+      void remove?.();
+    };
+  }, []);
+
+  // Messages from inside the class frame:
+  // - BBB's leave/ended page carries vxBbbExit=1; index.html there posts the exit;
+  // - the Vacademy PiP plugin asks the app for PiP where the WebView can't do it.
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (event.source !== frameRef.current?.contentWindow) return;
       const data = event.data as { type?: string; path?: string } | null;
-      if (!data || data.type !== BBB_EXIT_MESSAGE) return;
+      if (!data) return;
+      if (data.type === BBB_PIP_MESSAGE) {
+        void enterNativePictureInPicture();
+        return;
+      }
+      if (data.type !== BBB_EXIT_MESSAGE) return;
       const path =
         typeof data.path === "string" && data.path.startsWith(LIST) ? data.path : LIST;
-      allowLeaveRef.current = true;
-      navigate({ to: path as never });
+      leaveTo(path);
     };
     window.addEventListener("message", onMessage);
     return () => window.removeEventListener("message", onMessage);
-  }, [navigate]);
+  }, [leaveTo]);
 
-  // Leaving by any in-app route (sidebar, back button) asks first.
+  const confirmLeave = useCallback(
+    () => window.confirm(t("liveClass.classroom.leaveConfirm")),
+    [t]
+  );
+
+  // Leaving by any in-app route (sidebar, browser back) asks first.
   useBlocker({
     shouldBlockFn: () => {
       if (allowLeaveRef.current || state.kind !== "ready") return false;
-      return !window.confirm(t("liveClass.classroom.leaveConfirm"));
+      return !confirmLeave();
     },
   });
+
+  // Hardware back on Android: ask, then leave — never a silent history.back()
+  // that would only step the class frame backwards.
+  useEffect(
+    () =>
+      registerBackGuard(() => {
+        if (confirmLeave()) leaveTo(LIST);
+        return true;
+      }),
+    [confirmLeave, leaveTo]
+  );
 
   // Closing or reloading the tab mid-class asks too.
   useEffect(() => {
@@ -126,42 +180,24 @@ function ClassroomPage() {
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [state.kind]);
 
-  const openInBrowser = () => {
-    if (state.kind !== "ready") return;
-    // Open synchronously inside the tap so popup blockers allow it, then drop
-    // the frame so the learner isn't in the class twice.
-    window.open(state.url, "_blank", "noopener,noreferrer");
-    preferExternalForAWeek();
-    leaveTo(LIST);
-  };
-
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-neutral-900">
-      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3">
-        <p className="min-w-0 flex-1 truncate text-body font-semibold text-neutral-50">
-          {state.kind === "ready" && state.title ? state.title : t("liveClass.classroom.title")}
-        </p>
-        {state.kind === "ready" && (
+      {!inPip && (
+        <div className="flex min-h-12 shrink-0 items-center gap-2 border-b border-neutral-700 bg-neutral-800 px-3 pt-safe">
+          <p className="min-w-0 flex-1 truncate text-body font-semibold text-neutral-50">
+            {state.kind === "ready" && state.title ? state.title : t("liveClass.classroom.title")}
+          </p>
           <MyButton
-            buttonType="secondary"
+            buttonType="primary"
             scale="small"
             layoutVariant="default"
-            onClick={openInBrowser}
+            onClick={() => navigate({ to: LIST })}
           >
-            <ArrowSquareOut size={14} />
-            <span className="hidden xs:inline">{t("liveClass.classroom.openInBrowser")}</span>
+            <SignOut size={14} />
+            {t("liveClass.classroom.leave")}
           </MyButton>
-        )}
-        <MyButton
-          buttonType="primary"
-          scale="small"
-          layoutVariant="default"
-          onClick={() => navigate({ to: LIST })}
-        >
-          <SignOut size={14} />
-          {t("liveClass.classroom.leave")}
-        </MyButton>
-      </div>
+        </div>
+      )}
 
       <div className="relative min-h-0 flex-1">
         {state.kind === "ready" && (
@@ -180,15 +216,6 @@ function ClassroomPage() {
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-neutral-900 p-6 text-center">
             <CircleNotch size={32} className="animate-spin text-primary-300" />
             <p className="text-body text-neutral-200">{t("liveClass.classroom.loading")}</p>
-            {slow && (
-              <div className="flex flex-col items-center gap-2">
-                <p className="text-caption text-neutral-400">{t("liveClass.classroom.slow")}</p>
-                <MyButton buttonType="secondary" scale="small" layoutVariant="default" onClick={openInBrowser}>
-                  <ArrowSquareOut size={14} />
-                  {t("liveClass.classroom.openInBrowser")}
-                </MyButton>
-              </div>
-            )}
           </div>
         )}
 

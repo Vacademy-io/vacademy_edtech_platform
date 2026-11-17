@@ -10,7 +10,9 @@
 		00811935E04FA62B1E99A99D /* LaunchScreenSadbhavana.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8F29AA281E525DB1CE0EA129 /* LaunchScreenSadbhavana.storyboard */; };
 		0118E8A822DD8D62C63A7588 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		02AAF59F0B5EA6B3527E05DE /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		5D0C25551A66F8EBDC1C969D /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		02F5C080AD2E4959B0453516 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		2808ED49E1C536EC458238C7 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		05A45838FD4344402637C16F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		06E05A1778BC0B55C14B7755 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21216D9D311F8C984BCE098F /* Foundation.framework */; };
 		07E15DF61F63FF23C44F7E1B /* LaunchScreenElevate.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8BFD6B6A6E113C28FC1AF534 /* LaunchScreenElevate.storyboard */; };
@@ -19,6 +21,7 @@
 		0BEE3853FEB47C0B02EC3402 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21216D9D311F8C984BCE098F /* Foundation.framework */; };
 		0DBD2FF7585B32626E7A31F9 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = F3969B766B40EF22BCAE4710 /* GoogleService-Info.plist */; };
 		0E0C6D3250494547B873F88D /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		CDDA8D5E6BE143D5FF670E67 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		0E0D4AE92FC2BDC200E29BEC /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		0E0D4AEE2FC2BDC200E29BEC /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		0E0D4AEF2FC2BDC200E29BEC /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
@@ -71,6 +74,7 @@
 		0FE74A35E7EAE82DDF3B8419 /* Pods_SSDC_Horizon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7A0502371AED7FB67D47AB98 /* Pods_SSDC_Horizon.framework */; };
 		11C855A6C72427C7B48AE0A9 /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		12216C0695BE4850F2D32409 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		61F76F4F214FB5A8058B5D6F /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		12AD9106DDA4265C98D16D1F /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		1376A4A7F9FE68EC97D896F4 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		13A26850F96AA4CAAE3459DC /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 27B4E38B1AB1BE57ACD61835 /* GoogleService-Info.plist */; };
@@ -83,8 +87,10 @@
 		1686093AAA320B3378BB8B28 /* Pods_Shiksha_Nation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D7FA5A0257B0DC08A2072CEE /* Pods_Shiksha_Nation.framework */; };
 		1893791D8E8340F5936C0B35 /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B732170F2E424837BA95FC36 /* MainViewController.swift */; };
 		19167FC1C77149F193D6E6C7 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		99C71EFF8F47567C6CCD3837 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		193FC5F69363BA2D76BD043E /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		1A83A0208D25392F70B5D80C /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		312B019421F6E50CA99EC5EE /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		1AAA00012F25A00000000001 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		1AAA00022F25A00000000002 /* EnarkGoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1AAA00102F25A00000000010 /* EnarkGoogleService-Info.plist */; };
 		1AAA00032F25A00000000003 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
@@ -95,21 +101,26 @@
 		1AAA00082F25A00000000008 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		1C400C4481F6A18318962E82 /* Pods_DumBee.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = DB270668FDA6CE831C168D9D /* Pods_DumBee.framework */; };
 		1CA82B8F39EDBE3CE3620476 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		76AF6C6DD6E40FF3BB32B4C4 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		1D20BDAF629027264756B161 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		1D9DB8CEB39ABA1DE24EA668 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		C90E50BB9DEEC96A152BE49B /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		1F3E0E8F49B8A0BDB606F4EB /* LaunchScreenDumBee.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 24D512D1333882090B007013 /* LaunchScreenDumBee.storyboard */; };
 		1F3F40F9F67ED7DF6673F338 /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		1FD784859F894C6BB964779B /* MainViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B732170F2E424837BA95FC36 /* MainViewController.swift */; };
 		22004B948EBA55F4867461C1 /* OfflineMediaSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85C6D06FFEA4567AD04E2CE /* OfflineMediaSchemeHandler.swift */; };
 		235EF7FF7C704F9E9022E9BE /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		D8F8B0AE4D27CE8091F4F711 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		260F0895AB5945E98BD705F3 /* OfflineMediaSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85C6D06FFEA4567AD04E2CE /* OfflineMediaSchemeHandler.swift */; };
 		2612C186DA7B446990F59A91 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		A17A68EF1CBCE9C28ABDEFEB /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		263A33B6F004F44F14CFE8E8 /* OfflineMediaCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93D3EA14A8641A29AE1336A /* OfflineMediaCrypto.swift */; };
 		27F91A007C9315CF67099CBA /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		2BD9EADE27C148BDAAC05D3E /* OfflineMediaCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93D3EA14A8641A29AE1336A /* OfflineMediaCrypto.swift */; };
 		2CA63ACFEDFAE4D81F1F8DD9 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21216D9D311F8C984BCE098F /* Foundation.framework */; };
 		2E1FE691860D4A8ABD9B8D92 /* OfflineMediaSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85C6D06FFEA4567AD04E2CE /* OfflineMediaSchemeHandler.swift */; };
 		2E988900412A5E933CDC9D2C /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		56487E7C911AC80CAC1C5FA4 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		2FAD9763203C412B000D30F8 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
 		309292DC8E2C5E54F958EFE1 /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		31170A8D66EED80E34866581 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
@@ -137,6 +148,7 @@
 		4BBDA3A872CA19A3467D84F3 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 5AF1ACF2FB7E58A636751BAA /* GoogleService-Info.plist */; };
 		4BE4FBBC41C3DC7446F0C118 /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		4C6D6B348A9E456FAD8CEF82 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		9915A8E0785DFE0899E74BD0 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		4FB756C8CCB1313579C87C74 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
@@ -156,9 +168,11 @@
 		56B497174D266CCA797B5FDF /* OfflineMediaSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85C6D06FFEA4567AD04E2CE /* OfflineMediaSchemeHandler.swift */; };
 		5860C17569880D4CB1858FED /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		59BE89DD7F864AD3CF9F2CAB /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		558BD727E925F0A4CFB72F03 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		59E603FB5A3D3F4007F5CA7F /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21216D9D311F8C984BCE098F /* Foundation.framework */; };
 		5C2190CFA8C65284CD9BA20C /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21216D9D311F8C984BCE098F /* Foundation.framework */; };
 		5C81E7B1E26E4E219E727B00 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		D60698834A21C47177818371 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		5CEE86A08BED4F15A7548F90 /* OfflineMediaCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93D3EA14A8641A29AE1336A /* OfflineMediaCrypto.swift */; };
 		5D49563C21058AAE059F2749 /* LaunchScreenSreedhar.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E758873D12BC48449153A1B1 /* LaunchScreenSreedhar.storyboard */; };
 		5F2CC31F17773615A9A4AA9E /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
@@ -169,6 +183,7 @@
 		6388A267971EC0D3EB04B5A9 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		647FFED3A78356EC35FF2321 /* OfflineMediaSchemeHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C85C6D06FFEA4567AD04E2CE /* OfflineMediaSchemeHandler.swift */; };
 		64F13DB96EA440508443ECF1 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		396CF5479317FD43C4D3213F /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		64F8B99B9F8FDC35CFADF4A3 /* LaunchScreenOui.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7386B924ACCB08C3697B1B93 /* LaunchScreenOui.storyboard */; };
 		661F44D6FD6CD47A777FAC1F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		67C2EDCA7287BBD5907D25CA /* LaunchScreenAgilore.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7A2427C14A1A5E68DBC1B563 /* LaunchScreenAgilore.storyboard */; };
@@ -185,7 +200,9 @@
 		6FCE29C515A312D02E6583F8 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 21216D9D311F8C984BCE098F /* Foundation.framework */; };
 		6FDD8CEA4F5E141FD1AD0D22 /* OfflineMediaCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93D3EA14A8641A29AE1336A /* OfflineMediaCrypto.swift */; };
 		701DDABAABAF4E7BB5C51AE9 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		EAB3DDDB8692F8595118A037 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		732AEBA4D48A482C9947A155 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		9343D474A047C6211BDB234F /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		73D8149638D24F7F7122151F /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		7411584DD8EBBB621F299383 /* Pods_the7cs.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D5F8D10E430BC0B8C80AED5B /* Pods_the7cs.framework */; };
 		74B8DD78D6B5433D776E4F60 /* config.xml in Resources */ = {isa = PBXBuildFile; fileRef = 2FAD9762203C412B000D30F8 /* config.xml */; };
@@ -207,6 +224,7 @@
 		914B42132C1F6C7DF8EDC9EB /* Pods_Shiksha_Nation_SK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9F3DCD4D12768ECFD7DBB5AA /* Pods_Shiksha_Nation_SK.framework */; };
 		9221A480A10AE5F026CF4EE7 /* Pods_Five_Sep.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FF80D54945E534E81704718B /* Pods_Five_Sep.framework */; };
 		9276850C792B3AA9C1644FDC /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		2F63128FC0BCAA1885C6435D /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		9290619EAA92D02CD7F627E4 /* LaunchScreenSmartAI.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 8072B7A3893DD95FFABFB677 /* LaunchScreenSmartAI.storyboard */; };
 		92CF6E9FD15192700D5BAD2F /* Pods_Edzumo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 89D4AC3DF798C5FEBCADB42D /* Pods_Edzumo.framework */; };
 		9469B14356F304C74E962794 /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
@@ -265,6 +283,7 @@
 		D1DA697911CA1F9685933BB9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		D1DB9AA50A3194B0D71D06B6 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC3101FED79650016851F /* LaunchScreen.storyboard */; };
 		D2D5FAC0817300D38E298F8D /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		DA5D6CC8C6744A334BE17038 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		D3A395F821157DE968E622E5 /* Pods_Chanakya_IAS_Academy.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 920B2CD1F603B3CC23BAE8D8 /* Pods_Chanakya_IAS_Academy.framework */; };
 		D4DFC5CA0DB24B41396429CB /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		D5880455C1FC9BDFE47CC628 /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
@@ -287,6 +306,7 @@
 		EEDED76BCF9F80120954FFE0 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
 		EF2B3D2F01CFC3B47C9035DB /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30B1FED79650016851F /* Main.storyboard */; };
 		EF8061D5CA924D34A39DE777 /* OfflineMediaPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */; };
+		B6EB93CFCAF39BCDE441D969 /* VacademyLiveClassPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */; };
 		F0DD885BCD5BC1628C750E77 /* public in Resources */ = {isa = PBXBuildFile; fileRef = 50B271D01FEDC1A000F3C39B /* public */; };
 		F1D7138149EB4FA8AF385C15 /* OfflineMediaCrypto.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93D3EA14A8641A29AE1336A /* OfflineMediaCrypto.swift */; };
 		F207C2F3BBCB70BF1B2E29E3 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 504EC30E1FED79650016851F /* Assets.xcassets */; };
@@ -309,6 +329,7 @@
 		05656F4AC827527D07E072ED /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		06A9C7727BA813EC43D26305 /* Pods-Edzumo.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Edzumo.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Edzumo/Pods-Edzumo.debug.xcconfig"; sourceTree = "<group>"; };
 		070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OfflineMediaPlugin.swift; sourceTree = "<group>"; };
+		2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VacademyLiveClassPlugin.swift; sourceTree = "<group>"; };
 		07F30C5C54EA4686AD3DA612 /* Pods-Chanakaya IAS Academy.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Chanakaya IAS Academy.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Chanakaya IAS Academy/Pods-Chanakaya IAS Academy.debug.xcconfig"; sourceTree = "<group>"; };
 		0924CA0E88D7EC0E18B34460 /* Pods-Elevate Education.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Elevate Education.release.xcconfig"; path = "Pods/Target Support Files/Pods-Elevate Education/Pods-Elevate Education.release.xcconfig"; sourceTree = "<group>"; };
 		09276756C96D9E1BD5DE6D5D /* Pods-Brahm Varchas Shiksha.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Brahm Varchas Shiksha.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Brahm Varchas Shiksha/Pods-Brahm Varchas Shiksha.debug.xcconfig"; sourceTree = "<group>"; };
@@ -739,6 +760,7 @@
 				504EC3071FED79650016851F /* AppDelegate.swift */,
 				E93D3EA14A8641A29AE1336A /* OfflineMediaCrypto.swift */,
 				070B74BA81E94A3D820C661E /* OfflineMediaPlugin.swift */,
+				2084849E381C834030E7028A /* VacademyLiveClassPlugin.swift */,
 				C85C6D06FFEA4567AD04E2CE /* OfflineMediaSchemeHandler.swift */,
 				B732170F2E424837BA95FC36 /* MainViewController.swift */,
 				504EC30B1FED79650016851F /* Main.storyboard */,
@@ -2473,6 +2495,7 @@
 				0E0D4AE92FC2BDC200E29BEC /* AppDelegate.swift in Sources */,
 				69AD056C540847E4A3298870 /* OfflineMediaCrypto.swift in Sources */,
 				EF8061D5CA924D34A39DE777 /* OfflineMediaPlugin.swift in Sources */,
+				B6EB93CFCAF39BCDE441D969 /* VacademyLiveClassPlugin.swift in Sources */,
 				801EDFE3F88D4A70A44A00A1 /* OfflineMediaSchemeHandler.swift in Sources */,
 				80CBF2D1E6E14789BC249257 /* MainViewController.swift in Sources */,
 			);
@@ -2485,6 +2508,7 @@
 				0E0D4AFF2FC2CB0100E29BEC /* AppDelegate.swift in Sources */,
 				5CEE86A08BED4F15A7548F90 /* OfflineMediaCrypto.swift in Sources */,
 				701DDABAABAF4E7BB5C51AE9 /* OfflineMediaPlugin.swift in Sources */,
+				EAB3DDDB8692F8595118A037 /* VacademyLiveClassPlugin.swift in Sources */,
 				B529081F47694FDCA934FD6C /* OfflineMediaSchemeHandler.swift in Sources */,
 				6A214F130D4C4807B42AF5B2 /* MainViewController.swift in Sources */,
 			);
@@ -2497,6 +2521,7 @@
 				0E3507892F1C931700F1F9F9 /* AppDelegate.swift in Sources */,
 				2BD9EADE27C148BDAAC05D3E /* OfflineMediaCrypto.swift in Sources */,
 				5C81E7B1E26E4E219E727B00 /* OfflineMediaPlugin.swift in Sources */,
+				D60698834A21C47177818371 /* VacademyLiveClassPlugin.swift in Sources */,
 				542B13A323EA4A28A69BFA55 /* OfflineMediaSchemeHandler.swift in Sources */,
 				7AC2B5D585C2436285C22D6F /* MainViewController.swift in Sources */,
 			);
@@ -2509,6 +2534,7 @@
 				0E35079E2F1C931F00F1F9F9 /* AppDelegate.swift in Sources */,
 				F1D7138149EB4FA8AF385C15 /* OfflineMediaCrypto.swift in Sources */,
 				64F13DB96EA440508443ECF1 /* OfflineMediaPlugin.swift in Sources */,
+				396CF5479317FD43C4D3213F /* VacademyLiveClassPlugin.swift in Sources */,
 				AD056A8BAB964CF8A82B5E28 /* OfflineMediaSchemeHandler.swift in Sources */,
 				439F2F8A2EB44A3AB00BC81C /* MainViewController.swift in Sources */,
 			);
@@ -2521,6 +2547,7 @@
 				0E5CB2362F0ABC0800089DAC /* AppDelegate.swift in Sources */,
 				F92B60D363B74C23B6D95691 /* OfflineMediaCrypto.swift in Sources */,
 				0E0C6D3250494547B873F88D /* OfflineMediaPlugin.swift in Sources */,
+				CDDA8D5E6BE143D5FF670E67 /* VacademyLiveClassPlugin.swift in Sources */,
 				540A41F34EC54BDAAB02875E /* OfflineMediaSchemeHandler.swift in Sources */,
 				E6761DF1E0A246B3A45D6630 /* MainViewController.swift in Sources */,
 			);
@@ -2533,6 +2560,7 @@
 				0EB0C0E82F73B79D003DA394 /* AppDelegate.swift in Sources */,
 				FA404FC5414543089A2C9103 /* OfflineMediaCrypto.swift in Sources */,
 				19167FC1C77149F193D6E6C7 /* OfflineMediaPlugin.swift in Sources */,
+				99C71EFF8F47567C6CCD3837 /* VacademyLiveClassPlugin.swift in Sources */,
 				D91136FEE2F248F99CB856B4 /* OfflineMediaSchemeHandler.swift in Sources */,
 				1FD784859F894C6BB964779B /* MainViewController.swift in Sources */,
 			);
@@ -2545,6 +2573,7 @@
 				A1154899623E5BD21C6C39C4 /* AppDelegate.swift in Sources */,
 				6FDD8CEA4F5E141FD1AD0D22 /* OfflineMediaCrypto.swift in Sources */,
 				1CA82B8F39EDBE3CE3620476 /* OfflineMediaPlugin.swift in Sources */,
+				76AF6C6DD6E40FF3BB32B4C4 /* VacademyLiveClassPlugin.swift in Sources */,
 				32C1BABD8D73278810BBF635 /* OfflineMediaSchemeHandler.swift in Sources */,
 				C7478F454A5067F42C326E94 /* MainViewController.swift in Sources */,
 			);
@@ -2557,6 +2586,7 @@
 				1AAA00012F25A00000000001 /* AppDelegate.swift in Sources */,
 				46BC7686D33545A089BB64AD /* OfflineMediaCrypto.swift in Sources */,
 				235EF7FF7C704F9E9022E9BE /* OfflineMediaPlugin.swift in Sources */,
+				D8F8B0AE4D27CE8091F4F711 /* VacademyLiveClassPlugin.swift in Sources */,
 				C1607586FA904122A833A480 /* OfflineMediaSchemeHandler.swift in Sources */,
 				1893791D8E8340F5936C0B35 /* MainViewController.swift in Sources */,
 			);
@@ -2569,6 +2599,7 @@
 				961C1D1C54F4AAC6B72445FD /* AppDelegate.swift in Sources */,
 				263A33B6F004F44F14CFE8E8 /* OfflineMediaCrypto.swift in Sources */,
 				D2D5FAC0817300D38E298F8D /* OfflineMediaPlugin.swift in Sources */,
+				DA5D6CC8C6744A334BE17038 /* VacademyLiveClassPlugin.swift in Sources */,
 				647FFED3A78356EC35FF2321 /* OfflineMediaSchemeHandler.swift in Sources */,
 				CCA8C37F87460E22A3338EDC /* MainViewController.swift in Sources */,
 			);
@@ -2581,6 +2612,7 @@
 				8096B6932B8C76CF811F7345 /* AppDelegate.swift in Sources */,
 				3995D85EFF584B57881CC141 /* OfflineMediaCrypto.swift in Sources */,
 				02F5C080AD2E4959B0453516 /* OfflineMediaPlugin.swift in Sources */,
+				2808ED49E1C536EC458238C7 /* VacademyLiveClassPlugin.swift in Sources */,
 				260F0895AB5945E98BD705F3 /* OfflineMediaSchemeHandler.swift in Sources */,
 				CED1EE3C4F924B449A849A75 /* MainViewController.swift in Sources */,
 			);
@@ -2593,6 +2625,7 @@
 				D1DA697911CA1F9685933BB9 /* AppDelegate.swift in Sources */,
 				CC83C7694AF74710A268A7C3 /* OfflineMediaCrypto.swift in Sources */,
 				732AEBA4D48A482C9947A155 /* OfflineMediaPlugin.swift in Sources */,
+				9343D474A047C6211BDB234F /* VacademyLiveClassPlugin.swift in Sources */,
 				BC67E2B60E714A6D84EC10FA /* OfflineMediaSchemeHandler.swift in Sources */,
 				4445A6DD7B254233817F21CA /* MainViewController.swift in Sources */,
 			);
@@ -2605,6 +2638,7 @@
 				974474857A30479F153356F6 /* AppDelegate.swift in Sources */,
 				D14435C32FA64923B57163FE /* OfflineMediaCrypto.swift in Sources */,
 				2612C186DA7B446990F59A91 /* OfflineMediaPlugin.swift in Sources */,
+				A17A68EF1CBCE9C28ABDEFEB /* VacademyLiveClassPlugin.swift in Sources */,
 				89B75F7B56AA48949FC3667E /* OfflineMediaSchemeHandler.swift in Sources */,
 				B54A1F3CD7664D439F52C51A /* MainViewController.swift in Sources */,
 			);
@@ -2617,6 +2651,7 @@
 				EEDED76BCF9F80120954FFE0 /* AppDelegate.swift in Sources */,
 				3D82C3F2D2533BBC3F21B6F9 /* OfflineMediaCrypto.swift in Sources */,
 				02AAF59F0B5EA6B3527E05DE /* OfflineMediaPlugin.swift in Sources */,
+				5D0C25551A66F8EBDC1C969D /* VacademyLiveClassPlugin.swift in Sources */,
 				E821B0060991412BD849FC74 /* OfflineMediaSchemeHandler.swift in Sources */,
 				3C5FA77D728FE107A47B3002 /* MainViewController.swift in Sources */,
 			);
@@ -2629,6 +2664,7 @@
 				A5742CAF260A4E0C4386CECF /* AppDelegate.swift in Sources */,
 				FF4678D1AD97A855A3F0ECB6 /* OfflineMediaCrypto.swift in Sources */,
 				12216C0695BE4850F2D32409 /* OfflineMediaPlugin.swift in Sources */,
+				61F76F4F214FB5A8058B5D6F /* VacademyLiveClassPlugin.swift in Sources */,
 				FF68169C768260C0D7BEA856 /* OfflineMediaSchemeHandler.swift in Sources */,
 				51DBEC520ED076FD6800432D /* MainViewController.swift in Sources */,
 			);
@@ -2641,6 +2677,7 @@
 				504EC3081FED79650016851F /* AppDelegate.swift in Sources */,
 				76D1CA09A18E4F8687EEBCCA /* OfflineMediaCrypto.swift in Sources */,
 				4C6D6B348A9E456FAD8CEF82 /* OfflineMediaPlugin.swift in Sources */,
+				9915A8E0785DFE0899E74BD0 /* VacademyLiveClassPlugin.swift in Sources */,
 				2E1FE691860D4A8ABD9B8D92 /* OfflineMediaSchemeHandler.swift in Sources */,
 				7750EF205F394B4B94D524FE /* MainViewController.swift in Sources */,
 			);
@@ -2653,6 +2690,7 @@
 				A70FB30C2032E00F0BA6C805 /* AppDelegate.swift in Sources */,
 				FE7A3C2EE12DAEA72BC4B21A /* OfflineMediaCrypto.swift in Sources */,
 				59BE89DD7F864AD3CF9F2CAB /* OfflineMediaPlugin.swift in Sources */,
+				558BD727E925F0A4CFB72F03 /* VacademyLiveClassPlugin.swift in Sources */,
 				22004B948EBA55F4867461C1 /* OfflineMediaSchemeHandler.swift in Sources */,
 				BDAC3AE2C25F8654198310FA /* MainViewController.swift in Sources */,
 			);
@@ -2665,6 +2703,7 @@
 				4FB756C8CCB1313579C87C74 /* AppDelegate.swift in Sources */,
 				E9E4B56C7B8576978768DB62 /* OfflineMediaCrypto.swift in Sources */,
 				1A83A0208D25392F70B5D80C /* OfflineMediaPlugin.swift in Sources */,
+				312B019421F6E50CA99EC5EE /* VacademyLiveClassPlugin.swift in Sources */,
 				CE49629F4B199F8FF5685F52 /* OfflineMediaSchemeHandler.swift in Sources */,
 				83D419E30B8538006CD080D1 /* MainViewController.swift in Sources */,
 			);
@@ -2677,6 +2716,7 @@
 				B9B61372F40DBDA5A41B7EFF /* AppDelegate.swift in Sources */,
 				6BB1931143BC68C3CEB615FB /* OfflineMediaCrypto.swift in Sources */,
 				9276850C792B3AA9C1644FDC /* OfflineMediaPlugin.swift in Sources */,
+				2F63128FC0BCAA1885C6435D /* VacademyLiveClassPlugin.swift in Sources */,
 				56B497174D266CCA797B5FDF /* OfflineMediaSchemeHandler.swift in Sources */,
 				A57673D1AA9FB8686D5E5F16 /* MainViewController.swift in Sources */,
 			);
@@ -2689,6 +2729,7 @@
 				7666EA03A7723F81DC060613 /* AppDelegate.swift in Sources */,
 				42E17EA2B7EB9493E179F9BC /* OfflineMediaCrypto.swift in Sources */,
 				2E988900412A5E933CDC9D2C /* OfflineMediaPlugin.swift in Sources */,
+				56487E7C911AC80CAC1C5FA4 /* VacademyLiveClassPlugin.swift in Sources */,
 				47070002BB3F35D4ABB7E31D /* OfflineMediaSchemeHandler.swift in Sources */,
 				3D32EB655CA9EBF1B1A4B97C /* MainViewController.swift in Sources */,
 			);
@@ -2701,6 +2742,7 @@
 				0BB823FFBDA6B2F58FBB3398 /* AppDelegate.swift in Sources */,
 				F4F3F18614C3686D0C66494A /* OfflineMediaCrypto.swift in Sources */,
 				1D9DB8CEB39ABA1DE24EA668 /* OfflineMediaPlugin.swift in Sources */,
+				C90E50BB9DEEC96A152BE49B /* VacademyLiveClassPlugin.swift in Sources */,
 				151F4BD912137E249C4B2E1E /* OfflineMediaSchemeHandler.swift in Sources */,
 				DFCB44133BBC17ED9DD955D3 /* MainViewController.swift in Sources */,
 			);
