@@ -46,6 +46,6 @@ class TelleoDisplaySettingsTest {
         assertEquals(List.of("/calling/ai-agents", "/audience-manager/call-log", "/settings?selectedTab=aiCalling"),
                 routes);
         assertTrue(data.get("ui").get("sidebarAllowList").asBoolean());
-        assertEquals("/calling/ai-agents", data.get("postLoginRedirectRoute").asText());
+        assertEquals("/telleo/api", data.get("postLoginRedirectRoute").asText());
     }
 }
