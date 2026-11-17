@@ -1,4 +1,4 @@
--- V674: Telleo self sign-up (TELLEO_SELF_SIGNUP_PLAN.md).
+-- V713: Telleo self sign-up (TELLEO_SELF_SIGNUP_PLAN.md).
 --
 -- Everything here is additive. Existing institutes have no row in these tables, so the
 -- caller-ID lock and onboarding never apply to them.
@@ -77,6 +77,6 @@ SELECT 'product.telleo',
                         'extra_credit_price_inr', e.setting_value -> 'extra_credit_price_inr'))
                       FROM ai_platform_settings e
                      WHERE e.setting_key = 'product.evalezy'), '{}'::jsonb),
-       'V674',
+       'V713',
        CURRENT_TIMESTAMP
 ON CONFLICT (setting_key) DO NOTHING;
