@@ -9,7 +9,9 @@ import { registerBackGuard } from "@/lib/back-guard";
 import {
   BBB_EXIT_MESSAGE,
   BBB_FRAME_ALLOW,
+  BBB_PIP_HELLO,
   BBB_PIP_MESSAGE,
+  BBB_PIP_REPLY,
   canHostClassInApp,
   takeClassroomJoin,
 } from "@/lib/live-class/bbb-classroom";
@@ -19,6 +21,7 @@ import {
   enterNativeClass,
   enterNativePictureInPicture,
   exitNativeClass,
+  nativePictureInPictureAvailable,
   prepareNativeClass,
 } from "@/lib/live-class/native-live-class";
 
@@ -132,6 +135,14 @@ function ClassroomPage() {
       if (event.source !== frameRef.current?.contentWindow) return;
       const data = event.data as { type?: string; path?: string } | null;
       if (!data) return;
+      if (data.type === BBB_PIP_HELLO) {
+        // The PiP plugin asks whether the app can do PiP itself (Android only).
+        (event.source as Window | null)?.postMessage(
+          { type: BBB_PIP_REPLY, available: nativePictureInPictureAvailable() },
+          "*"
+        );
+        return;
+      }
       if (data.type === BBB_PIP_MESSAGE) {
         void enterNativePictureInPicture();
         return;

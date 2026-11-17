@@ -45,6 +45,9 @@ const isFramed = (() => {
 
 /** Message the learner app's class view listens for (src/routes/study-library/live-class/classroom). */
 const NATIVE_PIP_MESSAGE = "vacademy:bbb-pip";
+/** Plugin asks / app answers whether the app can do PiP itself. */
+const NATIVE_PIP_HELLO = "vacademy:bbb-pip-hello";
+const NATIVE_PIP_REPLY = "vacademy:bbb-pip-native";
 
 const lang = (navigator.language || "en").toLowerCase();
 const TEXT = lang.startsWith("hi")
@@ -68,8 +71,34 @@ function PipPlugin({ uuid, pluginName }: { uuid: string; pluginName: string }) {
   const pipRef = useRef<CompositePip | null>(null);
 
   const canVideoPip = videoPipSupported();
-  // Inside the app without video PiP (Android), the app itself does PiP.
-  const canAskApp = !canVideoPip && isFramed;
+  // Inside an app whose WebView has no video PiP (Android), the app itself does
+  // PiP — but only if the app says so (an old app, or a browser like Firefox,
+  // would leave a dead button).
+  const [appCanPip, setAppCanPip] = useState(false);
+  const canAskApp = !canVideoPip && isFramed && appCanPip;
+
+  useEffect(() => {
+    if (canVideoPip || !isFramed) return undefined;
+    const onMessage = (event: MessageEvent) => {
+      if (event.source !== window.parent) return;
+      const data = event.data as { type?: string; available?: boolean } | null;
+      if (data?.type === NATIVE_PIP_REPLY) setAppCanPip(!!data.available);
+    };
+    window.addEventListener("message", onMessage);
+    // Ask a few times: the app may still be wiring its listener.
+    let tries = 0;
+    const ask = () => window.parent.postMessage({ type: NATIVE_PIP_HELLO }, "*");
+    ask();
+    const timer = window.setInterval(() => {
+      tries += 1;
+      if (tries > 5) window.clearInterval(timer);
+      else ask();
+    }, 2000);
+    return () => {
+      window.removeEventListener("message", onMessage);
+      window.clearInterval(timer);
+    };
+  }, [canVideoPip]);
 
   useEffect(() => {
     if (!canVideoPip && !canAskApp) {

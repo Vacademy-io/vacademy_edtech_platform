@@ -51,6 +51,9 @@ export const BBB_EXIT_MESSAGE = "vacademy:bbb-exit";
 
 /** Message the Vacademy PiP plugin posts from inside the frame when the app must do PiP (Android). */
 export const BBB_PIP_MESSAGE = "vacademy:bbb-pip";
+/** The PiP plugin asks (HELLO) whether the app can do PiP; the app answers (REPLY). */
+export const BBB_PIP_HELLO = "vacademy:bbb-pip-hello";
+export const BBB_PIP_REPLY = "vacademy:bbb-pip-native";
 
 /** Everything the frame may need; the class view sets no sandbox. */
 export const BBB_FRAME_ALLOW = [

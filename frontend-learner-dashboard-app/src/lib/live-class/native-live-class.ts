@@ -85,6 +85,11 @@ export async function exitNativeClass(): Promise<void> {
   }
 }
 
+/** Can the app itself do system PiP (Android shell with the live-class plugin)? */
+export function nativePictureInPictureAvailable(): boolean {
+  return Capacitor.getPlatform() === "android" && Capacitor.isPluginAvailable("VacademyLiveClass");
+}
+
 /** System PiP of the whole app (Android). False where the shell can't. */
 export async function enterNativePictureInPicture(): Promise<boolean> {
   if (Capacitor.getPlatform() !== "android") return false;

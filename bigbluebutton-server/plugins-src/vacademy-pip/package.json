@@ -1,6 +1,6 @@
 {
   "name": "vacademy-pip-bbb-plugin",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "BBB HTML5 plugin: picture-in-picture that works inside the learner app frame (webcams + screen share composited into one video)",
   "scripts": {
