@@ -25,7 +25,11 @@ vi.mock('@/services/capabilities', () => ({
 }));
 vi.mock('@/constants/helper', () => ({ getInstituteId: () => 'inst-1' }));
 vi.mock('react-i18next', () => ({
-    useTranslation: () => ({ t: (key: string) => key, i18n: { language: 'en' } }),
+    // A `name` option is shown, so per-line labels can be told apart.
+    useTranslation: () => ({
+        t: (key: string, options?: { name?: string }) => (options?.name ? `${key}:${options.name}` : key),
+        i18n: { language: 'en' },
+    }),
 }));
 vi.mock('@tanstack/react-router', () => ({
     Link: ({ children }: { children: ReactNode }) => <a href="/">{children}</a>,
@@ -260,5 +264,88 @@ describe('pack station', () => {
         expect(mocked.fetchOrder).not.toHaveBeenCalled();
         expect(mocked.fetchOrders).not.toHaveBeenCalled();
         expect(mocked.scanCode).not.toHaveBeenCalled();
+    });
+});
+
+/** Lets the query resolve and the effects run. */
+const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
+
+describe('pack station: the scan box keeps the focus for a USB scanner', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        setRoles([COMMERCE_ROLE.WAREHOUSE_STAFF]);
+        mocked.fetchOrder.mockResolvedValue(detail());
+    });
+
+    it("opened from the desk's Pack button (?order=): the box is focused once the order loads", async () => {
+        renderStation();
+        const box = await screen.findByLabelText('orders.pack.scanItems', { selector: 'input' });
+        await settle();
+        expect(document.activeElement).toBe(box);
+
+        // The first scan goes into the box, not into the page.
+        mocked.scanCode.mockResolvedValue(variantScan('ps-2'));
+        scanInto('V-BOTTLE');
+        await waitFor(() => expect(count(2)).toBe('1 / 2'));
+        expect(document.activeElement).toBe(
+            screen.getByLabelText('orders.pack.scanItems', { selector: 'input' })
+        );
+    });
+
+    it('after scanning the packing slip: the packing view box is focused for the first item', async () => {
+        mocked.fetchOrders.mockResolvedValue({ orders: [detail().order], page: 0, page_size: 5, total: 1 } as never);
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={client}>
+                <PackStationBody />
+            </QueryClientProvider>
+        );
+        const first = screen.getByLabelText('orders.pack.scanPrompt', { selector: 'input' });
+        expect(document.activeElement).toBe(first);
+        fireEvent.change(first, { target: { value: 'SO-1001' } });
+        fireEvent.keyDown(first, { key: 'Enter' });
+        const box = await screen.findByLabelText('orders.pack.scanItems', { selector: 'input' });
+        await settle();
+        expect(box).not.toBe(first);
+        expect(document.activeElement).toBe(box);
+    });
+
+    it('after "change order", the find box is focused again', async () => {
+        renderStation();
+        await screen.findByLabelText('orders.pack.scanItems', { selector: 'input' });
+        fireEvent.click(screen.getByRole('button', { name: 'orders.pack.changeOrder' }));
+        const first = await screen.findByLabelText('orders.pack.scanPrompt', { selector: 'input' });
+        await settle();
+        expect(document.activeElement).toBe(first);
+    });
+});
+
+describe('pack station: screen reader', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        setRoles([COMMERCE_ROLE.WAREHOUSE_STAFF]);
+        mocked.fetchOrder.mockResolvedValue(detail());
+    });
+
+    it("each line's tick box names its item", async () => {
+        renderStation();
+        await screen.findByText('Steel bottle');
+        expect(screen.getByRole('checkbox', { name: 'orders.pack.allPackedFor:Cotton scarf' })).toBeTruthy();
+        expect(screen.getByRole('checkbox', { name: 'orders.pack.allPackedFor:Steel bottle' })).toBeTruthy();
+    });
+
+    it('the same refusal twice is a new alert, so it is read out again', async () => {
+        renderStation();
+        await screen.findByText('Steel bottle');
+        mocked.scanCode.mockResolvedValue(variantScan('ps-elsewhere'));
+        scanInto('V-OTHER-1');
+        const firstAlert = await screen.findByText('orders.pack.scan.notInOrder');
+        scanInto('V-OTHER-2');
+        await waitFor(() => expect(mocked.scanCode).toHaveBeenCalledTimes(2));
+        await waitFor(() =>
+            expect(screen.getByText('orders.pack.scan.notInOrder')).not.toBe(firstAlert)
+        );
+        expect(screen.getAllByText('orders.pack.scan.notInOrder')).toHaveLength(1);
+        expect(screen.getByText('orders.pack.scan.notInOrder').closest('[role="alert"]')).toBeTruthy();
     });
 });

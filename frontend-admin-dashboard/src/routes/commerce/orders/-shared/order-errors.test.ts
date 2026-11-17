@@ -1,6 +1,7 @@
 /** F5: reading the server's `CODE: sentence` errors. */
 import { AxiosError } from 'axios';
 import { describe, expect, it } from 'vitest';
+import { readCommerceError } from '@/routes/commerce/-shared/commerce-errors';
 import { ORDER_ERROR_CODES, orderErrorKey, orderErrorKind, readOrderError } from './order-errors';
 
 const failure = (status: number, message: string, headers: Record<string, string> = {}) =>
@@ -64,5 +65,54 @@ describe('readOrderError', () => {
         expect(network.status).toBeNull();
         expect(orderErrorKind(network)).toBe('network');
         expect(orderErrorKey(network)).toBe('orders.errors.network');
+    });
+});
+
+/** A failed call whose body is whatever the server (or a proxy) sent. */
+const failureWithBody = (status: number, data: unknown) =>
+    new AxiosError('failed', 'ERR_BAD_RESPONSE', undefined, undefined, {
+        status,
+        data,
+        headers: {},
+        statusText: '',
+        config: {} as never,
+    } as never);
+
+describe('unexpected error bodies', () => {
+    it.each([
+        ['an object message', { message: { detail: 'x' } }],
+        ['a number message', { message: 123 }],
+        ['an array ex', { ex: ['x'] }],
+        ['a number message and object ex', { message: 5, ex: { a: 1 } }],
+        ['an HTML page', '<html>Bad gateway</html>'],
+        ['null', null],
+    ])('%s: no crash, no sentence, the generic text', (_name, data) => {
+        const error = readOrderError(failureWithBody(500, data));
+        expect(error).toMatchObject({ status: 500, code: null, key: null, message: '' });
+        expect(orderErrorKey(error)).toBe('orders.errors.generic');
+        expect(() => readCommerceError(failureWithBody(500, data), 'fallback')).not.toThrow();
+        expect(readCommerceError(failureWithBody(500, data), 'fallback')).toEqual({ code: null, message: 'fallback' });
+    });
+
+    it('a text ex is still read when message is not text', () => {
+        expect(readOrderError(failureWithBody(409, { message: 7, ex: 'ORDER_STATE_CHANGED: moved' })).code).toBe(
+            'ORDER_STATE_CHANGED'
+        );
+    });
+});
+
+describe('a 403 without a code', () => {
+    it('reads as "no access here", not "something went wrong"', () => {
+        const bare = readOrderError(failureWithBody(403, { message: 'Forbidden' }));
+        expect(bare.key).toBeNull();
+        expect(orderErrorKind(bare)).toBe('access');
+        expect(orderErrorKey(bare)).toBe('orders.errors.ACCESS_DENIED');
+        expect(orderErrorKey(readOrderError(failureWithBody(403, null)))).toBe('orders.errors.ACCESS_DENIED');
+    });
+
+    it('a 403 with a known code keeps its own sentence', () => {
+        expect(orderErrorKey(readOrderError(failure(403, 'LOCATION_NOT_ALLOWED: not here')))).toBe(
+            'orders.errors.LOCATION_NOT_ALLOWED'
+        );
     });
 });

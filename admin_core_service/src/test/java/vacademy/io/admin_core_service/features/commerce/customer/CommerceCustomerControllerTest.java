@@ -40,7 +40,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Who may read the shop's customers, through the controller and the real commerce guard: store
- * manager, accountant and an institute ADMIN; never warehouse staff or a cashier; nobody when the
+ * manager, accountant and an institute ADMIN; never warehouse staff, a cashier, a learner or a
+ * teacher (no commerce role at all); nobody when the
  * orders feature is off; and another institute's customer is "not found".
  */
 class CommerceCustomerControllerTest {
@@ -102,8 +103,8 @@ class CommerceCustomerControllerTest {
     }
 
     @Test
-    void aCashierAndWarehouseStaffAreRefusedByRole() {
-        for (String role : List.of("COMMERCE_POS_CASHIER", "COMMERCE_WAREHOUSE_STAFF")) {
+    void aCashierWarehouseStaffALearnerAndATeacherAreRefusedByRole() {
+        for (String role : List.of("COMMERCE_POS_CASHIER", "COMMERCE_WAREHOUSE_STAFF", "STUDENT", "TEACHER")) {
             CustomUserDetails user = user(role);
             assertEquals(CommerceAccessDeniedException.ROLE_NOT_ALLOWED,
                     refusal(() -> controller.list(INST, null, 0, 50, user)), role);

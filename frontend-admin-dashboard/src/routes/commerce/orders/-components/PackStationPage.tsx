@@ -224,6 +224,14 @@ export function PackStationContent({
         else if (!orderId) void findOrder(code);
     }, { paused: shipOpen });
 
+    // The packing view's scan box is a new element (the find step has its own, the loading
+    // skeleton none), so focus it whenever the packing view appears or the order changes:
+    // a USB scanner's first item must never type into the page (contract §5.3.2).
+    const { refocus } = scan;
+    useEffect(() => {
+        if (packing || !orderId) refocus();
+    }, [packing, orderId, refocus]);
+
     const reloadAndReset = useCallback(
         async (message?: string) => {
             initFor.current = null;
@@ -556,7 +564,8 @@ export function PackStationContent({
                     {scanBox}
                     {notice && <OrderNotice tone="info">{notice}</OrderNotice>}
                     {last && !last.ok && (
-                        <OrderNotice tone="danger">
+                        // Keyed by the outcome, so the same refusal twice is a new alert and is read out again.
+                        <OrderNotice key={last.seq} tone="danger">
                             <p>
                                 {t(`orders.pack.scan.${last.refusal}`, {
                                     status: last.status ?? '',
@@ -693,6 +702,7 @@ function PackLineRow({
                     <label htmlFor={tickId} className="flex min-h-12 items-center gap-2 text-body text-foreground">
                         <Checkbox
                             id={tickId}
+                            aria-label={t('orders.pack.allPackedFor', { name: line.name })}
                             className="size-6"
                             checked={full}
                             onCheckedChange={(checked) =>

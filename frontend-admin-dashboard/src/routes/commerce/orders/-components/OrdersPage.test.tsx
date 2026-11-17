@@ -146,3 +146,44 @@ describe('OrdersPage role gating', () => {
         expect(screen.queryByText('orders.newOrder')).toBeNull();
     });
 });
+
+describe('OrdersPage queue tabs keyboard', () => {
+    beforeEach(() => {
+        api.fetchOrders.mockReset();
+        api.fetchOrders.mockResolvedValue({ orders: [row('1')], page: 0, page_size: 50, total: 1 });
+    });
+
+    it('Tab reaches the selected tab only; arrows, Home and End move between tabs without opening one', async () => {
+        setAccess([COMMERCE_ROLE.ACCOUNTANT]);
+        const onSearchChange = vi.fn();
+        render(
+            <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+                <OrdersPage search={{ queue: 'DUES' }} onSearchChange={onSearchChange} />
+            </QueryClientProvider>
+        );
+        await screen.findAllByText('SO-1');
+        const all = screen.getAllByRole('tab');
+        const byQueue = (queue: string) => all.find((tab) => tab.getAttribute('data-queue') === queue)!;
+        expect(all.map((tab) => tab.tabIndex)).toEqual([-1, 0, -1, -1]);
+
+        const panel = screen.getByRole('tabpanel');
+        expect(panel.getAttribute('aria-labelledby')).toBe(byQueue('DUES').id);
+        all.forEach((tab) => expect(tab.getAttribute('aria-controls')).toBe(panel.id));
+
+        byQueue('DUES').focus();
+        fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
+        expect(document.activeElement).toBe(byQueue('REFUND_DUE'));
+        fireEvent.keyDown(document.activeElement!, { key: 'End' });
+        expect(document.activeElement).toBe(byQueue('ALL'));
+        fireEvent.keyDown(document.activeElement!, { key: 'ArrowRight' });
+        expect(document.activeElement).toBe(byQueue('COD_TO_COLLECT'));
+        fireEvent.keyDown(document.activeElement!, { key: 'ArrowLeft' });
+        expect(document.activeElement).toBe(byQueue('ALL'));
+        fireEvent.keyDown(document.activeElement!, { key: 'Home' });
+        expect(document.activeElement).toBe(byQueue('COD_TO_COLLECT'));
+        // Moving never opens a queue (each opening loads a list); a click does.
+        expect(onSearchChange).not.toHaveBeenCalled();
+        fireEvent.click(byQueue('COD_TO_COLLECT'));
+        expect(onSearchChange).toHaveBeenCalled();
+    });
+});

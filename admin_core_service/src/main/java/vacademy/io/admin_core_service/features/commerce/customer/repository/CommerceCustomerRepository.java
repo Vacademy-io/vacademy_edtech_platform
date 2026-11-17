@@ -112,7 +112,8 @@ public interface CommerceCustomerRepository extends JpaRepository<CommerceCustom
 
     /**
      * A customer as the staff list and profile show it, with what their orders add up to. Orders
-     * still waiting for payment do not count; a cancelled order counts only when money was paid.
+     * still waiting for payment do not count; a cancelled order counts only when money was paid. The
+     * same rule picks {@code last_order_at}, so an abandoned checkout does not put a customer on top.
      * {@code dues} mirrors the DUES queue of the order desk (staff orders on credit); money a
      * courier still owes on a cash-on-delivery order is not a due.
      */
@@ -163,17 +164,22 @@ public interface CommerceCustomerRepository extends JpaRepository<CommerceCustom
                        SUM(o.total - o.amount_paid) FILTER (WHERE o.channel = 'ADMIN'
                                           AND o.payment_status IN ('UNPAID', 'PARTIALLY_PAID')
                                           AND o.status NOT IN ('CANCELLED', 'RTO')) AS dues,
-                       MAX(o.created_at) FILTER (WHERE o.status <> 'PENDING_PAYMENT') AS last_order_at
+                       MAX(o.created_at) FILTER (WHERE o.status <> 'PENDING_PAYMENT'
+                                          AND NOT (o.status = 'CANCELLED' AND o.amount_paid = 0)) AS last_order_at
                 FROM commerce_order o
                 WHERE o.institute_id = c.institute_id AND o.customer_id = c.id) a ON TRUE
             """;
 
-    /** The search of the staff list: an exact (normalised) phone or part of the name; both null = every customer. */
+    /**
+     * The search of the staff list: an exact (normalised) phone or part of the name; both null = every
+     * customer. A search never finds an anonymised customer, whatever its columns still hold.
+     */
     String STAFF_FILTER = """
             c.institute_id = :instituteId
               AND (CAST(:phone AS VARCHAR) IS NULL AND CAST(:namePattern AS VARCHAR) IS NULL
-                   OR c.phone = CAST(:phone AS VARCHAR)
-                   OR LOWER(c.name) LIKE CAST(:namePattern AS VARCHAR))
+                   OR c.anonymised_at IS NULL
+                      AND (c.phone = CAST(:phone AS VARCHAR)
+                           OR LOWER(c.name) LIKE CAST(:namePattern AS VARCHAR)))
             """;
 
     /** One page of the staff list: the latest buyers first, then the newest rows. */

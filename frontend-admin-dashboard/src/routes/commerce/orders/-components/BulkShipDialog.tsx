@@ -4,7 +4,11 @@ import { UploadSimple } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyInput } from '@/components/design-system/input';
-import { parseBulkShipCsv, type BulkShipCsvResult } from '@/routes/commerce/orders/-shared/bulk-ship-csv';
+import {
+    readBulkShipCsvFile,
+    shownProblems,
+    type BulkShipCsvResult,
+} from '@/routes/commerce/orders/-shared/bulk-ship-csv';
 import { readCouriers, rememberCourier } from '@/routes/commerce/orders/-shared/courier-memory';
 import type { BulkItem, StaffOrderRow } from '@/routes/commerce/orders/-shared/order-types';
 import { TRACKING_PATTERN } from './dialogs/ShipDialog';
@@ -73,9 +77,8 @@ export function BulkShipDialog({
         );
 
     const readFile = async (file: File) => {
-        const text = await file.text();
-        const result = parseBulkShipCsv(
-            text,
+        const result = await readBulkShipCsvFile(
+            file,
             rows.map((row) => ({ order_id: row.id, order_number: row.order_number }))
         );
         setCsv(result);
@@ -91,6 +94,8 @@ export function BulkShipDialog({
             return next;
         });
     };
+
+    const problems = csv && csv.errors.length > 0 ? shownProblems(csv.errors) : null;
 
     const allReady = rows.length > 0 && rows.every((row) => shipRowReady(rowOf(row.id)));
 
@@ -177,10 +182,10 @@ export function BulkShipDialog({
                 {csv && csv.items.length > 0 && (
                     <OrderNotice tone="success">{t('orders.bulkShip.csvFilled', { count: csv.items.length })}</OrderNotice>
                 )}
-                {csv && csv.errors.length > 0 && (
+                {problems && (
                     <OrderNotice tone="warning">
-                        <ul className="flex flex-col gap-0.5">
-                            {csv.errors.map((problem) => (
+                        <ul className="flex flex-col gap-0.5" data-testid="bulk-ship-csv-problems">
+                            {problems.shown.map((problem) => (
                                 <li key={`${problem.line}-${problem.key}`}>
                                     {t(`orders.bulkShip.csvErrors.${problem.key}`, {
                                         line: problem.line,
@@ -188,6 +193,9 @@ export function BulkShipDialog({
                                     })}
                                 </li>
                             ))}
+                            {problems.more > 0 && (
+                                <li>{t('orders.bulkShip.csvMore', { count: problems.more })}</li>
+                            )}
                         </ul>
                     </OrderNotice>
                 )}

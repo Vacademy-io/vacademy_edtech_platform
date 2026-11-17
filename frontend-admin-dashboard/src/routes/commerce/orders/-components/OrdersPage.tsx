@@ -31,7 +31,7 @@ import type { OrderQueue, StaffOrderRow } from '@/routes/commerce/orders/-shared
 import { OrderRowActionDialog, type RowDialogAction } from './OrderActionBar';
 import { OrderBulkBar, exportOrders } from './OrderBulkBar';
 import { type DeskFilterValue, OrderFilters } from './OrderFilters';
-import { OrderQueueTabs } from './OrderQueueTabs';
+import { OrderQueueTabs, QUEUE_PANEL_ID, queueTabId } from './OrderQueueTabs';
 import { OrdersTable } from './OrdersTable';
 import { useOrderErrorText } from './order-ui';
 
@@ -225,92 +225,100 @@ function OrdersDesk({
                 onChange={(next) => change({ queue: next })}
                 enabled={enabled}
             />
-            <OrderFilters
-                value={{
-                    q: filters.q ?? '',
-                    from: filters.from ?? '',
-                    to: filters.to ?? '',
-                    channel: filters.channel ?? '',
-                    method: filters.method ?? '',
-                }}
-                onChange={onFilters}
-                filtered={filtered}
-                trailing={
-                    bulkActions.includes('EXPORT') && selectedRows.length === 0 && rows.length > 0 ? (
-                        <MyButton type="button" buttonType="secondary" scale="small" onClick={exportPage}>
-                            <DownloadSimple size={14} />
-                            {t('orders.bulk.exportPage')}
-                        </MyButton>
-                    ) : undefined
-                }
-            />
-
-            {selectedRows.length > 0 && bulkActions.length > 0 && (
-                <OrderBulkBar
-                    actions={bulkActions}
-                    selected={selectedRows}
-                    onClear={() => setSelected({})}
-                    onUntickDone={(ids) =>
-                        setSelected((current) => {
-                            const next = { ...current };
-                            ids.forEach((id) => delete next[id]);
-                            return next;
-                        })
+            <div
+                role="tabpanel"
+                id={QUEUE_PANEL_ID}
+                aria-labelledby={queueTabId(queue)}
+                className="flex flex-col gap-4"
+            >
+                <OrderFilters
+                    value={{
+                        q: filters.q ?? '',
+                        from: filters.from ?? '',
+                        to: filters.to ?? '',
+                        channel: filters.channel ?? '',
+                        method: filters.method ?? '',
+                    }}
+                    onChange={onFilters}
+                    filtered={filtered}
+                    trailing={
+                        bulkActions.includes('EXPORT') && selectedRows.length === 0 && rows.length > 0 ? (
+                            <MyButton type="button" buttonType="secondary" scale="small" onClick={exportPage}>
+                                <DownloadSimple size={14} />
+                                {t('orders.bulk.exportPage')}
+                            </MyButton>
+                        ) : undefined
                     }
                 />
-            )}
 
-            {list.isLoading && <CommerceLoadingRows rows={6} />}
-            {list.isError && !list.data && (
-                <CommerceErrorState
-                    message={`${t('orders.list.loadFailed')} ${errorText(readOrderError(list.error))}`}
-                    onRetry={() => void list.refetch()}
-                />
-            )}
-            {list.isSuccess && rows.length === 0 && (
-                <CommerceEmptyState
-                    title={filtered ? t('orders.empty.filteredTitle') : t(`orders.empty.${queue}`)}
-                    description={filtered ? t('orders.empty.filteredDescription') : t('orders.empty.hint')}
-                >
-                    {filtered && (
-                        <MyButton
-                            type="button"
-                            buttonType="secondary"
-                            scale="medium"
-                            onClick={() => change({ q: '', from: '', to: '', channel: '', method: '' })}
-                        >
-                            {t('orders.empty.clearFilters')}
-                        </MyButton>
-                    )}
-                </CommerceEmptyState>
-            )}
-            {list.data && rows.length > 0 && definition && (
-                <>
-                    <OrdersTable
-                        data={tableData}
-                        queue={definition}
-                        page={page}
-                        selectable={bulkActions.length > 0}
-                        selected={selected}
-                        onToggle={(id, on) => setSelected((current) => ({ ...current, [id]: on }))}
-                        onToggleAll={(on) =>
-                            setSelected(on ? Object.fromEntries(rows.map((row) => [row.id, true])) : {})
+                {selectedRows.length > 0 && bulkActions.length > 0 && (
+                    <OrderBulkBar
+                        actions={bulkActions}
+                        selected={selectedRows}
+                        onClear={() => setSelected({})}
+                        onUntickDone={(ids) =>
+                            setSelected((current) => {
+                                const next = { ...current };
+                                ids.forEach((id) => delete next[id]);
+                                return next;
+                            })
                         }
-                        rowAction={rowAction}
-                        onRowAction={onRowAction}
-                        onOpen={openOrder}
-                        now={now}
                     />
-                    <MyPagination
-                        currentPage={page}
-                        totalPages={tableData.total_pages}
-                        totalElements={tableData.total_elements}
-                        pageSize={ORDER_PAGE_SIZE}
-                        onPageChange={(next) => change({ page: next + 1 }, true)}
-                        compactOnPhone
+                )}
+
+                {list.isLoading && <CommerceLoadingRows rows={6} />}
+                {list.isError && !list.data && (
+                    <CommerceErrorState
+                        message={`${t('orders.list.loadFailed')} ${errorText(readOrderError(list.error))}`}
+                        onRetry={() => void list.refetch()}
                     />
-                </>
-            )}
+                )}
+                {list.isSuccess && rows.length === 0 && (
+                    <CommerceEmptyState
+                        title={filtered ? t('orders.empty.filteredTitle') : t(`orders.empty.${queue}`)}
+                        description={filtered ? t('orders.empty.filteredDescription') : t('orders.empty.hint')}
+                    >
+                        {filtered && (
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="medium"
+                                onClick={() => change({ q: '', from: '', to: '', channel: '', method: '' })}
+                            >
+                                {t('orders.empty.clearFilters')}
+                            </MyButton>
+                        )}
+                    </CommerceEmptyState>
+                )}
+                {list.data && rows.length > 0 && definition && (
+                    <>
+                        <OrdersTable
+                            data={tableData}
+                            queue={definition}
+                            page={page}
+                            selectable={bulkActions.length > 0}
+                            selected={selected}
+                            onToggle={(id, on) => setSelected((current) => ({ ...current, [id]: on }))}
+                            onToggleAll={(on) =>
+                                setSelected(on ? Object.fromEntries(rows.map((row) => [row.id, true])) : {})
+                            }
+                            rowAction={rowAction}
+                            onRowAction={onRowAction}
+                            onOpen={openOrder}
+                            now={now}
+                        />
+                        <MyPagination
+                            currentPage={page}
+                            totalPages={tableData.total_pages}
+                            totalElements={tableData.total_elements}
+                            pageSize={ORDER_PAGE_SIZE}
+                            onPageChange={(next) => change({ page: next + 1 }, true)}
+                            compactOnPhone
+                        />
+                    </>
+                )}
+
+            </div>
 
             {rowDialog && (
                 <OrderRowActionDialog

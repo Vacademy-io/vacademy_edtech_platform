@@ -1,6 +1,5 @@
 import { AxiosError } from 'axios';
-import { getBackendErrorBody } from '@/lib/report-api-error';
-import { readCommerceError } from '@/routes/commerce/-shared/commerce-errors';
+import { readCommerceError, serverSentence } from '@/routes/commerce/-shared/commerce-errors';
 
 /**
  * Order desk error reading. The server answers `CODE: sentence` in `message`
@@ -130,8 +129,7 @@ const looksLikeCode = (word: string) => /^[A-Z][A-Z0-9_]*$/.test(word) || /^[a-z
 export function readOrderError(error: unknown): OrderError {
     const isAxios = error instanceof AxiosError;
     const status = isAxios ? (error.response?.status ?? null) : null;
-    const body = getBackendErrorBody(error);
-    const raw = (body?.message || body?.ex || '').trim();
+    const raw = serverSentence(error);
     const guard = readCommerceError(error, '');
 
     let code: string | null = guard.code;
@@ -173,5 +171,7 @@ export function orderErrorKind(error: OrderError): OrderErrorKind {
 export function orderErrorKey(error: OrderError): string {
     if (error.key) return error.key;
     if (error.status === null && !error.message) return 'orders.errors.network';
+    // A bare 403 (a proxy or the sign-in check, no code): retrying will not help.
+    if (error.status === 403) return 'orders.errors.ACCESS_DENIED';
     return 'orders.errors.generic';
 }

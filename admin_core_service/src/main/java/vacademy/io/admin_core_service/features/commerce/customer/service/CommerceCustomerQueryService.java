@@ -22,6 +22,10 @@ import java.util.Locale;
  * has passed the commerce access guard for the institute; every query is scoped to it, so another
  * institute's customer answers 404 exactly as a customer that does not exist. Customers are
  * shop-wide (not narrowed by the caller's locations). Nothing about a customer is logged.
+ *
+ * <p>An anonymised customer ({@code anonymised_at} set) is shown without name, phone, e-mail, notes
+ * or addresses, whatever the columns still hold, and a search never finds one: this view does not
+ * rely on the anonymising step having scrubbed every column.
  */
 @Service
 public class CommerceCustomerQueryService {
@@ -91,6 +95,9 @@ public class CommerceCustomerQueryService {
             CommerceCustomerRepository.StaffRow row = customerRepository.findStaffRow(instituteId, customerId)
                     .orElseThrow(CommerceCustomerQueryService::notFound);
             List<CustomerDtos.AddressView> addresses = new ArrayList<>();
+            if (row.getAnonymisedAt() != null) {
+                return CustomerDtos.CustomerProfile.builder().customer(row(row, true)).addresses(addresses).build();
+            }
             List<CommerceCustomerAddress> book = addressRepository
                     .findByInstituteIdAndCustomerIdAndStatusOrderByIsDefaultDescCreatedAtDesc(instituteId, customerId,
                             CommerceCustomerAddress.STATUS_ACTIVE);
@@ -107,21 +114,22 @@ public class CommerceCustomerQueryService {
     }
 
     private static CustomerDtos.CustomerRow row(CommerceCustomerRepository.StaffRow r, boolean profile) {
+        boolean anonymised = r.getAnonymisedAt() != null;
         CustomerDtos.CustomerRow.CustomerRowBuilder b = CustomerDtos.CustomerRow.builder()
                 .id(r.getId())
-                .name(r.getName())
-                .phone(r.getPhone())
-                .email(r.getEmail())
+                .name(anonymised ? null : r.getName())
+                .phone(anonymised ? null : r.getPhone())
+                .email(anonymised ? null : r.getEmail())
                 .ordersCount(r.getOrdersCount() == null ? 0L : r.getOrdersCount())
                 .totalSpent(r.getTotalSpent() == null ? java.math.BigDecimal.ZERO : r.getTotalSpent())
                 .dues(r.getDues() == null ? java.math.BigDecimal.ZERO : r.getDues())
                 .lastOrderAt(instant(r.getLastOrderAt()))
                 .codRefusals(r.getCodRefusals() == null ? 0 : r.getCodRefusals())
                 .marketingConsent(Boolean.TRUE.equals(r.getMarketingConsent()))
-                .anonymised(r.getAnonymisedAt() != null)
+                .anonymised(anonymised)
                 .createdAt(instant(r.getCreatedAt()));
         if (profile) {
-            b.notes(r.getNotes()).consentAt(instant(r.getConsentAt())).consentSource(r.getConsentSource());
+            b.notes(anonymised ? null : r.getNotes()).consentAt(instant(r.getConsentAt())).consentSource(r.getConsentSource());
         }
         return b.build();
     }

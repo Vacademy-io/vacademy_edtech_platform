@@ -1346,13 +1346,16 @@
             "uploadCsv": "Upload CSV",
             "csvHelp": "Columns: order_number, courier, tracking_number, tracking_link",
             "csvFilled": "{{count}} rows filled from the file.",
+            "csvMore": "+{{count}} more",
             "missing": "Enter a courier and a tracking number for every order.",
             "csvErrors": {
                 "notSelected": "Line {{line}}: order {{value}} is not among the ticked orders.",
                 "duplicate": "Line {{line}}: order {{value}} appears twice.",
                 "missingField": "Line {{line}}: courier or tracking number missing for {{value}}.",
                 "noHeader": "Line {{line}}: the file has no order_number column.",
-                "empty": "Line {{line}}: the file has no rows."
+                "empty": "Line {{line}}: the file has no rows.",
+                "unreadable": "Line {{line}}: the file could not be read. Check its quotes and columns.",
+                "tooLarge": "The file is larger than 1 MB. Upload a file with only the ticked orders."
             }
         },
         "errors": {
@@ -1600,6 +1603,7 @@
             "scanPrompt": "Scan the packing slip or type the order number",
             "scanItems": "Scan each item's label",
             "allPacked": "All packed",
+            "allPackedFor": "All packed: {{name}}",
             "done": "Packed. Invoice issued.",
             "doneOrder": "Order {{number}} is ready to ship.",
             "shipNow": "Ship now",

@@ -38,6 +38,12 @@ const LABEL: Record<BulkActionId, string> = {
     EXPORT: 'orders.bulk.export',
 };
 
+/**
+ * Text cells that start with one of these get a leading apostrophe, so a spreadsheet shows
+ * them as text: buyer-typed names must never run as a formula (same rule as the panel usage export).
+ */
+const FORMULA_START = /^[=+\-@\t\r]/;
+
 /** Client-side CSV of rows (no server export route). */
 export function ordersCsv(rows: StaffOrderRow[]): string {
     return Papa.unparse(
@@ -52,7 +58,8 @@ export function ordersCsv(rows: StaffOrderRow[]): string {
             status: row.status,
             channel: row.channel ?? '',
             tracking: row.tracking_number ?? '',
-        }))
+        })),
+        { escapeFormulae: FORMULA_START }
     );
 }
 

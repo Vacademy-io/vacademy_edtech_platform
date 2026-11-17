@@ -181,4 +181,44 @@ class CommerceCustomerQueryServiceTest {
                 () -> service.profile(INST, "x".repeat(37)));
         verify(customers, org.mockito.Mockito.never()).findStaffRow(INST, "x".repeat(37));
     }
+
+    @Test
+    void anAnonymisedCustomerShowsNoNamePhoneEmailNotesOrAddressesWhateverTheColumnsHold() {
+        CommerceCustomerRepository.StaffRow row = row();
+        when(row.getEmail()).thenReturn("buyer@example.com");
+        when(row.getAnonymisedAt()).thenReturn(new Date(1_763_300_000_000L));
+        when(customers.staffSearch(INST, null, null, 50, 0L)).thenReturn(List.of(row));
+        when(customers.findStaffRow(INST, "cust-1")).thenReturn(Optional.of(row));
+
+        CustomerDtos.CustomerRow listed = service.list(INST, null, 0, 50).getCustomers().get(0);
+        assertEquals(Boolean.TRUE, listed.getAnonymised());
+        assertNull(listed.getName());
+        assertNull(listed.getPhone());
+        assertNull(listed.getEmail());
+        assertEquals(3L, listed.getOrdersCount(), "the totals stay");
+
+        CustomerDtos.CustomerProfile profile = service.profile(INST, "cust-1");
+        assertNull(profile.getCustomer().getName());
+        assertNull(profile.getCustomer().getPhone());
+        assertNull(profile.getCustomer().getEmail());
+        assertNull(profile.getCustomer().getNotes());
+        assertEquals(List.of(), profile.getAddresses());
+        org.mockito.Mockito.verifyNoInteractions(addresses);
+        JsonNode json = new ObjectMapper().valueToTree(profile);
+        for (String key : List.of("name", "phone", "email", "notes")) {
+            assertFalse(json.get("customer").has(key), key);
+        }
+        assertEquals(0, json.get("addresses").size());
+    }
+
+    @Test
+    void theSearchQueriesLeaveOutAnonymisedCustomersAndLastOrderAtFollowsTheOrdersCountRule() {
+        String filter = CommerceCustomerRepository.STAFF_FILTER.replaceAll("\\s+", " ");
+        assertTrue(filter.contains("OR c.anonymised_at IS NULL AND (c.phone = CAST(:phone AS VARCHAR) "
+                + "OR LOWER(c.name) LIKE CAST(:namePattern AS VARCHAR))"), filter);
+        String rowSql = CommerceCustomerRepository.STAFF_ROW.replaceAll("\\s+", " ");
+        String counted = "WHERE o.status <> 'PENDING_PAYMENT' AND NOT (o.status = 'CANCELLED' AND o.amount_paid = 0))";
+        assertTrue(rowSql.contains("FILTER (" + counted + " AS orders_count"), rowSql);
+        assertTrue(rowSql.contains("FILTER (" + counted + " AS last_order_at"), rowSql);
+    }
 }
