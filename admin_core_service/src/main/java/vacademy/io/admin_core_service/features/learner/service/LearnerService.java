@@ -282,4 +282,26 @@ public class LearnerService {
 
         instituteStudentRepository.save(student);
     }
+
+    /**
+     * Saves a region (state) on the learner's profile only when the profile has none yet.
+     * <p>
+     * The auth service has no region column, so a region sent with a new user never comes
+     * back from it and has to be written here. A region already on the profile is never
+     * replaced. Picks the same student row that StudentRegistrationManager writes to.
+     *
+     * @return true when the region was saved
+     */
+    public boolean fillRegionIfBlank(String userId, String region) {
+        if (!StringUtils.hasText(userId) || !StringUtils.hasText(region)) {
+            return false;
+        }
+        Student student = instituteStudentRepository.findTopByUserIdOrderByCreatedAtDesc(userId).orElse(null);
+        if (student == null || StringUtils.hasText(student.getRegion())) {
+            return false;
+        }
+        student.setRegion(region.trim());
+        instituteStudentRepository.save(student);
+        return true;
+    }
 }
