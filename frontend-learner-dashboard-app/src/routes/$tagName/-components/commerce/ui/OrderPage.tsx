@@ -4,8 +4,9 @@
  * in the address or in history.state, where analytics scripts could read it. An older
  * "order#t=…" link still works: its token is kept the same way and removed from the address at
  * once. An order link from a WhatsApp or e-mail message ("order#l=…", contract WP-33 §4.4) leaves
- * the address before anything else, is exchanged once for a short-lived order token that is kept
- * the same way, and is itself never stored. The token travels to the API only in the
+ * the address before anything else (the early script in index.html takes it before any other
+ * script runs and holds it in memory for this page), is exchanged once for a short-lived order
+ * token that is kept the same way, and is itself never stored. The token travels to the API only in the
  * X-Commerce-Order-Token header. A payment in
  * progress shows "Confirming your payment" and the page reads the order again (every 3 s for
  * 30 s, then every 10 s up to 5 minutes); it never offers a second payment while one is in
@@ -17,7 +18,7 @@ import { CheckCircle, Clock, Phone, WhatsappLogo, XCircle } from '@phosphor-icon
 import { CommerceApiError } from '../api/client';
 import type { OrderView } from '../api/types';
 import type { MessageKey } from '../i18n';
-import { PURCHASED_STATUSES, orderStage, pollDelay, readOrderFragment, readOrderLinkFragment } from '../logic/checkout';
+import { PURCHASED_STATUSES, orderStage, pollDelay, readOrderFragment, readOrderLinkFragment, takeHeldOrderLink } from '../logic/checkout';
 import { formatDate } from '../logic/dates';
 import { sendPurchaseOnce } from '../logic/events';
 import { payWithRazorpay } from '../logic/razorpay';
@@ -34,9 +35,11 @@ export type OrderLink = { linkToken: string };
 const isOrderLink = (taken: OpenedOrder | OrderLink | null): taken is OrderLink => !!taken && 'linkToken' in taken;
 
 /**
- * The order this page shows. An "#l=" order link comes first: the fragment is removed from the
- * address at once, before any request, and the link token is answered for the page to exchange
- * (an "l" that is not a well-formed link token is dropped the same way and opens nothing). Else
+ * The order this page shows. An order link comes first: the token the early script in index.html
+ * took out of the address (read once; the holder is gone afterwards), else an "#l=" still in the
+ * address (an older cached index.html, or a fragment the early script leaves alone), which is
+ * removed at once, before any request. The link token is answered for the page to exchange (an
+ * "l" that is not a well-formed link token is dropped the same way and opens nothing). Else
  * the record the history state's key names (or, after a language switch replaced the state, the
  * one this tab used last); else an older "#t=" link, whose token is then kept in sessionStorage
  * and removed from the address bar. The key is put back in the history state, so Back and a
@@ -50,9 +53,10 @@ export const takeOrder = (
     if (!win) return null;
     try {
         const address = `${win.location.pathname}${win.location.search}`;
-        const linkToken = readOrderLinkFragment(win.location.hash);
+        const held = takeHeldOrderLink(win);
+        const linkToken = held || readOrderLinkFragment(win.location.hash);
         if (linkToken || new URLSearchParams(win.location.hash.replace(/^#/, '')).has('l')) {
-            win.history.replaceState(win.history.state, '', address);
+            if (win.location.hash) win.history.replaceState(win.history.state, '', address);
             return linkToken ? { linkToken } : null;
         }
         const current = (win.history.state && typeof win.history.state === 'object' ? win.history.state : {}) as Record<string, unknown>;

@@ -142,7 +142,9 @@ public class CommerceNotificationEmailRenderer {
     private static void button(StringBuilder out, String link, String label) {
         out.append("<table role=\"presentation\" cellpadding=\"0\" cellspacing=\"0\" style=\"margin:4px 0 18px 0;\">")
                 .append("<tr><td style=\"background:#111827;border-radius:6px;\">")
-                .append("<a href=\"").append(CommerceNotificationValues.escapeHtml(link))
+                // ses:no-track: the mail service leaves this link as it is (no click-tracking redirect), so
+                // the order link reaches the buyer's browser directly and is never rewritten.
+                .append("<a ses:no-track href=\"").append(CommerceNotificationValues.escapeHtml(link))
                 .append("\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"display:inline-block;padding:10px 20px;"
                         + "color:#ffffff;text-decoration:none;font-weight:bold;\">")
                 .append(CommerceNotificationValues.escapeHtml(label)).append("</a></td></tr></table>");

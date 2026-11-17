@@ -267,6 +267,19 @@ public class InMemoryNotificationStore extends CommerceNotificationStore {
     }
 
     @Override
+    public synchronized int releaseClaim(String id, int minutes, String code) {
+        Delivery d = deliveries.get(id);
+        if (d == null || !"SENDING".equals(d.status)) {
+            return 0;
+        }
+        d.status = "PENDING";
+        d.errorCode = code;
+        d.attempts = Math.max(d.attempts - 1, 0);
+        d.dueInMinutes = minutes;
+        return 1;
+    }
+
+    @Override
     public synchronized int expirePending(String id) {
         Delivery d = deliveries.get(id);
         if (d == null || !"PENDING".equals(d.status)) {

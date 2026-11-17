@@ -378,6 +378,29 @@ class CommerceNotificationSettingsServiceTest {
         assertEquals("shop_shipped_v3", view.getWhatsapp().getTemplateName());
     }
 
+    @Test
+    void onlyAUtilityTemplateCanBeChosen() {
+        for (String category : List.of("MARKETING", "AUTHENTICATION")) {
+            when(templates.read(INST, "shop_offer", "hi")).thenReturn(new CommerceWhatsAppTemplateStatus.Template(
+                    "APPROVED", List.of(), "t9", category));
+            InvalidRequestException refused = assertThrows(InvalidRequestException.class, () -> service.updateTrigger(
+                    user, INST, "ORDER_CONFIRMED", body("{\"version\":0,\"whatsapp_template_name\":\"shop_offer\"}")));
+            assertTrue(refused.getMessage().startsWith("invalid_request: "), refused.getMessage());
+            assertTrue(refused.getMessage().contains("UTILITY"), refused.getMessage());
+        }
+        verifyNoInteractions(jdbc);
+
+        when(templates.read(INST, "shop_confirmed_v2", "hi")).thenReturn(new CommerceWhatsAppTemplateStatus.Template(
+                "APPROVED", List.of("customer_name"), "t2", "UTILITY"));
+        when(templates.read(INST, "shop_confirmed_v2", "en")).thenReturn(new CommerceWhatsAppTemplateStatus.Template(
+                "APPROVED", List.of("customer_name"), "t3", "UTILITY"));
+        when(jdbc.queryForList(eq(CommerceNotificationSettingsService.UPSERT), eq(Integer.class), any(Object[].class)))
+                .thenReturn(List.of(1));
+        NotificationSettingsDtos.TriggerView view = service.updateTrigger(user, INST, "ORDER_CONFIRMED",
+                body("{\"version\":0,\"whatsapp_template_name\":\"shop_confirmed_v2\"}"));
+        assertEquals("shop_confirmed_v2", view.getWhatsapp().getTemplateName());
+    }
+
     // ================================================================== PUT shop
 
     @Test

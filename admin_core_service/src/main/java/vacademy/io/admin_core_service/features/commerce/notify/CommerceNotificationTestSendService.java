@@ -281,6 +281,15 @@ public class CommerceNotificationTestSendService {
         if (!CommerceWhatsAppTemplateStatus.APPROVED.equals(status)) {
             return result(WHATSAPP, "SKIPPED", "TEMPLATE_NOT_APPROVED", masked);
         }
+        String category;
+        try {
+            category = templates.category(instituteId, templateName, r.locale());
+        } catch (RuntimeException e) {
+            category = null;
+        }
+        if (!CommerceWhatsAppTemplateStatus.isUtility(category)) {
+            return result(WHATSAPP, "SKIPPED", "TEMPLATE_NOT_UTILITY", masked);
+        }
         if (facts.link() == null) {
             return result(WHATSAPP, "SKIPPED", "NO_SHOP_URL", masked);
         }
@@ -324,6 +333,7 @@ public class CommerceNotificationTestSendService {
             case "SENT" -> result(channel, "SENT", null, masked);
             case "QUEUED" -> result(channel, "SENT", "QUEUED_BY_PLATFORM", masked);
             case "SKIPPED_UNSUBSCRIBED" -> result(channel, "SKIPPED", "UNSUBSCRIBED", masked);
+            case "SKIPPED_BLOCKED" -> result(channel, "SKIPPED", "ADDRESS_BLOCKED", masked);
             case "BLOCKED_NO_CREDITS" -> result(channel, "FAILED", "NO_CREDITS", masked);
             case "FAILED" -> result(channel, "FAILED", "PROVIDER_REJECTED", masked);
             default -> first.isSuccess() ? result(channel, "SENT", null, masked)

@@ -186,6 +186,8 @@ class CommerceNotificationsDatabaseProofIT {
         registry.add("commerce.turnstile.required", () -> "false");
         registry.add("spring.datasource.hikari.maximum-pool-size", () -> "40");
         registry.add("commerce.notify.cron", () -> "-");
+        // Off by default (production stays off until the first messages are checked); on for this proof.
+        registry.add("commerce.notifications.enabled", () -> "true");
         registry.add("commerce.payment-fetch.cron", () -> "-");
         registry.add("commerce.refund-poll.cron", () -> "-");
         registry.add("commerce.cod-confirm-timeout.cron", () -> "-");
@@ -321,6 +323,8 @@ class CommerceNotificationsDatabaseProofIT {
                     .build();
         }).when(notificationService).sendUnified(any());
         when(templates.status(anyString(), anyString(), anyString())).thenAnswer(call -> templateStatus);
+        when(templates.category(anyString(), anyString(), anyString()))
+                .thenReturn(CommerceWhatsAppTemplateStatus.UTILITY);
         // The listener's executor only queues; the proof runs the tasks itself.
         doAnswer(call -> {
             listenerTasks.add(call.getArgument(0));
@@ -1166,6 +1170,39 @@ class CommerceNotificationsDatabaseProofIT {
         assertEquals("SKIPPED", text("SELECT status FROM commerce_notification_event WHERE id = ?", event));
         assertEquals(0, count("SELECT count(*) FROM commerce_notification_delivery WHERE event_id = ?", event));
         assertEquals(callsBefore, calls(orderId).size(), "never sent later");
+
+        // Planned while commerce was on, switched off before the send: every planned message ends
+        // SKIPPED COMMERCE_OFF at send time, and nothing goes out when it is turned on again.
+        String second = paidOrder("en", true, true);
+        awaitTasks(1);
+        drain();
+        int secondBefore = calls(second).size();
+        ship(second);
+        awaitTasks(1);
+        Runnable later = listenerTasks.poll();
+        assertNotNull(later);
+        String shipped = eventId(second, "ORDER_SHIPPED");
+        assertEquals("PLANNED", dispatcher.plan(store.findEvent(shipped)));
+        assertEquals(2, count("SELECT count(*) FROM commerce_notification_delivery WHERE event_id = ? "
+                + "AND status = 'PENDING'", shipped));
+        db.update("UPDATE institute_module_entitlement SET enabled = false WHERE institute_id = ? AND key = 'commerce'",
+                inst);
+        capabilityResolver.evict(inst);
+        try {
+            job.runOnce();
+            assertEquals(2, count("SELECT count(*) FROM commerce_notification_delivery WHERE event_id = ? "
+                    + "AND status = 'SKIPPED' AND error_code = 'COMMERCE_OFF'", shipped));
+            assertEquals(secondBefore, calls(second).size(), "zero calls at send time");
+        } finally {
+            db.update("UPDATE institute_module_entitlement SET enabled = true WHERE institute_id = ? AND key = "
+                    + "'commerce'", inst);
+            capabilityResolver.evict(inst);
+        }
+        later.run();
+        job.runOnce();
+        assertEquals(2, count("SELECT count(*) FROM commerce_notification_delivery WHERE event_id = ? "
+                + "AND status = 'SKIPPED' AND error_code = 'COMMERCE_OFF'", shipped));
+        assertEquals(secondBefore, calls(second).size(), "never sent later");
         noDrift("proof 6");
     }
 

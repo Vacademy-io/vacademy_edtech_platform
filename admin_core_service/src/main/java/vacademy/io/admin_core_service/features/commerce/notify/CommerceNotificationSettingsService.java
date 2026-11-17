@@ -286,7 +286,10 @@ public class CommerceNotificationSettingsService {
         return node.asBoolean();
     }
 
-    /** The template name to store: null for the default (or a reset); refused when it asks for a variable the trigger lacks. */
+    /**
+     * The template name to store: null for the default (or a reset); refused when it asks for a variable the
+     * trigger lacks, or when it is not a UTILITY template (order messages are transactional).
+     */
     private String templateName(String instituteId, CommerceNotificationTrigger trigger, JsonNode node) {
         if (node == null || node.isNull()) {
             return null;
@@ -313,6 +316,11 @@ public class CommerceNotificationSettingsService {
             if (names != null && !trigger.variables().containsAll(names)) {
                 throw invalid("the template " + name + " (" + locale + ") asks for a variable this trigger does "
                         + "not have; allowed: " + String.join(", ", trigger.variables()));
+            }
+            String category = template == null ? null : template.category();
+            if (category != null && !CommerceWhatsAppTemplateStatus.isUtility(category)) {
+                throw invalid("the template " + name + " (" + locale + ") is of the category " + category
+                        + "; order messages use UTILITY templates only");
             }
         }
         return name;

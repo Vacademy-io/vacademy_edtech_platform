@@ -84,7 +84,11 @@ class CommerceNotificationEmailRendererTest {
         String html = messages.email(CommerceNotificationTrigger.ORDER_CONFIRMED, "en",
                 facts("Asha", LINK, null, null, items(1, "Kurta")), null).html();
         assertEquals(1, count(html, "<a "), html);
-        assertTrue(html.contains("<a href=\"" + LINK + "\" target=\"_blank\" rel=\"noopener noreferrer\""), html);
+        // ses:no-track: the mail service never rewrites the order link into a click-tracking redirect.
+        assertTrue(html.contains("<a ses:no-track href=\"" + LINK + "\" target=\"_blank\" rel=\"noopener noreferrer\""),
+                html);
+        // Every anchor of the message carries it.
+        assertEquals(html.split("<a ", -1).length, html.split("<a ses:no-track ", -1).length, html);
         assertTrue(html.contains(">See your order</a>"), html);
         // The lead-in "See your order:" is the button now, not a paragraph as well.
         assertEquals(1, count(html, "See your order"), html);
@@ -102,6 +106,7 @@ class CommerceNotificationEmailRendererTest {
                 facts("Asha", LINK, null, null, items(1, "Kurta")), null).html();
         assertTrue(hindi.contains(">अपना ऑर्डर देखें</a>"), hindi);
         assertTrue(hindi.contains("rel=\"noopener noreferrer\""), hindi);
+        assertTrue(hindi.contains("<a ses:no-track href=\"" + LINK + "\""), hindi);
     }
 
     @Test

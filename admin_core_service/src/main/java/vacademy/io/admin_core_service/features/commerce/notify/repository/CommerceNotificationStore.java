@@ -179,6 +179,17 @@ public class CommerceNotificationStore {
                 code, minutes, recipientHash, recipientMasked, id);
     }
 
+    /**
+     * SENDING back to PENDING before any call was made (the institute's feature could not be read): asked
+     * again in {@code minutes}; the claim does not count as an attempt. 1 when released.
+     */
+    public int releaseClaim(String id, int minutes, String code) {
+        return jdbc.update("UPDATE commerce_notification_delivery SET status = 'PENDING', error_code = ?, "
+                        + "attempts = GREATEST(attempts - 1, 0), next_attempt_at = now() + make_interval(mins => ?), "
+                        + "updated_at = now() WHERE id = ? AND status = 'SENDING'",
+                code, minutes, id);
+    }
+
     /** PENDING deliveries of an expired event: EXPIRED without a claim (nothing is sent a day late). */
     public int expirePending(String id) {
         return jdbc.update("UPDATE commerce_notification_delivery SET status = 'EXPIRED', error_code = 'EXPIRED', "

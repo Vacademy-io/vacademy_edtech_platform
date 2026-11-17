@@ -382,7 +382,7 @@ public class WorkflowExecutionLogger {
         final Set<String> SENSITIVE_PATTERNS = Set.of(
                 "password", "passwd", "pwd", "secret", "token", "key", "apikey", "api_key",
                 "authorization", "auth", "credential", "private", "ssn", "social_security",
-                "credit_card", "card_number", "cvv", "pin", "otp");
+                "credit_card", "card_number", "cvv", "pin", "otp", "orderlink");
 
         Map<String, Object> sanitized = new HashMap<>();
         int estimatedSize = 0;

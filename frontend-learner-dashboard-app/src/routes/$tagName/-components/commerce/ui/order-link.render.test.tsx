@@ -12,11 +12,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const router = vi.hoisted(() => ({
     location: { pathname: '/shop/order', search: '', hash: '', searchStr: '' },
     navigate: [] as string[],
+    replaced: [] as string[],
 }));
 
 vi.mock('@tanstack/react-router', () => ({
     useRouter: () => ({
-        history: { location: router.location, replace: () => undefined },
+        history: { location: router.location, replace: (href: string) => void router.replaced.push(href) },
         navigate: ({ href }: { href: string }) => {
             router.navigate.push(href);
             return Promise.resolve();
@@ -33,8 +34,11 @@ import { createRoot, type Root } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { hi } from '../i18n/messages.hi';
 import { ORDER_KEY_STATE, orderHandoffKey, readOrderHandoff, resetOrderHandoffMemory } from '../state/order-handoff';
-import { OrderPage } from './OrderPage';
-import { CommerceSiteProvider } from './site';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { HELD_ORDER_LINK } from '../logic/checkout';
+import { OrderPage, takeOrder } from './OrderPage';
+import { CommerceSiteProvider, useCommerceSite } from './site';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -101,6 +105,13 @@ const stubApi = () =>
 
 let root: Root | null = null;
 
+/** The page's language switch, reached from a probe inside the same provider. */
+const site: { setLocale?: (code: string) => void } = {};
+const SiteProbe = () => {
+    site.setLocale = useCommerceSite().setLocale;
+    return null;
+};
+
 const render = async () => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     const container = document.createElement('div');
@@ -112,6 +123,7 @@ const render = async () => {
             <QueryClientProvider client={client}>
                 <CommerceSiteProvider instituteId="inst-1" tagName="shop" globalSettings={SETTINGS} siteName="Example Shop">
                     <OrderPage />
+                    <SiteProbe />
                 </CommerceSiteProvider>
             </QueryClientProvider>
         );
@@ -176,6 +188,9 @@ beforeEach(() => {
     Object.defineProperty(window, 'sessionStorage', { value: memoryStorage(), configurable: true });
     requests.length = 0;
     router.navigate.length = 0;
+    router.replaced.length = 0;
+    router.location.hash = '';
+    delete (window as unknown as Record<string, unknown>)[HELD_ORDER_LINK];
     linkAnswers = [];
     linkGate = null;
     gtag = vi.fn();
@@ -336,3 +351,76 @@ describe('order page opened from an order link', () => {
         expect(purchaseSent()).toBe(false);
     });
 });
+
+/** The early script of index.html, run as written in this window (as the browser runs it first). */
+const runEarlyScript = () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    const match = html.match(/<script>\s*\/\/ Sign-in hand-off[\s\S]*?<\/script>/);
+    if (!match) throw new Error('no early script in index.html');
+    new Function(match[0].replace(/<\/?script>/g, ''))();
+};
+
+describe('order link taken by the early script in index.html', () => {
+    it('the address holds no token once the app starts; the page exchanges the held token once', async () => {
+        window.history.replaceState(null, '', `/shop/order#l=${LINK_TOKEN}`);
+        runEarlyScript();
+        // This is the address every later script (Sentry, the router, tracking) starts from.
+        expect(window.location.hash).toBe('');
+        expect(window.location.href).not.toContain(LINK_TOKEN);
+        expect(JSON.stringify(window.history.state)).not.toContain(LINK_TOKEN);
+        expect(Object.keys(window)).not.toContain(HELD_ORDER_LINK);
+        expect(dump(window.sessionStorage)).not.toContain(LINK_TOKEN);
+        expect(dump(window.localStorage)).not.toContain(LINK_TOKEN);
+
+        await render();
+        await settle(() => text().includes(hi['order.thanks']));
+        expect(calls('/orders/link')).toHaveLength(1);
+        expect(calls('/orders/link')[0]!.body).toEqual({ link_token: LINK_TOKEN });
+        expect(calls('/orders/link')[0]!.href).not.toContain(LINK_TOKEN);
+        // Read once: the holder is gone, and nothing else can take it again.
+        expect(HELD_ORDER_LINK in window).toBe(false);
+        expect(takeOrder('inst-1')).not.toMatchObject({ linkToken: LINK_TOKEN });
+        expect(calls('/orders/view')[0]!.headers['X-Commerce-Order-Token']).toBe(ORDER_TOKEN);
+        expect(purchaseSent()).toBe(false);
+    });
+
+    it('leaves a non-order page alone', () => {
+        window.history.replaceState(null, '', `/shop/checkout#l=${LINK_TOKEN}`);
+        runEarlyScript();
+        expect(window.location.hash).toBe(`#l=${LINK_TOKEN}`);
+        expect(HELD_ORDER_LINK in window).toBe(false);
+        window.history.replaceState(null, '', '/shop/order#details');
+        runEarlyScript();
+        expect(window.location.hash).toBe('#details');
+        expect(HELD_ORDER_LINK in window).toBe(false);
+    });
+});
+
+describe('a language switch on the order page', () => {
+    it('never puts a link token back, even when the router still remembers the old fragment', async () => {
+        // An older cached index.html: the page itself took the fragment out; the router's own
+        // record of the address may still hold it.
+        router.location.hash = `#l=${LINK_TOKEN}`;
+        await openLink();
+        await settle(() => text().includes(hi['order.thanks']));
+        expect(window.location.hash).toBe('');
+        await act(async () => site.setLocale!('en'));
+        expect(router.replaced).toHaveLength(1);
+        expect(router.replaced[0]).toBe('/shop/order?lang=en');
+        expect(router.replaced.join(' ')).not.toContain(LINK_TOKEN);
+    });
+
+    it('nor an order token; an ordinary anchor is kept', async () => {
+        router.location.hash = `#t=${OLD_ORDER_TOKEN}`;
+        window.history.replaceState(null, '', `/shop/order#t=${OLD_ORDER_TOKEN}`);
+        await render();
+        await settle(() => calls('/orders/view').length === 1);
+        await act(async () => site.setLocale!('en'));
+        expect(router.replaced.at(-1)).toBe('/shop/order?lang=en');
+
+        router.location.hash = '#details';
+        await act(async () => site.setLocale!('hi'));
+        expect(router.replaced.at(-1)).toBe('/shop/order#details');
+    });
+});
+

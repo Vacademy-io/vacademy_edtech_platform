@@ -18,7 +18,8 @@ import java.util.function.LongSupplier;
  * Whether a WhatsApp template of an institute is approved, read through notification_service's
  * {@code /by-name} (by institute, name and language). Cached: 10 minutes for APPROVED, 2 minutes
  * otherwise; a read error counts as not approved ({@code UNKNOWN}). Also the template's variable
- * names, and which WhatsApp provider the institute uses.
+ * names and category (order messages go out only through a {@code UTILITY} template), and which
+ * WhatsApp provider the institute uses.
  */
 @Slf4j
 @Component
@@ -27,11 +28,23 @@ public class CommerceWhatsAppTemplateStatus {
     public static final String APPROVED = "APPROVED";
     public static final String MISSING = "MISSING";
     public static final String UNKNOWN = "UNKNOWN";
+    public static final String UTILITY = "UTILITY";
     static final long APPROVED_TTL_MS = 10 * 60_000L;
     static final long OTHER_TTL_MS = 2 * 60_000L;
 
-    /** A template as read: status, variable names (null when unknown), its id (null when missing). */
-    public record Template(String status, List<String> bodyVariableNames, String id) {
+    /**
+     * A template as read: status, variable names (null when unknown), its id (null when missing) and
+     * its category (MARKETING, UTILITY, AUTHENTICATION; null when unknown).
+     */
+    public record Template(String status, List<String> bodyVariableNames, String id, String category) {
+        public Template(String status, List<String> bodyVariableNames, String id) {
+            this(status, bodyVariableNames, id, null);
+        }
+    }
+
+    /** Whether a category read from a template is UTILITY (an unknown category is not). */
+    public static boolean isUtility(String category) {
+        return category != null && UTILITY.equals(category.trim().toUpperCase(Locale.ROOT));
     }
 
     private record Cached(Template template, long until) {
@@ -57,6 +70,11 @@ public class CommerceWhatsAppTemplateStatus {
     /** APPROVED, PENDING, REJECTED, DRAFT, MISSING, or UNKNOWN when it could not be read. */
     public String status(String instituteId, String name, String locale) {
         return read(instituteId, name, locale).status();
+    }
+
+    /** The template's category as read (upper case), or null when it is missing or could not be read. */
+    public String category(String instituteId, String name, String locale) {
+        return read(instituteId, name, locale).category();
     }
 
     public Template read(String instituteId, String name, String locale) {
@@ -98,7 +116,9 @@ public class CommerceWhatsAppTemplateStatus {
                     names.add(v.asText());
                 }
             }
-            return new Template(status.isEmpty() ? UNKNOWN : status, names, node.path("id").asText());
+            String category = node.path("category").asText("").trim().toUpperCase(Locale.ROOT);
+            return new Template(status.isEmpty() ? UNKNOWN : status, names, node.path("id").asText(),
+                    category.isEmpty() ? null : category);
         } catch (RuntimeException e) {
             log.warn("COMMERCE_NOTIFY template status of institute {} not read: {}", instituteId,
                     e.getClass().getSimpleName());

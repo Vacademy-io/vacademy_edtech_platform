@@ -39,6 +39,23 @@
           );
         } catch (e) {}
       })();
+      // Order link of a shop message ("/order#l=l1.<payload>.<mac>"): the link
+      // token leaves the address before any other script runs. It is kept in
+      // memory only (never in storage), and the order page takes it once
+      // (takeOrder in src/routes/$tagName/-components/commerce/ui/OrderPage.tsx).
+      // Any other address, or a fragment of another shape, is left as it is.
+      (function () {
+        try {
+          var m = /^#l=(l1\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+)$/.exec(location.hash || "");
+          if (!m || m[1].length > 200 || !/\/order\/?$/.test(location.pathname)) return;
+          Object.defineProperty(window, "__cmxOrderLink", {
+            configurable: true,
+            writable: true,
+            value: m[1]
+          });
+          history.replaceState(history.state, "", location.pathname + location.search);
+        } catch (e) {}
+      })();
     </script>
     <meta
       name="viewport"

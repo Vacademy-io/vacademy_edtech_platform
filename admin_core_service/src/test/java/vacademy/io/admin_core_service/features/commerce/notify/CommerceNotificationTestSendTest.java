@@ -80,6 +80,7 @@ class CommerceNotificationTestSendTest {
         when(settings.findByInstituteIdAndTriggerCode(eq(INST), anyString())).thenReturn(Optional.empty());
         templates = mock(CommerceWhatsAppTemplateStatus.class);
         when(templates.status(eq(INST), anyString(), anyString())).thenReturn(CommerceWhatsAppTemplateStatus.APPROVED);
+        when(templates.category(eq(INST), anyString(), anyString())).thenReturn(CommerceWhatsAppTemplateStatus.UTILITY);
         shopSettings = mock(CommerceNotificationShopSettings.class);
         when(shopSettings.read(INST)).thenReturn(CommerceNotificationShopSettings.Shop.defaults());
         when(shopSettings.linkBase(eq(INST), any())).thenReturn("https://shop.example.com");
@@ -275,5 +276,34 @@ class CommerceNotificationTestSendTest {
         assertThrows(IllegalStateException.class, () -> service.send(user, INST,
                 body("{\"trigger\":\"ORDER_SHIPPED\",\"locale\":\"en\"}")));
         verifyNoInteractions(notificationService);
+    }
+
+    @Test
+    void aTemplateThatIsNotUtilityIsNotSent() {
+        for (String category : new String[] {"MARKETING", null}) {
+            when(templates.category(INST, "commerce_order_rto", "hi")).thenReturn(category);
+
+            NotificationSettingsDtos.TestSendAnswer answer = service.send(user, INST,
+                    body("{\"trigger\":\"ORDER_RTO\",\"locale\":\"hi\",\"channels\":[\"WHATSAPP\"]}"));
+
+            NotificationSettingsDtos.TestSendResult result = answer.getResults().get(0);
+            assertEquals("SKIPPED", result.getStatus(), String.valueOf(category));
+            assertEquals("TEMPLATE_NOT_UTILITY", result.getCode());
+        }
+        verify(notificationService, never()).sendUnified(any());
+    }
+
+    @Test
+    void aBlockedAddressIsSkipped() {
+        when(notificationService.sendUnified(any())).thenReturn(UnifiedSendResponse.builder().results(List.of(
+                UnifiedSendResponse.RecipientResult.builder().success(false).status("SKIPPED_BLOCKED").build()))
+                .build());
+
+        NotificationSettingsDtos.TestSendAnswer answer = service.send(user, INST,
+                body("{\"trigger\":\"ORDER_SHIPPED\",\"locale\":\"en\",\"channels\":[\"EMAIL\"]}"));
+
+        NotificationSettingsDtos.TestSendResult result = answer.getResults().get(0);
+        assertEquals("SKIPPED", result.getStatus());
+        assertEquals("ADDRESS_BLOCKED", result.getCode());
     }
 }

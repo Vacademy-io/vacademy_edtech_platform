@@ -101,6 +101,8 @@ public class DispatcherFixture {
         lenient().when(workflows.getIfAvailable()).thenReturn(workflowService);
         lenient().when(templates.status(anyString(), anyString(), anyString()))
                 .thenReturn(CommerceWhatsAppTemplateStatus.APPROVED);
+        lenient().when(templates.category(anyString(), anyString(), anyString()))
+                .thenReturn(CommerceWhatsAppTemplateStatus.UTILITY);
         lenient().when(shopSettings.read(anyString())).thenReturn(CommerceNotificationShopSettings.Shop.defaults());
         lenient().when(shopSettings.linkBase(anyString(), any())).thenReturn(LINK_BASE);
         lenient().when(returnSettings.read(anyString())).thenReturn(CommerceReturnPolicy.defaults());

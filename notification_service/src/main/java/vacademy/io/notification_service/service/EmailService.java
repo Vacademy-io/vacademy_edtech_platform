@@ -32,6 +32,7 @@ import vacademy.io.notification_service.features.bounced_emails.service.BouncedE
 import vacademy.io.notification_service.features.notification_log.entity.NotificationLog;
 import vacademy.io.notification_service.features.notification_log.repository.NotificationLogRepository;
 import vacademy.io.notification_service.util.EmailDomainBlocklistUtil;
+import vacademy.io.notification_service.util.LogMask;
 
 import java.time.Instant;
 import java.util.AbstractMap;
@@ -937,7 +938,8 @@ public class EmailService {
                 return SendOutcome.SKIPPED_UNSUBSCRIBED;
             }
 
-            logger.info("Sending HTML email to: {} using emailType: {} for service: {}", to, emailType, service);
+            logger.info("Sending HTML email to: {} using emailType: {} for service: {}", LogMask.email(to), emailType,
+                    service);
 
             // Determine final from address - custom email takes highest priority
             final String finalFromEmail;
@@ -1030,7 +1032,7 @@ public class EmailService {
                     emailUsageStore.recordSent(instituteId, billingClass, billingUnits);
 
                 } catch (Exception e) {
-                    logger.error("Failed to send HTML email to: {}", to, e);
+                    logger.error("Failed to send HTML email to: {}", LogMask.email(to), e);
                     SentryLogger.SentryEventBuilder.error(e)
                             .withMessage("Failed to send HTML email")
                             .withTag("notification.type", "EMAIL")

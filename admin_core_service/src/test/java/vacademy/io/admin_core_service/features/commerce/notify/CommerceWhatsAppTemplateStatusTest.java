@@ -109,4 +109,27 @@ class CommerceWhatsAppTemplateStatusTest {
         verify(client, times(2)).getWhatsAppTemplateByName(INST, NAME, "hi");
         verify(client, times(1)).getWhatsAppTemplateByName("inst-2", NAME, "hi");
     }
+
+    @Test
+    void theCategoryIsReadWithTheStatusAndOnlyUtilityCounts() throws Exception {
+        answer("hi", "{\"id\":\"t-1\",\"status\":\"APPROVED\",\"category\":\"utility\"}");
+        assertEquals("UTILITY", status.category(INST, NAME, "hi"));
+        answer("en", "{\"id\":\"t-2\",\"status\":\"APPROVED\",\"category\":\"MARKETING\"}");
+        assertEquals("MARKETING", status.read(INST, NAME, "en").category());
+        verify(client, times(1)).getWhatsAppTemplateByName(INST, NAME, "hi");
+
+        assertEquals(true, CommerceWhatsAppTemplateStatus.isUtility("UTILITY"));
+        assertEquals(true, CommerceWhatsAppTemplateStatus.isUtility(" utility "));
+        assertEquals(false, CommerceWhatsAppTemplateStatus.isUtility("MARKETING"));
+        assertEquals(false, CommerceWhatsAppTemplateStatus.isUtility("AUTHENTICATION"));
+        assertEquals(false, CommerceWhatsAppTemplateStatus.isUtility(null));
+    }
+
+    @Test
+    void aTemplateWithoutACategoryOrUnreadableHasNone() throws Exception {
+        answer("hi", "{\"id\":\"t-1\",\"status\":\"APPROVED\"}");
+        assertNull(status.category(INST, NAME, "hi"));
+        when(client.getWhatsAppTemplateByName(INST, NAME, "en")).thenThrow(new IllegalStateException("down"));
+        assertNull(status.category(INST, NAME, "en"));
+    }
 }

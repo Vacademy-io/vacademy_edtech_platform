@@ -55,7 +55,8 @@ import java.util.Map;
  * row per enabled channel. Two pods planning one event make the same rows once.
  *
  * <p><b>Send</b> (a PENDING delivery that is due): claimed by a compare-and-set to SENDING; only the
- * claimer sends, once. An answer that leaves the outcome unknown (a read timeout, a 5xx, a lost
+ * claimer sends, once. The institute's commerce feature is read again after the claim (OFF: skipped
+ * for good; UNKNOWN: back to PENDING for 5 minutes, before any call). An answer that leaves the outcome unknown (a read timeout, a 5xx, a lost
  * claim) is never sent again: a buyer may miss a message, never gets two. Logs carry ids, the
  * trigger, the channel, the status and codes only.
  */
@@ -99,7 +100,7 @@ public class CommerceNotificationDispatcher {
                                           CommerceOrderLinkTokens linkTokens,
                                           CommerceNotificationMessages messages,
                                           PlatformTransactionManager transactionManager,
-                                          @Value("${commerce.notifications.enabled:true}") boolean enabled,
+                                          @Value("${commerce.notifications.enabled:false}") boolean enabled,
                                           @Value("${commerce.order-token.secret:}") String orderTokenSecret) {
         this.store = store;
         this.settings = settings;
@@ -165,9 +166,8 @@ public class CommerceNotificationDispatcher {
         if (order == null) {
             return skip(event, "NOT_APPLICABLE");
         }
-        CommerceFeature feature = trigger == CommerceNotificationTrigger.POS_BILL_ISSUED && "POS".equals(order.channel())
-                ? CommerceFeature.POS : CommerceFeature.ORDERS;
-        CommerceAccessGuard.FeatureState state = accessGuard.featureState(event.instituteId(), feature);
+        CommerceAccessGuard.FeatureState state = accessGuard.featureState(event.instituteId(),
+                featureOf(trigger, order.channel()));
         if (state == CommerceAccessGuard.FeatureState.UNKNOWN || state == null) {
             store.retryEvent(event.id(), (int) FEATURE_RETRY.toMinutes());
             log.warn("COMMERCE_NOTIFY event {} order={} trigger={}: feature state unknown; asked again later",
@@ -229,6 +229,12 @@ public class CommerceNotificationDispatcher {
         return "PLANNED";
     }
 
+    /** The commerce feature a message of the trigger needs: POS for the bill of a POS sale, else orders. */
+    static CommerceFeature featureOf(CommerceNotificationTrigger trigger, String orderChannel) {
+        return trigger == CommerceNotificationTrigger.POS_BILL_ISSUED && "POS".equals(orderChannel)
+                ? CommerceFeature.POS : CommerceFeature.ORDERS;
+    }
+
     private PlatformTransactionManager readOnlyManager() {
         return readOnly.getTransactionManager();
     }
@@ -282,6 +288,23 @@ public class CommerceNotificationDispatcher {
         }
         CommerceNotificationStore.DeliveryRow d = store.findDelivery(deliveryId);
         try {
+            // Planned while commerce was on; the institute may have been switched off since.
+            CommerceNotificationTrigger trigger = CommerceNotificationTrigger.of(d.triggerCode());
+            if (trigger != null) {
+                CommerceNotificationStore.OrderFacts facts = store.order(d.instituteId(), d.orderId());
+                CommerceAccessGuard.FeatureState state = accessGuard.featureState(d.instituteId(),
+                        featureOf(trigger, facts == null ? null : facts.channel()));
+                if (state == CommerceAccessGuard.FeatureState.OFF) {
+                    return finish(d, CommerceNotificationDelivery.SKIPPED, "COMMERCE_OFF", null, null, null, null);
+                }
+                if (state != CommerceAccessGuard.FeatureState.ON) {
+                    // Nothing was called yet: safe to ask again.
+                    store.releaseClaim(d.id(), (int) FEATURE_RETRY.toMinutes(), "FEATURE_UNKNOWN");
+                    log.warn("COMMERCE_NOTIFY delivery {} order={} trigger={} channel={}: feature state unknown; "
+                            + "asked again later", d.id(), d.orderId(), d.triggerCode(), d.channel());
+                    return Result.RETRY;
+                }
+            }
             if (CommerceNotificationTrigger.COD_CONFIRMATION_NEEDED.name().equals(d.triggerCode())) {
                 // Planned while the order waited for the call; staff may have answered it since.
                 CommerceNotificationStore.OrderFacts now = store.order(d.instituteId(), d.orderId());
@@ -397,6 +420,11 @@ public class CommerceNotificationDispatcher {
         if (!CommerceWhatsAppTemplateStatus.APPROVED.equals(templates.status(d.instituteId(), templateName,
                 d.locale()))) {
             return finish(d, CommerceNotificationDelivery.SKIPPED, "TEMPLATE_NOT_APPROVED", null, null, hash, masked);
+        }
+        // Order messages are transactional: only a template of the UTILITY category goes out.
+        if (!CommerceWhatsAppTemplateStatus.isUtility(templates.category(d.instituteId(), templateName,
+                d.locale()))) {
+            return finish(d, CommerceNotificationDelivery.SKIPPED, "TEMPLATE_NOT_UTILITY", null, null, hash, masked);
         }
         if (c.linkBase() == null || !linkTokens.isConfigured()) {
             return finish(d, CommerceNotificationDelivery.SKIPPED, "NO_SHOP_URL", null, null, hash, masked);
@@ -571,6 +599,9 @@ public class CommerceNotificationDispatcher {
             case "QUEUED" -> finish(d, CommerceNotificationDelivery.SENT, "QUEUED_BY_PLATFORM", null,
                     result.getMessageId(), hash, masked);
             case "SKIPPED_UNSUBSCRIBED" -> finish(d, CommerceNotificationDelivery.SKIPPED, "UNSUBSCRIBED", null, null,
+                    hash, masked);
+            // The platform does not write to an address that bounced or is blocklisted: nothing was sent.
+            case "SKIPPED_BLOCKED" -> finish(d, CommerceNotificationDelivery.SKIPPED, "ADDRESS_BLOCKED", null, null,
                     hash, masked);
             case "BLOCKED_NO_CREDITS" -> finish(d, CommerceNotificationDelivery.FAILED, "NO_CREDITS", null, null, hash,
                     masked);

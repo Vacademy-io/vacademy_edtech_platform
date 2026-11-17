@@ -10,6 +10,8 @@ import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import vacademy.io.admin_core_service.features.commerce.notify.entity.CommerceNotificationSetting;
 import vacademy.io.admin_core_service.features.commerce.order.checkout.CommerceOrderLinkTokens;
+import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard;
+import vacademy.io.admin_core_service.features.commerce.security.CommerceFeature;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendResponse;
 import vacademy.io.admin_core_service.features.workflow.service.TriggerContextKeyRegistry;
@@ -595,5 +597,107 @@ class CommerceNotificationSenderTest {
         assertFalse(ctx.containsKey("customerEmail"));
         assertFalse(ctx.containsKey("userId"));
         assertFalse(ctx.containsKey("orderLink"));
+    }
+
+    // ================================================================== rules read again at send time
+
+    @Test
+    void commerceSwitchedOffAfterPlanningSkipsTheMessageForGoodWithoutAnAlert() {
+        String id = due("ORDER_SHIPPED", "EMAIL");
+        when(f.accessGuard.featureState(DispatcherFixture.INST, CommerceFeature.ORDERS))
+                .thenReturn(CommerceAccessGuard.FeatureState.OFF);
+        try (LogCapture logs = LogCapture.of(LogCapture.COMMERCE)) {
+            assertEquals(CommerceNotificationDispatcher.Result.SKIPPED, send(id));
+            assertFalse(logs.messages().stream().anyMatch(m -> m.contains("COMMERCE_ALERT")), logs.messages()
+                    .toString());
+        }
+        assertEquals("SKIPPED", f.row(id).status);
+        assertEquals("COMMERCE_OFF", f.row(id).errorCode);
+        assertTrue(f.sent.isEmpty());
+        // Turned on again: the message stays skipped, never sent late.
+        when(f.accessGuard.featureState(DispatcherFixture.INST, CommerceFeature.ORDERS))
+                .thenReturn(CommerceAccessGuard.FeatureState.ON);
+        assertEquals(CommerceNotificationDispatcher.Result.NOT_CLAIMED, send(id));
+        verify(f.notificationService, never()).sendUnified(any());
+    }
+
+    @Test
+    void anUnknownFeatureAtSendTimeGoesBackToPendingForFiveMinutesWithoutCountingAnAttempt() {
+        String id = due("ORDER_SHIPPED", "WHATSAPP");
+        when(f.accessGuard.featureState(anyString(), any())).thenReturn(CommerceAccessGuard.FeatureState.UNKNOWN);
+        try (LogCapture logs = LogCapture.of(LogCapture.COMMERCE)) {
+            assertEquals(CommerceNotificationDispatcher.Result.RETRY, send(id));
+            assertFalse(logs.messages().stream().anyMatch(m -> m.contains("COMMERCE_ALERT")), logs.messages()
+                    .toString());
+        }
+        assertEquals("PENDING", f.row(id).status);
+        assertEquals("FEATURE_UNKNOWN", f.row(id).errorCode);
+        assertEquals(5, f.row(id).dueInMinutes);
+        assertEquals(0, f.row(id).attempts);
+        assertTrue(f.sent.isEmpty());
+        // Not due before then.
+        assertEquals(CommerceNotificationDispatcher.Result.NOT_CLAIMED, send(id));
+
+        // A null answer is treated the same way.
+        f.row(id).dueInMinutes = 0;
+        when(f.accessGuard.featureState(anyString(), any())).thenReturn(null);
+        assertEquals(CommerceNotificationDispatcher.Result.RETRY, send(id));
+        assertEquals(0, f.row(id).attempts);
+
+        // Readable and on again: sent once, as the first attempt.
+        f.row(id).dueInMinutes = 0;
+        when(f.accessGuard.featureState(anyString(), any())).thenReturn(CommerceAccessGuard.FeatureState.ON);
+        assertEquals(CommerceNotificationDispatcher.Result.SENT, send(id));
+        assertEquals(1, f.row(id).attempts);
+        assertEquals(1, f.sent.size());
+    }
+
+    @Test
+    void theBillOfAPosSaleIsCheckedAgainstThePosFeatureAtSendTime() {
+        f.order.channel = "POS";
+        f.order.put();
+        String id = due("POS_BILL_ISSUED", "EMAIL");
+        when(f.accessGuard.featureState(DispatcherFixture.INST, CommerceFeature.POS))
+                .thenReturn(CommerceAccessGuard.FeatureState.OFF);
+        assertEquals(CommerceNotificationDispatcher.Result.SKIPPED, send(id));
+        assertEquals("COMMERCE_OFF", f.row(id).errorCode);
+        assertTrue(f.sent.isEmpty());
+    }
+
+    @Test
+    void onlyAUtilityTemplateGoesOutOnWhatsApp() {
+        for (String category : new String[] {"MARKETING", "AUTHENTICATION", null}) {
+            DispatcherFixture g = new DispatcherFixture();
+            when(g.templates.category(anyString(), anyString(), anyString())).thenReturn(category);
+            String whatsapp = due(g, "ORDER_SHIPPED", "ship-1", "WHATSAPP");
+            String email = g.delivery(g.store.deliveries.get(whatsapp).eventId, "EMAIL");
+            try (LogCapture logs = LogCapture.of(LogCapture.COMMERCE)) {
+                assertEquals(CommerceNotificationDispatcher.Result.SKIPPED, g.dispatcher.send(whatsapp),
+                        String.valueOf(category));
+                assertFalse(logs.messages().stream().anyMatch(m -> m.contains("COMMERCE_ALERT")));
+            }
+            assertEquals("TEMPLATE_NOT_UTILITY", g.row(whatsapp).errorCode);
+            assertTrue(g.sent.isEmpty(), String.valueOf(category));
+            // The e-mail of the same message still goes.
+            assertEquals(CommerceNotificationDispatcher.Result.SENT, g.dispatcher.send(email));
+        }
+        DispatcherFixture utility = new DispatcherFixture();
+        when(utility.templates.category(anyString(), anyString(), anyString())).thenReturn("utility");
+        String id = due(utility, "ORDER_SHIPPED", "ship-1", "WHATSAPP");
+        assertEquals(CommerceNotificationDispatcher.Result.SENT, utility.dispatcher.send(id));
+    }
+
+    @Test
+    void aBlockedAddressIsSkippedWithoutAnAlert() {
+        try (LogCapture logs = LogCapture.of(LogCapture.COMMERCE)) {
+            String id = sendOne(DispatcherFixture.sentAnswer("SKIPPED_BLOCKED", false, null, "address bounced"));
+            assertEquals("SKIPPED", f.row(id).status);
+            assertEquals("ADDRESS_BLOCKED", f.row(id).errorCode);
+            assertNull(f.row(id).errorDetail);
+            assertFalse(logs.messages().stream().anyMatch(m -> m.contains("COMMERCE_ALERT")), logs.messages()
+                    .toString());
+            assertTrue(logs.events().stream().noneMatch(e -> e.getLevel() == Level.ERROR));
+        }
+        assertEquals(1, f.sent.size(), "never retried");
     }
 }
