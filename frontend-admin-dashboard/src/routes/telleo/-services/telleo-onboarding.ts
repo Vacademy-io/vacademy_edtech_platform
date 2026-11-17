@@ -19,8 +19,13 @@ export interface TelleoAnswers {
     agent_name?: string;
 }
 
+/** PLATFORM = the dashboard; API = calls from the client's own software. */
+export type AccessMode = 'PLATFORM' | 'API';
+
 export interface TelleoOnboardingStatus {
     institute_id: string;
+    /** Null until chosen; an account set up before the choice is the dashboard. */
+    access_mode?: AccessMode | null;
     status: OnboardingStatus;
     line_status: StepStatus;
     settings_status: StepStatus;
@@ -43,6 +48,18 @@ export interface CallMeResult {
 export const fetchOnboarding = async (instituteId: string): Promise<TelleoOnboardingStatus> => {
     const { data } = await authenticatedAxiosInstance.get<TelleoOnboardingStatus>(
         `${API}/${encodeURIComponent(instituteId)}`
+    );
+    return data;
+};
+
+/** The first setup step. API sets the account up straight away; the dashboard goes on to the questions. */
+export const chooseAccess = async (
+    instituteId: string,
+    accessMode: AccessMode
+): Promise<TelleoOnboardingStatus> => {
+    const { data } = await authenticatedAxiosInstance.post<TelleoOnboardingStatus>(
+        `${API}/${encodeURIComponent(instituteId)}/access`,
+        { access_mode: accessMode }
     );
     return data;
 };

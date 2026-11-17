@@ -52,6 +52,11 @@ import java.util.concurrent.RejectedExecutionException;
 @Service
 public class TelleoOnboardingService {
 
+    /** The dashboard: business questions, a draft agent and the lead pages. */
+    public static final String ACCESS_PLATFORM = "PLATFORM";
+    /** Calls over the API: trial line and keys; no questions and no draft agent. */
+    public static final String ACCESS_API = "API";
+
     public static final String NEW = "NEW";
     public static final String RUNNING = "RUNNING";
     public static final String READY = "READY";
@@ -118,6 +123,12 @@ public class TelleoOnboardingService {
                     .agentStatus(STEP_PENDING).build();
         }
         Row r = row.get();
+        out.accessMode(r.accessMode());
+        // Chose the dashboard but has not answered yet: still on the questions.
+        if (r.answers() == null && !ACCESS_API.equals(r.accessMode())) {
+            return out.status(NEW).lineStatus(r.lineStatus()).settingsStatus(r.settingsStatus())
+                    .agentStatus(r.agentStatus()).build();
+        }
         return out.status(r.stale() ? FAILED : r.status())
                 .lineStatus(r.lineStatus())
                 .settingsStatus(r.settingsStatus())
@@ -131,14 +142,46 @@ public class TelleoOnboardingService {
 
     // ── Writes ──────────────────────────────────────────────────────────────────
 
+    /**
+     * The first setup step: dashboard (PLATFORM) or API. The dashboard goes on to the questions; API
+     * is set up straight away (trial line, settings and its own pages, no draft agent). Chosen once
+     * here; switching later is a separate change, since the two are priced differently.
+     */
+    public TelleoOnboardingStatusDTO chooseAccess(String instituteId, String accessMode) {
+        requireTelleo(instituteId);
+        String mode = accessMode == null ? "" : accessMode.trim().toUpperCase(java.util.Locale.ROOT);
+        if (!ACCESS_PLATFORM.equals(mode) && !ACCESS_API.equals(mode)) {
+            throw new VacademyException(HttpStatus.BAD_REQUEST, "Choose the dashboard or the API.");
+        }
+        String current = row(instituteId).map(Row::accessMode).orElse(null);
+        if (current != null && !current.equals(mode)) {
+            throw new VacademyException(HttpStatus.CONFLICT, "This account is already set up for "
+                    + (ACCESS_API.equals(current) ? "the API." : "the dashboard."));
+        }
+        jdbc.update("""
+                INSERT INTO telleo_onboarding (institute_id, access_mode) VALUES (:id, :m)
+                ON CONFLICT (institute_id) DO UPDATE SET access_mode = EXCLUDED.access_mode, updated_at = now()
+                """, new MapSqlParameterSource().addValue("id", instituteId).addValue("m", mode));
+        if (ACCESS_API.equals(mode)) {
+            start(instituteId);
+        }
+        return status(instituteId);
+    }
+
     /** Saves the answers and starts (or resumes) setting the account up in the background. */
     public TelleoOnboardingStatusDTO submit(String instituteId, TelleoAnswersDTO answers) {
         requireTelleo(instituteId);
+        if (ACCESS_API.equals(row(instituteId).map(Row::accessMode).orElse(null))) {
+            throw new VacademyException(HttpStatus.CONFLICT, "This account is set up for the API.");
+        }
         TelleoAnswersDTO clean = TelleoAgentDraftBuilder.clean(answers);
+        // Answering the questions is choosing the dashboard (also for accounts from before the choice).
         jdbc.update("""
-                INSERT INTO telleo_onboarding (institute_id, answers) VALUES (:id, :a)
-                ON CONFLICT (institute_id) DO UPDATE SET answers = EXCLUDED.answers, updated_at = now()
-                """, new MapSqlParameterSource().addValue("id", instituteId).addValue("a", writeAnswers(clean)));
+                INSERT INTO telleo_onboarding (institute_id, answers, access_mode) VALUES (:id, :a, :m)
+                ON CONFLICT (institute_id) DO UPDATE SET answers = EXCLUDED.answers,
+                       access_mode = COALESCE(telleo_onboarding.access_mode, EXCLUDED.access_mode), updated_at = now()
+                """, new MapSqlParameterSource().addValue("id", instituteId).addValue("a", writeAnswers(clean))
+                .addValue("m", ACCESS_PLATFORM));
         start(instituteId);
         return status(instituteId);
     }
@@ -146,7 +189,8 @@ public class TelleoOnboardingService {
     /** Runs the steps that are not done yet with the saved answers. */
     public TelleoOnboardingStatusDTO retry(String instituteId) {
         requireTelleo(instituteId);
-        if (row(instituteId).map(Row::answers).orElse(null) == null) {
+        Row current = row(instituteId).orElse(null);
+        if (current == null || (current.answers() == null && !ACCESS_API.equals(current.accessMode()))) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Answer the questions first.");
         }
         start(instituteId);
@@ -187,8 +231,9 @@ public class TelleoOnboardingService {
     void run(String instituteId) {
         Row r = row(instituteId).orElse(null);
         if (r == null) return;
+        boolean api = ACCESS_API.equals(r.accessMode());
         TelleoAnswersDTO answers = readAnswers(r.answers());
-        if (answers == null) {
+        if (answers == null && !api) {
             finish(instituteId, FAILED, "Answer the questions first.");
             return;
         }
@@ -198,10 +243,11 @@ public class TelleoOnboardingService {
             firstError = step(instituteId, "line_status", () -> lineService.attachTrialLine(instituteId), firstError);
         }
         if (!STEP_DONE.equals(r.settingsStatus())) {
-            firstError = step(instituteId, "settings_status", () -> applySettings(instituteId), firstError);
+            firstError = step(instituteId, "settings_status", () -> applySettings(instituteId, api), firstError);
         }
-        if (!STEP_DONE.equals(r.agentStatus()) || r.agentId() == null
-                || agentService.find(r.agentId(), instituteId).isEmpty()) {
+        // An API account writes its own agents over the API: no draft.
+        if (!api && (!STEP_DONE.equals(r.agentStatus()) || r.agentId() == null
+                || agentService.find(r.agentId(), instituteId).isEmpty())) {
             firstError = step(instituteId, "agent_status", () -> createAgent(instituteId, answers), firstError);
         }
         finish(instituteId, firstError == null ? READY : FAILED, firstError);
@@ -219,8 +265,12 @@ public class TelleoOnboardingService {
         }
     }
 
-    /** AI calling on Telleo's engine, and the four-page dashboard unless the admin already has one. */
-    void applySettings(String instituteId) {
+    /**
+     * AI calling on Telleo's engine (which also shows the API keys card), and the account's pages: an
+     * API account always gets the API pages (sign-up wrote the dashboard ones); a dashboard account
+     * gets its four pages unless the admin already has display settings.
+     */
+    void applySettings(String instituteId, boolean api) {
         InstituteSettingWriter.Actor actor = InstituteSettingWriter.Actor.platform(ACTOR, "Telleo onboarding");
         settingsMutator.update(instituteId, data -> {
             if (!data.hasNonNull("provider") || data.get("provider").asText().isBlank()) {
@@ -231,7 +281,10 @@ public class TelleoOnboardingService {
             Institute institute = instituteRepository.findById(instituteId)
                     .orElseThrow(() -> new IllegalStateException("Institute not found"));
             Map<String, ?> existing = InstituteSettingWriter.settingNodes(institute.getSetting());
-            if (!existing.containsKey(DisplaySettingsFormat.ADMIN_KEY)) {
+            if (api) {
+                settingWriter.putSettingKey(institute, DisplaySettingsFormat.ADMIN_KEY,
+                        TelleoDisplaySettings.apiAdminEntry(), actor);
+            } else if (!existing.containsKey(DisplaySettingsFormat.ADMIN_KEY)) {
                 settingWriter.putSettingKey(institute, DisplaySettingsFormat.ADMIN_KEY,
                         TelleoDisplaySettings.adminEntry(), actor);
             }
@@ -295,19 +348,21 @@ public class TelleoOnboardingService {
     }
 
     private record Row(String status, String lineStatus, String settingsStatus, String agentStatus,
-                       String agentId, String agentSource, String error, String answers, boolean stale) {
+                       String agentId, String agentSource, String error, String answers, boolean stale,
+                       String accessMode) {
     }
 
     private Optional<Row> row(String instituteId) {
         return jdbc.query("""
                 SELECT status, line_status, settings_status, agent_status, agent_id, agent_source, error, answers,
-                       (status = 'RUNNING' AND updated_at < now() - make_interval(mins => :stale)) AS stale
+                       (status = 'RUNNING' AND updated_at < now() - make_interval(mins => :stale)) AS stale,
+                       access_mode
                   FROM telleo_onboarding WHERE institute_id = :id
                 """, new MapSqlParameterSource().addValue("id", instituteId).addValue("stale", STALE_RUN_MINUTES),
                 (rs, n) -> new Row(rs.getString("status"), rs.getString("line_status"),
                         rs.getString("settings_status"), rs.getString("agent_status"), rs.getString("agent_id"),
                         rs.getString("agent_source"), rs.getString("error"), rs.getString("answers"),
-                        rs.getBoolean("stale")))
+                        rs.getBoolean("stale"), rs.getString("access_mode")))
                 .stream().findFirst();
     }
 

@@ -37,4 +37,15 @@ class TelleoDisplaySettingsTest {
             }
         });
     }
+
+    @Test
+    void anApiAccountSeesItsAgentsCallLogAndKeysOnly() {
+        JsonNode data = TelleoDisplaySettings.apiAdminEntry().get("data");
+        List<String> routes = new ArrayList<>();
+        data.get("sidebar").forEach(tab -> tab.get("subTabs").forEach(s -> routes.add(s.get("route").asText())));
+        assertEquals(List.of("/calling/ai-agents", "/audience-manager/call-log", "/settings?selectedTab=aiCalling"),
+                routes);
+        assertTrue(data.get("ui").get("sidebarAllowList").asBoolean());
+        assertEquals("/calling/ai-agents", data.get("postLoginRedirectRoute").asText());
+    }
 }

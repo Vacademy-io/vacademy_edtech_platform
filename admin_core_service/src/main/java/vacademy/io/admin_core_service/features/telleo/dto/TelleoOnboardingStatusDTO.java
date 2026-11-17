@@ -15,6 +15,8 @@ import lombok.NoArgsConstructor;
 @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
 public class TelleoOnboardingStatusDTO {
     private String instituteId;
+    /** PLATFORM (dashboard) | API | null (not chosen yet; an account set up before the choice is PLATFORM). */
+    private String accessMode;
     /** NEW (no answers yet) | RUNNING | READY | FAILED. */
     private String status;
     /** PENDING | DONE | FAILED for each step. */
