@@ -12,6 +12,8 @@ export interface HostProduct {
     name: string;
     logo: string;
     favicon: string;
+    /** A preset theme code (preset-themes.ts) the host's login and sign-up wear; none keeps the default. */
+    theme?: string;
 }
 
 const EVALEZY: HostProduct = {
@@ -26,6 +28,8 @@ const TELLEO: HostProduct = {
     name: 'Telleo',
     logo: '/telleo-logo.svg',
     favicon: '/telleo-favicon.svg',
+    // The same preset new Telleo workspaces get (TelleoDisplaySettings.THEME_CODE).
+    theme: 'green',
 };
 
 const firstLabel = (hostname?: string): string => {

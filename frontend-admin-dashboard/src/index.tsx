@@ -310,6 +310,10 @@ if (!rootElement.innerHTML) {
                         new URL(product.favicon, window.location.origin).href
                     );
                     useInstituteLogoStore.getState().setInstituteLogo?.(product.logo);
+                    // Read by the ThemeProvider on first render (below), as an institute's code is.
+                    if (product.theme) {
+                        localStorage.setItem('theme-code', product.theme);
+                    }
                     return;
                 }
                 // If no data from API, ensure we have a fallback title

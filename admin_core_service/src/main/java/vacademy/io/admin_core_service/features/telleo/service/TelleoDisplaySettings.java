@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import vacademy.io.admin_core_service.features.capabilities.service.DisplaySettingsFormat;
 
 /**
- * The admin display settings a new Telleo account starts with: the normal dashboard, showing only
- * Lead list, Calling dashboard, Call log and AI agents.
+ * The admin display settings a new Telleo account starts with, written when the institute is
+ * created: the normal dashboard, showing only Lead list, Recent leads, Call log and AI agents.
  *
  * <p>{@code ui.sidebarAllowList} is what makes this an allow-list. With it on, the admin app hides
  * every sidebar entry this blob does not list (instead of filling it in from the defaults) and
@@ -22,7 +22,10 @@ public final class TelleoDisplaySettings {
 
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
-    public static final String POST_LOGIN_ROUTE = "/calling/dashboard";
+    public static final String POST_LOGIN_ROUTE = "/audience-manager/list";
+
+    /** The dashboard's preset green (preset-themes.ts), Telleo's brand colour. */
+    public static final String THEME_CODE = "green";
 
     public static ObjectNode adminEntry() {
         ObjectNode entry = MAPPER.createObjectNode();
@@ -33,10 +36,10 @@ public final class TelleoDisplaySettings {
         ArrayNode sidebar = data.putArray("sidebar");
         ObjectNode leads = tab(sidebar, "leads", 0);
         sub(leads, "lead-list-leads", "/audience-manager/list", 0);
+        sub(leads, "recent-leads", "/audience-manager/recent-leads", 1);
         ObjectNode calling = tab(sidebar, "calling", 1);
-        sub(calling, "calling-dashboard", "/calling/dashboard", 0);
-        sub(calling, "calling-call-log", "/audience-manager/call-log", 1);
-        sub(calling, "calling-ai-agents", "/calling/ai-agents", 2);
+        sub(calling, "calling-call-log", "/audience-manager/call-log", 0);
+        sub(calling, "calling-ai-agents", "/calling/ai-agents", 1);
 
         ArrayNode categories = data.putArray("sidebarCategories");
         category(categories, "CRM", true, true, 0);

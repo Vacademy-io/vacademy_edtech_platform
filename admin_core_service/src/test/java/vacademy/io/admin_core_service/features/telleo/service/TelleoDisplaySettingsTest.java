@@ -22,12 +22,12 @@ class TelleoDisplaySettingsTest {
 
         List<String> routes = new ArrayList<>();
         data.get("sidebar").forEach(tab -> tab.get("subTabs").forEach(s -> routes.add(s.get("route").asText())));
-        assertEquals(List.of("/audience-manager/list", "/calling/dashboard", "/audience-manager/call-log",
-                "/calling/ai-agents"), routes);
+        assertEquals(List.of("/audience-manager/list", "/audience-manager/recent-leads",
+                "/audience-manager/call-log", "/calling/ai-agents"), routes);
 
         assertTrue(data.get("ui").get("sidebarAllowList").asBoolean());
         assertTrue(data.get("ui").get("showAiCredits").asBoolean());
-        assertEquals("/calling/dashboard", data.get("postLoginRedirectRoute").asText());
+        assertEquals("/audience-manager/list", data.get("postLoginRedirectRoute").asText());
 
         data.get("sidebarCategories").forEach(c -> {
             if ("CRM".equals(c.get("id").asText())) {

@@ -39,7 +39,7 @@ public class TelleoTrialService {
     public Optional<TrialInfo> find(String instituteId) {
         if (instituteId == null || instituteId.isBlank()) return Optional.empty();
         List<TrialInfo> rows = jdbc.query("""
-                SELECT i.id, p.phone_e164, i.phone, i.demo_expires_at
+                SELECT i.id, p.phone_e164, i.mobile_number, i.demo_expires_at
                   FROM institutes i
                   LEFT JOIN telleo_trial_phone p ON p.institute_id = i.id
                  WHERE i.id = :id AND i.product = 'telleo'
@@ -47,7 +47,7 @@ public class TelleoTrialService {
             Timestamp ends = rs.getTimestamp("demo_expires_at");
             String phone = rs.getString("phone_e164");
             return new TrialInfo(rs.getString("id"),
-                    phone != null ? phone : PhoneNumbers.toE164(rs.getString("phone")),
+                    phone != null ? phone : PhoneNumbers.toE164(rs.getString("mobile_number")),
                     ends == null ? null : ends.toInstant());
         });
         return rows.stream().findFirst();

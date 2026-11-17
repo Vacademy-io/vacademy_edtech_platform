@@ -140,7 +140,7 @@ const GoToDashboard = () => {
             buttonType="secondary"
             scale="large"
             className="w-full"
-            onClick={() => navigate({ to: '/calling/dashboard' })}
+            onClick={() => navigate({ to: '/audience-manager/list' })}
         >
             {t('goToDashboard', 'Go to your dashboard')}
         </MyButton>
