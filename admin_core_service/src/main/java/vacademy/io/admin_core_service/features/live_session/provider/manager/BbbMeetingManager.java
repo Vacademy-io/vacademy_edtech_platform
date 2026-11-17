@@ -404,7 +404,12 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
                     .replaceAll("/bigbluebutton/api/?$", "");
             List<String> manifestUrls = new ArrayList<>();
             if (pipPluginEnabled) {
-                manifestUrls.add(bbbBaseUrl + "/plugins/picture-in-picture/manifest.json");
+                // The stock plugin uses Document Picture-in-Picture, which only works in a
+                // top-level page; in-app classes run in a frame, so they get Vacademy's PiP
+                // (plugins-src/vacademy-pip: composited video PiP, or the Android app's PiP).
+                manifestUrls.add(bbbBaseUrl + (inAppMeeting
+                        ? "/plugins/vacademy-pip/manifest.json"
+                        : "/plugins/picture-in-picture/manifest.json"));
             }
             if (activenessScore) {
                 manifestUrls.add(bbbBaseUrl + "/plugins/vacademy-activeness/manifest.json");
