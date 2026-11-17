@@ -20,7 +20,7 @@ import { useUtmBuilderEnabled } from '@/hooks/use-utm-builder-enabled';
 import { Link } from '@tanstack/react-router';
 import { Funnel, Megaphone } from '@phosphor-icons/react';
 import { UTM_FILTER_DIMENSIONS, CORE_UTM_FILTER_DIMENSIONS } from '@/services/utm-list-filters';
-import { LIST_BUILT_IN_FILTERS } from '@/types/display-settings';
+import { listBuiltInFiltersFor } from '@/types/display-settings';
 import { useLeadTerminology } from '@/hooks/use-lead-terminology';
 
 interface ListCustomFieldControlsCardProps {
@@ -165,12 +165,14 @@ export const ListCustomFieldControlsCard = ({
     // Named from Lead Settings, so an institute that calls the campaign type
     // "Source" sees "Source" here and on the filter bar alike.
     const builtInHidden = builtInValue?.[surface]?.hidden ?? [];
-    const builtInLabel = (f: ListBuiltInFilter) =>
-        f === 'campaignType'
-            ? terminology.campaignType
-            : f === 'audience'
-              ? terminology.leadSource
-              : t('builtIn.counsellor');
+    const builtInFilters = listBuiltInFiltersFor(surface);
+    const builtInLabel = (f: ListBuiltInFilter) => {
+        if (f === 'campaignType') return terminology.campaignType;
+        if (f === 'audience') return terminology.leadSource;
+        if (f === 'city') return t('builtIn.city');
+        if (f === 'region') return t('builtIn.region');
+        return t('builtIn.counsellor');
+    };
     const toggleBuiltIn = (f: ListBuiltInFilter, on: boolean) => {
         if (!onBuiltInChange) return;
         const next = new Set(builtInHidden);
@@ -178,7 +180,7 @@ export const ListCustomFieldControlsCard = ({
         else next.add(f);
         onBuiltInChange({
             ...(builtInValue ?? {}),
-            [surface]: { hidden: LIST_BUILT_IN_FILTERS.filter((x) => next.has(x)) },
+            [surface]: { hidden: builtInFilters.filter((x) => next.has(x)) },
         });
     };
 
@@ -222,7 +224,7 @@ export const ListCustomFieldControlsCard = ({
                             </p>
                         </div>
                         <div className="mt-3 flex flex-col gap-2">
-                            {LIST_BUILT_IN_FILTERS.map((f) => (
+                            {builtInFilters.map((f) => (
                                 <div key={f} className="flex items-center justify-between gap-4">
                                     <Label
                                         htmlFor={`list-built-in-${surface}-${f}`}

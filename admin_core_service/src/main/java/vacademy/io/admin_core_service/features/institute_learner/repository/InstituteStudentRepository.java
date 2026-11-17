@@ -1730,6 +1730,8 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
               SELECT 1 FROM student s
               WHERE s.user_id = c.user_id
                 AND (:#{#gender == null || #gender.isEmpty()} = true OR s.gender IN (:gender))
+                AND (:#{#cities == null || #cities.isEmpty()} = true OR LOWER(TRIM(s.city)) IN (:cities))
+                AND (:#{#regions == null || #regions.isEmpty()} = true OR LOWER(TRIM(s.region)) IN (:regions))
             )
 
           UNION ALL
@@ -1747,6 +1749,8 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
           JOIN student s ON s.user_id = c.user_id
           WHERE CAST(:name AS TEXT) IS NOT NULL
             AND (:#{#gender == null || #gender.isEmpty()} = true OR s.gender IN (:gender))
+            AND (:#{#cities == null || #cities.isEmpty()} = true OR LOWER(TRIM(s.city)) IN (:cities))
+            AND (:#{#regions == null || #regions.isEmpty()} = true OR LOWER(TRIM(s.region)) IN (:regions))
           GROUP BY c.user_id, c.m_all, c.m_n, c.any_n
           HAVING c.any_n OR BOOL_OR(s.full_name ILIKE '%' || :name || '%'
                 OR s.username ILIKE '%' || :name || '%'
@@ -1928,6 +1932,8 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
           SELECT 1 FROM student s
           WHERE s.user_id = c.user_id
             AND (:#{#gender == null || #gender.isEmpty()} = true OR s.gender IN (:gender))
+            AND (:#{#cities == null || #cities.isEmpty()} = true OR LOWER(TRIM(s.city)) IN (:cities))
+            AND (:#{#regions == null || #regions.isEmpty()} = true OR LOWER(TRIM(s.region)) IN (:regions))
             AND (CAST(:name AS TEXT) IS NULL OR c.any_n OR s.full_name ILIKE '%' || :name || '%'
                 OR s.username ILIKE '%' || :name || '%'
                 OR s.email ILIKE '%' || :name || '%'
@@ -1957,6 +1963,9 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,
       @Param("audienceIds") List<String> audienceIds,
+      /** Lower-cased, trimmed city / region (state) values. Empty or null = no filter. */
+      @Param("cities") List<String> cities,
+      @Param("regions") List<String> regions,
       @Param("name") String name,
       @Param("includeAudienceOnly") boolean includeAudienceOnly,
       Pageable pageable);
@@ -1976,6 +1985,8 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
           JOIN student_session_institute_group_mapping ssigm ON s.user_id = ssigm.user_id
           WHERE (:#{#statuses == null || #statuses.isEmpty()} = true OR ssigm.status IN (:statuses))
             AND (:#{#gender == null || #gender.isEmpty()} = true OR s.gender IN (:gender))
+            AND (:#{#cities == null || #cities.isEmpty()} = true OR LOWER(TRIM(s.city)) IN (:cities))
+            AND (:#{#regions == null || #regions.isEmpty()} = true OR LOWER(TRIM(s.region)) IN (:regions))
             AND (:#{#instituteIds == null || #instituteIds.isEmpty()} = true OR ssigm.institute_id IN (:instituteIds))
             AND (:#{#groupIds == null || #groupIds.isEmpty()} = true OR ssigm.group_id IN (:groupIds))
             AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true OR ssigm.package_session_id IN (:packageSessionIds))
@@ -2048,6 +2059,8 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
             AND ar.audience_status = 'ACTIVE'
             AND (:#{#audienceIds == null || #audienceIds.isEmpty()} = true OR ar.audience_id IN (:audienceIds))
             AND (:#{#gender == null || #gender.isEmpty()} = true OR s.gender IN (:gender))
+            AND (:#{#cities == null || #cities.isEmpty()} = true OR LOWER(TRIM(s.city)) IN (:cities))
+            AND (:#{#regions == null || #regions.isEmpty()} = true OR LOWER(TRIM(s.region)) IN (:regions))
             AND (
               CAST(:name AS TEXT) IS NULL
               OR s.full_name ILIKE '%' || :name || '%'
@@ -2076,6 +2089,8 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
           JOIN student_session_institute_group_mapping ssigm ON s.user_id = ssigm.user_id
           WHERE (:#{#statuses == null || #statuses.isEmpty()} = true OR ssigm.status IN (:statuses))
             AND (:#{#gender == null || #gender.isEmpty()} = true OR s.gender IN (:gender))
+            AND (:#{#cities == null || #cities.isEmpty()} = true OR LOWER(TRIM(s.city)) IN (:cities))
+            AND (:#{#regions == null || #regions.isEmpty()} = true OR LOWER(TRIM(s.region)) IN (:regions))
             AND (:#{#instituteIds == null || #instituteIds.isEmpty()} = true OR ssigm.institute_id IN (:instituteIds))
             AND (:#{#groupIds == null || #groupIds.isEmpty()} = true OR ssigm.group_id IN (:groupIds))
             AND (:#{#packageSessionIds == null || #packageSessionIds.isEmpty()} = true OR ssigm.package_session_id IN (:packageSessionIds))
@@ -2147,6 +2162,8 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
             AND ar.audience_status = 'ACTIVE'
             AND (:#{#audienceIds == null || #audienceIds.isEmpty()} = true OR ar.audience_id IN (:audienceIds))
             AND (:#{#gender == null || #gender.isEmpty()} = true OR s.gender IN (:gender))
+            AND (:#{#cities == null || #cities.isEmpty()} = true OR LOWER(TRIM(s.city)) IN (:cities))
+            AND (:#{#regions == null || #regions.isEmpty()} = true OR LOWER(TRIM(s.region)) IN (:regions))
             AND (
               CAST(:name AS TEXT) IS NULL
               OR s.full_name ILIKE '%' || :name || '%'
@@ -2184,6 +2201,9 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
       @Param("startDate") LocalDate startDate,
       @Param("endDate") LocalDate endDate,
       @Param("audienceIds") List<String> audienceIds,
+      /** Lower-cased, trimmed city / region (state) values. Empty or null = no filter. */
+      @Param("cities") List<String> cities,
+      @Param("regions") List<String> regions,
       @Param("name") String name,
       @Param("includeAudienceOnly") boolean includeAudienceOnly,
       Pageable pageable);
@@ -2701,4 +2721,57 @@ public interface InstituteStudentRepository extends CrudRepository<Student, Stri
       @Param("userIds") List<String> userIds,
       @Param("instituteIds") List<String> instituteIds,
       @Param("customFieldStatus") List<String> customFieldStatus);
+
+  // ── Learner-list city / region filter ──
+  // The institute learners whose student row matches the city and region values (lower-cased,
+  // trimmed). An empty or null side is not filtered. The learner list folds these ids into its
+  // matched-id set when it takes the custom-field path, which has no city or region clause.
+  @Query(nativeQuery = true, value = """
+      SELECT DISTINCT s.user_id
+      FROM student s
+      JOIN student_session_institute_group_mapping ssigm ON ssigm.user_id = s.user_id
+      WHERE ssigm.institute_id IN (:instituteIds)
+        AND (:#{#cities == null || #cities.isEmpty()} = true OR LOWER(TRIM(s.city)) IN (:cities))
+        AND (:#{#regions == null || #regions.isEmpty()} = true OR LOWER(TRIM(s.region)) IN (:regions))
+      """)
+  List<String> findInstituteUserIdsByCityAndRegion(
+      @Param("instituteIds") List<String> instituteIds,
+      @Param("cities") List<String> cities,
+      @Param("regions") List<String> regions);
+
+  // Values for the learner-list City filter: one row per city ignoring case and spaces, shown
+  // in its most used spelling, with how many of the institute learners have it. Columns:
+  // [0] value, [1] learner count. Blank cities are left out.
+  @Query(nativeQuery = true, value = """
+      SELECT MODE() WITHIN GROUP (ORDER BY TRIM(s.city)) AS option_value,
+             COUNT(DISTINCT s.user_id) AS learner_count
+      FROM student s
+      WHERE s.user_id IN (
+            SELECT ssigm.user_id
+            FROM student_session_institute_group_mapping ssigm
+            WHERE ssigm.institute_id = :instituteId
+          )
+        AND TRIM(s.city) <> ''
+      GROUP BY LOWER(TRIM(s.city))
+      ORDER BY learner_count DESC, option_value
+      LIMIT 500
+      """)
+  List<Object[]> findCityFilterOptions(@Param("instituteId") String instituteId);
+
+  // Same as findCityFilterOptions, for the region (state) column.
+  @Query(nativeQuery = true, value = """
+      SELECT MODE() WITHIN GROUP (ORDER BY TRIM(s.region)) AS option_value,
+             COUNT(DISTINCT s.user_id) AS learner_count
+      FROM student s
+      WHERE s.user_id IN (
+            SELECT ssigm.user_id
+            FROM student_session_institute_group_mapping ssigm
+            WHERE ssigm.institute_id = :instituteId
+          )
+        AND TRIM(s.region) <> ''
+      GROUP BY LOWER(TRIM(s.region))
+      ORDER BY learner_count DESC, option_value
+      LIMIT 500
+      """)
+  List<Object[]> findRegionFilterOptions(@Param("instituteId") String instituteId);
 }

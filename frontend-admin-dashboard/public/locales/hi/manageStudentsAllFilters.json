@@ -5,6 +5,12 @@
     "gender": {
         "title": "लिंग"
     },
+    "city": {
+        "title": "शहर"
+    },
+    "region": {
+        "title": "क्षेत्र"
+    },
     "sessionExpiry": {
         "titleSuffix": "समाप्ति",
         "optionLabel": "{{days}} दिनों में समाप्त हो रहा है"

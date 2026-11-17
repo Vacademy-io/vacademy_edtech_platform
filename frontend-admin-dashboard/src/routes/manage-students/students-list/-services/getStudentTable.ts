@@ -50,6 +50,8 @@ export const useStudentList = (
             types: filters.types?.sort() || [],
             enroll_invite_ids: filters.enroll_invite_ids?.sort() || [],
             audience_ids: filters.audience_ids?.sort() || [],
+            cities: filters.cities ? [...filters.cities].sort() : [],
+            regions: filters.regions ? [...filters.regions].sort() : [],
             // Dropdown custom-field filters — sort both the field-id keys and each
             // field's selected values so the cache key is stable regardless of
             // selection order.
