@@ -191,11 +191,23 @@ docker stop greenlight-v3 2>/dev/null && docker update --restart=no greenlight-v
 echo "[7/8] Configuring nginx for iframe embedding..."
 
 cat > /etc/bigbluebutton/nginx/iframe-allow.nginx <<'NGINX'
-# Allow embedding BBB in iframes from any origin (multi-institute)
+# Allow embedding BBB in iframes: our learner sites, white-label learner domains
+# (add new ones here when an institute's in-app class is switched on), the
+# Capacitor apps (Android https://localhost, iOS capacitor://localhost), the
+# Electron app (it rewrites CSP itself; listed for completeness) and local dev.
+# Kept as an explicit list, not "https:", so recordings under /playback can't be
+# embedded by any site.
 proxy_hide_header X-Frame-Options;
 proxy_hide_header Content-Security-Policy;
 
-add_header Content-Security-Policy "frame-ancestors 'self' https://*.vacademy.io http://localhost:*;" always;
+add_header Content-Security-Policy "frame-ancestors 'self' https://*.vacademy.io https://learner.shikshanation.com https://practice.ithinkersolympiad.com https://training.enarkuplift.in https://workout.edzumo.com https://learn.stemxindia.com https://student.elevateeducation.in https://localhost capacitor://localhost capacitor-electron: http://localhost:*;" always;
+NGINX
+
+# getJoinUrl turns any valid sessionToken into fresh signed join links (same
+# role, incl. MODERATOR). Nothing of ours calls it; block it so a leaked token
+# can't be multiplied.
+cat > /etc/bigbluebutton/nginx/block-getjoinurl.nginx <<'NGINX'
+location = /bigbluebutton/api/getJoinUrl { return 403; }
 NGINX
 
 # Remove X-Frame-Options from bbb-html5 nginx so our iframe-allow.nginx
@@ -205,12 +217,13 @@ if [ -f /etc/bigbluebutton/nginx/bbb-html5.nginx ]; then
 fi
 
 # ── 8. Cookie SameSite for iframe ─────────────────────────────
-echo "[8/8] Configuring cookies for cross-origin iframe..."
-if [ -f /etc/bigbluebutton/nginx/bbb-html5.nginx ]; then
-    grep -q 'proxy_cookie_flags' /etc/bigbluebutton/nginx/bbb-html5.nginx || \
-        sed -i '/proxy_pass/a\        proxy_cookie_flags ~ secure samesite=none;' \
-            /etc/bigbluebutton/nginx/bbb-html5.nginx 2>/dev/null || true
-fi
+# No server-side cookie change. The old step added `proxy_cookie_flags` to
+# bbb-html5.nginx, which needs nginx >= 1.19.3 (Ubuntu 22.04 ships 1.18, so
+# `nginx -t` would fail) and never touched bbb-web's JSESSIONID anyway.
+# Framed classes work because admin_core creates each meeting with
+# allowRequestsWithoutSession=true (BbbMeetingManager), so bbb-web authorises
+# audio/video/chat/slides by sessionToken without the cookie.
+echo "[8/8] Cookies: nothing to do (per-meeting allowRequestsWithoutSession)."
 
 # ── Persist changes across BBB updates ────────────────────────
 APPLY_SCRIPT="/etc/bigbluebutton/bbb-conf/apply-config.sh"

@@ -88,6 +88,33 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
     @Value("${bbb.plugins.activeness.enabled:true}")
     private boolean activenessPluginEnabled;
 
+    /**
+     * Lets a meeting run inside a frame on another site (the learner app on
+     * Android/iOS/desktop, white-label learner domains). bbb-web otherwise requires
+     * its JSESSIONID cookie on audio/video/chat/slides requests, and browsers drop
+     * that cookie (no SameSite=None) when the class sits in a cross-site frame, so
+     * the join fails. With this on, the client's sessionToken alone authorises those
+     * requests. Trade-off: a leaked /html5client/?sessionToken= link then works on
+     * any device until the class ends (without it, the link is useless outside the
+     * learner's own browser), so it is OFF by default and enabled per institute.
+     * Comma-separated institute ids, or "*" for all; empty = off. Applies only to
+     * meetings created after it is set (needs an admin_core restart to change). The
+     * meeting is tagged meta_vacademy-inapp=1 so the join path can tell
+     * frame-capable meetings from older ones. NOTE: BBB does not copy this flag to
+     * breakout rooms (it does copy meta_*), so never trust the tag for breakouts.
+     */
+    @Value("${bbb.inapp.institute-ids:}")
+    private String inAppInstituteIds;
+
+    boolean isInAppEnabled(String instituteId) {
+        if (inAppInstituteIds == null || inAppInstituteIds.isBlank()) return false;
+        for (String id : inAppInstituteIds.split(",")) {
+            String t = id.trim();
+            if (t.equals("*") || (instituteId != null && t.equals(instituteId))) return true;
+        }
+        return false;
+    }
+
     /** Where the activeness plugin POSTs its per-learner report (no JWT; HMAC token in the body). */
     private static final String ACTIVENESS_REPORT_PATH =
             "/admin-core-service/live-sessions/provider/meeting/bbb-activeness";
@@ -338,6 +365,12 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
 
         // Retain event data so BBB can send analytics callback after meeting ends
         params.put("keepEvents", "true");
+
+        // In-app classes: no session cookie needed inside a cross-site frame (see field doc).
+        if (isInAppEnabled(instituteId)) {
+            params.put("allowRequestsWithoutSession", "true");
+            params.put("meta_vacademy-inapp", "1");
+        }
 
         // HTML5 Picture-in-Picture plugin (webcams + screen-share in a floating window).
         // The bundle is self-hosted on the routed BBB server, so derive the manifest URL
