@@ -142,9 +142,12 @@ def test_workflow_draft_tool_is_off_unless_its_group_is_enabled():
 
 
 # ── schema translation ───────────────────────────────────────────────────
+ALWAYS_ON = {"whoami", "search_help_knowledge"}
+
+
 def gated(tools):
-    """Tool names minus the always-on identity tool, which every caller gets."""
-    return [t.name for t in tools if t.name != "whoami"]
+    """Tool names minus the always-on tools (identity, product how-tos), which every caller gets."""
+    return [t.name for t in tools if t.name not in ALWAYS_ON]
 
 
 def test_tools_translate_to_valid_mcp_tools():
@@ -195,10 +198,10 @@ def test_tool_is_hidden_when_the_institute_has_not_enabled_it():
     assert gated(adapter.list_tools_for(principal(), setting([]))) == []
 
 
-def test_whoami_is_always_offered_to_anyone_who_may_connect():
-    """Identity only — no toggle can switch it off, in any configuration."""
+def test_always_on_tools_are_offered_to_anyone_who_may_connect():
+    """Identity and product how-tos — no toggle can switch them off, in any configuration."""
     for conf in (setting([]), setting([], {"TEACHER": {"enabled_tools": []}}), normalize_setting(None)):
-        assert [t.name for t in adapter.list_tools_for(principal(), conf)] == ["whoami"]
+        assert {t.name for t in adapter.list_tools_for(principal(), conf)} == ALWAYS_ON
 
 
 def test_tool_is_hidden_for_a_role_without_an_override():

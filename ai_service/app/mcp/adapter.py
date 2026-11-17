@@ -39,6 +39,7 @@ from .access import setting_for_tool_gate
 from .constants import (
     MCP_EXPOSED_TOOLS,
     MCP_OPT_IN_GROUPS,
+    MCP_ALWAYS_ON_TOOLS,
     MCP_TOOL_AREAS,
     MCP_TOOL_GROUP_LABELS,
     MCP_TOOL_GROUP_SUMMARIES,
@@ -111,8 +112,8 @@ def tool_catalog(include_opt_in: bool = True, entitlements: Optional[Any] = None
                 "summary": MCP_TOOL_GROUP_SUMMARIES.get(key, description),
                 "actions": actions,
                 "mode": spec.mode,
-                # Not a toggle: on for everyone who may connect (identity only).
-                "always_on": bool(spec.always_allowed),
+                # Not a toggle: on for everyone who may connect (identity, product how-tos).
+                "always_on": bool(spec.always_allowed) or spec.name in MCP_ALWAYS_ON_TOOLS,
                 "module_feature": spec.module_feature or (spec.module_features_any or (None,))[0],
                 **_placement(key),
             }

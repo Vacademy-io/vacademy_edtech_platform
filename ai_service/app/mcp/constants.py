@@ -611,6 +611,11 @@ MCP_TOOL_PLACEMENT: Dict[str, Dict[str, str]] = {
 #: catalogue marks them ``opt_in``). Off for every existing institute. Every
 #: CRM edit is opt-in, so the area's Edit level never turns on a write that
 #: changes leads or contacts them.
+#: Tools on for everyone who may connect, with no toggle: they read none of the
+#: institute's data (product how-tos). The in-product assistant keeps its own
+#: setting for them.
+MCP_ALWAYS_ON_TOOLS = frozenset({"search_help_knowledge"})
+
 MCP_OPT_IN_GROUPS = frozenset({"website_data_edits", "website_publish",
                                "learner_enrollments", "learner_profile_edits", "course_structure_edits",
                                "sub_org_edits", "sub_org_enrollments",

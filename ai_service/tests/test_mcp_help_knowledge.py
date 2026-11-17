@@ -147,21 +147,23 @@ def test_mcp_exposes_the_registry_tool_itself():
 
 def test_mcp_lists_it_only_when_its_group_is_on():
     names = lambda conf, roles=("ADMIN",): [t.name for t in adapter.list_tools_for(principal(roles), conf)]  # noqa: E731
-    assert TOOL not in names(normalize_setting(None))
-    assert TOOL not in names(mcp_setting([]))
-    assert TOOL not in names(mcp_setting(["institute_overview"]))
+    assert TOOL in names(normalize_setting(None))
+    assert TOOL in names(mcp_setting([]))
+    assert TOOL in names(mcp_setting(["institute_overview"]))
     assert TOOL in names(mcp_setting([TOOL]))
-    per_role = mcp_setting([], {"TEACHER": {"enabled_tools": [TOOL]}})
-    assert TOOL in names(per_role, ("TEACHER",)) and TOOL not in names(per_role, ("ADMIN",))
+    per_role = mcp_setting([], {"TEACHER": {"enabled_tools": []}})
+    assert TOOL in names(per_role, ("TEACHER",)) and TOOL in names(per_role, ("ADMIN",))
     tool = next(t for t in adapter.list_tools_for(principal(), mcp_setting([TOOL])) if t.name == TOOL)
     assert tool.annotations.read_only_hint is True and tool.input_schema["required"] == ["query"]
 
 
-def test_catalog_shows_it_as_its_own_view_area_off_by_default():
+def test_catalog_shows_it_as_its_own_view_area_always_on():
     entry = next(c for c in adapter.tool_catalog() if c["name"] == TOOL)
     assert entry["key"] == TOOL and entry["label"] == "How-to help"
     assert entry["area"] == "help" and entry["level"] == "view"
-    assert entry["always_on"] is False and entry["opt_in"] is False and TOOL not in MCP_OPT_IN_GROUPS
+    assert entry["always_on"] is True and entry["opt_in"] is False and TOOL not in MCP_OPT_IN_GROUPS
+    # Always on over MCP only: the in-product assistant keeps its own setting.
+    assert registry.ASSISTANT_TOOLS[TOOL].always_allowed is False
     assert "none of your institute's data" in entry["summary"]
 
 
@@ -179,10 +181,9 @@ def test_server_instructions_send_how_to_questions_to_it():
 
 
 @pytest.mark.asyncio
-async def test_mcp_call_is_refused_while_the_group_is_off(search, resolver):
+async def test_mcp_call_works_with_no_group_switched_on(search, resolver):
     out, result = await call_mcp(PortalDb("https://admin.example.org"), enabled=())
-    assert result.is_error and out["error"] == "tool_not_permitted"
-    assert search == [] and resolver.seen == []
+    assert not result.is_error and out["results"]
 
 
 # ── the embedding key ────────────────────────────────────────────────────

@@ -102,8 +102,13 @@ def setting_for_tool_gate(setting: Dict[str, Any], principal: PinnedPrincipal) -
         if node is not None:
             projected[role] = node
 
+    from ..services.assistant_tool_registry import ASSISTANT_TOOLS
+    from .constants import MCP_ALWAYS_ON_TOOLS
+
+    always = [ASSISTANT_TOOLS[n].key() for n in sorted(MCP_ALWAYS_ON_TOOLS) if n in ASSISTANT_TOOLS]
+    enabled = list(setting.get("enabled_tools") or [])
     return {
-        "enabled_tools": list(setting.get("enabled_tools") or []),
+        "enabled_tools": enabled + [k for k in always if k not in enabled],
         "role_overrides": projected,
     }
 
