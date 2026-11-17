@@ -3,6 +3,29 @@
   <head>
     <meta charset="UTF-8" />
     <script>
+      // In-app live class exit. BBB sends learners to its logoutURL when they leave
+      // or the class ends; for in-app classes that URL carries vxBbbExit=1. Inside
+      // the class frame, tell the app (src/routes/study-library/live-class/classroom)
+      // where to go and stop here, instead of loading the whole portal in the frame.
+      // In a normal tab the marker is simply dropped from the address.
+      (function () {
+        try {
+          var s = new URLSearchParams(window.location.search);
+          if (s.get("vxBbbExit") !== "1") return;
+          s.delete("vxBbbExit");
+          var q = s.toString();
+          var path = window.location.pathname + (q ? "?" + q : "");
+          if (window.self !== window.top) {
+            window.parent.postMessage({ type: "vacademy:bbb-exit", path: path }, "*");
+            window.stop();
+            document.documentElement.innerHTML = "";
+            return;
+          }
+          window.history.replaceState(null, "", path + window.location.hash);
+        } catch (e) {}
+      })();
+    </script>
+    <script>
       // Sign-in hand-off: keep credentials out of the address.
       // The app reads them through src/lib/auth/arrival-tokens.ts.
       (function () {

@@ -428,7 +428,17 @@
             "refreshOrRejoin": "Please refresh the page or try rejoining.",
             "stillSettingUp": "This {{liveClass}} is still being set up. Please refresh in a moment."
         },
-        "zoomSettingUpTooltip": "The Zoom meeting is still being set up. Check back shortly."
+        "zoomSettingUpTooltip": "The Zoom meeting is still being set up. Check back shortly.",
+        "classroom": {
+            "title": "Live class",
+            "leave": "Leave",
+            "leaveConfirm": "Leave the class?",
+            "openInBrowser": "Open in browser",
+            "loading": "Connecting to your class…",
+            "slow": "Taking longer than usual? You can open the class in your browser instead.",
+            "error": "We couldn't open your class.",
+            "retry": "Try again"
+        }
     },
     "supportersSection": {
         "headingPrefix": "Our",

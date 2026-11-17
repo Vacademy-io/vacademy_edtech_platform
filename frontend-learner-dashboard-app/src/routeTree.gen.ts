@@ -105,6 +105,7 @@ import { Route as SubscriptionsUsernameCancelIndexRouteImport } from './routes/s
 import { Route as StudyLibraryLiveClassWaitingRoomIndexRouteImport } from './routes/study-library/live-class/waiting-room/index'
 import { Route as StudyLibraryLiveClassFeedbackIndexRouteImport } from './routes/study-library/live-class/feedback/index'
 import { Route as StudyLibraryLiveClassEmbedIndexRouteImport } from './routes/study-library/live-class/embed/index'
+import { Route as StudyLibraryLiveClassClassroomIndexRouteImport } from './routes/study-library/live-class/classroom/index'
 import { Route as StudyLibraryLiveClassUsernameIndexRouteImport } from './routes/study-library/live-class/$username/index'
 import { Route as StudyLibraryCoursesCourseDetailsIndexRouteImport } from './routes/study-library/courses/course-details/index'
 import { Route as PayInvoiceInvoiceIdIndexRouteImport } from './routes/pay/invoice/$invoiceId/index'
@@ -638,6 +639,12 @@ const StudyLibraryLiveClassEmbedIndexRoute =
     path: '/study-library/live-class/embed/',
     getParentRoute: () => rootRouteImport,
   } as any)
+const StudyLibraryLiveClassClassroomIndexRoute =
+  StudyLibraryLiveClassClassroomIndexRouteImport.update({
+    id: '/study-library/live-class/classroom/',
+    path: '/study-library/live-class/classroom/',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const StudyLibraryLiveClassUsernameIndexRoute =
   StudyLibraryLiveClassUsernameIndexRouteImport.update({
     id: '/study-library/live-class/$username/',
@@ -909,6 +916,7 @@ export interface FileRoutesByFullPath {
   '/pay/invoice/$invoiceId': typeof PayInvoiceInvoiceIdIndexRoute
   '/study-library/courses/course-details': typeof StudyLibraryCoursesCourseDetailsIndexRoute
   '/study-library/live-class/$username': typeof StudyLibraryLiveClassUsernameIndexRoute
+  '/study-library/live-class/classroom': typeof StudyLibraryLiveClassClassroomIndexRoute
   '/study-library/live-class/embed': typeof StudyLibraryLiveClassEmbedIndexRoute
   '/study-library/live-class/feedback': typeof StudyLibraryLiveClassFeedbackIndexRoute
   '/study-library/live-class/waiting-room': typeof StudyLibraryLiveClassWaitingRoomIndexRoute
@@ -1032,6 +1040,7 @@ export interface FileRoutesByTo {
   '/pay/invoice/$invoiceId': typeof PayInvoiceInvoiceIdIndexRoute
   '/study-library/courses/course-details': typeof StudyLibraryCoursesCourseDetailsIndexRoute
   '/study-library/live-class/$username': typeof StudyLibraryLiveClassUsernameIndexRoute
+  '/study-library/live-class/classroom': typeof StudyLibraryLiveClassClassroomIndexRoute
   '/study-library/live-class/embed': typeof StudyLibraryLiveClassEmbedIndexRoute
   '/study-library/live-class/feedback': typeof StudyLibraryLiveClassFeedbackIndexRoute
   '/study-library/live-class/waiting-room': typeof StudyLibraryLiveClassWaitingRoomIndexRoute
@@ -1158,6 +1167,7 @@ export interface FileRoutesById {
   '/pay/invoice/$invoiceId/': typeof PayInvoiceInvoiceIdIndexRoute
   '/study-library/courses/course-details/': typeof StudyLibraryCoursesCourseDetailsIndexRoute
   '/study-library/live-class/$username/': typeof StudyLibraryLiveClassUsernameIndexRoute
+  '/study-library/live-class/classroom/': typeof StudyLibraryLiveClassClassroomIndexRoute
   '/study-library/live-class/embed/': typeof StudyLibraryLiveClassEmbedIndexRoute
   '/study-library/live-class/feedback/': typeof StudyLibraryLiveClassFeedbackIndexRoute
   '/study-library/live-class/waiting-room/': typeof StudyLibraryLiveClassWaitingRoomIndexRoute
@@ -1285,6 +1295,7 @@ export interface FileRouteTypes {
     | '/pay/invoice/$invoiceId'
     | '/study-library/courses/course-details'
     | '/study-library/live-class/$username'
+    | '/study-library/live-class/classroom'
     | '/study-library/live-class/embed'
     | '/study-library/live-class/feedback'
     | '/study-library/live-class/waiting-room'
@@ -1408,6 +1419,7 @@ export interface FileRouteTypes {
     | '/pay/invoice/$invoiceId'
     | '/study-library/courses/course-details'
     | '/study-library/live-class/$username'
+    | '/study-library/live-class/classroom'
     | '/study-library/live-class/embed'
     | '/study-library/live-class/feedback'
     | '/study-library/live-class/waiting-room'
@@ -1533,6 +1545,7 @@ export interface FileRouteTypes {
     | '/pay/invoice/$invoiceId/'
     | '/study-library/courses/course-details/'
     | '/study-library/live-class/$username/'
+    | '/study-library/live-class/classroom/'
     | '/study-library/live-class/embed/'
     | '/study-library/live-class/feedback/'
     | '/study-library/live-class/waiting-room/'
@@ -1657,6 +1670,7 @@ export interface RootRouteChildren {
   PayInvoiceInvoiceIdIndexRoute: typeof PayInvoiceInvoiceIdIndexRoute
   StudyLibraryCoursesCourseDetailsIndexRoute: typeof StudyLibraryCoursesCourseDetailsIndexRoute
   StudyLibraryLiveClassUsernameIndexRoute: typeof StudyLibraryLiveClassUsernameIndexRoute
+  StudyLibraryLiveClassClassroomIndexRoute: typeof StudyLibraryLiveClassClassroomIndexRoute
   StudyLibraryLiveClassEmbedIndexRoute: typeof StudyLibraryLiveClassEmbedIndexRoute
   StudyLibraryLiveClassFeedbackIndexRoute: typeof StudyLibraryLiveClassFeedbackIndexRoute
   StudyLibraryLiveClassWaitingRoomIndexRoute: typeof StudyLibraryLiveClassWaitingRoomIndexRoute
@@ -2345,6 +2359,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudyLibraryLiveClassEmbedIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/study-library/live-class/classroom/': {
+      id: '/study-library/live-class/classroom/'
+      path: '/study-library/live-class/classroom'
+      fullPath: '/study-library/live-class/classroom'
+      preLoaderRoute: typeof StudyLibraryLiveClassClassroomIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/study-library/live-class/$username/': {
       id: '/study-library/live-class/$username/'
       path: '/study-library/live-class/$username'
@@ -2688,6 +2709,8 @@ const rootRouteChildren: RootRouteChildren = {
     StudyLibraryCoursesCourseDetailsIndexRoute,
   StudyLibraryLiveClassUsernameIndexRoute:
     StudyLibraryLiveClassUsernameIndexRoute,
+  StudyLibraryLiveClassClassroomIndexRoute:
+    StudyLibraryLiveClassClassroomIndexRoute,
   StudyLibraryLiveClassEmbedIndexRoute: StudyLibraryLiveClassEmbedIndexRoute,
   StudyLibraryLiveClassFeedbackIndexRoute:
     StudyLibraryLiveClassFeedbackIndexRoute,

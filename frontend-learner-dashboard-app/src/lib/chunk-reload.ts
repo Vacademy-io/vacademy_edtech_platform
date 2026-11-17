@@ -140,7 +140,11 @@ export function reloadForChunkError(err?: unknown): boolean {
     return false;
   }
   const path = window.location.pathname;
-  if (path.includes("/live-session/host/") || path.includes("/live-class/embed")) {
+  if (
+    path.includes("/live-session/host/") ||
+    path.includes("/live-class/embed") ||
+    path.includes("/live-class/classroom")
+  ) {
     return false;
   }
   const record = readRecord();
