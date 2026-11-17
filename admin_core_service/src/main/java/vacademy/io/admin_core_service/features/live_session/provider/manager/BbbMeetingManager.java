@@ -106,6 +106,15 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
     @Value("${bbb.inapp.institute-ids:}")
     private String inAppInstituteIds;
 
+    /**
+     * Which learner-app clients may show a class in-app (comma list of
+     * web, android, ios, electron). Only "web" by default: Android needs a native
+     * release first (keep-awake, lock-screen audio, PiP), iOS/desktop follow after
+     * device tests. See resolveOpenMode.
+     */
+    @Value("${bbb.inapp.clients:web}")
+    private String inAppClients;
+
     boolean isInAppEnabled(String instituteId) {
         if (inAppInstituteIds == null || inAppInstituteIds.isBlank()) return false;
         for (String id : inAppInstituteIds.split(",")) {
@@ -324,13 +333,19 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
 
         // Redirect students to the feedback page when meeting ends.
         // If feedback is disabled for this session, the page auto-redirects to the listing.
+        // In-app meetings add vxBbbExit=1: when the class runs inside the learner app's
+        // frame, that page tells the app (index.html) to close the class view instead of
+        // loading the whole portal inside the frame. In a normal tab the marker is ignored.
+        boolean inAppMeeting = isInAppEnabled(instituteId);
         if (learnerBaseUrl != null && request.getScheduleId() != null) {
-            String feedbackUrl = learnerBaseUrl + "/study-library/live-class/feedback?scheduleId=" + request.getScheduleId();
+            String feedbackUrl = learnerBaseUrl + "/study-library/live-class/feedback?scheduleId=" + request.getScheduleId()
+                    + (inAppMeeting ? "&vxBbbExit=1" : "");
             params.put("logoutURL", feedbackUrl);
             params.put("meetingEndedURL", feedbackUrl);
         } else if (learnerBaseUrl != null) {
-            params.put("logoutURL", learnerBaseUrl + "/study-library/live-class");
-            params.put("meetingEndedURL", learnerBaseUrl + "/study-library/live-class");
+            String listUrl = learnerBaseUrl + "/study-library/live-class" + (inAppMeeting ? "?vxBbbExit=1" : "");
+            params.put("logoutURL", listUrl);
+            params.put("meetingEndedURL", listUrl);
         }
 
         // BBB hard-stops a meeting after `duration` minutes (BBB shows "X minutes left"
@@ -917,6 +932,66 @@ public class BbbMeetingManager implements LiveSessionProviderStrategy {
         } catch (Exception e) {
             log.warn("[BBB] getMeetingLiveState failed for meetingId={}: {}", providerMeetingId, e.getMessage());
             return Optional.empty();
+        }
+    }
+
+    /**
+     * Where the learner app should show this class: "IN_APP" (inside the app, in a
+     * frame) or "EXTERNAL" (a new tab / Chrome / Safari — the behaviour every app
+     * had before in-app classes). IN_APP needs all of:
+     * <ul>
+     *   <li>the app said which client it is (old apps send nothing → EXTERNAL),</li>
+     *   <li>that client is allowed ({@code bbb.inapp.clients}, default "web"),</li>
+     *   <li>the institute is switched on ({@code bbb.inapp.institute-ids}),</li>
+     *   <li>the meeting itself was created frame-capable (meta vacademy-inapp=1) —
+     *       meetings created before the switch, or by an older backend, still need
+     *       bbb-web's cookie and would fail inside a frame.</li>
+     * </ul>
+     * Fails closed: any doubt or lookup error means EXTERNAL.
+     */
+    public String resolveOpenMode(String instituteId, String client, String providerMeetingId, String bbbServerId) {
+        if (client == null || client.isBlank() || !isInAppEnabled(instituteId)) {
+            return "EXTERNAL";
+        }
+        boolean clientAllowed = false;
+        for (String c : (inAppClients == null ? "" : inAppClients).split(",")) {
+            if (c.trim().equalsIgnoreCase(client.trim())) {
+                clientAllowed = true;
+                break;
+            }
+        }
+        if (!clientAllowed) {
+            return "EXTERNAL";
+        }
+        return isMeetingInAppCapable(providerMeetingId, bbbServerId) ? "IN_APP" : "EXTERNAL";
+    }
+
+    /** True only when BBB confirms the meeting carries meta vacademy-inapp=1. */
+    private boolean isMeetingInAppCapable(String providerMeetingId, String bbbServerId) {
+        if (providerMeetingId == null || providerMeetingId.isBlank()) {
+            return false;
+        }
+        try {
+            BbbServerPool server = serverRouter.getServer(bbbServerId);
+            Map<String, String> params = new LinkedHashMap<>();
+            params.put("meetingID", providerMeetingId);
+            String queryString = buildQueryString(params);
+            String checksum = sha256("getMeetingInfo" + queryString + server.getSecret());
+            String url = server.getApiUrl() + "/getMeetingInfo?" + queryString + "&checksum=" + checksum;
+            String xmlResponse = webClientBuilder.build()
+                    .get().uri(URI.create(url))
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            Document doc = parseXml(xmlResponse);
+            if (!"SUCCESS".equals(getXmlText(doc, "returncode"))) {
+                return false;
+            }
+            String tag = getXmlText(doc, "vacademy-inapp");
+            return tag != null && "1".equals(tag.trim());
+        } catch (Exception e) {
+            log.warn("[BBB] in-app capability lookup failed for meetingId={}: {}", providerMeetingId, e.getMessage());
+            return false;
         }
     }
 
