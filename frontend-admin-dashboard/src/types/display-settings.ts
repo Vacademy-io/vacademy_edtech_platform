@@ -651,6 +651,11 @@ export interface DisplaySettingsData {
         // role and HIDDEN for teacher/custom roles; admins can opt a specific
         // role in from that role's Display Settings.
         showAssistDock?: boolean;
+        // Allow-list mode, opt-in (set for Telleo self sign-ups). On: sidebar entries this
+        // blob does not list are hidden rather than filled in from the defaults, and a page
+        // not under a visible sidebar entry goes to the locked page. Off/absent: hidden
+        // entries stay reachable by deep link, as for every other institute.
+        sidebarAllowList?: boolean;
     };
 
     // 7) Course content types (slides) visibility

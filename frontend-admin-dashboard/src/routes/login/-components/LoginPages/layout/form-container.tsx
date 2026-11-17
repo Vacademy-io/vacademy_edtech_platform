@@ -1,4 +1,4 @@
-import { loginLogo } from '@/lib/evalezy-mode';
+import { loginLogo } from '@/lib/product-host';
 import { FormContainerProps } from '@/routes/login/-types/loginTypes';
 import LoginImage from '@/assets/svgs/login-image.svg';
 import useInstituteLogoStore from '../../../../../components/common/layout-container/sidebar/institutelogo-global-zustand';

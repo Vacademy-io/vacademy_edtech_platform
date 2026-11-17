@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { createFileRoute, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Prohibit } from '@phosphor-icons/react';
@@ -8,7 +8,7 @@ import { useInstituteQuery } from '@/services/student-list-section/getInstituteD
 import { takePlanBuyIntent } from '@/lib/plan-buy-intent';
 import { isIOS } from '@/native';
 import { EvalezyHeader } from './-components/EvalezyHeader';
-import { TrialBanner } from './-components/TrialBanner';
+import { TrialBanner } from '@/components/common/trial-banner/TrialBanner';
 import { WelcomeTutorialDialog } from './-components/Tutorials';
 import { useEvalezySettings } from './-hooks/useEvalezySettings';
 import { isPaymentPending, PAYMENT_PENDING_PATHS, usePlanAccess } from './-hooks/usePlanAccess';
@@ -52,7 +52,15 @@ function EvalezyLayout() {
         // long nowrap titles widen the page and the WebView zooms the whole app out.
         <div className="min-h-screen-safe flex w-full min-w-0 flex-col bg-neutral-50">
             <EvalezyHeader />
-            <TrialBanner />
+            <TrialBanner
+                ns="evalezy"
+                renderUpgrade={(label) => (
+                    <Link to="/evalezy/plan" className="shrink-0 font-semibold underline">
+                        {/* No purchase wording in the iPhone app (App Store rules). */}
+                        {isIOS() ? t('plan.menu') : label}
+                    </Link>
+                )}
+            />
             <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col p-4 sm:py-6">
                 {isLoading || lockedOut ? (
                     <DashboardLoader />

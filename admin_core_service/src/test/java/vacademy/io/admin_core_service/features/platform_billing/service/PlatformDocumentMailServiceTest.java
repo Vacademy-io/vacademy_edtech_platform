@@ -245,4 +245,12 @@ class PlatformDocumentMailServiceTest {
                 PlatformDocumentMailService.productBillingLink("https://evalezy.vacademy.io/login", "/evalezy"));
         assertNull(PlatformDocumentMailService.productBillingLink(null, "/evalezy"));
     }
+
+    @Test
+    void productBillingLinkUsesTheAppRootNotTheLandingPage() {
+        // Telleo lands new sign-ups on /telleo/setup; its plan page is /telleo/plan.
+        assertEquals("https://telleo.vacademy.io/telleo/plan",
+                PlatformDocumentMailService.productBillingLink("https://telleo.vacademy.io/login", "/telleo/setup"));
+        assertNull(PlatformDocumentMailService.productBillingLink("https://telleo.vacademy.io/login", "/"));
+    }
 }

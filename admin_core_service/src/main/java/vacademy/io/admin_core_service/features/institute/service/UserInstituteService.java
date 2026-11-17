@@ -62,6 +62,8 @@ public class UserInstituteService {
     private vacademy.io.admin_core_service.features.product_config.service.PlatformProductService platformProductService;
     @Autowired
     private vacademy.io.admin_core_service.features.audience.service.LeadStatusService leadStatusService;
+    @Autowired
+    private vacademy.io.admin_core_service.features.telleo.service.TelleoTrialService telleoTrialService;
 
     /** Set by auth-service on an institute created from a product's one-screen demo. */
     static final String DEMO_PORTAL_TAG = "signup:demo_portal";
@@ -136,6 +138,15 @@ public class UserInstituteService {
                         savedInstitute.getAffiliationNumber());
                 log.info("[ADMIN-CORE-SERVICE] savedInstitute.staffStrength: {}", savedInstitute.getStaffStrength());
                 log.info("[ADMIN-CORE-SERVICE] savedInstitute.schoolStrength: {}", savedInstitute.getSchoolStrength());
+
+                // A product whose sign-up proves a phone (Telleo): record that phone in THIS
+                // transaction, so a phone that already had a trial rolls the institute back
+                // instead of leaving a second free account.
+                var signupRules = "FREE_TRIAL".equals(savedInstitute.getLeadTag())
+                        ? platformProductService.signupRulesFor(savedInstitute.getProduct()) : null;
+                if (signupRules != null && signupRules.requiresPhone()) {
+                    telleoTrialService.registerTrial(savedInstitute.getId(), instituteDto.getPhone());
+                }
 
                 instituteSettingService.createDefaultSettingsForInstitute(savedInstitute);
                 createInstituteSubModulesMapping(allSubModules, savedInstitute);
