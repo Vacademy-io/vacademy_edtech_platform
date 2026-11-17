@@ -12,7 +12,7 @@ import { resolveInviteAvailability } from "@/lib/invite-availability";
 import {
   groupCourseVariants,
   languageOfLevel,
-  languageOfRow,
+  languagesOfRow,
   type CourseLanguageOption,
 } from "../../../-utils/course-variants";
 import { readComingSoon } from "../../../-utils/coming-soon";
@@ -226,25 +226,29 @@ export const buildCatalogCards = <R extends CatalogRowLike>(
 
 // Per language list, per row: the facet counts ask for the same rows' language
 // many times on every keystroke, and languageOfLevel builds a RegExp per token.
-const rowLanguageCache = new WeakMap<CourseLanguageOption[], WeakMap<object, CourseLanguageOption | null>>();
+const rowLanguagesCache = new WeakMap<CourseLanguageOption[], WeakMap<object, CourseLanguageOption[]>>();
+
+type LanguageRowLike = { level_name?: string | null; level?: string; comma_separeted_tags?: string | null };
 
 /**
- * The language a row is in, read from its level name. Remembered per row
- * object and language list (rows and the resolved language list are not
- * mutated), so repeated filter and count tests are lookups.
+ * Every language a row is in: its level name's, else each language tag
+ * ("english,hindi" = both). Remembered per row object and language list (rows
+ * and the resolved language list are not mutated), so repeated filter and
+ * count tests are lookups.
  */
-export const rowLanguage = (
-  row: { level_name?: string | null; level?: string; comma_separeted_tags?: string | null },
-  languages: CourseLanguageOption[],
-): CourseLanguageOption | null => {
-  let byRow = rowLanguageCache.get(languages);
+export const rowLanguages = (row: LanguageRowLike, languages: CourseLanguageOption[]): CourseLanguageOption[] => {
+  let byRow = rowLanguagesCache.get(languages);
   if (!byRow) {
     byRow = new WeakMap();
-    rowLanguageCache.set(languages, byRow);
+    rowLanguagesCache.set(languages, byRow);
   }
   const known = byRow.get(row);
   if (known !== undefined) return known;
-  const lang = languageOfRow(row, languages);
-  byRow.set(row, lang);
-  return lang;
+  const langs = languagesOfRow(row, languages);
+  byRow.set(row, langs);
+  return langs;
 };
+
+/** The row's first language (see rowLanguages): the one a single-language view (a cart line, a version pick) names. */
+export const rowLanguage = (row: LanguageRowLike, languages: CourseLanguageOption[]): CourseLanguageOption | null =>
+  rowLanguages(row, languages)[0] ?? null;
