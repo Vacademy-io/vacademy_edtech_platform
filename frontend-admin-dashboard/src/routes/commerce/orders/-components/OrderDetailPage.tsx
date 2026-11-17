@@ -20,7 +20,10 @@ import { OrderMessagesCard } from './OrderMessagesCard';
 import { OrderParcelCard } from './OrderParcelCard';
 import { OrderPaymentsCard } from './OrderPaymentsCard';
 import { OrderTimelineCard } from './OrderTimelineCard';
+import { OrderReturnsCard, useExchangeReturnViews } from './OrderReturnsCard';
 import { OrderTotalsCard } from './OrderTotalsCard';
+import { RefundDialog } from './dialogs/RefundDialog';
+import { ReturnCreateDialog } from './dialogs/ReturnCreateDialog';
 import { OrderAccessAlertContext, OrderNotice, money, useOrderErrorText } from './order-ui';
 
 interface OrderDetailPageProps {
@@ -35,12 +38,20 @@ interface OrderDetailPageProps {
     returnViews?: readonly ReturnView[];
 }
 
+/** The server codes whose dialogs live outside the action bar (Part 3). */
+const RETURN_DIALOGS: ExtraOrderDialogs = { CREATE_RETURN: ReturnCreateDialog, REFUND: RefundDialog };
+
+const renderReturnsCard = (detail: StaffOrderDetail) => <OrderReturnsCard detail={detail} />;
+
 /** S2: one order with its action table, items, money, parcel, people and messages. */
 export function OrderDetailPage(props: OrderDetailPageProps) {
     const { t } = useTranslation('commerce');
     const access = useCommerceAccess();
     const query = useOrderDetail(props.orderId, access.isResolved && access.canOpen('commerce-orders'));
     const detail = query.data;
+    const exchangeViews = useExchangeReturnViews(detail);
+    const returnViews = props.returnViews ?? exchangeViews;
+    const extraDialogs = props.extraDialogs ?? RETURN_DIALOGS;
     // Above the page so a 403 from the header's dialogs lands on the page too.
     const [accessMessage, setAccessMessage] = useState<string | null>(null);
     return (
@@ -53,8 +64,8 @@ export function OrderDetailPage(props: OrderDetailPageProps) {
                     detail ? (
                         <OrderActionBar
                             detail={detail}
-                            returnViews={props.returnViews}
-                            extraDialogs={props.extraDialogs}
+                            returnViews={returnViews}
+                            extraDialogs={extraDialogs}
                             initialAction={props.initialAction}
                         />
                     ) : undefined
@@ -65,6 +76,8 @@ export function OrderDetailPage(props: OrderDetailPageProps) {
                     accessMessage={accessMessage}
                     onDismissAccess={() => setAccessMessage(null)}
                     {...props}
+                    renderReturns={props.renderReturns ?? renderReturnsCard}
+                    extraDialogs={extraDialogs}
                 />
             </CommercePage>
         </OrderAccessAlertContext.Provider>

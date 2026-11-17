@@ -1,3 +1,5 @@
+import type { TFunction } from 'i18next';
+import { formatMoney } from '@/components/design-system/money-cell';
 import { round2 } from './order-format';
 import type { ReturnView, StaffOrderDetail } from './order-types';
 
@@ -35,4 +37,11 @@ export function amountProblem(amount: number | null, cap: number): 'required' | 
     if (amount <= 0) return 'positive';
     if (round2(amount) > cap) return 'aboveCap';
     return null;
+}
+
+/** "At most ₹x can be refunded on this order" (or "…on this return"). */
+export function refundCapText(cap: number, forReturn: boolean, t: TFunction, currency = 'INR'): string {
+    return t(forReturn ? 'orders.refund.capReturn' : 'orders.refund.cap', {
+        amount: formatMoney(cap, currency),
+    });
 }

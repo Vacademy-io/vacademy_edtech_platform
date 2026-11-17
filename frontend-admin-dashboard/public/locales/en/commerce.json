@@ -1655,6 +1655,452 @@
             "loading": "Loading {{done}} of {{count}}…",
             "failed": "Order {{id}} could not be loaded.",
             "none": "No orders were chosen to print."
+        },
+        "refund": {
+            "cap": "At most {{amount}} can be refunded on this order.",
+            "capReturn": "At most {{amount}} can be refunded on this return.",
+            "nothingDue": "Nothing is due back on this order.",
+            "methods": {
+                "GATEWAY": "Back through the payment gateway",
+                "UPI": "UPI",
+                "BANK_TRANSFER": "Bank transfer",
+                "CASH": "Cash",
+                "EXCHANGE_CREDIT": "Credit for an exchange order"
+            },
+            "for": "Refund for",
+            "forOrder": "The order",
+            "forReturn": "Return {{number}}",
+            "method": "How to refund",
+            "gatewayHelp": "Back to the customer's card or UPI through the payment gateway.",
+            "payLaterHint": "Leave blank to pay later; the refund stays \"To pay\" until you record the payout.",
+            "paidOn": "Paid on",
+            "submit": "Refund",
+            "done": "Refund recorded",
+            "doneGateway": "Refund sent to the gateway; it shows Processed when the gateway confirms.",
+            "loadingReturn": "Reading the return…"
+        },
+        "refunds": {
+            "title": "Refunds",
+            "forReturn": "for return {{number}}",
+            "failed": "Failed: {{code}}",
+            "recordPayout": "Record payout",
+            "cancel": "Cancel refund",
+            "check": "Check with the gateway",
+            "checked": "The gateway says: {{status}}",
+            "referenceRequired": "Write the payment reference.",
+            "payoutDone": "Payout recorded",
+            "cancelled": "Refund cancelled"
+        },
+        "returns": {
+            "reasons": {
+                "DEFECTIVE": "Defective",
+                "WRONG_ITEM": "Wrong item",
+                "DAMAGED_IN_TRANSIT": "Damaged in transit",
+                "SIZE": "Size",
+                "CHANGED_MIND": "Changed mind",
+                "OTHER": "Other"
+            },
+            "via": {
+                "PHONE": "Phone",
+                "WHATSAPP": "WhatsApp",
+                "EMAIL": "Email",
+                "COUNTER": "At the counter",
+                "OTHER": "Other"
+            },
+            "override": "Reason to go ahead anyway",
+            "cardTitle": "Returns and refunds",
+            "none": "No returns or refunds on this order.",
+            "units": "{{count}} items",
+            "refundedShort": "Refunded",
+            "nothingShipped": "Nothing on this order can be returned yet.",
+            "returnable": "{{quantity}} can be returned",
+            "quantityFor": "Quantity to return of {{name}}",
+            "tooMany": "More than can be returned.",
+            "linesRequired": "Enter a quantity for at least one item.",
+            "reason": "Reason for the return",
+            "reasonRequired": "Choose the reason for the return.",
+            "choose": "Choose",
+            "requestedVia": "The customer asked by",
+            "reasonNote": "What the customer said",
+            "policy": {
+                "title": "Return policy",
+                "window": "Returns are accepted for {{days}} days after delivery.",
+                "sinceDelivery": "Delivered {{days}} days ago.",
+                "allowedReasons": "Reasons accepted: {{reasons}}",
+                "photoRequired": "The policy asks for a photo. Photos are not taken here, so write a reason to go ahead.",
+                "paidByBuyer": "The customer pays for the return shipping.",
+                "paidBySeller": "The shop pays for the return shipping."
+            },
+            "warnings": {
+                "OUTSIDE_WINDOW": "The return window has passed.",
+                "COLLECTION_NO_RETURNS": "These products are sold without returns.",
+                "REASON_NOT_ALLOWED": "The policy does not accept this reason.",
+                "PHOTO_MISSING": "The policy asks for a photo."
+            },
+            "creditEstimate": "Credit for the customer",
+            "estimateNote": "Estimate; the credit note decides.",
+            "previewFailed": "The policy check could not be loaded; the server checks again when you save.",
+            "approveNow": "Approve now",
+            "restockLocation": "Put back in stock at",
+            "created": "Return {{number}} created"
+        },
+        "returnSheet": {
+            "title": "Return {{number}}",
+            "description": "Order {{number}}",
+            "conditionSplit": "Can be sold again {{resaleable}} · Damaged {{damaged}}",
+            "credited": "Credited",
+            "creditTotal": "Credit total",
+            "refunded": "Refunded",
+            "creditNote": "Credit note {{number}}",
+            "downloadCreditNote": "Download credit note",
+            "pdfNotReady": "The PDF is not ready yet. Try again in a minute.",
+            "overrideReason": "Went ahead because: {{reason}}",
+            "rejectReason": "Rejected because: {{reason}}",
+            "times": {
+                "created": "Requested",
+                "approved": "Approved",
+                "rejected": "Rejected",
+                "received": "Received",
+                "closed": "Closed"
+            },
+            "approve": "Approve",
+            "reject": "Reject",
+            "approved": "Return approved",
+            "rejected": "Return rejected",
+            "receive": "Receive",
+            "receiveTitle": "Receive the return",
+            "receiveHelp": "For each item say what came back and whether it can be sold again.",
+            "cameBack": "{{code}} came back",
+            "tickPieces": "Tick exactly {{quantity}} pieces that came back.",
+            "mustAddUp": "The two amounts must add up to {{quantity}}.",
+            "received": "Return received; credit note {{number}} issued."
+        },
+        "new": {
+            "title": "New order",
+            "description": "Take an order by phone, WhatsApp or for a reseller; the customer can pay now, later or in part.",
+            "create": "Create order",
+            "created": "Order {{number}} created",
+            "restOnCredit": "Rest on credit",
+            "handOverNow": "Customer takes it now",
+            "estimate": "Estimate before shipping and rounding; the server sets the total.",
+            "customer": {
+                "title": "Customer",
+                "phone": "Mobile number",
+                "name": "Name",
+                "email": "E-mail",
+                "known": "Known customer: {{name}}, {{count}} orders"
+            },
+            "lines": {
+                "title": "Items",
+                "description": "Scan a label, search the products or type a SKU.",
+                "empty": "No items yet.",
+                "quantity": "Quantity",
+                "quantityMeasured": "Quantity ({{unit}})",
+                "listPrice": "List price",
+                "priceBySystem": "Set by the server",
+                "priceOverride": "Price for this order",
+                "priceOverrideHint": "Leave empty to use the list price.",
+                "pieces": "Pieces: {{codes}}",
+                "remove": "Remove {{name}}",
+                "tooMany": "An order can have at most {{count}} items.",
+                "pieceTwice": "This piece is already in the order."
+            },
+            "scan": {
+                "label": "Scan a label",
+                "placeholder": "Scan or type the code",
+                "add": "Add",
+                "pieceHint": "A piece label adds that very piece; it is handed over now.",
+                "notFound": "Code not found.",
+                "unavailable": "Scanning needs the Stock feature; search the products instead."
+            },
+            "sku": {
+                "label": "Type a SKU",
+                "add": "Add SKU"
+            },
+            "search": {
+                "label": "Search products",
+                "placeholder": "Product name or SKU",
+                "go": "Search",
+                "loading": "Searching…",
+                "none": "No active product matches.",
+                "variants": "{{count}} variants",
+                "pickVariant": "Choose a variant of {{name}}",
+                "back": "Back to the results"
+            },
+            "delivery": {
+                "title": "Delivery",
+                "ship": "Ship to an address",
+                "handOverHint": "Scan the piece label of every one-of-a-kind item before you create the order.",
+                "billingSame": "Billing address is the same as the delivery address",
+                "billing": "Billing address",
+                "chargeShipping": "Charge shipping",
+                "buyerGstin": "Buyer GSTIN",
+                "buyerGstinHint": "Only for a business buyer.",
+                "coupon": "Coupon code",
+                "note": "Note for the order"
+            },
+            "address": {
+                "name": "Name",
+                "phone": "Phone",
+                "line1": "House and street",
+                "line2": "Area",
+                "landmark": "Landmark",
+                "city": "City",
+                "state": "State",
+                "pincode": "PIN code"
+            },
+            "payments": {
+                "title": "Payment",
+                "description": "Payments received now. Turn on Rest on credit to let the customer pay the rest later.",
+                "none": "No payment received yet.",
+                "mode": "Paid by",
+                "amount": "Amount",
+                "reference": "Reference",
+                "add": "Add a payment",
+                "remove": "Remove payment {{number}}",
+                "restOnCreditHint": "What is not paid now stays due on the order.",
+                "tendersHint": "Turn on Rest on credit or change the payments."
+            },
+            "summary": {
+                "title": "Summary",
+                "estimate": "Estimate",
+                "unpriced": "{{count}} items have no price here; the server prices them."
+            },
+            "problems": {
+                "required": "Fill this in.",
+                "phone": "Enter a 10-digit mobile number.",
+                "email": "Enter a valid e-mail address.",
+                "noLines": "Add at least one item.",
+                "tooManyLines": "An order can have at most {{count}} items.",
+                "quantity": "Enter a quantity above zero (metres to one decimal).",
+                "price": "Enter a price of zero or more.",
+                "pincode": "Enter a 6-digit PIN code.",
+                "gstin": "This GSTIN is not valid.",
+                "tooLong": "This is too long.",
+                "tooManyPayments": "At most 10 payments.",
+                "amount": "Enter an amount above zero.",
+                "remainderMethod": "Choose how the rest of the credit is refunded.",
+                "fix": "Some fields need attention."
+            }
+        },
+        "exchange": {
+            "loading": "Reading the return…",
+            "banner": "Exchange for return {{number}}: credit {{amount}} pays this order.",
+            "notAvailable": "This return can no longer be exchanged; the order is created without credit.",
+            "credit": "Exchange credit",
+            "remainder": "{{amount}} of the credit is left over and goes back to the customer.",
+            "remainderMethod": "Refund the rest by",
+            "remainderReference": "Refund reference"
+        }
+    },
+    "customers": {
+        "title": "Customers",
+        "description": "People who have ordered from the shop, with their orders, spend and dues.",
+        "searchPlaceholder": "Phone number or name",
+        "loadFailed": "The customers could not be loaded.",
+        "notAvailable": "Customer lists are coming soon",
+        "notFound": "This customer was not found.",
+        "backToList": "Customers",
+        "noName": "No name",
+        "anonymised": "Customer data removed",
+        "yes": "Yes",
+        "no": "No",
+        "ordersCount": "{{count}} orders",
+        "columns": {
+            "name": "Name",
+            "phone": "Phone",
+            "email": "Email",
+            "orders": "Orders",
+            "totalSpent": "Total spent",
+            "dues": "Dues",
+            "lastOrder": "Last order",
+            "codRefusals": "COD refused",
+            "consent": "Marketing messages"
+        },
+        "empty": {
+            "title": "No customers yet.",
+            "description": "Customers appear with their first order.",
+            "filteredTitle": "No customer matches this search",
+            "filteredDescription": "Check the phone number or try part of the name.",
+            "clear": "Clear search"
+        },
+        "tabs": {
+            "overview": "Overview",
+            "orders": "Orders",
+            "addresses": "Addresses"
+        },
+        "overview": {
+            "contact": "Contact",
+            "since": "Customer since",
+            "consentAt": "Agreed on {{time}}",
+            "totals": "Orders and money",
+            "notes": "Notes",
+            "noNotes": "No notes."
+        },
+        "orders": {
+            "empty": "No orders found for this phone number.",
+            "noPhone": "This customer has no phone number, so orders cannot be listed.",
+            "more": "{{count}} older orders are not shown. Search the order desk by phone."
+        },
+        "addresses": {
+            "address": "Address",
+            "default": "Default",
+            "empty": "No saved addresses."
+        }
+    },
+    "notifications": {
+        "description": "WhatsApp and email messages to customers when their order moves on.",
+        "testSend": "Send a test",
+        "test": "Test",
+        "edit": "Edit",
+        "view": "View",
+        "close": "Close",
+        "on": "On",
+        "whatsapp": "WhatsApp",
+        "email": "Email",
+        "byWorkflow": "Sent by a workflow",
+        "templateIn": "Template ({{language}})",
+        "tryAgainIn": "Try again in {{minutes}} minutes.",
+        "triggersTitle": "Messages for order events",
+        "triggersDescription": "Switch each message on or off, and choose WhatsApp, email or both.",
+        "languages": {
+            "hi": "Hindi",
+            "en": "English"
+        },
+        "banners": {
+            "sendingOff": "Messages are switched off for this shop by the platform; settings are kept.",
+            "linksOff": "Order links are off: messages are sent without a link."
+        },
+        "shop": {
+            "title": "Shop details in messages",
+            "description": "The order link and the shop name customers see in every message.",
+            "linkBase": "Order link address",
+            "linkBaseHint": "Only the shop's verified website addresses can be used.",
+            "noLink": "No link",
+            "linkDays": "Link works for (days)",
+            "linkDaysHint": "A whole number from {{min}} to {{max}}.",
+            "shopName": {
+                "hi": "Shop name in Hindi",
+                "en": "Shop name in English"
+            },
+            "shopNameHint": "Leave blank to use \"{{name}}\".",
+            "shopNameTooLong": "One line of at most {{max}} characters.",
+            "saved": "Shop details saved"
+        },
+        "templates": {
+            "request": "Ask WhatsApp to approve templates",
+            "explain": "The order message templates in Hindi and English are sent to WhatsApp for approval. Approval can take a day.",
+            "confirm": "Send for approval",
+            "sending": "Sending…",
+            "codes": {
+                "CREATED_AND_SUBMITTED": "Created and sent for approval",
+                "EXISTS": "Already there",
+                "PROVIDER_NOT_SUPPORTED": "Your WhatsApp provider cannot take templates from here",
+                "PROVIDER_ERROR": "The WhatsApp provider gave an error"
+            }
+        },
+        "editor": {
+            "description": "Hindi first, then English. WhatsApp sends the approved template; the email text can be changed.",
+            "templateName": "WhatsApp template name",
+            "templateDefault": "Leave blank to use the default template {{name}}.",
+            "templateInvalid": "Use only small letters, digits and _ (at most 100).",
+            "resetTemplate": "Use the default template",
+            "templateText": "Template text (approved by WhatsApp, cannot be changed here)",
+            "subject": "Email subject",
+            "body": "Email text",
+            "usingDefault": "Using the default text",
+            "resetEmail": "Reset to default",
+            "variables": "Insert a detail at the cursor",
+            "tooLong": "At most {{max}} characters.",
+            "saved": "Message saved"
+        },
+        "testDialog": {
+            "explain": "The test goes to your own e-mail and mobile number, with sample order data.",
+            "language": "Language",
+            "channels": "Send by",
+            "pickChannel": "Choose at least one.",
+            "sending": "Sending…",
+            "sendAgain": "Send again",
+            "sentTo": "To {{recipient}}",
+            "tooMany": "Too many tests. Try again in {{minutes}} minutes."
+        },
+        "triggers": {
+            "ORDER_CONFIRMED": {
+                "title": "Order confirmed",
+                "description": "When a paid order is placed or a cash-on-delivery order is confirmed."
+            },
+            "COD_CONFIRMATION_NEEDED": {
+                "title": "COD confirmation needed",
+                "description": "When a cash-on-delivery order waits for the customer to confirm."
+            },
+            "ORDER_SHIPPED": {
+                "title": "Order shipped",
+                "description": "When the parcel is handed to the courier, with the tracking number."
+            },
+            "ORDER_DELIVERED": {
+                "title": "Order delivered",
+                "description": "When the parcel is marked delivered."
+            },
+            "ORDER_CANCELLED": {
+                "title": "Order cancelled",
+                "description": "When the shop or the customer cancels the order."
+            },
+            "ORDER_RTO": {
+                "title": "Parcel returned (RTO)",
+                "description": "When the courier brings the parcel back to the shop."
+            },
+            "RETURN_APPROVED": {
+                "title": "Return approved",
+                "description": "When the shop approves a return the customer asked for."
+            },
+            "REFUND_PROCESSED": {
+                "title": "Refund processed",
+                "description": "When money is paid back to the customer."
+            },
+            "POS_BILL_ISSUED": {
+                "title": "Counter bill issued",
+                "description": "When a bill is made at the shop counter."
+            }
+        },
+        "testCodes": {
+            "NO_EMAIL": "Your account has no e-mail address.",
+            "NO_PHONE": "Your account has no mobile number.",
+            "TEMPLATE_NOT_APPROVED": "The WhatsApp template is not approved yet.",
+            "TEMPLATE_NOT_UTILITY": "The WhatsApp template is not of the order-update (utility) kind.",
+            "NO_SHOP_URL": "The shop has no order link address, which this template needs.",
+            "PLATFORM_ERROR": "The messaging service did not answer. Try again later.",
+            "ANSWER_UNREADABLE": "The messaging service gave an answer that could not be read.",
+            "QUEUED_BY_PLATFORM": "Accepted; it will be sent shortly.",
+            "UNSUBSCRIBED": "This address has unsubscribed from messages.",
+            "ADDRESS_BLOCKED": "This address is blocked for messages.",
+            "NO_CREDITS": "The institute has no message credits left.",
+            "PROVIDER_REJECTED": "The message provider refused the message."
+        },
+        "deliveryCodes": {
+            "COMMERCE_OFF": "The shop was switched off.",
+            "FEATURE_UNKNOWN": "The shop's settings could not be read; tried again later.",
+            "STALE": "The order had already moved on.",
+            "NOT_APPLICABLE": "Not needed for this order.",
+            "OUTCOME_UNKNOWN": "It is not known whether it was sent.",
+            "NO_PHONE": "The customer has no mobile number.",
+            "NO_EMAIL": "The customer has no e-mail address.",
+            "PHONE_NOT_VERIFIED": "The customer's mobile number is not verified.",
+            "TEMPLATE_NOT_APPROVED": "The WhatsApp template is not approved yet.",
+            "TEMPLATE_NOT_UTILITY": "The WhatsApp template is not of the order-update (utility) kind.",
+            "NO_SHOP_URL": "The shop has no order link address.",
+            "WORKFLOW_ERROR": "The workflow that sends this message failed.",
+            "PLATFORM_UNREACHABLE": "The messaging service could not be reached; it will be tried again.",
+            "PLATFORM_UNAVAILABLE": "The messaging service was busy; it will be tried again.",
+            "REQUEST_REFUSED": "The messaging service refused the request.",
+            "ANSWER_UNREADABLE": "The messaging service gave an answer that could not be read.",
+            "QUEUED_BY_PLATFORM": "Accepted by the messaging service.",
+            "UNSUBSCRIBED": "The customer has unsubscribed from messages.",
+            "ADDRESS_BLOCKED": "The customer's address is blocked for messages.",
+            "NO_CREDITS": "The institute had no message credits left.",
+            "PROVIDER_REJECTED": "The message provider refused the message.",
+            "RETRIES_EXHAUSTED": "Not sent after several tries.",
+            "EXPIRED": "Too late to send.",
+            "CLAIM_LOST": "Sending was interrupted; it is not known whether it went."
         }
     }
 }

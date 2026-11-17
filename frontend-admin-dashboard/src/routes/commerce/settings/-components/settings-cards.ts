@@ -58,12 +58,13 @@ export const SETTINGS_CARDS: readonly SettingsCard[] = [
         to: '/commerce/settings/staff',
         anyFeature: [COMMERCE_FEATURE.STOCK, COMMERCE_FEATURE.POS],
     },
+    // Settings routes accept any commerce feature, so no anyFeature here.
+    { id: 'notifications', icon: BellRinging, to: '/commerce/settings/notifications' },
     { id: 'registers', icon: CashRegister },
     { id: 'shipping', icon: Truck },
     { id: 'payments', icon: CreditCard },
     { id: 'documents', icon: FileText },
     { id: 'returns', icon: ArrowUUpLeft },
     { id: 'labels', icon: Printer },
-    { id: 'notifications', icon: BellRinging },
     { id: 'storefront', icon: Browser },
 ];

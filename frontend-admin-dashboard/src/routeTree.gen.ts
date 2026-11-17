@@ -244,6 +244,7 @@ import { Route as ErpAttendanceRegularizationsIndexRouteImport } from "./routes/
 import { Route as EngagementEnginesDashboardOutcomesIndexRouteImport } from "./routes/engagement-engines/dashboard/outcomes/index"
 import { Route as CommerceSettingsTaxClassesIndexRouteImport } from "./routes/commerce/settings/tax-classes/index"
 import { Route as CommerceSettingsStaffIndexRouteImport } from "./routes/commerce/settings/staff/index"
+import { Route as CommerceSettingsNotificationsIndexRouteImport } from "./routes/commerce/settings/notifications/index"
 import { Route as CommerceSettingsLocationsIndexRouteImport } from "./routes/commerce/settings/locations/index"
 import { Route as CommerceSettingsBusinessIndexRouteImport } from "./routes/commerce/settings/business/index"
 import { Route as CommerceProductsImportIndexRouteImport } from "./routes/commerce/products/import/index"
@@ -251,7 +252,9 @@ import { Route as CommerceProductsProductIdIndexRouteImport } from "./routes/com
 import { Route as CommerceOrdersRemittancesIndexRouteImport } from "./routes/commerce/orders/remittances/index"
 import { Route as CommerceOrdersPrintIndexRouteImport } from "./routes/commerce/orders/print/index"
 import { Route as CommerceOrdersPackIndexRouteImport } from "./routes/commerce/orders/pack/index"
+import { Route as CommerceOrdersNewIndexRouteImport } from "./routes/commerce/orders/new/index"
 import { Route as CommerceOrdersOrderIdIndexRouteImport } from "./routes/commerce/orders/$orderId/index"
+import { Route as CommerceCustomersCustomerIdIndexRouteImport } from "./routes/commerce/customers/$customerId/index"
 import { Route as AudienceManagerListCampaignUsersIndexRouteImport } from "./routes/audience-manager/list/campaign-users/index"
 import { Route as AudienceManagerLeadAgentAgentIdIndexRouteImport } from "./routes/audience-manager/lead-agent/$agentId/index"
 import { Route as AssessmentExportAssessmentIdIndexRouteImport } from "./routes/assessment/export/$assessmentId/index"
@@ -2060,6 +2063,16 @@ const CommerceSettingsStaffIndexRoute =
   } as any).lazy(() =>
     import("./routes/commerce/settings/staff/index.lazy").then((d) => d.Route),
   )
+const CommerceSettingsNotificationsIndexRoute =
+  CommerceSettingsNotificationsIndexRouteImport.update({
+    id: "/commerce/settings/notifications/",
+    path: "/commerce/settings/notifications/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/settings/notifications/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const CommerceSettingsLocationsIndexRoute =
   CommerceSettingsLocationsIndexRouteImport.update({
     id: "/commerce/settings/locations/",
@@ -2123,6 +2136,13 @@ const CommerceOrdersPackIndexRoute = CommerceOrdersPackIndexRouteImport.update({
 } as any).lazy(() =>
   import("./routes/commerce/orders/pack/index.lazy").then((d) => d.Route),
 )
+const CommerceOrdersNewIndexRoute = CommerceOrdersNewIndexRouteImport.update({
+  id: "/commerce/orders/new/",
+  path: "/commerce/orders/new/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/orders/new/index.lazy").then((d) => d.Route),
+)
 const CommerceOrdersOrderIdIndexRoute =
   CommerceOrdersOrderIdIndexRouteImport.update({
     id: "/commerce/orders/$orderId/",
@@ -2130,6 +2150,16 @@ const CommerceOrdersOrderIdIndexRoute =
     getParentRoute: () => rootRouteImport,
   } as any).lazy(() =>
     import("./routes/commerce/orders/$orderId/index.lazy").then((d) => d.Route),
+  )
+const CommerceCustomersCustomerIdIndexRoute =
+  CommerceCustomersCustomerIdIndexRouteImport.update({
+    id: "/commerce/customers/$customerId/",
+    path: "/commerce/customers/$customerId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/customers/$customerId/index.lazy").then(
+      (d) => d.Route,
+    ),
   )
 const AudienceManagerListCampaignUsersIndexRoute =
   AudienceManagerListCampaignUsersIndexRouteImport.update({
@@ -2714,7 +2744,9 @@ export interface FileRoutesByFullPath {
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
   "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
+  "/commerce/customers/$customerId/": typeof CommerceCustomersCustomerIdIndexRoute
   "/commerce/orders/$orderId/": typeof CommerceOrdersOrderIdIndexRoute
+  "/commerce/orders/new/": typeof CommerceOrdersNewIndexRoute
   "/commerce/orders/pack/": typeof CommerceOrdersPackIndexRoute
   "/commerce/orders/print/": typeof CommerceOrdersPrintIndexRoute
   "/commerce/orders/remittances/": typeof CommerceOrdersRemittancesIndexRoute
@@ -2722,6 +2754,7 @@ export interface FileRoutesByFullPath {
   "/commerce/products/import/": typeof CommerceProductsImportIndexRoute
   "/commerce/settings/business/": typeof CommerceSettingsBusinessIndexRoute
   "/commerce/settings/locations/": typeof CommerceSettingsLocationsIndexRoute
+  "/commerce/settings/notifications/": typeof CommerceSettingsNotificationsIndexRoute
   "/commerce/settings/staff/": typeof CommerceSettingsStaffIndexRoute
   "/commerce/settings/tax-classes/": typeof CommerceSettingsTaxClassesIndexRoute
   "/engagement-engines/dashboard/outcomes/": typeof EngagementEnginesDashboardOutcomesIndexRoute
@@ -3000,7 +3033,9 @@ export interface FileRoutesByTo {
   "/assessment/export/$assessmentId": typeof AssessmentExportAssessmentIdIndexRoute
   "/audience-manager/lead-agent/$agentId": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users": typeof AudienceManagerListCampaignUsersIndexRoute
+  "/commerce/customers/$customerId": typeof CommerceCustomersCustomerIdIndexRoute
   "/commerce/orders/$orderId": typeof CommerceOrdersOrderIdIndexRoute
+  "/commerce/orders/new": typeof CommerceOrdersNewIndexRoute
   "/commerce/orders/pack": typeof CommerceOrdersPackIndexRoute
   "/commerce/orders/print": typeof CommerceOrdersPrintIndexRoute
   "/commerce/orders/remittances": typeof CommerceOrdersRemittancesIndexRoute
@@ -3008,6 +3043,7 @@ export interface FileRoutesByTo {
   "/commerce/products/import": typeof CommerceProductsImportIndexRoute
   "/commerce/settings/business": typeof CommerceSettingsBusinessIndexRoute
   "/commerce/settings/locations": typeof CommerceSettingsLocationsIndexRoute
+  "/commerce/settings/notifications": typeof CommerceSettingsNotificationsIndexRoute
   "/commerce/settings/staff": typeof CommerceSettingsStaffIndexRoute
   "/commerce/settings/tax-classes": typeof CommerceSettingsTaxClassesIndexRoute
   "/engagement-engines/dashboard/outcomes": typeof EngagementEnginesDashboardOutcomesIndexRoute
@@ -3289,7 +3325,9 @@ export interface FileRoutesById {
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
   "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
+  "/commerce/customers/$customerId/": typeof CommerceCustomersCustomerIdIndexRoute
   "/commerce/orders/$orderId/": typeof CommerceOrdersOrderIdIndexRoute
+  "/commerce/orders/new/": typeof CommerceOrdersNewIndexRoute
   "/commerce/orders/pack/": typeof CommerceOrdersPackIndexRoute
   "/commerce/orders/print/": typeof CommerceOrdersPrintIndexRoute
   "/commerce/orders/remittances/": typeof CommerceOrdersRemittancesIndexRoute
@@ -3297,6 +3335,7 @@ export interface FileRoutesById {
   "/commerce/products/import/": typeof CommerceProductsImportIndexRoute
   "/commerce/settings/business/": typeof CommerceSettingsBusinessIndexRoute
   "/commerce/settings/locations/": typeof CommerceSettingsLocationsIndexRoute
+  "/commerce/settings/notifications/": typeof CommerceSettingsNotificationsIndexRoute
   "/commerce/settings/staff/": typeof CommerceSettingsStaffIndexRoute
   "/commerce/settings/tax-classes/": typeof CommerceSettingsTaxClassesIndexRoute
   "/engagement-engines/dashboard/outcomes/": typeof EngagementEnginesDashboardOutcomesIndexRoute
@@ -3579,7 +3618,9 @@ export interface FileRouteTypes {
     | "/assessment/export/$assessmentId/"
     | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
+    | "/commerce/customers/$customerId/"
     | "/commerce/orders/$orderId/"
+    | "/commerce/orders/new/"
     | "/commerce/orders/pack/"
     | "/commerce/orders/print/"
     | "/commerce/orders/remittances/"
@@ -3587,6 +3628,7 @@ export interface FileRouteTypes {
     | "/commerce/products/import/"
     | "/commerce/settings/business/"
     | "/commerce/settings/locations/"
+    | "/commerce/settings/notifications/"
     | "/commerce/settings/staff/"
     | "/commerce/settings/tax-classes/"
     | "/engagement-engines/dashboard/outcomes/"
@@ -3865,7 +3907,9 @@ export interface FileRouteTypes {
     | "/assessment/export/$assessmentId"
     | "/audience-manager/lead-agent/$agentId"
     | "/audience-manager/list/campaign-users"
+    | "/commerce/customers/$customerId"
     | "/commerce/orders/$orderId"
+    | "/commerce/orders/new"
     | "/commerce/orders/pack"
     | "/commerce/orders/print"
     | "/commerce/orders/remittances"
@@ -3873,6 +3917,7 @@ export interface FileRouteTypes {
     | "/commerce/products/import"
     | "/commerce/settings/business"
     | "/commerce/settings/locations"
+    | "/commerce/settings/notifications"
     | "/commerce/settings/staff"
     | "/commerce/settings/tax-classes"
     | "/engagement-engines/dashboard/outcomes"
@@ -4153,7 +4198,9 @@ export interface FileRouteTypes {
     | "/assessment/export/$assessmentId/"
     | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
+    | "/commerce/customers/$customerId/"
     | "/commerce/orders/$orderId/"
+    | "/commerce/orders/new/"
     | "/commerce/orders/pack/"
     | "/commerce/orders/print/"
     | "/commerce/orders/remittances/"
@@ -4161,6 +4208,7 @@ export interface FileRouteTypes {
     | "/commerce/products/import/"
     | "/commerce/settings/business/"
     | "/commerce/settings/locations/"
+    | "/commerce/settings/notifications/"
     | "/commerce/settings/staff/"
     | "/commerce/settings/tax-classes/"
     | "/engagement-engines/dashboard/outcomes/"
@@ -4433,7 +4481,9 @@ export interface RootRouteChildren {
   AssessmentExportAssessmentIdIndexRoute: typeof AssessmentExportAssessmentIdIndexRoute
   AudienceManagerLeadAgentAgentIdIndexRoute: typeof AudienceManagerLeadAgentAgentIdIndexRoute
   AudienceManagerListCampaignUsersIndexRoute: typeof AudienceManagerListCampaignUsersIndexRoute
+  CommerceCustomersCustomerIdIndexRoute: typeof CommerceCustomersCustomerIdIndexRoute
   CommerceOrdersOrderIdIndexRoute: typeof CommerceOrdersOrderIdIndexRoute
+  CommerceOrdersNewIndexRoute: typeof CommerceOrdersNewIndexRoute
   CommerceOrdersPackIndexRoute: typeof CommerceOrdersPackIndexRoute
   CommerceOrdersPrintIndexRoute: typeof CommerceOrdersPrintIndexRoute
   CommerceOrdersRemittancesIndexRoute: typeof CommerceOrdersRemittancesIndexRoute
@@ -4441,6 +4491,7 @@ export interface RootRouteChildren {
   CommerceProductsImportIndexRoute: typeof CommerceProductsImportIndexRoute
   CommerceSettingsBusinessIndexRoute: typeof CommerceSettingsBusinessIndexRoute
   CommerceSettingsLocationsIndexRoute: typeof CommerceSettingsLocationsIndexRoute
+  CommerceSettingsNotificationsIndexRoute: typeof CommerceSettingsNotificationsIndexRoute
   CommerceSettingsStaffIndexRoute: typeof CommerceSettingsStaffIndexRoute
   CommerceSettingsTaxClassesIndexRoute: typeof CommerceSettingsTaxClassesIndexRoute
   EngagementEnginesDashboardOutcomesIndexRoute: typeof EngagementEnginesDashboardOutcomesIndexRoute
@@ -6161,6 +6212,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof CommerceSettingsStaffIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/commerce/settings/notifications/": {
+      id: "/commerce/settings/notifications/"
+      path: "/commerce/settings/notifications"
+      fullPath: "/commerce/settings/notifications/"
+      preLoaderRoute: typeof CommerceSettingsNotificationsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/commerce/settings/locations/": {
       id: "/commerce/settings/locations/"
       path: "/commerce/settings/locations"
@@ -6210,11 +6268,25 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof CommerceOrdersPackIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/commerce/orders/new/": {
+      id: "/commerce/orders/new/"
+      path: "/commerce/orders/new"
+      fullPath: "/commerce/orders/new/"
+      preLoaderRoute: typeof CommerceOrdersNewIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/commerce/orders/$orderId/": {
       id: "/commerce/orders/$orderId/"
       path: "/commerce/orders/$orderId"
       fullPath: "/commerce/orders/$orderId/"
       preLoaderRoute: typeof CommerceOrdersOrderIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/customers/$customerId/": {
+      id: "/commerce/customers/$customerId/"
+      path: "/commerce/customers/$customerId"
+      fullPath: "/commerce/customers/$customerId/"
+      preLoaderRoute: typeof CommerceCustomersCustomerIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/audience-manager/list/campaign-users/": {
@@ -6784,7 +6856,9 @@ const rootRouteChildren: RootRouteChildren = {
     AudienceManagerLeadAgentAgentIdIndexRoute,
   AudienceManagerListCampaignUsersIndexRoute:
     AudienceManagerListCampaignUsersIndexRoute,
+  CommerceCustomersCustomerIdIndexRoute: CommerceCustomersCustomerIdIndexRoute,
   CommerceOrdersOrderIdIndexRoute: CommerceOrdersOrderIdIndexRoute,
+  CommerceOrdersNewIndexRoute: CommerceOrdersNewIndexRoute,
   CommerceOrdersPackIndexRoute: CommerceOrdersPackIndexRoute,
   CommerceOrdersPrintIndexRoute: CommerceOrdersPrintIndexRoute,
   CommerceOrdersRemittancesIndexRoute: CommerceOrdersRemittancesIndexRoute,
@@ -6792,6 +6866,8 @@ const rootRouteChildren: RootRouteChildren = {
   CommerceProductsImportIndexRoute: CommerceProductsImportIndexRoute,
   CommerceSettingsBusinessIndexRoute: CommerceSettingsBusinessIndexRoute,
   CommerceSettingsLocationsIndexRoute: CommerceSettingsLocationsIndexRoute,
+  CommerceSettingsNotificationsIndexRoute:
+    CommerceSettingsNotificationsIndexRoute,
   CommerceSettingsStaffIndexRoute: CommerceSettingsStaffIndexRoute,
   CommerceSettingsTaxClassesIndexRoute: CommerceSettingsTaxClassesIndexRoute,
   EngagementEnginesDashboardOutcomesIndexRoute:

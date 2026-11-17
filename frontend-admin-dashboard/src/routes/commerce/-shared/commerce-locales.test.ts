@@ -13,7 +13,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { COMMERCE_NAV } from '@/lib/commerce/commerce-access';
+import { RETURN_WARNINGS } from '../orders/-components/dialogs/ReturnCreateDialog';
 import { BULK_SHIP_CSV_ERRORS } from '../orders/-shared/bulk-ship-csv';
+import { NEW_ORDER_PROBLEM_KEYS } from '../orders/-shared/new-order';
 import { CLIENT_ACTION_IDS } from '../orders/-shared/order-actions';
 import { ORDER_ERROR_CODES, ORDER_ERROR_FALLBACK_KEYS } from '../orders/-shared/order-errors';
 import { QUEUE_DEFINITIONS } from '../orders/-shared/order-queues';
@@ -23,11 +25,21 @@ import {
     ORDER_CHANNELS,
     ORDER_QUEUES,
     PAYMENT_METHODS,
+    REFUND_METHODS,
+    RETURN_REASONS,
+    RETURN_VIA,
     RTO_REASONS,
     TENDER_MODES,
 } from '../orders/-shared/order-types';
 import { PACK_REFUSALS } from '../orders/-shared/pack-session';
 import { NAMED_MEDIA_TAGS } from '../products/-components/media-tags';
+import {
+    DELIVERY_CODES,
+    NOTIFICATION_LOCALES,
+    NOTIFICATION_TRIGGERS,
+    TEMPLATE_SUBMIT_CODES,
+    TEST_SEND_CODES,
+} from '../settings/-components/notifications-logic';
 import { PRODUCT_LOCALES } from './catalogue-types';
 import { GST_STATE_CODES } from './gstin';
 import { PRODUCT_SERVER_ERROR_KEYS } from './product-errors';
@@ -271,6 +283,28 @@ describe('commerce strings: every key the code asks for exists', () => {
         expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
     });
 
+    it('returns, refunds, new order and notification keys built at run time exist', () => {
+        const need: string[] = [];
+        const each = (prefix: string, values: readonly string[]) =>
+            values.forEach((value) => need.push(`${prefix}.${value}`));
+        each('orders.refund.methods', [...REFUND_METHODS, 'EXCHANGE_CREDIT']);
+        each('orders.returns.reasons', RETURN_REASONS);
+        each('orders.returns.via', RETURN_VIA);
+        each('orders.returns.warnings', RETURN_WARNINGS);
+        each('orders.new.problems', NEW_ORDER_PROBLEM_KEYS);
+        NOTIFICATION_TRIGGERS.forEach((code) =>
+            need.push(`notifications.triggers.${code}.title`, `notifications.triggers.${code}.description`)
+        );
+        each('notifications.testCodes', TEST_SEND_CODES);
+        each('notifications.deliveryCodes', DELIVERY_CODES);
+        each('notifications.templates.codes', TEMPLATE_SUBMIT_CODES);
+        each('notifications.languages', NOTIFICATION_LOCALES);
+        each('notifications.shop.shopName', NOTIFICATION_LOCALES);
+        expect(NOTIFICATION_TRIGGERS).toHaveLength(9);
+        expect(need.length).toBeGreaterThan(90);
+        expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
+    });
+
     it('the settings cards in the code are the ones with strings', async () => {
         const { SETTINGS_CARDS } = await import('../settings/-components/settings-cards');
         SETTINGS_CARDS.forEach((card) => {
@@ -282,6 +316,7 @@ describe('commerce strings: every key the code asks for exists', () => {
             'taxClasses',
             'locations',
             'staff',
+            'notifications',
         ]);
         expect(SETTINGS_CARDS.filter((card) => !card.to).map((card) => card.id)).toEqual([
             'registers',
@@ -290,7 +325,6 @@ describe('commerce strings: every key the code asks for exists', () => {
             'documents',
             'returns',
             'labels',
-            'notifications',
             'storefront',
         ]);
     });

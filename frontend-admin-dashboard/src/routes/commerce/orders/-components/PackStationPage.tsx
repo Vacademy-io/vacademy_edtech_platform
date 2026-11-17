@@ -487,7 +487,7 @@ export function PackStationContent({
                     message={errorText(readOrderError(detailQuery.error))}
                     onRetry={() => void detailQuery.refetch()}
                 />
-                <MyButton type="button" buttonType="secondary" scale="medium" onClick={nextOrder}>
+                <MyButton type="button" buttonType="secondary" scale="medium" className="h-12 md:h-9" onClick={nextOrder}>
                     {t('orders.pack.changeOrder')}
                 </MyButton>
             </div>
@@ -508,7 +508,7 @@ export function PackStationContent({
                     <ArrowSquareOut size={14} />
                 </Link>
             </div>
-            <MyButton type="button" buttonType="secondary" scale="medium" onClick={nextOrder}>
+            <MyButton type="button" buttonType="secondary" scale="medium" className="h-12 md:h-9" onClick={nextOrder}>
                 {t('orders.pack.changeOrder')}
             </MyButton>
         </div>
