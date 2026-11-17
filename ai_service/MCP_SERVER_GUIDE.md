@@ -16,6 +16,7 @@ settings tab has one toggle per feature to manage per role:
 | Tool | Mode | Settings group | Actions |
 | :--- | :--- | :--- | :--- |
 | `whoami` | READ | `identity` — **always on**, not a toggle | the caller's name, username, email, mobile, roles + the institute's name, logo, theme, portals, terminology |
+| `search_help_knowledge` | READ | `search_help_knowledge` (area "How-to help") — **always on** over MCP, not a toggle | product how-tos (steps + `url` on the institute's admin portal); reads no institute data |
 | `get_institute_overview` | READ | `institute_overview` | sections: `profile` (name, logo, theme, contact, terminology), outstanding fees, classes live now, active learners |
 | `website` | READ | `website_builder` | `list`, `get_page`, `find_section`, `context`, `analytics`, `lead_summary`, `audit`, `review`, `brief_checklist`, `schema`, `list_media`, `preview`, `strings` |
 | `design_import` | WRITE (drafts only, no model, no credits; MCP-only — never offered in the in-product assistant) | `design_import` (Website → "Import Figma designs", off until enabled) | `plan` (Figma results the AI app read itself → tokens, sections matched to the pattern registry, data needs, assets, site JSON draft; uploads kept 24 h in `mcp_design_import_part`, one row per part, institute-scoped, purged for all institutes on every upload), `save_draft` (through `website_edit`'s create_site / create_page; also needs `website_builder_edits`) |
@@ -35,6 +36,16 @@ settings tab has one toggle per feature to manage per role:
 | `course_drip_edit` | WRITE (non-live courses only) | `course_drip_edits` | `set_rules`, `schedule`, `remove_rules` |
 | `course_invites_edit` | WRITE (additive only) | `course_invite_edits` | `create_invite`, `create_payment_plan`, `make_default` |
 | `learner_report` | READ (no model, no credits) | `learner_reports` (own area "Progress reports", off until enabled) | `guide` (field meanings, the dashboard report's status / grade rules, how to write a grounded report), `data` (`learner_id`, window ≤ 366 days, optional `batch_id` / `modules` / `detail` / `attempt_limit`: `report` = admin-core `/internal/student-analysis/student-360` (Layer-1 facts, no narrative) and `detail` = `/internal/student-analysis/raw-detail` (per-class attendance, per-module progress vs the batch, slide-by-slide study, assignment submissions, doubt text + replies, per-attempt `processed_json`; `attempt_details` = raw_json, opt-in); both refuse a learner or batch outside the institute), `saved_reports` / `saved_report` (`student_analysis_process`, COMPLETED, institute-scoped SQL) |
+| `learners` | READ | `learners` | `find`, `get`, `enroll_options`, `enroll_template` |
+| `learner_enroll` | WRITE (additive, preview + confirm token) | `learner_enrollments` (Learners → "Enrol into courses", **opt-in**) | `preview`, `enroll` |
+| `learner_edit` | WRITE (live, preview + confirm token) | `learner_profile_edits` (Learners → "Edit learner details", **opt-in**) | `preview`, `apply` (never email; username / password through auth-service) |
+| `manage_enrollment` | WRITE (live, preview + edit token; the assistant's card write) | `learner_enrolment_changes` over MCP (Learners → "Change enrolments", **opt-in**); `learner_edits` in the assistant | one learner in one batch: `ADD_EXPIRY`, `UPDATE_BATCH`, `MAKE_INACTIVE`, `MAKE_ACTIVE`, `UPDATE_STATUS` → `POST /institute/institute_learner-operation/v1/update`. Over MCP the token is bound to the change, the user, the connection and the enrolment's current status + expiry; refuses a learner not in that batch and organisation batches |
+| `find_batch`, `list_batch_learners`, `list_recent_enrollments` | READ | `batch_data` over MCP (area "Batches"); `learner_data` / `batch_data` in the assistant. `find_batch` is also on with `payments`, `assessments`, `announcements`, `announcement_sends`, `learner_enrolment_changes` | batch name → id (institute-scoped SQL); roster and enrolments in a window (`/institute/institute_learner/get/v2/all`, `institute_ids` forced) |
+| `find_assessment`, `get_assessment_results`, `get_assessment_leaderboard` | READ | `assessments` (area "Assessments"); plan `assessments.tests` | assessment-service admin list, participants, leaderboard; `instituteId` forced |
+| `get_class_schedule` | READ | `schedule` (area "Live classes"); plan `live_classes.sessions` | `live`, `upcoming` (`instituteId` forced), `mine` (the caller's user id) |
+| `get_fee_dues`, `get_payment_history`, `get_subscription_plans`, `search_fee_records`, `get_collections_summary` | READ | `payments` (area "Fees and payments"); plan `finance.fees` or `finance.memberships` | admin-core student-fee and user-plan endpoints, institute forced; works without the CRM (`crm_collections` covers the people behind leads) |
+| `list_announcements` | READ | `announcements` (area "Announcements"); plan `communications.announcements` | `planned`, `past` |
+| `send_announcement` | WRITE (outbound, single-use, ≤10/h/user; the assistant's card write) | `announcement_sends` over MCP (**opt-in**); `announcements` in the assistant | batches / learners verified in the institute, or whole roles; institute and sender forced; `POST /notification-service/v1/announcements` |
 | `sub_orgs` | READ | `sub_orgs` (own area "Sub-organisations") | `list` (admin-core `GET /institute/v1/sub-org/get-all-with-details`, caller's visibility), `get` (courses = batches of the sub-org's ACTIVE `tag='SUB_ORG'` invites, seats used per batch vs the cap, admins, `SUB_ORG_SETTING`, invite link), `members` (learners: stamped `sub_org_id` OR a plan from one of its invites), `create_options` (ACTIVE institute payment options incl. CPO mirrors, gateways, auth-service roles, admin permissions), `enroll_template` (add-member's profile columns + custom fields). Institute-scoped through `institute_suborg` (`services/sub_org_data.py`) |
 | `sub_org_edit` | WRITE (**live**, preview + confirm token) | `sub_org_edits` (Sub-organisations → "Create and change", **opt-in**) | `preview` / `apply` × `change`: `create` (`POST /institute/v1/sub-org/create-with-subscription` — the dashboard wizard's body; name unique per institute, ≥1 course, payment option / seats / validity / admin roles never defaulted, warns on ADMIN), `update` (`PATCH /{id}/configuration`: `add_package_session_ids`, `member_count` (not below current usage), `validity_in_days`, `auth_roles`, `allowed_team_roles`, `admin_permissions`; no payment-option swap), `add_admin` (`POST /sub-org/v1/add-member` with ROOT_ADMIN on every batch, role = `AUTH_ROLES[0]`; refused when an admin exists). No delete / deactivate / course removal |
 | `sub_org_enroll` | WRITE (additive, preview + confirm token) | `sub_org_enrollments` (Sub-organisations → "Add learners", **opt-in**) | `preview` / `enroll`: CSV and/or `[{learner_id} | row]` (≤200) into all or some of the sub-org's batches; one `POST /sub-org/v1/add-member` per learner (role LEARNER, institute / sub-org forced, 4 at a time, each its own transaction, per-row result). Skips anyone ACTIVE in a batch (in or outside the sub-org); refuses an upload over the per-batch cap (`SUB_ORG_SETTING.MEMBER_COUNT`, else the admin plan's `member_count` — admin-core itself only checks the latter); asks `credentials_file` (link-only CSV, `file_exports`); login emails follow Course Settings; lists `SUB_ORG_MEMBER_ENROLLMENT` automations |
@@ -70,6 +81,20 @@ SQL reads + the admin-core client in `course_builder_data.py` and the pure
 contract / validators / slide payloads in `course_content.py`; its design is in
 `docs/ai-course/COURSE_BUILDER_MCP_PLAN.md`. Like the website tools, no model runs
 server-side: the connected LLM writes the course, the tools validate and save.
+
+**One registry, two doors.** Every tool in `ASSISTANT_TOOLS` serves the
+in-product assistant (unless `mcp_only`) and, when listed in `MCP_EXPOSED_TOOLS`,
+MCP; `tests/test_assistant_tool_doors.py` lists the few that use one door, each
+with its reason. Where the doors differ, the spec says so instead of a second
+tool: `mcp_setting_key` / `mcp_setting_keys_any` give the MCP settings group (a
+group new to MCP starts off for every institute, and an outbound write gets an
+opt-in group of its own), and `mcp_schema` gives the wording an app outside the
+dashboard can follow (no page context, no card). The assistant's card writes
+(`manage_enrollment`, `send_announcement`) run the same executor on both doors:
+in the product it stores the pending card; over MCP (`ctx.via_mcp`) it returns
+a preview and a confirm token (`MCP_WRITE_CONFIRM`: an edit token bound to the
+target's current state, or a single-use token for sends) through
+`crm_data.preview_or_apply`, and the card's performer runs only with that token.
 
 **One model, not two.** The connected AI app is the only LLM: it interviews the
 admin (`website(brief_checklist)`), reads the component contract
@@ -498,7 +523,8 @@ cd ai_service
 python -m pytest tests/test_mcp_access.py tests/test_mcp_adapter.py \
                  tests/test_mcp_oauth.py tests/test_mcp_clients.py tests/test_mcp_institute_scope.py \
                  tests/test_website_tools.py tests/test_website_edit_tool.py \
-                 tests/test_workflow_tools.py tests/test_course_tools.py tests/test_institute_setting_reader.py -q
+                 tests/test_workflow_tools.py tests/test_course_tools.py tests/test_institute_setting_reader.py \
+                 tests/test_mcp_assistant_tools.py tests/test_assistant_tool_doors.py -q
 ```
 
 These cover the gates, the exposed-tool containment, the redirect-URI policy and
@@ -520,8 +546,10 @@ see the verification notes in the PR.
    institute/role gate still applies. A write tool is only
    allowed when **every** action is draft-only (published from the dashboard)
    or purely additive; add it to `MCP_ALLOWED_WRITE_TOOLS` with that reason and
-   keep it `default_enabled=False` with no `default_roles`. Live writes that
-   change or remove data (learner edits, announcements) stay off MCP until
-   elicitation exists.
+   keep it `default_enabled=False` with no `default_roles`. A live write needs
+   its own preview → confirm token and an opt-in group (see `learner_edit`,
+   `manage_enrollment`, the CRM writes); one served by both doors keeps the
+   assistant's defaults there but gets an MCP group of its own
+   (`mcp_setting_key`), so it starts off over MCP.
 4. Nothing else: the settings UI reads its catalogue from
    `/mcp/oauth/connection-info`, so the toggle appears on its own.

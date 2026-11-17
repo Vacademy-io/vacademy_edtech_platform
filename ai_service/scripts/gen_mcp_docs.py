@@ -39,7 +39,8 @@ RISK_TEXT = {
     "not_live": "Only touches courses that are not live yet.",
     "live_additive": "Adds to live records — what it adds is visible straight away.",
     "live": "Changes live data — the change applies straight away.",
-    "outbound": "Calls or messages leads, or sends them invites — always after you confirm.",
+    "outbound": ("Calls or messages people (leads, or learners and staff through an announcement), or sends them "
+                 "invites — always after you confirm."),
 }
 
 CONFIRM_TEXT = {
@@ -119,7 +120,8 @@ def _params(schema: Dict[str, Any]) -> List[str]:
 
 
 def _tool_section(entry: Dict[str, Any], spec: Any, write_reasons: Dict[str, str]) -> str:
-    fn = spec.schema.get("function") or {}
+    schema = spec.schema_for(via_mcp=True)
+    fn = schema.get("function") or {}
     description = fn.get("description") or ""
     actions: List[str] = entry["actions"]
     meta = _action_specs(spec)
@@ -151,7 +153,7 @@ def _tool_section(entry: Dict[str, Any], spec: Any, write_reasons: Dict[str, str
             for a in actions:
                 lines.append(f"| `{a}` | {_cell(fallback.get(a) or '')} |")
         lines.append("")
-    params = _params(spec.schema)
+    params = _params(schema)
     if params:
         lines += ["<Accordion title=\"Parameters\">", "", *params, "", "</Accordion>", ""]
     lines += ["<Accordion title=\"What your AI app is told about this tool\">", "", "```text",

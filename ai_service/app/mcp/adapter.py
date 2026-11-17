@@ -94,8 +94,8 @@ def tool_catalog(include_opt_in: bool = True, entitlements: Optional[Any] = None
     """
     catalog: List[Dict[str, Any]] = []
     for spec in exposed_specs():
-        fn = spec.schema.get("function", {})
-        key = spec.key()
+        fn = spec.schema_for(via_mcp=True).get("function", {})
+        key = spec.key(via_mcp=True)
         if not include_opt_in and key in MCP_OPT_IN_GROUPS:
             continue
         description = fn.get("description", "")
@@ -124,7 +124,7 @@ def tool_catalog(include_opt_in: bool = True, entitlements: Optional[Any] = None
 
 
 def _to_mcp_tool(spec: ToolSpec) -> Tool:
-    fn = spec.schema.get("function", {})
+    fn = spec.schema_for(via_mcp=True).get("function", {})
     parameters = fn.get("parameters") or {"type": "object", "properties": {}}
     read_only = spec.mode == "READ"
     return Tool(
@@ -150,7 +150,7 @@ def list_tools_for(principal: PinnedPrincipal, mcp_setting: Dict[str, Any],
     on every call. Without it (tests, DB-less callers) that check is skipped.
     """
     gate_setting = setting_for_tool_gate(mcp_setting, principal)
-    specs = [spec for spec in exposed_specs() if is_tool_allowed(spec.name, principal, gate_setting)]
+    specs = [spec for spec in exposed_specs() if is_tool_allowed(spec.name, principal, gate_setting, via_mcp=True)]
     if db is not None and any(s.module_feature or s.module_features_any for s in specs):
         try:
             ent = load_entitlements(db, principal.institute_id)

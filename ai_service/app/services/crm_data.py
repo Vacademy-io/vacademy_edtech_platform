@@ -1653,7 +1653,7 @@ MAX_OPEN_TOKENS_PER_INSTITUTE = 50
 ONCE_PREFIX = "vcc_"
 _ONCE_RE = re.compile(r"^vcc_[A-Za-z0-9_-]{30,80}$")
 
-#: Spent single-use confirmations per user per hour, by purpose (crm.<tool>.<action>).
+#: Spent single-use confirmations per user per hour, by purpose (crm.<tool>.<action>, assistant.<tool>).
 CAPS: Dict[str, int] = {
     "crm.crm_send.send": 20,
     "crm.crm_send.send_email": 30,
@@ -1670,6 +1670,8 @@ CAPS: Dict[str, int] = {
     "crm.crm_team_edit.reassign_from_counsellor": 10,
     "crm.crm_lead_intake.import_leads": 5,
     "crm.crm_lead_activity.complete_followup": 60,
+    # Card-confirmed assistant writes over MCP (assistant_tool_registry.mcp_write_purpose).
+    "assistant.send_announcement": 10,
 }
 DEFAULT_CAP = 30
 

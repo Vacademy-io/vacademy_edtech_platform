@@ -38,30 +38,24 @@ MCP_ONLY = {
     "crm_payment_reminders": _CRM_WRITE,
 }
 
-_PANEL_READ = "an early in-product read; MCP clients use the action tools (learners, courses, …) instead"
-_PANEL_WRITE = "proposes a live change that runs only after Confirm on the panel's card; MCP has no card"
-
-#: Tools served in the in-product assistant only (not in MCP_EXPOSED_TOOLS), with the reason.
+#: Tools served in the in-product assistant only (not in MCP_EXPOSED_TOOLS), with the reason. Each one's job is
+#: done over MCP by the tool named in COVERED_ON_MCP_BY, so it is not exposed a second time.
 ASSISTANT_ONLY = {
-    "find_learner": _PANEL_READ,
-    "get_student_360": _PANEL_READ,
-    "find_batch": _PANEL_READ,
-    "trigger_full_report": _PANEL_READ,
-    "get_payment_history": _PANEL_READ,
-    "get_fee_dues": _PANEL_READ,
-    "get_subscription_plans": _PANEL_READ,
-    "list_batch_learners": _PANEL_READ,
-    "get_class_schedule": _PANEL_READ,
-    "search_fee_records": _PANEL_READ,
-    "get_collections_summary": _PANEL_READ,
-    "list_recent_enrollments": _PANEL_READ,
-    "find_assessment": _PANEL_READ,
-    "get_assessment_results": _PANEL_READ,
-    "get_assessment_leaderboard": _PANEL_READ,
-    "list_announcements": _PANEL_READ,
-    "update_learner_profile": _PANEL_WRITE,
-    "manage_enrollment": _PANEL_WRITE,
-    "send_announcement": _PANEL_WRITE,
+    "find_learner": "the same search as learners(action='find'), which both doors serve",
+    "get_student_360": "the same learner data as learner_report(action='data'), which both doors serve",
+    "trigger_full_report": (
+        "starts the dashboard's written progress report in the background (AI credits, an email); over MCP the AI "
+        "app writes the report itself from learner_report, and saved_reports reads the dashboard's"
+    ),
+    "update_learner_profile": "the same job as learner_edit, which both doors serve and which never changes email",
+}
+
+#: The tool that does each assistant-only tool's job over MCP.
+COVERED_ON_MCP_BY = {
+    "find_learner": "learners",
+    "get_student_360": "learner_report",
+    "trigger_full_report": "learner_report",
+    "update_learner_profile": "learner_edit",
 }
 
 
@@ -98,3 +92,10 @@ def test_mcp_only_tools_are_all_writes():
     """A read has no reason to skip the in-product assistant (topics keep long schemas off other pages)."""
     for name in MCP_ONLY:
         assert ASSISTANT_TOOLS[name].mode == "WRITE", name
+
+
+def test_each_assistant_only_tool_names_the_tool_that_covers_it_on_mcp():
+    assert set(COVERED_ON_MCP_BY) == set(ASSISTANT_ONLY)
+    for name, cover in COVERED_ON_MCP_BY.items():
+        assert cover in MCP_EXPOSED_TOOLS, f"{name}: {cover} is not served over MCP"
+        assert not ASSISTANT_TOOLS[cover].mcp_only, f"{name}: {cover} should serve both doors"

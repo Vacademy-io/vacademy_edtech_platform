@@ -184,7 +184,12 @@
                   "mcp-server/tools/blog",
                   "mcp-server/tools/courses",
                   "mcp-server/tools/learners",
+                  "mcp-server/tools/batches",
                   "mcp-server/tools/learner-reports",
+                  "mcp-server/tools/assessments",
+                  "mcp-server/tools/live-classes",
+                  "mcp-server/tools/fees",
+                  "mcp-server/tools/announcements",
                   "mcp-server/tools/sub-orgs",
                   "mcp-server/tools/crm-payments"
                 ]

@@ -13,10 +13,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import pytest  # noqa: E402
 
 from app.mcp import adapter  # noqa: E402
-from app.mcp.access import normalize_setting  # noqa: E402
+from app.mcp.access import normalize_setting, setting_for_tool_gate  # noqa: E402
 from app.mcp.constants import MCP_ALLOWED_WRITE_TOOLS, MCP_EXPOSED_TOOLS  # noqa: E402
 from app.schemas.auth import PinnedPrincipal  # noqa: E402
-from app.services.assistant_tool_registry import ASSISTANT_TOOLS  # noqa: E402
+from app.services.assistant_tool_registry import ASSISTANT_TOOLS, is_tool_allowed  # noqa: E402
 
 SERVICES = Path(__file__).resolve().parents[1] / "app" / "services"
 
@@ -83,8 +83,14 @@ def test_exposed_set_is_the_documented_one():
         "audience_forms", "audience_forms_edit",
         "workflows", "workflows_edit", "blog", "blog_edit",
         "courses", "course_edit", "course_drip_edit", "course_invites_edit", "course_structure_edit",
-        "learners", "learner_report", "learner_enroll", "learner_edit",
+        "learners", "learner_report", "learner_enroll", "learner_edit", "manage_enrollment",
         "sub_orgs", "sub_org_edit", "sub_org_enroll",
+        "find_batch", "list_batch_learners", "list_recent_enrollments",
+        "find_assessment", "get_assessment_results", "get_assessment_leaderboard",
+        "get_class_schedule",
+        "get_fee_dues", "get_payment_history", "get_subscription_plans", "search_fee_records",
+        "get_collections_summary",
+        "list_announcements", "send_announcement",
         "crm_leads", "crm_lead_activity", "crm_lead_edit", "crm_lead_merge", "crm_team_edit", "crm_lead_intake",
         "crm_calls", "crm_dial", "crm_ai_campaign",
         "crm_meetings", "crm_meetings_edit",
@@ -105,16 +111,23 @@ def test_every_exposed_name_exists_in_the_registry():
 
 
 def test_exposed_write_tools_are_on_the_allow_list():
-    """MCP has no confirm card: a write tool is exposed only when it is draft-only or additive."""
+    """MCP has no confirm card: a write tool is exposed only with the property on its allow-list entry."""
+    unconfigured = setting_for_tool_gate(normalize_setting({"enabled": True}), principal())
     for spec in adapter.exposed_specs():
         if spec.mode == "WRITE":
             assert spec.name in MCP_ALLOWED_WRITE_TOOLS, spec.name
-            assert not spec.default_enabled and not spec.default_roles, "writes are never default-on"
+            assert not spec.default_enabled, "writes are never default-on"
+            # A write the in-product assistant defaults on for admins (behind its card) is still off over MCP:
+            # its MCP group is its own, and an MCP setting never falls back to the assistant's defaults.
+            assert not is_tool_allowed(spec.name, principal(), unconfigured, via_mcp=True), spec.name
+            if spec.default_roles:
+                assert spec.mcp_setting_key and spec.mcp_setting_key != spec.key(), spec.name
 
 
 def test_live_write_tools_are_not_exposed():
-    """The Assistant's confirm-card writes (update_learner_profile, announcements …) stay off MCP; the learner
-    tools exposed instead carry their own preview → confirm_token gate (test_learner_tools.py)."""
+    """A live write without an allow-list entry stays off MCP (update_learner_profile: learner_edit does that job
+    with its own preview → confirm_token gate). The card writes exposed over MCP use the preview → confirm_token
+    form of the card (test_mcp_assistant_tools.py)."""
     write_tools = {name for name, spec in ASSISTANT_TOOLS.items() if spec.mode == "WRITE"}
     live_writes = write_tools - set(MCP_ALLOWED_WRITE_TOOLS)
     assert live_writes, "registry should contain live write tools for this test to mean anything"
@@ -188,7 +201,11 @@ def test_catalog_places_every_tool_in_an_area_with_one_view_and_risk_rated_edits
             assert c["risk"] in ("drafts", "additive", "not_live", "live_additive", "live", "outbound") \
                 and c["sub_label"]
     for area in {c["area"] for c in catalog}:
-        assert sum(1 for c in catalog if c["area"] == area and c["level"] == "view") == 1, area
+        # One View switch per area: several read tools may sit behind it, all in the same group.
+        assert len({c["key"] for c in catalog if c["area"] == area and c["level"] == "view"}) == 1, area
+    # Each edit has a switch of its own.
+    edit_keys = [c["key"] for c in catalog if c["level"] == "edit"]
+    assert len(edit_keys) == len(set(edit_keys))
     invites = next(c for c in catalog if c["key"] == "course_invite_edits")
     assert invites["area"] == "courses" and invites["risk"] == "live"
 
@@ -229,12 +246,12 @@ def test_unconfigured_setting_exposes_nothing():
 async def test_calling_an_unexposed_registry_tool_is_refused():
     """Even a real registry tool must be unreachable unless it is allow-listed."""
     result = await adapter.call_tool(
-        name="send_announcement",
+        name="update_learner_profile",
         arguments={},
         principal=principal(),
         platform_token="jwt",
         db=None,
-        mcp_setting=setting(["institute_overview", "announcements"]),
+        mcp_setting=setting(["institute_overview", "learner_edits", "learner_profile_edits"]),
     )
     assert result.is_error is True
     assert "tool_not_available" in result.content[0].text
@@ -300,11 +317,12 @@ def test_website_publish_is_an_opt_in_live_capability_no_existing_connection_has
     # Every other group keeps the area's Edit level / presets behaviour.
     opt_in_keys = [
         "website_data_edits", "website_publish", "course_structure_edits", "learner_enrollments",
-        "learner_profile_edits", "sub_org_edits", "sub_org_enrollments",
+        "learner_profile_edits", "learner_enrolment_changes", "sub_org_edits", "sub_org_enrollments",
+        "announcement_sends",
         "crm_lead_activity", "crm_lead_edits", "crm_lead_merges", "crm_team_edits", "crm_lead_intake",
         "crm_calling_outbound", "crm_ai_campaigns", "crm_meeting_edits", "crm_messaging_outbound",
         "crm_payment_reminders"]
-    keys_loaded = {ASSISTANT_TOOLS[n].key() for n in loaded(MCP_EXPOSED_TOOLS) if n in ASSISTANT_TOOLS}
+    keys_loaded = {ASSISTANT_TOOLS[n].key(via_mcp=True) for n in loaded(MCP_EXPOSED_TOOLS) if n in ASSISTANT_TOOLS}
     assert [c["key"] for c in adapter.tool_catalog() if c["opt_in"]] == [k for k in opt_in_keys if k in keys_loaded]
     from app.mcp.constants import MCP_OPT_IN_GROUPS
     assert MCP_OPT_IN_GROUPS == frozenset(opt_in_keys)
@@ -337,7 +355,7 @@ def test_opt_in_groups_are_served_only_to_a_settings_page_that_asks_for_them():
     full = {c["key"] for c in adapter.tool_catalog(include_opt_in=True)}
     legacy = {c["key"] for c in adapter.tool_catalog(include_opt_in=False)}
     # CRM groups whose module has not landed yet are simply absent from both.
-    landed = {s.key() for s in adapter.exposed_specs()}
+    landed = {s.key(via_mcp=True) for s in adapter.exposed_specs()}
     assert MCP_OPT_IN_GROUPS & landed <= full and MCP_OPT_IN_GROUPS - landed <= set(CRM_GROUP.values())
     assert not (MCP_OPT_IN_GROUPS & legacy)
     assert full - legacy == set(MCP_OPT_IN_GROUPS) & landed
