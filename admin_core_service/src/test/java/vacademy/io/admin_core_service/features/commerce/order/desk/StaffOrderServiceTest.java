@@ -269,4 +269,55 @@ class StaffOrderServiceTest {
         assertNull(f.order.getCancelReason());
         assertEquals(ORDER, f.order.getId());
     }
+
+    // ------------------------------------------------------------------ buyer messages (WP-33)
+
+    private List<CommerceOrderEvents.OrderEvent> emitted() {
+        ArgumentCaptor<CommerceOrderEvents.OrderEvent> captor = ArgumentCaptor.forClass(
+                CommerceOrderEvents.OrderEvent.class);
+        verify(f.events, org.mockito.Mockito.atLeast(0)).afterCommit(captor.capture());
+        return captor.getAllValues();
+    }
+
+    @Test
+    void aSaleHandedOverAtTheCounterIsABillOnly() {
+        service.create(manager, INST, request().shippingAddress(null).chargeShipping(null)
+                .tenders(List.of(tender("CASH", "1060"))).handOverNow(true).build());
+        List<CommerceOrderEvents.OrderEvent> sent = emitted();
+        assertEquals(List.of(CommerceOrderEvents.POS_BILL_ISSUED),
+                sent.stream().map(CommerceOrderEvents.OrderEvent::type).toList());
+        CommerceOrderEvents.OrderEvent bill = sent.get(0);
+        assertEquals(INST, bill.instituteId());
+        assertEquals(f.order.getId(), bill.orderId());
+        assertEquals("", bill.refId());
+        assertTrue(bill.notifyCustomer());
+    }
+
+    @Test
+    void anOrderForLaterDeliveryIsConfirmed() {
+        service.create(manager, INST, request().tenders(List.of(tender("CASH", "1060"))).build());
+        List<CommerceOrderEvents.OrderEvent> sent = emitted();
+        assertEquals(List.of(CommerceOrderEvents.ORDER_CONFIRMED),
+                sent.stream().map(CommerceOrderEvents.OrderEvent::type).toList());
+        assertEquals("", sent.get(0).refId());
+        assertTrue(sent.get(0).notifyCustomer());
+        verify(shipments, never()).handOverInside(any(), any(), any(), any());
+    }
+
+    @Test
+    void anOrderOnCreditForLaterDeliveryIsConfirmedToo() {
+        service.create(manager, INST, request().tenders(List.of(tender("CASH", "100"))).restOnCredit(true).build());
+        assertEquals(List.of(CommerceOrderEvents.ORDER_CONFIRMED),
+                emitted().stream().map(CommerceOrderEvents.OrderEvent::type).toList());
+    }
+
+    @Test
+    void aRepeatedRequestTellsNobodyAgain() {
+        StaffOrderRequest body = request().tenders(List.of(tender("CASH", "1060"))).handOverNow(true).build();
+        f.order.setRequestHash(CommerceRequestGuard.hash("STAFF_ORDER", body));
+        when(f.orderRepository.findByInstituteIdAndClientRequestId(INST, "staff-order-1")).thenReturn(Optional.of(
+                f.order));
+        assertTrue(service.create(manager, INST, body).replayed());
+        assertTrue(emitted().isEmpty());
+    }
 }

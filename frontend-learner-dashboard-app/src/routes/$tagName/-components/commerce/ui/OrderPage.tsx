@@ -3,7 +3,10 @@
  * whose order token this tab keeps in sessionStorage (state/order-handoff.ts): the token is never
  * in the address or in history.state, where analytics scripts could read it. An older
  * "order#t=…" link still works: its token is kept the same way and removed from the address at
- * once. The token travels to the API only in the X-Commerce-Order-Token header. A payment in
+ * once. An order link from a WhatsApp or e-mail message ("order#l=…", contract WP-33 §4.4) leaves
+ * the address before anything else, is exchanged once for a short-lived order token that is kept
+ * the same way, and is itself never stored. The token travels to the API only in the
+ * X-Commerce-Order-Token header. A payment in
  * progress shows "Confirming your payment" and the page reads the order again (every 3 s for
  * 30 s, then every 10 s up to 5 minutes); it never offers a second payment while one is in
  * progress, nor in the five minutes after this tab's payment window said the payment went through.
@@ -14,7 +17,7 @@ import { CheckCircle, Clock, Phone, WhatsappLogo, XCircle } from '@phosphor-icon
 import { CommerceApiError } from '../api/client';
 import type { OrderView } from '../api/types';
 import type { MessageKey } from '../i18n';
-import { PURCHASED_STATUSES, orderStage, pollDelay, readOrderFragment } from '../logic/checkout';
+import { PURCHASED_STATUSES, orderStage, pollDelay, readOrderFragment, readOrderLinkFragment } from '../logic/checkout';
 import { formatDate } from '../logic/dates';
 import { sendPurchaseOnce } from '../logic/events';
 import { payWithRazorpay } from '../logic/razorpay';
@@ -25,21 +28,33 @@ import { ErrorState, shouldRetry } from './primitives';
 import { ShopLink, useCommerceSite, whatsappLink } from './site';
 
 export type OpenedOrder = OrderHandoff & { key: string };
+/** An order link from a message, not yet exchanged. The token lives in memory only. */
+export type OrderLink = { linkToken: string };
+
+const isOrderLink = (taken: OpenedOrder | OrderLink | null): taken is OrderLink => !!taken && 'linkToken' in taken;
 
 /**
- * The order this page shows: the record the history state's key names (or, after a language
- * switch replaced the state, the one this tab used last); else an older "#t=" link, whose token
- * is then kept in sessionStorage and removed from the address bar. The key is put back in the
- * history state, so Back and a reload find the same order.
+ * The order this page shows. An "#l=" order link comes first: the fragment is removed from the
+ * address at once, before any request, and the link token is answered for the page to exchange
+ * (an "l" that is not a well-formed link token is dropped the same way and opens nothing). Else
+ * the record the history state's key names (or, after a language switch replaced the state, the
+ * one this tab used last); else an older "#t=" link, whose token is then kept in sessionStorage
+ * and removed from the address bar. The key is put back in the history state, so Back and a
+ * reload find the same order.
  */
 export const takeOrder = (
     instituteId: string,
     win: Window | undefined = typeof window === 'undefined' ? undefined : window,
     storage: KeyValueStorage | null = browserSessionStorage()
-): OpenedOrder | null => {
+): OpenedOrder | OrderLink | null => {
     if (!win) return null;
     try {
         const address = `${win.location.pathname}${win.location.search}`;
+        const linkToken = readOrderLinkFragment(win.location.hash);
+        if (linkToken || new URLSearchParams(win.location.hash.replace(/^#/, '')).has('l')) {
+            win.history.replaceState(win.history.state, '', address);
+            return linkToken ? { linkToken } : null;
+        }
         const current = (win.history.state && typeof win.history.state === 'object' ? win.history.state : {}) as Record<string, unknown>;
         const fromHash = readOrderFragment(win.location.hash);
         // A key in the state wins; a "#t=" link wins over the order this tab used last.
@@ -162,10 +177,39 @@ export const OrderState: React.FC<{
     }
 };
 
+/** Where an order link from a message stands while the page exchanges it. */
+type LinkPhase = { phase: 'opening' } | { phase: 'expired' } | { phase: 'failed'; error: unknown };
+
+/** A page without an order to show: what happened, then Track and "Your orders". */
+const FindOrderState: React.FC<{ title: MessageKey; body: MessageKey }> = ({ title, body }) => {
+    const { t } = useCommerceSite();
+    return (
+        <div className="cmx-shell cmx-section">
+            <div className="cmx-state">
+                <h1 className="cmx-h2">{t(title)}</h1>
+                <p className="cmx-body">{t(body)}</p>
+                <div className="flex flex-col gap-2 sm:flex-row">
+                    <ShopLink to="track-order" className="cmx-btn cmx-btn--primary">
+                        {t('track.title')}
+                    </ShopLink>
+                    <ShopLink to="account" className="cmx-btn cmx-btn--outline">
+                        {t('account.seeOrders')}
+                    </ShopLink>
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const OrderPage: React.FC = () => {
     const { t, client, instituteId, config: shop, siteName, locale } = useCommerceSite();
     const queryClient = useQueryClient();
-    const [opened] = useState<OpenedOrder | null>(() => takeOrder(instituteId));
+    const [taken] = useState(() => takeOrder(instituteId));
+    // The link token of a message: in this ref only, until the exchange settles it.
+    const linkToken = useRef<string | null>(isOrderLink(taken) ? taken.linkToken : null);
+    const [opened, setOpened] = useState<OpenedOrder | null>(isOrderLink(taken) ? null : taken);
+    const [link, setLink] = useState<LinkPhase | null>(linkToken.current ? { phase: 'opening' } : null);
+    const [linkAttempt, setLinkAttempt] = useState(0);
     const token = opened?.token ?? null;
     const [paidAt, setPaidAt] = useState<number | null>(opened?.paidAt ?? null);
     // Only an order this tab placed or paid sends `purchase`; opening an old order never does.
@@ -190,6 +234,44 @@ export const OrderPage: React.FC = () => {
     });
     const view = query.data;
     const processing = !!view && orderStage(view, Date.now(), paidAt).kind === 'processing';
+
+    // An order link: exchanged for an order token, which is then kept exactly as for "#t=". The
+    // order opened this way was not placed here, so it never sends `purchase`.
+    useEffect(() => {
+        const pending = linkToken.current;
+        if (!pending) return;
+        const controller = new AbortController();
+        client.exchangeOrderLink(pending, controller.signal).then(
+            (answer) => {
+                if (controller.signal.aborted) return;
+                linkToken.current = null;
+                const state = handOffOrder(instituteId, answer.order_access_token, { phoneProved: answer.phone_verified === true });
+                const next = orderKeyFromState(state) ? readOrderHandoff(instituteId, state) : null;
+                if (next) {
+                    const current = (window.history.state && typeof window.history.state === 'object' ? window.history.state : {}) as Record<string, unknown>;
+                    window.history.replaceState({ ...current, ...state }, '', `${window.location.pathname}${window.location.search}`);
+                }
+                setOpened(next);
+                setLink(null);
+            },
+            (failure: unknown) => {
+                if (controller.signal.aborted) return;
+                const status = failure instanceof CommerceApiError ? failure.status : 0;
+                if (status === 410) {
+                    linkToken.current = null;
+                    setLink({ phase: 'expired' });
+                } else if (status >= 400 && status < 500 && status !== 429) {
+                    // A link that is not good (403, 400): the page without an order.
+                    linkToken.current = null;
+                    setLink(null);
+                } else {
+                    // Busy, down or offline: the token stays in memory for Retry.
+                    setLink({ phase: 'failed', error: failure });
+                }
+            }
+        );
+        return () => controller.abort();
+    }, [client, instituteId, linkAttempt]);
 
     // The polling clock starts when the page first sees the payment in progress.
     useEffect(() => {
@@ -258,23 +340,33 @@ export const OrderPage: React.FC = () => {
         }
     };
 
-    if (!token || (query.error instanceof CommerceApiError && (query.error.status === 403 || query.error.status === 404 || query.error.status === 401))) {
+    if (link?.phase === 'opening') {
         return (
-            <div className="cmx-shell cmx-section">
-                <div className="cmx-state">
-                    <h1 className="cmx-h2">{t('order.noToken.title')}</h1>
-                    <p className="cmx-body">{t('order.noToken.body')}</p>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                        <ShopLink to="track-order" className="cmx-btn cmx-btn--primary">
-                            {t('track.title')}
-                        </ShopLink>
-                        <ShopLink to="account" className="cmx-btn cmx-btn--outline">
-                            {t('account.seeOrders')}
-                        </ShopLink>
-                    </div>
-                </div>
+            <div className="cmx-shell cmx-section" aria-busy="true">
+                <p className="cmx-body cmx-muted mb-4" role="status">
+                    {t('order.linkOpening')}
+                </p>
+                <div className="cmx-skel mb-4 h-8 w-56" aria-hidden="true" />
+                <div className="cmx-skel h-40 w-full" aria-hidden="true" />
             </div>
         );
+    }
+    if (link?.phase === 'expired') return <FindOrderState title="order.linkExpired.title" body="order.linkExpired.body" />;
+    if (link?.phase === 'failed') {
+        return (
+            <div className="cmx-shell cmx-section">
+                <ErrorState
+                    error={link.error}
+                    onRetry={() => {
+                        setLink({ phase: 'opening' });
+                        setLinkAttempt((n) => n + 1);
+                    }}
+                />
+            </div>
+        );
+    }
+    if (!token || (query.error instanceof CommerceApiError && (query.error.status === 403 || query.error.status === 404 || query.error.status === 401))) {
+        return <FindOrderState title="order.noToken.title" body="order.noToken.body" />;
     }
     if (query.error && !view) {
         return (

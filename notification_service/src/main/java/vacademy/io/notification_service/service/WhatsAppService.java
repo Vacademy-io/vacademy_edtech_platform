@@ -401,7 +401,7 @@ public class WhatsAppService {
                 // (e.g. code 132000 "number of parameters does not match"), which is the
                 // only thing that makes a failed send diagnosable by the caller.
                 String reason = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-                log.error("Failed to send to {} via provider: {}", phoneNumber, reason);
+                log.error("Failed to send to {} via provider: {}", vacademy.io.notification_service.util.LogMask.phone(phoneNumber), reason);
                 results.add(new WhatsAppSendResult(phoneNumber, false, reason, null));
             }
 

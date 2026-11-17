@@ -374,7 +374,7 @@ public class CommerceReturnService {
         returnRepository.save(ret);
         auditService.record(ret.getInstituteId(), actor, ret.getLocationId(), "RETURN_APPROVED", "RETURN", ret.getId(),
                 null, null, note);
-        events.afterCommit(desk.event(CommerceOrderEvents.RETURN_APPROVED, order, null, true));
+        events.afterCommit(desk.event(CommerceOrderEvents.RETURN_APPROVED, order, ret.getId(), true));
     }
 
     /** {@code POST /returns/{id}/reject} (R3): its units may be asked for again. */

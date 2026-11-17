@@ -269,4 +269,18 @@ public final class CheckoutDtos {
         private String pincode;
         private Boolean isDefault;
     }
+
+    /** The answer to an order link: a short order access token for the order page. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class OrderLinkExchange {
+        private String orderAccessToken;
+        /** ISO-8601 instant. */
+        private String orderAccessTokenExpiresAt;
+        private Boolean phoneVerified;
+    }
 }

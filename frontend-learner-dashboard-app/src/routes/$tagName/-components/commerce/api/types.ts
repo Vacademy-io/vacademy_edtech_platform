@@ -556,6 +556,13 @@ export interface OrderView {
     masked?: boolean;
 }
 
+/** POST /orders/link: an order link from a message exchanged for a short-lived order token. */
+export interface OrderLinkExchange {
+    order_access_token: string;
+    order_access_token_expires_at: string;
+    phone_verified: boolean;
+}
+
 /** A row of the buyer's order list. A masked row carries only number, status and date. */
 export interface OrderSummary {
     order_id?: string | null;

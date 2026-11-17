@@ -6,6 +6,7 @@
  *   GET  /admin-core-service/open/commerce/v1/pincode/{pin}
  *   GET  /admin-core-service/open/commerce/v1/q/{code}          (named by the design, not built yet)
  *   The buying routes of /open/commerce/v1 (checkout, otp, orders, me) and the stock-hold release.
+ *   POST /admin-core-service/open/commerce/v1/orders/link       (order link from a message, contract WP-33 §4.4)
  *
  * Tokens (session, verified phone, order access) travel in headers or JSON bodies only, never in
  * a URL, and the learner's own token is never sent: these are not learner calls.
@@ -25,6 +26,7 @@ import type {
     CheckoutAddress,
     CheckoutConfig,
     CheckoutRequestBody,
+    OrderLinkExchange,
     OrderPage,
     OrderView,
     OtpPurpose,
@@ -170,6 +172,11 @@ export interface CommerceClient {
     retryPayment(orderId: string, orderToken: string): Promise<Placed>;
     releaseHold(body: { payment_log_id: string; release_token: string }): Promise<{ released: number }>;
     viewOrder(orderToken: string, signal?: AbortSignal): Promise<OrderView>;
+    /**
+     * Exchanges the link token of an order message ("#l=") for a short-lived order token. The
+     * link token goes in the JSON body only. 410 link_expired, 403 link_invalid.
+     */
+    exchangeOrderLink(linkToken: string, signal?: AbortSignal): Promise<OrderLinkExchange>;
     trackOrder(body: { order_number: string; phone_token: string }): Promise<OrderView>;
     getMe(auth: ShopperAuth, signal?: AbortSignal): Promise<ShopperMe>;
     myOrders(auth: ShopperAuth, page: number, pageSize?: number, signal?: AbortSignal): Promise<OrderPage>;
@@ -290,6 +297,7 @@ export const createCommerceClient = (options: CommerceClientOptions): CommerceCl
         releaseHold: (body) => send('POST', `${options.baseUrl}/admin-core-service/open/v1/stock-hold/release`, body, { noKey: true }),
         viewOrder: (orderToken, signal) =>
             send('GET', `${commerce}/orders/view`, undefined, { headers: { [ORDER_TOKEN_HEADER]: orderToken }, signal }),
+        exchangeOrderLink: (linkToken, signal) => send('POST', `${commerce}/orders/link`, { link_token: linkToken }, { signal }),
         trackOrder: (body) => send('POST', `${commerce}/orders/track`, body),
         getMe: (auth, signal) => send('GET', me, undefined, { headers: shopperAuthHeaders(auth), signal }),
         myOrders: (auth, page, pageSize = 20, signal) =>

@@ -678,6 +678,8 @@ export const CheckoutPage: React.FC = () => {
                                 }
                             />
                         )}
+                        {/* Transactional notice; the marketing tick box further down is separate. */}
+                        <p className="cmx-small cmx-muted">{t('checkout.updatesNotice')}</p>
                         {!rules.verified && (rules.otpRequired || otpOpen || rules.otpRecommended || mode === 'EMAIL') && (
                             <div ref={otpRef} className={cn('flex flex-col gap-2', rules.otpRequired && 'cmx-buy-required')}>
                                 {rules.otpRequired && <p className="cmx-small font-medium">{method === 'COD' ? t('checkout.codNeedsOtp') : t('checkout.otpRequired')}</p>}

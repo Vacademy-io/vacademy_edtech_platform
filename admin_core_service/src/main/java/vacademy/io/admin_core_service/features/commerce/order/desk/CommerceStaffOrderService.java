@@ -306,7 +306,10 @@ public class CommerceStaffOrderService {
         if (clean.handOverNow()) {
             shipmentService.getObject().handOverInside(order, lines, clean.handOverPieces(), actor);
         }
-        events.afterCommit(desk.event(CommerceOrderEvents.ORDER_CONFIRMED, order, null, true));
+        // A sale handed over at the counter is a bill (the counter sale); anything else is an order
+        // to be delivered later.
+        events.afterCommit(desk.event(clean.handOverNow() ? CommerceOrderEvents.POS_BILL_ISSUED
+                : CommerceOrderEvents.ORDER_CONFIRMED, order, null, true));
         log.info("Commerce staff order {} ({}) created for institute {}: {} line(s), total {} {}, {}",
                 order.getOrderNumber(), order.getId(), order.getInstituteId(), lines.size(), order.getTotal(),
                 order.getCurrency(), order.getPaymentStatus());

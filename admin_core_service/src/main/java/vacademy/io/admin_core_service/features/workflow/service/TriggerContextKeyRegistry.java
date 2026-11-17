@@ -82,6 +82,29 @@ public class TriggerContextKeyRegistry {
         // PackageSessionScheduler ~L165. No `user`.
         AUDITED.put(WorkflowTriggerEvent.MEMBERSHIP_EXPIRY.name(), Set.of(
                 "userPlanId", "userId", "paymentPlanId", "enrollInviteId", "endDate", "daysToExpiry"));
+        // CommerceNotificationSender (commerce/notify/CommerceNotificationDispatcher.workflowContext).
+        // customerPhone only for a proved phone, customerEmail only for a deliverable address,
+        // userId and orderLink only when known; the trigger's own keys below.
+        for (WorkflowTriggerEvent event : List.of(WorkflowTriggerEvent.ORDER_CONFIRMED,
+                WorkflowTriggerEvent.COD_CONFIRMATION_NEEDED, WorkflowTriggerEvent.ORDER_DELIVERED,
+                WorkflowTriggerEvent.ORDER_RTO, WorkflowTriggerEvent.POS_BILL_ISSUED)) {
+            AUDITED.put(event.name(), commerceKeys(event == WorkflowTriggerEvent.ORDER_DELIVERED
+                    || event == WorkflowTriggerEvent.ORDER_RTO ? Set.of("shipmentId") : Set.of()));
+        }
+        AUDITED.put(WorkflowTriggerEvent.ORDER_SHIPPED.name(), commerceKeys(Set.of(
+                "shipmentId", "courier", "trackingNumber", "amountDue")));
+        AUDITED.put(WorkflowTriggerEvent.ORDER_CANCELLED.name(), commerceKeys(Set.of("cancelReason")));
+        AUDITED.put(WorkflowTriggerEvent.RETURN_APPROVED.name(), commerceKeys(Set.of("returnId", "returnNumber")));
+        AUDITED.put(WorkflowTriggerEvent.REFUND_PROCESSED.name(), commerceKeys(Set.of(
+                "refundId", "refundAmount", "refundMethod")));
+    }
+
+    /** The keys every commerce order trigger carries, plus its own. */
+    private static Set<String> commerceKeys(Set<String> own) {
+        Set<String> keys = new LinkedHashSet<>(List.of("orderId", "orderNumber", "trigger", "locale", "customerName",
+                "customerPhone", "customerEmail", "userId", "orderTotal", "orderLink", "shopName"));
+        keys.addAll(own);
+        return Set.copyOf(keys);
     }
 
     /**

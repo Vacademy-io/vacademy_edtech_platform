@@ -44,6 +44,7 @@ import java.util.function.Supplier;
  * POST   /open/commerce/v1/checkout/{orderId}/confirm-payment  gateway order, payment id, signature
  * GET    /open/commerce/v1/orders/view                       the order page (order token header)
  * POST   /open/commerce/v1/orders/track                      order number + verified-phone token
+ * POST   /open/commerce/v1/orders/link                       a message's order link for a short order token
  * GET    /open/commerce/v1/me                                the buyer's account
  * POST   /open/commerce/v1/me/logout                         end every session of the buyer's phone
  * PUT    /open/commerce/v1/me/consent                        the buyer's marketing choice
@@ -77,6 +78,10 @@ public class PublicCommerceCheckoutController implements CatalogApiEnvelope {
     static final int TRACK_PER_VISITOR = 10;
     static final int ACCOUNT_PER_KEY = 1500;
     static final int ACCOUNT_PER_VISITOR = 60;
+    /** The order link of a message: a family of its own on top of the order-read limits. */
+    static final int LINK_PER_KEY = 300;
+    static final int LINK_PER_VISITOR = 20;
+    static final int MAX_LINK_BODY_BYTES = 1024;
 
     /** A checkout of 50 lines with two addresses and notes is well under this. */
     static final int MAX_CHECKOUT_BODY_BYTES = 64 * 1024;
@@ -92,6 +97,14 @@ public class PublicCommerceCheckoutController implements CatalogApiEnvelope {
     private final CommerceOrderQueryService queryService;
     private final CommerceCheckoutConfig checkoutConfig;
     private final ObjectMapper objectMapper;
+    /** The order links of buyer messages (set by Spring; absent in tests that build this controller by hand). */
+    private vacademy.io.admin_core_service.features.commerce.order.checkout.CommerceOrderLinkService orderLinks;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setOrderLinks(vacademy.io.admin_core_service.features.commerce.order.checkout.CommerceOrderLinkService
+                                      orderLinks) {
+        this.orderLinks = orderLinks;
+    }
 
     @GetMapping("/checkout/config")
     public ResponseEntity<Map<String, Object>> checkoutConfig(HttpServletRequest http) {
@@ -150,6 +163,22 @@ public class PublicCommerceCheckoutController implements CatalogApiEnvelope {
         // The header only: a token in the address ends up in logs and in the Referer.
         String orderToken = http.getHeader(ORDER_TOKEN_HEADER);
         return answer(() -> queryService.viewByToken(p.instituteId(), orderToken));
+    }
+
+    /** A link token from a buyer's message, exchanged for a short order access token. Never cached. */
+    @PostMapping("/orders/link")
+    public ResponseEntity<CheckoutDtos.OrderLinkExchange> orderLink(HttpServletRequest http) {
+        var p = enter(http, "order", ORDER_READ_PER_KEY, ORDER_READ_PER_VISITOR);
+        auth.rateLimit(p, http, "link", LINK_PER_KEY, LINK_PER_VISITOR);
+        Map<?, ?> body = read(http, Map.class, MAX_LINK_BODY_BYTES);
+        String linkToken = field(body, "link_token");
+        return answer(() -> {
+            if (orderLinks == null) {
+                throw new CheckoutException(HttpStatus.SERVICE_UNAVAILABLE, CheckoutException.NOT_CONFIGURED,
+                        "Order links are not available right now.");
+            }
+            return orderLinks.exchange(p.instituteId(), linkToken);
+        });
     }
 
     @PostMapping("/orders/track")

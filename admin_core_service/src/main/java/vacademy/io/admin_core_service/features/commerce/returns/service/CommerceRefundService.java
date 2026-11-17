@@ -581,7 +581,7 @@ public class CommerceRefundService {
         String method = refund.getMethod();
         BigDecimal amount = refund.getAmount();
         desk.afterCommitMoney(hook -> hook.refundProcessed(instituteId, orderId, refundId, method, amount));
-        events.afterCommit(desk.event(CommerceOrderEvents.REFUND_PROCESSED, order, null, true));
+        events.afterCommit(desk.event(CommerceOrderEvents.REFUND_PROCESSED, order, refundId, true));
     }
 
     // ================================================================== automatic refunds

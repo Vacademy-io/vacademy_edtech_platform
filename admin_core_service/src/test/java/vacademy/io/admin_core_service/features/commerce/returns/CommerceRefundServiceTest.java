@@ -569,4 +569,36 @@ class CommerceRefundServiceTest {
     private static LocalDate day(String text) {
         return LocalDate.parse(text);
     }
+
+    // ------------------------------------------------------------------ buyer messages (WP-33)
+
+    @Test
+    void eachProcessedRefundTellsTheBuyerOnceWithItsOwnIdAsTheRef() {
+        CommerceRefund first = f.pendingGateway("100.00");
+        CommerceRefund second = f.pendingGateway("200.00");
+
+        assertTrue(f.service.markProcessed(first.getId(), CommerceRefundService.Facts.gateway("processed", "ARN1")));
+        assertTrue(f.service.markProcessed(second.getId(), CommerceRefundService.Facts.gateway("processed", "ARN2")));
+        // A replay of either changes nothing and tells nothing.
+        assertFalse(f.service.markProcessed(first.getId(), CommerceRefundService.Facts.gateway("processed", null)));
+        assertFalse(f.service.markProcessed(second.getId(), null));
+
+        java.util.List<String> refs = new java.util.ArrayList<>();
+        for (int i = 0; i < f.eventTypes.size(); i++) {
+            if (CommerceOrderEvents.REFUND_PROCESSED.equals(f.eventTypes.get(i))) {
+                refs.add(f.eventRefs.get(i));
+            }
+        }
+        assertEquals(java.util.List.of(first.getId(), second.getId()), refs);
+
+        org.mockito.ArgumentCaptor<CommerceOrderEvents.OrderEvent> published = org.mockito.ArgumentCaptor.forClass(
+                CommerceOrderEvents.OrderEvent.class);
+        verify(f.events, org.mockito.Mockito.atLeast(0)).afterCommit(published.capture());
+        java.util.List<CommerceOrderEvents.OrderEvent> refundEvents = published.getAllValues().stream()
+                .filter(e -> CommerceOrderEvents.REFUND_PROCESSED.equals(e.type())).toList();
+        assertEquals(2, refundEvents.size());
+        assertEquals(first.getId(), refundEvents.get(0).refId());
+        assertEquals(second.getId(), refundEvents.get(1).refId());
+        assertTrue(refundEvents.get(0).notifyCustomer());
+    }
 }

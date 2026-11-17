@@ -407,6 +407,18 @@ export const readOrderFragment = (hash: string | null | undefined): string | nul
     return token && token.length <= 512 && /^[A-Za-z0-9._~-]+$/.test(token) ? token : null;
 };
 
+/**
+ * The link token in an "#l=<token>" fragment (the order link of a WhatsApp or e-mail message),
+ * else null. The page exchanges it once for an order token and never keeps it anywhere.
+ */
+export const readOrderLinkFragment = (hash: string | null | undefined): string | null => {
+    const raw = (hash || '').replace(/^#/, '');
+    if (!raw) return null;
+    const params = new URLSearchParams(raw);
+    const token = params.get('l');
+    return token && token.length <= 200 && /^[A-Za-z0-9._-]+$/.test(token) ? token : null;
+};
+
 /** Ordered steps of the timeline a buyer sees. */
 export const TIMELINE_STEPS = ['PLACED', 'CONFIRMED', 'PACKED', 'SHIPPED', 'DELIVERED'] as const;
 

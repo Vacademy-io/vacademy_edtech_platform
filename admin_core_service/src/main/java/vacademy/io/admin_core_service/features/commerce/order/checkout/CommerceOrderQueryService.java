@@ -96,6 +96,15 @@ public class CommerceOrderQueryService {
         this.returnsView = returnsView;
     }
 
+    /** The buyer messages of an order (WP-33); set by Spring, absent in tests built by hand. */
+    private vacademy.io.admin_core_service.features.commerce.notify.repository.CommerceNotificationStore notificationStore;
+
+    @Autowired(required = false)
+    public void setNotificationStore(
+            vacademy.io.admin_core_service.features.commerce.notify.repository.CommerceNotificationStore store) {
+        this.notificationStore = store;
+    }
+
     private CommerceOrderReturnsView returnsView() {
         return returnsView == null ? null : returnsView.getIfAvailable();
     }
@@ -346,14 +355,7 @@ public class CommerceOrderQueryService {
 
     /** {@code a•••@example.com}: the first letter and the domain. */
     static String maskEmail(String email) {
-        if (!StringUtils.hasText(email) || CommerceBuyerResolver.isHolderEmail(email)) {
-            return null;
-        }
-        int at = email.indexOf('@');
-        if (at < 1) {
-            return null;
-        }
-        return email.charAt(0) + "•••" + email.substring(at);
+        return vacademy.io.admin_core_service.features.commerce.notify.CommerceMasks.email(email);
     }
 
     /** Who a {@code /me} call is for: the phone, and the session when one was used. */
@@ -609,6 +611,30 @@ public class CommerceOrderQueryService {
      */
     public StaffOrderDtos.StaffOrderDetail staffDetail(String instituteId, String orderId, Set<CommerceRole> roles,
                                                        boolean admin, boolean fromPrimary) {
+        StaffOrderDtos.StaffOrderDetail detail = staffDetailOnly(instituteId, orderId, roles, admin, fromPrimary);
+        attachNotifications(detail, instituteId, orderId);
+        return detail;
+    }
+
+    /**
+     * The buyer messages of the order, read after the detail's transaction (a failed read leaves
+     * the list out and never fails the detail).
+     */
+    private void attachNotifications(StaffOrderDtos.StaffOrderDetail detail, String instituteId, String orderId) {
+        if (detail == null || notificationStore == null) {
+            return;
+        }
+        try {
+            detail.setNotifications(vacademy.io.admin_core_service.features.commerce.notify.dto.NotificationSettingsDtos
+                    .DeliveryView.of(notificationStore.ofOrder(instituteId, orderId, 100)));
+        } catch (RuntimeException e) {
+            log.warn("Buyer messages of order {} not read: {}", orderId, e.getClass().getSimpleName());
+        }
+    }
+
+    private StaffOrderDtos.StaffOrderDetail staffDetailOnly(String instituteId, String orderId,
+                                                            Set<CommerceRole> roles, boolean admin,
+                                                            boolean fromPrimary) {
         return (fromPrimary ? primary : readOnly).execute(tx -> {
             CommerceOrder order = orderRepository.findByIdAndInstituteId(orderId, instituteId)
                     .orElseThrow(CommerceOrderQueryService::notFound);

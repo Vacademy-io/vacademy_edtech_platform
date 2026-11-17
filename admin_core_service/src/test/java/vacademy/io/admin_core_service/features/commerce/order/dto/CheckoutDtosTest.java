@@ -32,7 +32,9 @@ class CheckoutDtosTest {
                     "sessionExpiresAt")),
             Map.entry("OrderPage", Set.of("orders", "page", "pageSize", "total")),
             Map.entry("AddressView", Set.of("id", "label", "name", "phone", "line1", "line2", "landmark", "city",
-                    "stateCode", "pincode", "isDefault")));
+                    "stateCode", "pincode", "isDefault")),
+            // The answer to an order link (WP-33): a short order token for the order page.
+            Map.entry("OrderLinkExchange", Set.of("orderAccessToken", "orderAccessTokenExpiresAt", "phoneVerified")));
 
     @Test
     void thePublicViewsHaveExactlyTheAllowedFields() {

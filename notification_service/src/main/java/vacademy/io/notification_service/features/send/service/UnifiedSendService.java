@@ -1,5 +1,7 @@
 package vacademy.io.notification_service.features.send.service;
 
+import vacademy.io.notification_service.util.LogMask;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
@@ -258,7 +260,7 @@ public class UnifiedSendService implements SendChannelRouter {
                                 "template.name", request.getTemplateName() != null ? request.getTemplateName() : "unknown",
                                 "institute.id", request.getInstituteId() != null ? request.getInstituteId() : "unknown",
                                 "user.id", r.getUserId() != null ? r.getUserId() : "unknown",
-                                "raw.phone", r.getPhone() != null ? r.getPhone() : "null",
+                                "raw.phone", LogMask.phone(r.getPhone()),
                                 "layer", "4-unified-send"
                         ));
                 continue;
@@ -269,7 +271,7 @@ public class UnifiedSendService implements SendChannelRouter {
                 try {
                     if (userAnnouncementPreferenceService.isWhatsAppUnsubscribed(
                             r.getUserId(), request.getInstituteId(), phone)) {
-                        log.info("Skipping WhatsApp to user {} ({}): unsubscribed", r.getUserId(), phone);
+                        log.info("Skipping WhatsApp to user {} ({}): unsubscribed", r.getUserId(), LogMask.phone(phone));
                         results.add(UnifiedSendResponse.RecipientResult.builder()
                                 .phone(phone).success(false)
                                 .status("SKIPPED_UNSUBSCRIBED")
@@ -634,7 +636,7 @@ public class UnifiedSendService implements SendChannelRouter {
                         if (userAnnouncementPreferenceService.isEmailSenderUnsubscribed(
                                 userId, request.getInstituteId(), emailType, fromForUnsubCheck)) {
                             log.info("Skipping email to user {} ({}): unsubscribed from {} ({})",
-                                    userId, email, fromForUnsubCheck, emailType);
+                                    userId, LogMask.email(email), fromForUnsubCheck, emailType);
                             results.add(UnifiedSendResponse.RecipientResult.builder()
                                     .email(email).success(false)
                                     .status("SKIPPED_UNSUBSCRIBED")
@@ -703,12 +705,12 @@ public class UnifiedSendService implements SendChannelRouter {
 
                 // Retry-friendly: detect SES throttling errors
                 if (errorMsg.contains("Throttling") || errorMsg.contains("Rate") || errorMsg.contains("limit")) {
-                    log.warn("Email rate limit hit for {}: {} — marking as QUEUED for retry", email, errorMsg);
+                    log.warn("Email rate limit hit for {}: {} — marking as QUEUED for retry", LogMask.email(email), errorMsg);
                     results.add(UnifiedSendResponse.RecipientResult.builder()
                             .email(email).success(false)
                             .status("QUEUED").error("Rate limited - retry later").build());
                 } else {
-                    log.error("Email send failed for {}: {}", email, errorMsg);
+                    log.error("Email send failed for {}: {}", LogMask.email(email), errorMsg);
                     results.add(UnifiedSendResponse.RecipientResult.builder()
                             .email(email).success(false)
                             .status("FAILED").error(errorMsg).build());

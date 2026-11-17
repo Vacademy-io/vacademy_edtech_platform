@@ -6,6 +6,7 @@ const KEY = `vak_pub_${'b2'.repeat(24)}`;
 const SESSION = 's1.eyJpIjoiaW5zdC0xIn0.c2lnbmF0dXJl';
 const PHONE_TOKEN = 'v1.eyJjIjoxfQ.c2ln';
 const ORDER_TOKEN = 'v1.aW5zdHxvcmRlcnwx.c2ln';
+const LINK_TOKEN = 'l1.abc.def';
 const BASE = 'https://api.example/admin-core-service/open/commerce/v1';
 
 const stub = (status = 200, body: unknown = { ok: true }, headers: Record<string, string> = {}) => {
@@ -106,6 +107,24 @@ describe('buying calls', () => {
         expect(sent.locale).toBe('hi');
     });
 
+    it('exchanges an order link: POST /orders/link with the key, the link token in the body only', async () => {
+        const answer = { order_access_token: ORDER_TOKEN, order_access_token_expires_at: '2026-11-18T10:00:00Z', phone_verified: true };
+        const { client, calls } = stub(200, answer);
+        await expect(client.exchangeOrderLink(LINK_TOKEN)).resolves.toEqual(answer);
+        expect(calls).toHaveLength(1);
+        const call = calls[0]!;
+        expect(call.url).toBe(`${BASE}/orders/link`);
+        expect(call.url).not.toContain(LINK_TOKEN);
+        expect(call.init.method).toBe('POST');
+        expect(call.init.cache).toBe('no-store');
+        expect(call.init.credentials).toBe('omit');
+        expect(headersOf(call.init)['X-API-Key']).toBe(KEY);
+        expect(headersOf(call.init)['content-type']).toBe('application/json');
+        expect(headersOf(call.init).Authorization).toBeUndefined();
+        expect(Object.values(headersOf(call.init)).join(' ')).not.toContain(LINK_TOKEN);
+        expect(JSON.parse(call.init.body as string)).toEqual({ link_token: LINK_TOKEN });
+    });
+
     it('releases a hold on the stock-hold route, without the shop key', async () => {
         const { client, calls } = stub(200, { released: 1 });
         await expect(client.releaseHold({ payment_log_id: 'plog-1', release_token: 'rt-1' })).resolves.toEqual({ released: 1 });
@@ -139,6 +158,14 @@ describe('buying errors', () => {
         });
         expect(errorFromBody(401, { error: { code: 'session_invalid' } })).toMatchObject({ kind: 'unauthorized', details: null });
         expect(errorFromBody(400, { error: { code: 'x', details: ['not', 'an', 'object'] } }).details).toBeNull();
+    });
+
+    it('maps the order link refusals', async () => {
+        await expect(stub(410, { error: { code: 'link_expired' } }).client.exchangeOrderLink(LINK_TOKEN)).rejects.toMatchObject({ status: 410, code: 'link_expired', kind: 'invalid' });
+        await expect(stub(403, { error: { code: 'link_invalid' } }).client.exchangeOrderLink(LINK_TOKEN)).rejects.toMatchObject({ status: 403, code: 'link_invalid', kind: 'unauthorized' });
+        await expect(stub(400, { error: { code: 'invalid_request' } }).client.exchangeOrderLink(LINK_TOKEN)).rejects.toMatchObject({ status: 400, kind: 'invalid' });
+        await expect(stub(429, { error: { code: 'rate_limited' } }, { 'retry-after': '30' }).client.exchangeOrderLink(LINK_TOKEN)).rejects.toMatchObject({ kind: 'rate_limited', retryAfter: 30, retryable: true });
+        await expect(stub(503, { error: { code: 'checkout_not_configured' } }).client.exchangeOrderLink(LINK_TOKEN)).rejects.toMatchObject({ status: 503, kind: 'server', retryable: true });
     });
 
     it('reads Retry-After of an OTP rate limit', async () => {

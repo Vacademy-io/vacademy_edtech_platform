@@ -126,6 +126,9 @@ public final class StaffOrderDtos {
         private List<ReturnDtos.ReturnSummary> returns;
         private List<RefundDtos.RefundSummary> refunds;
         private String exchangeOfOrderId;
+        // Buyer messages (WP-33): newest first, at most 100; addresses masked.
+        private List<vacademy.io.admin_core_service.features.commerce.notify.dto.NotificationSettingsDtos.DeliveryView>
+                notifications;
     }
 
     @Data

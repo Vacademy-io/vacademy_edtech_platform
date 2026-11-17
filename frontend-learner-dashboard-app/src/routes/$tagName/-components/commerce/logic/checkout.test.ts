@@ -13,6 +13,7 @@ import {
     orderStage,
     pollDelay,
     readOrderFragment,
+    readOrderLinkFragment,
     renewAttempt,
     typedMobile,
     validateForm,
@@ -218,5 +219,26 @@ describe('the order page', () => {
         expect(readOrderFragment('#x=1&t=v1.a.b')).toBe('v1.a.b');
         expect(readOrderFragment('')).toBeNull();
         expect(readOrderFragment('#t=<script>')).toBeNull();
+    });
+
+    it('reads the link token of an order message from the fragment', () => {
+        // valid
+        expect(readOrderLinkFragment('#l=l1.abc.def')).toBe('l1.abc.def');
+        expect(readOrderLinkFragment('l=l1.a_b-c.d-e_f')).toBe('l1.a_b-c.d-e_f');
+        expect(readOrderLinkFragment('')).toBeNull();
+        expect(readOrderLinkFragment(null)).toBeNull();
+        expect(readOrderLinkFragment('#t=v1.abc.def')).toBeNull();
+        // too long: 200 characters at most
+        expect(readOrderLinkFragment(`#l=${'a'.repeat(200)}`)).toBe('a'.repeat(200));
+        expect(readOrderLinkFragment(`#l=${'a'.repeat(201)}`)).toBeNull();
+        // bad characters (the "~" of order tokens is not in a link token)
+        expect(readOrderLinkFragment('#l=<script>')).toBeNull();
+        expect(readOrderLinkFragment('#l=l1.abc~def')).toBeNull();
+        expect(readOrderLinkFragment('#l=l1.abc%20def')).toBeNull();
+        expect(readOrderLinkFragment('#l=l1.ab+c.def')).toBeNull();
+        expect(readOrderLinkFragment('#l=')).toBeNull();
+        // both "t" and "l": each reader takes its own
+        expect(readOrderLinkFragment('#t=v1.abc.def&l=l1.abc.def')).toBe('l1.abc.def');
+        expect(readOrderFragment('#t=v1.abc.def&l=l1.abc.def')).toBe('v1.abc.def');
     });
 });

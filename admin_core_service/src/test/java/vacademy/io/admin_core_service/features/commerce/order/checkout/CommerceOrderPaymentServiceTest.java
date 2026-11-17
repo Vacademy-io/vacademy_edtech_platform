@@ -685,4 +685,157 @@ class CommerceOrderPaymentServiceTest {
         assertEquals("PENDING_PAYMENT", order.getStatus());
         verify(orderRepository, never()).save(any());
     }
+
+    // ------------------------------------------------------------------ buyer messages (WP-33)
+
+    private vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents events(
+            CommerceOrderPaymentService target) {
+        vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents events =
+                mock(vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents.class);
+        target.setEvents(events);
+        return events;
+    }
+
+    private static List<vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents.OrderEvent>
+            emitted(vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents events) {
+        ArgumentCaptor<vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents.OrderEvent>
+                captor = ArgumentCaptor.forClass(
+                vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents.OrderEvent.class);
+        verify(events, org.mockito.Mockito.atLeast(0)).afterCommit(captor.capture());
+        return captor.getAllValues();
+    }
+
+    private static void assertOrderEvent(String type,
+            vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents.OrderEvent event) {
+        assertEquals(type, event.type());
+        assertEquals("inst-1", event.instituteId());
+        assertEquals(ORDER, event.orderId());
+        assertEquals("ORD-000007", event.orderNumber());
+        assertEquals("", event.refId());
+        assertTrue(event.notifyCustomer());
+    }
+
+    @Test
+    void aPaidSettleTellsTheBuyerTheOrderIsConfirmed_once() {
+        var events = events(service);
+        paidInFull();
+        hold("plan-1", "SOLD", false);
+        hold("plan-2", "SOLD", false);
+
+        assertEquals(Outcome.CONFIRMED, service.onPaymentLogPaid("log-2"));
+        var sent = emitted(events);
+        assertEquals(1, sent.size());
+        assertOrderEvent("ORDER_CONFIRMED", sent.get(0));
+
+        // A replay settles nothing and tells nothing.
+        assertEquals(Outcome.ALREADY_SETTLED, service.onPaymentLogPaid("log-1"));
+        assertEquals(Outcome.ALREADY_SETTLED, service.ensurePaidOrderConfirmed(ORDER));
+        assertEquals(1, emitted(events).size());
+    }
+
+    @Test
+    void aLatePaymentThatReopensACancelledOrderTellsTheBuyerItIsConfirmed() {
+        var events = events(service);
+        cancelledUnpaid();
+        paidInFull();
+        hold("plan-1", "SOLD", false);
+        hold("plan-2", "SOLD", false);
+
+        assertEquals(Outcome.CONFIRMED, service.onPaymentLogPaid("log-1"));
+        var sent = emitted(events);
+        assertEquals(1, sent.size());
+        assertOrderEvent("ORDER_CONFIRMED", sent.get(0));
+    }
+
+    @Test
+    void anOversoldPaidOrderTellsTheBuyerItIsCancelled_neverConfirmed() {
+        var events = events(service);
+        cancelledUnpaid();
+        paidInFull();
+        hold("plan-1", "SOLD", false);
+        hold("plan-2", "SOLD", true);
+        assertEquals(Outcome.OVERSOLD_PAID, service.onPaymentLogPaid("log-1"));
+        var sent = emitted(events);
+        assertEquals(1, sent.size());
+        assertOrderEvent("ORDER_CANCELLED", sent.get(0));
+        // The planner reads the reason from the order.
+        assertEquals(CommerceOrderPaymentService.REASON_OVERSOLD_PAID, order.getCancelReason());
+        assertEquals(Outcome.ALREADY_SETTLED, service.onPaymentLogPaid("log-2"));
+        assertEquals(1, emitted(events).size());
+    }
+
+    @Test
+    void anOversoldHoldOnAWaitingOrderTellsTheBuyerItIsCancelled() {
+        var events = events(service);
+        paidInFull();
+        hold("plan-1", "SOLD", true);
+        assertEquals(Outcome.OVERSOLD_PAID, service.ensurePaidOrderConfirmed(ORDER));
+        var sent = emitted(events);
+        assertEquals(1, sent.size());
+        assertOrderEvent("ORDER_CANCELLED", sent.get(0));
+        assertEquals("OVERSOLD_PAID", order.getCancelReason());
+    }
+
+    @Test
+    void noMessageWhenTheOrderIsNotSettled() {
+        var events = events(service);
+        log("log-1", "PAYMENT_PENDING", "500.00");
+        log("log-2", "FAILED", "1000.00");
+        assertEquals(Outcome.NOT_PAID_YET, service.ensurePaidOrderConfirmed(ORDER));
+
+        logs.clear();
+        log("log-1", "PAID", "500.00");
+        log("log-2", "PAYMENT_PENDING", "1000.00");
+        assertEquals(Outcome.PARTLY_PAID, service.onPaymentLogPaid("log-1"));
+
+        logs.clear();
+        log("log-1", "PAID", "500.00");
+        log("log-2", "PAID", "999.00");
+        assertEquals(Outcome.REFUSED_MISMATCH, service.onPaymentLogPaid("log-1"));
+
+        logs.clear();
+        paidInFull();
+        assertEquals(Outcome.REFUSED_MISMATCH, service.onPaymentLogPaid("log-1", "order_gw_1", 100L));
+
+        hold("plan-1", "HELD", false);
+        hold("plan-2", "SOLD", false);
+        assertEquals(Outcome.STOCK_NOT_SETTLED, service.ensurePaidOrderConfirmed(ORDER));
+
+        when(legacyRepository.findGroupIdOfLog("course-log")).thenReturn(null);
+        assertEquals(Outcome.NOT_A_COMMERCE_ORDER, service.onPaymentLogPaid("course-log"));
+
+        verifyNoInteractions(events);
+    }
+
+    @Test
+    void theConfirmedEventIsWrittenInsideTheSettleTransaction() {
+        CountingTransactions transactions = new CountingTransactions();
+        CommerceOrderPaymentService real = new CommerceOrderPaymentService(orderRepository, lineRepository,
+                tenderRepository, legacyRepository, writer, stockHoldService, userPlanService, refundHook,
+                transactions);
+        var events = events(real);
+        List<Boolean> insideATransaction = new ArrayList<>();
+        org.mockito.Mockito.doAnswer(call -> {
+            insideATransaction.add(org.springframework.transaction.support.TransactionSynchronizationManager
+                    .isActualTransactionActive());
+            // The order change is already made when its event is written.
+            assertEquals("CONFIRMED", order.getStatus());
+            return null;
+        }).when(events).afterCommit(any());
+        paidInFull();
+        hold("plan-1", "SOLD", false);
+        hold("plan-2", "SOLD", false);
+
+        assertEquals(Outcome.CONFIRMED, real.ensurePaidOrderConfirmed(ORDER));
+        assertEquals(List.of(true), insideATransaction);
+    }
+
+    @Test
+    void withoutTheEventsBeanTheSettleWorksAsBefore() {
+        paidInFull();
+        hold("plan-1", "SOLD", false);
+        hold("plan-2", "SOLD", false);
+        assertEquals(Outcome.CONFIRMED, service.ensurePaidOrderConfirmed(ORDER));
+        assertEquals("CONFIRMED", order.getStatus());
+    }
 }

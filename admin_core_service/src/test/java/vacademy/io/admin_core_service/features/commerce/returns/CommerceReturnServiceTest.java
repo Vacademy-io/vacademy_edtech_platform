@@ -629,4 +629,37 @@ class CommerceReturnServiceTest {
         lenient().when(row.getCode()).thenReturn("CODE-" + id);
         return row;
     }
+
+    // ------------------------------------------------------------------ buyer messages (WP-33)
+
+    private java.util.List<String> refsOf(String type) {
+        java.util.List<String> refs = new java.util.ArrayList<>();
+        for (int i = 0; i < f.eventTypes.size(); i++) {
+            if (type.equals(f.eventTypes.get(i))) {
+                refs.add(f.eventRefs.get(i));
+            }
+        }
+        return refs;
+    }
+
+    @Test
+    void anApprovedReturnTellsTheBuyerWithTheReturnIdAsTheRef() {
+        line("l1", 2, "1050.00");
+        ReturnDtos.ReturnView now = created(create("l1", 1).approveNow(true));
+        assertEquals(java.util.List.of(now.getId()), refsOf(CommerceOrderEvents.RETURN_APPROVED));
+
+        String later = created(create("l1", 1)).getId();
+        assertEquals(1, refsOf(CommerceOrderEvents.RETURN_APPROVED).size(), "a requested return tells nothing yet");
+        service.approve(RefundFixture.manager(), INST, later, ReturnDtos.ApproveRequest.builder()
+                .clientRequestId("approve-key-9").fromStatus("REQUESTED").build());
+        assertEquals(java.util.List.of(now.getId(), later), refsOf(CommerceOrderEvents.RETURN_APPROVED));
+
+        org.mockito.ArgumentCaptor<CommerceOrderEvents.OrderEvent> published = org.mockito.ArgumentCaptor.forClass(
+                CommerceOrderEvents.OrderEvent.class);
+        verify(f.events, org.mockito.Mockito.atLeast(0)).afterCommit(published.capture());
+        java.util.List<String> publishedRefs = published.getAllValues().stream()
+                .filter(e -> CommerceOrderEvents.RETURN_APPROVED.equals(e.type()))
+                .map(CommerceOrderEvents.OrderEvent::refId).toList();
+        assertEquals(java.util.List.of(now.getId(), later), publishedRefs);
+    }
 }
