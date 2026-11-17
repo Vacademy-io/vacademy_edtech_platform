@@ -960,6 +960,13 @@ export function mergeDisplayWithDefaults(
     merged.listUtmFilterControls =
         incoming?.listUtmFilterControls ?? defaults.listUtmFilterControls;
 
+    // Built-in filter switches per surface (Counsellor / Source / Label, City / Region;
+    // institute-wide). Same pass-through rule. Without it every read dropped the saved
+    // switches, so a filter turned off in "Manage filters" came back on the next load,
+    // and saving the Display Settings page erased them.
+    merged.listBuiltInFilterControls =
+        incoming?.listBuiltInFilterControls ?? defaults.listBuiltInFilterControls;
+
     // Live class scheduling (role-level overlay on top of institute-level
     // Live Session Settings). Both flags default ON so existing roles aren't
     // suddenly locked out of either flow.

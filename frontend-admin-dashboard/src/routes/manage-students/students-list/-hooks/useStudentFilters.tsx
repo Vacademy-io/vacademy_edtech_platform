@@ -420,6 +420,21 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             }
         }
 
+        // City / Region filters from URL — the value is both id and label.
+        const locationFromUrl: [string, string][] = [
+            ['city', 'cities'],
+            ['region', 'regions'],
+        ];
+        locationFromUrl.forEach(([param, filterId]) => {
+            const values = toList(searchParams[param])
+                .map((v) => String(v).trim())
+                .filter(Boolean);
+            const options = [...new Set(values)].map((value) => ({ id: value, label: value }));
+            if (options.length > 0) {
+                initialFilters.push({ id: filterId, value: options });
+            }
+        });
+
         // Custom field filters from URL
         if (instituteDetails?.dropdown_custom_fields) {
             instituteDetails.dropdown_custom_fields.forEach((customField) => {
@@ -588,6 +603,12 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
                 sub_org_user_types: rolesToApply,
                 payment_statuses: paymentStatusesToApply,
                 types: learnerTypesToApply,
+                ...(selectedOptionIds(initialFilters, 'cities').length > 0
+                    ? { cities: selectedOptionIds(initialFilters, 'cities') }
+                    : {}),
+                ...(selectedOptionIds(initialFilters, 'regions').length > 0
+                    ? { regions: selectedOptionIds(initialFilters, 'regions') }
+                    : {}),
                 // approval_statuses is removed, merged into statuses
                 ...(Object.keys(legacyCfFilters).length > 0
                     ? { custom_field_filters: legacyCfFilters }
@@ -794,6 +815,8 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         const audienceIds = audienceFilter?.value.map((opt) => opt.id) || [];
         const subOrgFilter = columnFilters.find((filter) => filter.id === 'sub_org_ids');
         const subOrgIds = subOrgFilter?.value.map((opt) => opt.id) || [];
+        const citiesToApply = selectedOptionIds(columnFilters, 'cities');
+        const regionsToApply = selectedOptionIds(columnFilters, 'regions');
 
         const newFilters: StudentFilterRequest = {
             name: searchFilter,
@@ -813,6 +836,8 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             ...(enrollInviteIds.length > 0 ? { enroll_invite_ids: enrollInviteIds } : {}),
             ...(audienceIds.length > 0 ? { audience_ids: audienceIds } : {}),
             ...(subOrgIds.length > 0 ? { sub_org_ids: subOrgIds } : {}),
+            ...(citiesToApply.length > 0 ? { cities: citiesToApply } : {}),
+            ...(regionsToApply.length > 0 ? { regions: regionsToApply } : {}),
             ...(Object.keys(legacyCfFilters).length > 0
                 ? { custom_field_filters: legacyCfFilters }
                 : {}),
@@ -843,6 +868,8 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         currentParams.delete('approvalStatus');
         currentParams.delete('audienceId');
         currentParams.delete('enrollInviteId');
+        currentParams.delete('city');
+        currentParams.delete('region');
 
         // Remove old custom field params
         if (instituteDetails?.dropdown_custom_fields) {
@@ -915,6 +942,9 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
             [...new Set(enrollInviteIds)].forEach((id) => currentParams.append('enrollInviteId', id));
         }
 
+        citiesToApply.forEach((city) => currentParams.append('city', city));
+        regionsToApply.forEach((region) => currentParams.append('region', region));
+
         // Handle custom field filters
         if (instituteDetails?.dropdown_custom_fields) {
             instituteDetails.dropdown_custom_fields.forEach((customField) => {
@@ -981,6 +1011,8 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         currentParams.delete('learnerType');
         currentParams.delete('audienceId');
         currentParams.delete('enrollInviteId');
+        currentParams.delete('city');
+        currentParams.delete('region');
 
         // Remove custom field params
         if (instituteDetails?.dropdown_custom_fields) {
@@ -1084,8 +1116,11 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         const hasPaymentStatus = Boolean(paymentStatusFilter?.value && paymentStatusFilter.value.length > 0);
         const hasApprovalStatus = Boolean(approvalStatusFilter?.value && approvalStatusFilter.value.length > 0);
         const hasLearnerType = Boolean(learnerTypeFilter?.value && learnerTypeFilter.value.length > 0);
+        const hasLocation =
+            selectedOptionIds(columnFilters, 'cities').length > 0 ||
+            selectedOptionIds(columnFilters, 'regions').length > 0;
 
-        return Boolean(hasName || hasGender || hasStatus || hasBatch || hasSessionExpiry || hasPaymentStatus || hasApprovalStatus || hasLearnerType);
+        return Boolean(hasName || hasGender || hasStatus || hasBatch || hasSessionExpiry || hasPaymentStatus || hasApprovalStatus || hasLearnerType || hasLocation);
     }, [columnFilters, appliedFilters]);
 
     return {
@@ -1110,6 +1145,14 @@ export const useStudentFilters = (options: { allowAllSessions?: boolean } = {}) 
         rangeCustomFields,
     };
 };
+
+/** The selected option ids of one filter chip, e.g. the cities picked in the City filter. */
+function selectedOptionIds(
+    filters: { id: string; value: { id: string; label: string }[] }[],
+    filterId: string
+): string[] {
+    return filters.find((filter) => filter.id === filterId)?.value.map((option) => option.id) ?? [];
+}
 
 /** "DD/MM/YYYY" (what the shared date-range control emits) -> "YYYY-MM-DD". */
 function toIsoDate(value?: string): string | undefined {

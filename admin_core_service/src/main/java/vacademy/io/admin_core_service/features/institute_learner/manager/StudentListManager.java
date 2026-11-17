@@ -85,6 +85,9 @@ public class StudentListManager {
     vacademy.io.admin_core_service.features.utm_attribution.service.UtmListFilterResolver utmListFilterResolver;
 
     @Autowired
+    vacademy.io.admin_core_service.features.institute_learner.service.LearnerLocationFilterService learnerLocationFilterService;
+
+    @Autowired
     StudentSessionRepository studentSessionRepository;
 
     @Autowired
@@ -362,6 +365,9 @@ public class StudentListManager {
     public ResponseEntity<AllStudentV2Response> getLinkedStudentsV2(CustomUserDetails user,
                                                                     StudentListFilter studentListFilter, int pageNo, int pageSize) {
         applyFacultyAccessFilter(user, studentListFilter);
+        // City / region: trimmed + lower-cased once here; every query below compares lower-cased.
+        vacademy.io.admin_core_service.features.institute_learner.service.LearnerLocationFilterService
+                .normalizeFilter(studentListFilter);
 
         // Custom-field sort arrives as a sortColumns entry keyed
         // "cf:<custom_field_id>". Extract it (so createPageable/ListService only
@@ -450,6 +456,31 @@ public class StudentListManager {
         // Complex filters (custom fields, payment status, invite filter) and
         // custom-field sorting require the full JOIN query
         if (hasCustomFieldFilters || hasEnrollInviteFilter || hasPaymentStatusFilter || hasCustomFieldSort) {
+            // City / region: this path has no city or region clause, so the matching learners
+            // are folded into the same matched-id set the custom-field and UTM filters use.
+            // The fast path below filters them in its own SQL instead.
+            vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver.Resolution
+                    location = learnerLocationFilterService.resolve(studentListFilter);
+            if (location != null) {
+                vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver.Resolution
+                        combined = new vacademy.io.admin_core_service.features.common.service.CustomFieldListFilterResolver.Resolution(
+                                studentListFilter.getCfTypedMatchedUserIds() == null ? null
+                                        : new java.util.HashSet<>(studentListFilter.getCfTypedMatchedUserIds()),
+                                studentListFilter.getCfTypedExcludedUserIds() == null ? null
+                                        : new java.util.HashSet<>(studentListFilter.getCfTypedExcludedUserIds()))
+                        .and(location);
+                if (combined.shortCircuitsToEmpty()) {
+                    return ResponseEntity.ok(AllStudentV2Response.builder()
+                            .content(new ArrayList<>()).pageNo(pageNo).pageSize(pageSize)
+                            .totalElements(0L).totalPages(0).last(true)
+                            .membershipTypesAvailable(membershipTypesAvailable(studentListFilter.getInstituteIds()))
+                            .build());
+                }
+                studentListFilter.setCfTypedMatchedUserIds(
+                        combined.matchedIds == null ? null : new ArrayList<>(combined.matchedIds));
+                studentListFilter.setCfTypedExcludedUserIds(
+                        combined.excludedIds == null ? null : new ArrayList<>(combined.excludedIds));
+            }
             Pageable pageable = createPageable(studentListFilter, pageNo, pageSize);
             Page<StudentListV2Projection> page = fetchStudentPage(studentListFilter, pageable);
             List<StudentV2DTO> content = page != null ? mapProjectionsToDTOs(page.getContent()) : new ArrayList<>();
@@ -505,6 +536,8 @@ public class StudentListManager {
                 studentListFilter.getStartDate(),
                 studentListFilter.getEndDate(),
                 studentListFilter.getAudienceIds(),
+                studentListFilter.getCities(),
+                studentListFilter.getRegions(),
                 studentListFilter.getName(),
                 includeAudienceOnly,
                 PageRequest.of(pageNo, pageSize))
@@ -525,6 +558,8 @@ public class StudentListManager {
                 studentListFilter.getStartDate(),
                 studentListFilter.getEndDate(),
                 studentListFilter.getAudienceIds(),
+                studentListFilter.getCities(),
+                studentListFilter.getRegions(),
                 null,
                 includeAudienceOnly,
                 PageRequest.of(pageNo, pageSize));

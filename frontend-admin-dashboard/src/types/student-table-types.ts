@@ -23,6 +23,9 @@ export interface StudentFilterRequest {
     /** Join-date range over ssigm.enrolled_date, inclusive, as YYYY-MM-DD. */
     start_date?: string;
     end_date?: string;
+    /** Learner city / region (state). Matched ignoring case and spaces. */
+    cities?: string[];
+    regions?: string[];
     // Dropdown custom-field filters — keyed by custom_field.id, values are the
     // selected option ids. Matches the backend's StudentListFilter.customFieldFilters
     // (Map<String, List<String>>), NOT the legacy flat customFieldId*/customFieldValues*

@@ -56,6 +56,12 @@ public class StudentListFilter {
     // in one of these audiences (and that response isn't OPTED_OUT).
     private List<String> audienceIds;
 
+    // Learner city / region (state) filters, matched on student.city / student.region
+    // ignoring case and surrounding spaces. Empty or absent = no filter. Like gender,
+    // these are user-scoped and do not drop audience-only rows.
+    private List<String> cities;
+    private List<String> regions;
+
     // Internal fields - auto-injected by server for faculty ENROLL_INVITE filtering
     @JsonIgnore
     private List<String> serverEnrollInviteIds;

@@ -586,13 +586,26 @@ export type ListUtmFilterControls = Partial<
 // The filters a list surface ships with, as opposed to custom fields and UTM
 // dimensions. Admins turn these off when a column means nothing to their
 // institute (no counsellors assigned, one audience, …).
-export type ListBuiltInFilter = 'counsellor' | 'campaignType' | 'audience';
+export type ListBuiltInFilter = 'counsellor' | 'campaignType' | 'audience' | 'city' | 'region';
 
 export const LIST_BUILT_IN_FILTERS: readonly ListBuiltInFilter[] = [
     'counsellor',
     'campaignType',
     'audience',
 ] as const;
+
+// City and region exist only on the learner list, so only the STUDENTS surface
+// offers their switches. Every other surface keeps exactly LIST_BUILT_IN_FILTERS.
+const SURFACE_ONLY_BUILT_IN_FILTERS: Partial<
+    Record<ListCustomFieldSurface, readonly ListBuiltInFilter[]>
+> = {
+    STUDENTS: ['city', 'region'],
+};
+
+/** The built-in filters a surface's "Manage filters" popup offers switches for. */
+export function listBuiltInFiltersFor(surface: ListCustomFieldSurface): ListBuiltInFilter[] {
+    return [...LIST_BUILT_IN_FILTERS, ...(SURFACE_ONLY_BUILT_IN_FILTERS[surface] ?? [])];
+}
 
 export interface ListBuiltInFilterSurfaceControls {
     // Filters hidden on this surface. ABSENT or empty = all of them show, which

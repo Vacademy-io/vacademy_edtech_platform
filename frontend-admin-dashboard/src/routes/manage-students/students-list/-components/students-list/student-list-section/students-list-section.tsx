@@ -54,6 +54,9 @@ import { InviteFormProvider } from '@/routes/manage-students/invite/-context/use
 import { Users, FileMagnifyingGlass } from '@phosphor-icons/react';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { useListCustomFieldControls } from '@/components/shared/leads/use-list-custom-field-controls';
+import { useListBuiltInFilterControls } from '@/components/shared/leads/use-list-built-in-filter-controls';
+import { useLearnerLocationFilterOptions } from '@/routes/manage-students/students-list/-services/getLearnerLocationFilterOptions';
+import type { FilterConfig } from '@/routes/manage-students/students-list/-types/students-list-types';
 import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 
 // Row statuses that mean the user actually holds (or held) an enrolment, as opposed to
@@ -236,6 +239,8 @@ export const StudentsListSection = () => {
         session_expiry_days: ['expiry_date'],
         payment_statuses: ['plan_type', 'amount_paid'],
         enroll_invite_ids: ['enroll_invite_name'],
+        cities: ['city'],
+        regions: ['region'],
     };
 
     const customFieldIdByKey = useMemo(() => {
@@ -261,7 +266,66 @@ export const StudentsListSection = () => {
     // run: it starts false and flips once the first page arrives, which re-renders the bar.
     const [membershipTypesAvailable, setMembershipTypesAvailable] = useState(false);
 
-    const allFilters = GetFilterData(
+    // City / Region chips. Switched on or off for the whole institute from "Manage filters"
+    // (Built-in filters, Students tab); on unless an admin turned them off. Their options are
+    // the values this institute's learners actually have, so a chip with nothing to pick
+    // (no learner has a city, say) is left out.
+    const { isVisible: isBuiltInFilterVisible } = useListBuiltInFilterControls('STUDENTS');
+    const showCityFilter = isBuiltInFilterVisible('city');
+    const showRegionFilter = isBuiltInFilterVisible('region');
+    const { data: locationOptions } = useLearnerLocationFilterOptions(
+        audienceInstituteId || undefined,
+        showCityFilter || showRegionFilter
+    );
+    // A filter switched off also stops filtering: drop a City / Region selection that is still
+    // applied (e.g. from a ?city= link) once its switch is off, the same as the built-in
+    // filters on the lead lists. Does nothing while both are on or nothing is picked.
+    const appliedCities = appliedFilters.cities;
+    const appliedRegions = appliedFilters.regions;
+    useEffect(() => {
+        const dropCities = !showCityFilter && (appliedCities?.length ?? 0) > 0;
+        const dropRegions = !showRegionFilter && (appliedRegions?.length ?? 0) > 0;
+        if (!dropCities && !dropRegions) return;
+        setColumnFilters((prev) =>
+            prev.filter(
+                (f) => !(dropCities && f.id === 'cities') && !(dropRegions && f.id === 'regions')
+            )
+        );
+        setAppliedFilters((prev) => {
+            const next = { ...prev };
+            if (dropCities) delete next.cities;
+            if (dropRegions) delete next.regions;
+            return next;
+        });
+        const params = new URLSearchParams(window.location.search);
+        if (dropCities) params.delete('city');
+        if (dropRegions) params.delete('region');
+        window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+    }, [showCityFilter, showRegionFilter, appliedCities, appliedRegions, setColumnFilters, setAppliedFilters]);
+
+    const locationFilters: FilterConfig[] = [];
+    if (showCityFilter && locationOptions?.cities.length) {
+        locationFilters.push({
+            id: 'cities',
+            title: tAllFilters('city.title'),
+            filterList: locationOptions.cities.map((o) => ({
+                id: o.value,
+                label: `${o.value} (${o.count})`,
+            })),
+        });
+    }
+    if (showRegionFilter && locationOptions?.regions.length) {
+        locationFilters.push({
+            id: 'regions',
+            title: tAllFilters('region.title'),
+            filterList: locationOptions.regions.map((o) => ({
+                id: o.value,
+                label: `${o.value} (${o.count})`,
+            })),
+        });
+    }
+
+    const baseFilters = GetFilterData(
         tAllFilters,
         instituteDetails,
         currentSession.id,
@@ -272,6 +336,16 @@ export const StudentsListSection = () => {
         gatedRangeCustomFields,
         membershipTypesAvailable
     );
+    // Right after Gender, the other learner-profile filter.
+    const genderIndex = baseFilters.findIndex((f) => f.id === 'gender');
+    const allFilters =
+        genderIndex >= 0
+            ? [
+                  ...baseFilters.slice(0, genderIndex + 1),
+                  ...locationFilters,
+                  ...baseFilters.slice(genderIndex + 1),
+              ]
+            : [...baseFilters, ...locationFilters];
     const filters = allFilters.filter((f) => {
         const fixed = FILTER_TO_COLUMNS[f.id];
         if (fixed) return fixed.some((accessor) => !roleHiddenColumns.has(accessor));
