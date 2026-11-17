@@ -30,6 +30,7 @@ import vacademy.io.admin_core_service.features.credits.client.CreditClient;
 import vacademy.io.admin_core_service.features.capabilities.service.DisplaySettingsFormat;
 import vacademy.io.admin_core_service.features.institute.setting_history.InstituteSettingWriter;
 import vacademy.io.admin_core_service.features.telleo.service.TelleoDisplaySettings;
+import vacademy.io.admin_core_service.features.voomsales.service.VoomSalesDisplaySettings;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -169,6 +170,17 @@ public class UserInstituteService {
                                 savedInstitute.getId(), e.getMessage());
                     }
                 }
+                // VoomSales opens on the CRM only: the other sidebar categories start hidden.
+                if (VoomSalesDisplaySettings.isVoomSales(savedInstitute.getProduct())) {
+                    try {
+                        instituteSettingWriter.putSettingKey(savedInstitute, DisplaySettingsFormat.ADMIN_KEY,
+                                VoomSalesDisplaySettings.adminEntry(),
+                                InstituteSettingWriter.Actor.platform("voomsales-signup", "VoomSales CRM-only dashboard"));
+                    } catch (Exception e) {
+                        log.warn("[voomsales] display settings not written for institute {}: {}",
+                                savedInstitute.getId(), e.getMessage());
+                    }
+                }
                 createInstituteSubModulesMapping(allSubModules, savedInstitute);
                 instituteDefaultUserSubscriptionService.createDefaultPaymentOption(institute.getId());
 
@@ -240,6 +252,11 @@ public class UserInstituteService {
         // A Telleo workspace wears Telleo's green unless the caller chose a theme.
         if (!StringUtils.hasText(institute.getInstituteThemeCode()) && isTelleo(instituteInfo.getProduct())) {
             institute.setInstituteThemeCode(TelleoDisplaySettings.THEME_CODE);
+        }
+        // A VoomSales workspace wears the preset blue unless the caller chose a theme.
+        if (!StringUtils.hasText(institute.getInstituteThemeCode())
+                && VoomSalesDisplaySettings.isVoomSales(instituteInfo.getProduct())) {
+            institute.setInstituteThemeCode(VoomSalesDisplaySettings.THEME_CODE);
         }
         institute.setBoard(instituteInfo.getBoard());
         institute.setGstDetails(instituteInfo.getGstDetails());
