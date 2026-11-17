@@ -9,6 +9,8 @@ import { DashboardLoader } from '@/components/core/dashboard-loader';
 import { getInstituteId } from '@/constants/helper';
 import {
     callMeNow,
+    chooseAccess,
+    type AccessMode,
     fetchOnboarding,
     onboardingErrorMessage,
     retryOnboarding,
@@ -80,12 +82,16 @@ function TelleoSetupPage() {
 
     const data = status.data;
     const step =
-        data.status === 'NEW' ? (
+        data.status === 'NEW' && !data.access_mode ? (
+            <AccessStep status={data} />
+        ) : data.status === 'NEW' ? (
             <QuestionsStep status={data} />
         ) : data.status === 'RUNNING' ? (
             <BuildingStep status={data} />
         ) : data.status === 'FAILED' ? (
             <FailedStep status={data} />
+        ) : data.access_mode === 'API' ? (
+            <ApiReadyStep />
         ) : (
             <ReadyStep status={data} />
         );
@@ -144,6 +150,96 @@ const GoToDashboard = () => {
         >
             {t('goToDashboard', 'Go to your dashboard')}
         </MyButton>
+    );
+};
+
+/** Where API keys are made: Settings → AI calling (the "AI calling API" card). */
+const API_KEYS_PATH = '/settings?selectedTab=aiCalling';
+
+/** The first step: how this account will use Telleo. Dashboard and API are priced differently. */
+const AccessStep = ({ status }: { status: TelleoOnboardingStatus }) => {
+    const { t } = useTranslation('telleoSetup');
+    const queryClient = useQueryClient();
+    const choose = useMutation({
+        mutationFn: (mode: AccessMode) => chooseAccess(status.institute_id, mode),
+        onSuccess: (next) => queryClient.setQueryData([QUERY_KEY, status.institute_id], next),
+    });
+    const option = (mode: AccessMode, title: string, body: string) => (
+        <button
+            type="button"
+            disabled={choose.isPending}
+            onClick={() => choose.mutate(mode)}
+            className="flex w-full flex-col gap-1 rounded-lg border border-neutral-200 p-4 text-left transition-colors hover:border-primary-500 hover:bg-primary-50 disabled:opacity-60"
+        >
+            <span className="text-subtitle font-semibold text-neutral-800">{title}</span>
+            <span className="text-body text-neutral-600">{body}</span>
+        </button>
+    );
+    return (
+        <Shell
+            title={t('access.title', 'How will you use Telleo?')}
+            subtitle={t('access.subtitle', 'Pick how you want to start.')}
+        >
+            {option(
+                'PLATFORM',
+                t('access.platform', 'Dashboard'),
+                t(
+                    'access.platformBody',
+                    'Answer a few questions and we write your first AI agent. Upload leads, call them and see every call here.'
+                )
+            )}
+            {option(
+                'API',
+                t('access.api', 'API'),
+                t(
+                    'access.apiBody',
+                    'Call from your own software. Get an API key, create agents and place calls over the API.'
+                )
+            )}
+            {choose.isError && (
+                <p
+                    role="alert"
+                    className="rounded-md bg-danger-50 p-2 text-caption text-danger-700"
+                >
+                    {onboardingErrorMessage(choose.error) ??
+                        t('submitFailed', 'That did not save. Try again.')}
+                </p>
+            )}
+        </Shell>
+    );
+};
+
+/** An API account is ready: the key is the next step, and the docs. */
+const ApiReadyStep = () => {
+    const { t } = useTranslation('telleoSetup');
+    return (
+        <Shell
+            title={t('apiReady.title', 'Your API access is ready')}
+            subtitle={t(
+                'apiReady.subtitle',
+                'Create an API key, then place your first call with it. The key is shown once, so keep it safe.'
+            )}
+        >
+            <MyButton
+                type="button"
+                buttonType="primary"
+                scale="large"
+                className="w-full"
+                // A full navigation, like the other settings deep links.
+                onClick={() => window.location.assign(API_KEYS_PATH)}
+            >
+                {t('apiReady.createKey', 'Create your API key')}
+            </MyButton>
+            <MyButton
+                type="button"
+                buttonType="secondary"
+                scale="large"
+                className="w-full"
+                onClick={() => window.location.assign('/calling/ai-agents')}
+            >
+                {t('apiReady.agents', 'Go to your agents')}
+            </MyButton>
+        </Shell>
     );
 };
 
@@ -402,7 +498,13 @@ const Steps = ({ status }: { status: TelleoOnboardingStatus }) => {
                 label={t('steps.settings', 'Your workspace')}
                 state={status.settings_status}
             />
-            <StepLine label={t('steps.agent', 'Your draft agent')} state={status.agent_status} />
+            {/* An API account writes its own agents over the API: no draft. */}
+            {status.access_mode !== 'API' && (
+                <StepLine
+                    label={t('steps.agent', 'Your draft agent')}
+                    state={status.agent_status}
+                />
+            )}
         </ul>
     );
 };
@@ -411,7 +513,11 @@ const BuildingStep = ({ status }: { status: TelleoOnboardingStatus }) => {
     const { t } = useTranslation('telleoSetup');
     return (
         <Shell
-            title={t('building.title', 'Building your agent…')}
+            title={
+                status.access_mode === 'API'
+                    ? t('building.titleApi', 'Setting up your API access…')
+                    : t('building.title', 'Building your agent…')
+            }
             subtitle={t(
                 'building.subtitle',
                 'This usually takes under a minute. You can keep this page open.'

@@ -27,19 +27,42 @@ public final class TelleoDisplaySettings {
     /** The dashboard's preset green (preset-themes.ts), Telleo's brand colour. */
     public static final String THEME_CODE = "green";
 
+    /** Where an API account lands: its agents (the keys are one click away, under AI calling settings). */
+    public static final String API_POST_LOGIN_ROUTE = "/calling/ai-agents";
+
+    /** A dashboard (platform) account: Lead list, Recent leads, Call log and AI agents. */
     public static ObjectNode adminEntry() {
+        return entry(false);
+    }
+
+    /**
+     * An API account: no lead pages, only what running calls over the API needs. AI agents, Call log,
+     * and AI calling settings, where the API keys are made.
+     */
+    public static ObjectNode apiAdminEntry() {
+        return entry(true);
+    }
+
+    private static ObjectNode entry(boolean api) {
         ObjectNode entry = MAPPER.createObjectNode();
         entry.put("key", DisplaySettingsFormat.ADMIN_KEY);
         entry.put("name", "Admin Display Settings");
         ObjectNode data = entry.putObject("data");
 
         ArrayNode sidebar = data.putArray("sidebar");
-        ObjectNode leads = tab(sidebar, "leads", 0);
-        sub(leads, "lead-list-leads", "/audience-manager/list", 0);
-        sub(leads, "recent-leads", "/audience-manager/recent-leads", 1);
-        ObjectNode calling = tab(sidebar, "calling", 1);
-        sub(calling, "calling-call-log", "/audience-manager/call-log", 0);
-        sub(calling, "calling-ai-agents", "/calling/ai-agents", 1);
+        if (api) {
+            ObjectNode calling = tab(sidebar, "calling", 0);
+            sub(calling, "calling-ai-agents", "/calling/ai-agents", 0);
+            sub(calling, "calling-call-log", "/audience-manager/call-log", 1);
+            sub(calling, "calling-ai-settings", "/settings?selectedTab=aiCalling", 2);
+        } else {
+            ObjectNode leads = tab(sidebar, "leads", 0);
+            sub(leads, "lead-list-leads", "/audience-manager/list", 0);
+            sub(leads, "recent-leads", "/audience-manager/recent-leads", 1);
+            ObjectNode calling = tab(sidebar, "calling", 1);
+            sub(calling, "calling-call-log", "/audience-manager/call-log", 0);
+            sub(calling, "calling-ai-agents", "/calling/ai-agents", 1);
+        }
 
         ArrayNode categories = data.putArray("sidebarCategories");
         category(categories, "CRM", true, true, 0);
@@ -47,7 +70,7 @@ public final class TelleoDisplaySettings {
         category(categories, "AI", false, false, 2);
         category(categories, "ERP", false, false, 3);
 
-        data.put("postLoginRedirectRoute", POST_LOGIN_ROUTE);
+        data.put("postLoginRedirectRoute", api ? API_POST_LOGIN_ROUTE : POST_LOGIN_ROUTE);
 
         ObjectNode ui = data.putObject("ui");
         ui.put("showSupportButton", true);

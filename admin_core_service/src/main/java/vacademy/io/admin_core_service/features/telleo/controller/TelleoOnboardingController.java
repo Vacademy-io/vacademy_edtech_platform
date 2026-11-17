@@ -22,6 +22,7 @@ import vacademy.io.common.auth.model.CustomUserDetails;
  *
  * <pre>
  *   GET  /admin-core-service/v1/telleo/onboarding/{instituteId}           status
+ *   POST /admin-core-service/v1/telleo/onboarding/{instituteId}/access    dashboard or API (first step)
  *   POST /admin-core-service/v1/telleo/onboarding/{instituteId}/answers   save answers, set the account up
  *   POST /admin-core-service/v1/telleo/onboarding/{instituteId}/retry     run the steps that failed
  *   POST /admin-core-service/v1/telleo/onboarding/{instituteId}/call-me   the agent rings the verified phone
@@ -40,6 +41,15 @@ public class TelleoOnboardingController {
                                             @RequestAttribute("user") CustomUserDetails user) {
         instituteAccessValidator.validateUserAccess(user, instituteId);
         return service.status(instituteId);
+    }
+
+    /** Body: {"access_mode": "PLATFORM" | "API"}, the first setup step. */
+    @PostMapping("/{instituteId}/access")
+    public TelleoOnboardingStatusDTO access(@PathVariable("instituteId") String instituteId,
+                                            @RequestBody java.util.Map<String, String> body,
+                                            @RequestAttribute("user") CustomUserDetails user) {
+        instituteAccessValidator.validateUserAccess(user, instituteId);
+        return service.chooseAccess(instituteId, body == null ? null : body.get("access_mode"));
     }
 
     @PostMapping("/{instituteId}/answers")
