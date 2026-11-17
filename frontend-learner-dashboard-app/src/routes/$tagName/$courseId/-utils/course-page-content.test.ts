@@ -65,6 +65,10 @@ describe("courseLanguageLabel", () => {
     expect(courseLanguageLabel({ levelName: "English (UK)", languages: langs })).toBe("English");
     expect(courseLanguageLabel({ levelName: "default", tags: ["swasthya", "english"], languages: langs })).toBe("English");
     expect(courseLanguageLabel({ levelName: "default", tags: ["swasthya"], languages: langs })).toBeNull();
+    // A course taught in both, tagged "english,hindi" (either order), names both in the site's order.
+    expect(courseLanguageLabel({ levelName: "Swasthavritta", tags: ["hindi", "e-learning", "english"], languages: langs })).toBe("English, Hindi");
+    // A language level still names the version alone.
+    expect(courseLanguageLabel({ levelName: "Hindi", tags: ["english", "hindi"], languages: langs })).toBe("Hindi");
     expect(courseLanguageLabel({ levelName: "Hindi", languages: [] })).toBeNull();
   });
 });

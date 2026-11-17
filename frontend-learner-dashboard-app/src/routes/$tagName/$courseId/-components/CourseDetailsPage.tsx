@@ -1481,6 +1481,10 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
       | undefined
   )?.courseDetails;
   const seriesOn = courseDetailsSettings?.series !== false;
+  const seriesPlace = useMemo(
+    () => ({ stream: coursePlace.stream, category: coursePlace.category }),
+    [coursePlace.stream, coursePlace.category],
+  );
   const contentOn = courseDetailsSettings?.content !== false;
   const contentHeadingOn = courseDetailsSettings?.contentHeading !== false;
   const courseSeries = useCourseSeries({
@@ -1492,6 +1496,9 @@ const CourseDetailsPageContent: React.FC<CourseDetailsPageContentProps> = ({
     groupVersions: courseLanguagesEnabled,
     languages: configuredLanguages,
     preferredLanguage: courseLanguagesEnabled ? preferredCourseLanguage(siteLocale.locale, configuredLanguages) : null,
+    // A course in no path is "part of" its category (else stream), as its breadcrumb names it.
+    streams: catalogStreams,
+    place: seriesPlace,
   });
   const appBanner = useMemo(
     () => (standardLayout ? findAppBanner(catalogueData?.pages, catalogueData?.globalSettings) : null),

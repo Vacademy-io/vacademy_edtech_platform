@@ -114,7 +114,7 @@ export const embedUrlOf = (video: PreviewVideo): string | null => {
 /**
  * The course's language for the facts strip: its version's level when the
  * site names languages that way ("Hindi", "English (UK)"), else a tag that
- * names one of the site's languages, else null.
+ * names one of the site's languages (every one it names, comma-joined), else null.
  */
 export const courseLanguageLabel = (input: {
   levelName?: string | null;
@@ -130,12 +130,10 @@ export const courseLanguageLabel = (input: {
     );
     if (hit) return hit.label;
   }
-  for (const tag of input.tags || []) {
-    const t = tag.trim().toLowerCase();
-    const hit = langs.find((l) => t === l.code.toLowerCase() || t === l.label.toLowerCase());
-    if (hit) return hit.label;
-  }
-  return null;
+  // Every language tag, in the site's order: a course tagged "english,hindi" reads "English, Hindi".
+  const tags = (input.tags || []).map((tag) => tag.trim().toLowerCase()).filter(Boolean);
+  const hits = langs.filter((l) => tags.some((t) => t === l.code.toLowerCase() || t === l.label.toLowerCase()));
+  return hits.length ? hits.map((l) => l.label).join(", ") : null;
 };
 
 /**

@@ -19,7 +19,7 @@
 
 import type { CourseBadge } from "../../../-utils/course-badges";
 import type { CourseLanguageOption } from "../../../-utils/course-variants";
-import { isComingSoonRow, rowLanguage, type CatalogCard, type CatalogRowLike } from "./catalog-cards";
+import { isComingSoonRow, rowLanguages, type CatalogCard, type CatalogRowLike } from "./catalog-cards";
 import type { CatalogCategory, CatalogStream } from "./catalog-streams";
 import type { PriceChoice } from "./catalog-url";
 import { cardMatchesCustomOption, customGroupId, type ResolvedCustomOption } from "./catalog-custom-filters";
@@ -178,10 +178,9 @@ export const rowMatchesSearch = (
 export const cardHasAnyTag = (card: { tagSet: Set<string> }, tags: string[]): boolean =>
   tags.some((t) => card.tagSet.has(t));
 
-const rowInLanguages = (row: CatalogRowLike, codes: string[], languages: CourseLanguageOption[]) => {
-  const lang = rowLanguage(row, languages);
-  return !!lang && codes.includes(lang.code);
-};
+// A row in several languages ("english,hindi") matches each of them.
+const rowInLanguages = (row: CatalogRowLike, codes: string[], languages: CourseLanguageOption[]) =>
+  rowLanguages(row, languages).some((l) => codes.includes(l.code));
 
 /* ── criteria -> groups ─────────────────────────────────────────────── */
 
@@ -351,7 +350,7 @@ export const languageOptions = <R extends CatalogRowLike>(
   codes: string[],
   languages: CourseLanguageOption[],
 ): CardOption<R>[] =>
-  codes.map((code) => ({ value: code, rowMatches: (r) => rowLanguage(r, languages)?.code === code }));
+  codes.map((code) => ({ value: code, rowMatches: (r) => rowLanguages(r, languages).some((l) => l.code === code) }));
 
 export const priceOptions = <R extends CatalogRowLike>(
   choices: { value: string; choice: PriceChoice }[],
@@ -378,8 +377,7 @@ export const instructorOptions = <R extends CatalogRowLike>(names: string[]): Ca
 export const presentLanguageCodes = (rows: CatalogRowLike[], languages: CourseLanguageOption[]): string[] => {
   const present = new Set<string>();
   for (const r of rows) {
-    const lang = rowLanguage(r, languages);
-    if (lang) present.add(lang.code);
+    for (const lang of rowLanguages(r, languages)) present.add(lang.code);
   }
   return languages.filter((l) => present.has(l.code)).map((l) => l.code);
 };
