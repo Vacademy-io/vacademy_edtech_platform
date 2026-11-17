@@ -153,8 +153,8 @@ const GoToDashboard = () => {
     );
 };
 
-/** Where API keys are made: Settings → AI calling (the "AI calling API" card). */
-const API_KEYS_PATH = '/settings?selectedTab=aiCalling';
+/** Where an API account makes its keys and finds the docs (routes/telleo/api.tsx). */
+const API_KEYS_PATH = '/telleo/api';
 
 /** The first step: how this account will use Telleo. Dashboard and API are priced differently. */
 const AccessStep = ({ status }: { status: TelleoOnboardingStatus }) => {

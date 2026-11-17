@@ -23,6 +23,13 @@
         "createKey": "Create your API key",
         "agents": "Go to your agents"
     },
+    "api": {
+        "title": "API access",
+        "subtitle": "Create a key, then call {{base}} from your own software.",
+        "docs": "API documentation",
+        "agents": "AI agents",
+        "callLog": "Call log"
+    },
     "questions": {
         "title": "Let's build your first AI agent",
         "subtitle": "Answer a few questions (under a minute). We write a draft agent from them, and it calls your phone so you can hear it.",

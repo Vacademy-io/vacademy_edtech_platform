@@ -27,8 +27,11 @@ public final class TelleoDisplaySettings {
     /** The dashboard's preset green (preset-themes.ts), Telleo's brand colour. */
     public static final String THEME_CODE = "green";
 
-    /** Where an API account lands: its agents (the keys are one click away, under AI calling settings). */
-    public static final String API_POST_LOGIN_ROUTE = "/calling/ai-agents";
+    /**
+     * Where an API account lands: the API access page (keys, agent ids, webhook, docs). It is outside
+     * the sidebar, so the post-login check leaves it as is.
+     */
+    public static final String API_POST_LOGIN_ROUTE = "/telleo/api";
 
     /** A dashboard (platform) account: Lead list, Recent leads, Call log and AI agents. */
     public static ObjectNode adminEntry() {
