@@ -76,6 +76,59 @@
             "PROCESSING": "Processing",
             "READY": "Ready",
             "FAILED": "Failed"
+        },
+        "order": {
+            "PENDING_PAYMENT": "Awaiting payment",
+            "COD_PENDING_CONFIRMATION": "To confirm",
+            "CONFIRMED": "Confirmed",
+            "PACKED": "Packed",
+            "SHIPPED": "Shipped",
+            "DELIVERED": "Delivered",
+            "RTO": "Returned to us",
+            "CANCELLED": "Cancelled"
+        },
+        "paymentStatus": {
+            "UNPAID": "Unpaid",
+            "PARTIALLY_PAID": "Part paid",
+            "PAID": "Paid"
+        },
+        "shipment": {
+            "PACKED": "Packed",
+            "SHIPPED": "Shipped",
+            "DELIVERED": "Delivered",
+            "RTO": "Returned",
+            "RTO_RECEIVED": "Back at the shop",
+            "CANCELLED": "Cancelled"
+        },
+        "return": {
+            "REQUESTED": "Requested",
+            "APPROVED": "Approved",
+            "REJECTED": "Rejected",
+            "RECEIVED": "Received",
+            "CLOSED": "Closed"
+        },
+        "refund": {
+            "PENDING": "To pay",
+            "IN_PROGRESS": "In progress",
+            "PROCESSED": "Refunded",
+            "FAILED": "Failed"
+        },
+        "delivery": {
+            "PENDING": "Waiting",
+            "SENDING": "Sending",
+            "SENT": "Sent",
+            "FAILED": "Failed",
+            "SKIPPED": "Not sent",
+            "UNKNOWN": "Not known",
+            "EXPIRED": "Expired"
+        },
+        "templateStatus": {
+            "APPROVED": "Approved",
+            "PENDING": "Waiting for WhatsApp",
+            "REJECTED": "Rejected",
+            "DRAFT": "Draft",
+            "MISSING": "Not created",
+            "UNKNOWN": "Could not check"
         }
     },
     "home": {
@@ -1074,6 +1127,534 @@
                 "PRODUCT": "First row of the product",
                 "VARIANT": "Each variant row"
             }
+        }
+    },
+    "orders": {
+        "title": "Order desk",
+        "description": "Confirm, pack, ship and collect payment for the shop's orders.",
+        "newOrder": "New order",
+        "packStation": "Pack station",
+        "remittances": "COD remittances",
+        "backToDesk": "Order desk",
+        "reason": "Reason",
+        "note": "Note",
+        "optional": "Optional",
+        "staff": "Staff",
+        "queues": {
+            "TO_CONFIRM": "To confirm",
+            "TO_PACK": "To pack",
+            "TO_SHIP": "To ship",
+            "IN_TRANSIT": "In transit",
+            "COD_TO_COLLECT": "COD to collect",
+            "RTO_TO_RECEIVE": "Returned parcels",
+            "STOCK_SHORT": "Stock short",
+            "DUES": "Dues",
+            "RETURNS": "Returns",
+            "REFUND_DUE": "Refund due",
+            "ALL": "All",
+            "label": "Order queues",
+            "count": "{{count}} orders"
+        },
+        "empty": {
+            "default": "No orders here.",
+            "hint": "New orders appear as soon as they are placed.",
+            "TO_CONFIRM": "No cash-on-delivery order is waiting for a call.",
+            "TO_PACK": "Nothing to pack right now.",
+            "TO_SHIP": "No packed parcel is waiting for a courier.",
+            "IN_TRANSIT": "No parcel is on the way.",
+            "COD_TO_COLLECT": "No cash on delivery is waiting to come from the courier.",
+            "RTO_TO_RECEIVE": "No returned parcel is waiting to be received.",
+            "STOCK_SHORT": "No order is short of stock.",
+            "DUES": "No customer owes the shop money.",
+            "RETURNS": "No return is open.",
+            "REFUND_DUE": "No refund is due.",
+            "ALL": "No orders yet.",
+            "filteredTitle": "Nothing matches these filters",
+            "filteredDescription": "Change the search or the dates, or clear the filters.",
+            "clearFilters": "Clear filters"
+        },
+        "actions": {
+            "CONFIRM": "Confirm order",
+            "PACK": "Pack",
+            "SHIP": "Ship",
+            "DELIVER": "Mark delivered",
+            "RTO": "Parcel returned (RTO)",
+            "RTO_RECEIVE": "Receive returned parcel",
+            "EDIT_TRACKING": "Edit tracking",
+            "UNPACK": "Unpack",
+            "UNDO_SHIP": "Undo shipped",
+            "UNDO_DELIVERY": "Undo delivered",
+            "CANCEL": "Cancel order",
+            "CANCEL_LINE": "Cancel an item",
+            "RECORD_RECEIPT": "Record payment",
+            "CLEAR_STOCK_SHORT": "Clear \"stock short\"",
+            "CREATE_RETURN": "Create return",
+            "REFUND": "Refund",
+            "RECORD_REMITTANCE": "Record COD remittance",
+            "PRINT_SLIP": "Print packing slip",
+            "DOWNLOAD_INVOICE": "Download invoice",
+            "REISSUE_B2B": "Reissue as business invoice",
+            "EXCHANGE": "Exchange for a new order",
+            "REVOKE_LINKS": "Revoke order links",
+            "OPEN": "Open",
+            "more": "More actions"
+        },
+        "channel": {
+            "ONLINE": "Website",
+            "ADMIN": "Staff order",
+            "POS": "Counter"
+        },
+        "paymentMethod": {
+            "PREPAID": "Prepaid",
+            "COD": "Cash on delivery",
+            "OFFLINE": "Offline"
+        },
+        "tender": {
+            "CASH": "Cash",
+            "UPI": "UPI",
+            "CARD": "Card",
+            "BANK_TRANSFER": "Bank transfer",
+            "CHEQUE": "Cheque"
+        },
+        "rto": {
+            "reasons": {
+                "REFUSED": "Customer refused",
+                "UNREACHABLE": "Customer not reachable",
+                "ADDRESS_ISSUE": "Address problem",
+                "DAMAGED": "Damaged on the way",
+                "OTHER": "Other"
+            }
+        },
+        "condition": {
+            "RESALEABLE": "Can be sold again",
+            "DAMAGED": "Damaged"
+        },
+        "cod": {
+            "call": "Call",
+            "collect": "Collect {{amount}}",
+            "customerSaidNo": "Customer said no: cancel"
+        },
+        "ship": {
+            "courier": "Courier",
+            "trackingNumber": "Tracking number",
+            "trackingLink": "Tracking link",
+            "weight": "Weight (grams)",
+            "notify": "Tell the customer"
+        },
+        "remittance": {
+            "reference": "Courier reference",
+            "gross": "Gross amount",
+            "deductions": "Courier deductions",
+            "net": "Net received",
+            "differenceReason": "Reason for the difference",
+            "pageDescription": "Cash on delivery the couriers have paid over to the shop.",
+            "referenceHint": "The courier's statement or transfer reference",
+            "receivedOn": "Received on",
+            "orders": "Orders paid in this remittance",
+            "orderCount": "Orders",
+            "tickedSum": "{{count}} orders ticked: {{amount}}",
+            "differenceHint": "The ticked orders add up to {{amount}}.",
+            "save": "Record remittance",
+            "recorded": "Remittance recorded; {{count}} orders are now paid.",
+            "empty": "No remittances recorded yet.",
+            "errors": {
+                "referenceRequired": "Enter the courier reference.",
+                "receivedOnRequired": "Enter the date the money came.",
+                "receivedOnFuture": "The date cannot be after today.",
+                "noOrders": "Tick at least one order.",
+                "tooMany": "At most {{max}} orders in one remittance.",
+                "grossPositive": "Enter an amount above zero.",
+                "deductionsInvalid": "Enter zero or more.",
+                "netNegative": "Deductions cannot be more than the gross amount.",
+                "differenceReasonRequired": "The amount differs from the orders: write the reason."
+            }
+        },
+        "receipt": {
+            "due": "Due {{amount}}"
+        },
+        "units": {
+            "metre": "m"
+        },
+        "age": {
+            "hours": "{{hours}} h",
+            "daysHours": "{{days}} d {{hours}} h"
+        },
+        "list": {
+            "searchPlaceholder": "Order number, phone, name or tracking number",
+            "stockShort": "Stock short: some items are not in stock",
+            "late": "Late",
+            "selectAll": "Select all on this page",
+            "select": "Select order {{number}}",
+            "loadFailed": "The orders could not be loaded.",
+            "columns": {
+                "number": "Order",
+                "placed": "Placed",
+                "customer": "Customer",
+                "total": "Total",
+                "payment": "Payment",
+                "status": "Status",
+                "channel": "Channel",
+                "age": "In this status for",
+                "tracking": "Tracking",
+                "codToCollect": "To collect",
+                "due": "Due",
+                "refundOpen": "Refund open",
+                "returnState": "Return",
+                "action": "Action"
+            }
+        },
+        "filters": {
+            "from": "From",
+            "to": "To",
+            "channel": "Channel",
+            "method": "Payment method",
+            "all": "All"
+        },
+        "bulk": {
+            "selected": "{{count}} selected",
+            "clear": "Clear selection",
+            "export": "Export",
+            "exportPage": "Export this page",
+            "printSlips": "Print packing slips",
+            "markPacked": "Mark packed",
+            "markShipped": "Mark shipped",
+            "markDelivered": "Mark delivered",
+            "confirm": "Confirm",
+            "confirmTitle": "Confirm orders",
+            "confirmBody": "Confirm {{count}} orders?",
+            "packTitle": "Mark orders packed",
+            "packBody": "Mark {{count}} orders packed? An invoice is issued for each.",
+            "packNote": "Orders with one-of-a-kind items must be packed at the pack station.",
+            "deliverTitle": "Mark orders delivered",
+            "deliverBody": "Mark {{count}} orders delivered on this date?",
+            "deliveredOn": "Delivered on",
+            "run": "Go ahead",
+            "failed": "Nothing was changed.",
+            "results": {
+                "title": "Results",
+                "summary": "{{ok}} done, {{failed}} not done",
+                "done": "Done",
+                "notDone": "Not done",
+                "untickDone": "Untick the done ones",
+                "close": "Close"
+            }
+        },
+        "bulkShip": {
+            "title": "Mark orders shipped",
+            "courierAll": "Courier for all",
+            "applyAll": "Use for all",
+            "uploadCsv": "Upload CSV",
+            "csvHelp": "Columns: order_number, courier, tracking_number, tracking_link",
+            "csvFilled": "{{count}} rows filled from the file.",
+            "missing": "Enter a courier and a tracking number for every order.",
+            "csvErrors": {
+                "notSelected": "Line {{line}}: order {{value}} is not among the ticked orders.",
+                "duplicate": "Line {{line}}: order {{value}} appears twice.",
+                "missingField": "Line {{line}}: courier or tracking number missing for {{value}}.",
+                "noHeader": "Line {{line}}: the file has no order_number column.",
+                "empty": "Line {{line}}: the file has no rows."
+            }
+        },
+        "errors": {
+            "generic": "Something went wrong. Try again.",
+            "network": "The connection failed. Nothing was saved; try again.",
+            "ORDER_STATE_CHANGED": "This order changed while you were working on it. It has been reloaded.",
+            "SHIPMENT_STATE_CHANGED": "This parcel changed while you were working on it. It has been reloaded.",
+            "ORDER_TRANSITION_NOT_ALLOWED": "This step is not possible for the order now. It has been reloaded.",
+            "ORDER_NOT_FOUND": "This order was not found.",
+            "NOT_FULLY_PACKED": "Every item must be packed in full. The order has been reloaded.",
+            "PIECE_SCAN_REQUIRED": "Scan the piece label of every one-of-a-kind item.",
+            "PIECE_NOT_AVAILABLE": "A scanned piece is no longer available. Scan another one.",
+            "PIECE_STATE": "A piece is not in the right state for this step.",
+            "LOCATION_NOT_ONLINE": "The packing location does not sell online. Ask the manager.",
+            "NO_FULFILMENT_LOCATION": "No location is set to send online orders. Ask the manager.",
+            "STOCK_NOT_SETTLED": "Stock for this order is not settled yet. Ask the manager.",
+            "NOT_IN_STOCK": "An item is not in stock. The order is marked \"stock short\".",
+            "COD_COLLECTED": "The cash on delivery is already collected for this order.",
+            "HAS_RETURNS": "This order has returns, so this step is not possible.",
+            "LINE_NOT_CANCELLABLE": "This item can no longer be cancelled.",
+            "RECEIPT_ABOVE_DUE": "At most {{amount}} is due on this order.",
+            "USE_COD_REMITTANCE": "Cash on delivery is recorded with the courier's remittance, not here.",
+            "REMITTANCE_ORDER_NOT_DUE": "An order in the list is not waiting for cash from the courier.",
+            "REMITTANCE_REFERENCE_REUSED": "This courier reference is already recorded.",
+            "REMITTANCE_DIFFERENCE_REASON_REQUIRED": "The amounts differ: write the reason for the difference.",
+            "REMITTANCE_NOT_FOUND": "This remittance was not found.",
+            "IDEMPOTENCY_MISMATCH": "This was already sent with different details. Try again.",
+            "TAX_NOT_CONFIGURED": "Tax is not set up for the shop. Ask the manager.",
+            "SELLER_GSTIN_MISSING": "The shop's GSTIN is missing. Ask the manager.",
+            "TAX_SNAPSHOT_STALE": "Tax rates changed since the order. Ask the manager.",
+            "INVOICE_FULLY_CREDITED": "The invoice is already fully credited. Ask the manager.",
+            "INVOICE_MISSING": "The order has no invoice yet.",
+            "PERIOD_LOCKED": "The accounts for this period are closed. Ask the manager.",
+            "RTO_LINES_INCOMPLETE": "Say for every returned item whether it can be sold again or is damaged.",
+            "TENDERS_SHORT": "The payments are less than the order total. Turn on Rest on credit or add a payment.",
+            "TENDERS_OVER": "The payments are more than the order total ({{amount}}). Change the payments.",
+            "REFUND_ABOVE_DUE": "At most {{amount}} can be refunded on this order.",
+            "REFUND_ABOVE_PAID": "At most {{amount}} can be refunded on this order.",
+            "REFUND_ABOVE_RETURN": "At most {{amount}} can be refunded on this return.",
+            "REFUND_METHOD_NOT_AVAILABLE": "This refund method is not available for the order. Choose another.",
+            "GATEWAY_PAYMENT_UNKNOWN": "The gateway payment of this order is not known. Refund by UPI, bank transfer or cash.",
+            "GATEWAY_REFUND_MISMATCH": "The gateway answered differently for this refund. Check it again.",
+            "REFUND_STATE_CHANGED": "This refund changed while you were working on it. It has been reloaded.",
+            "REFUND_NOT_FOUND": "This refund was not found.",
+            "USE_EXCHANGE_ORDER": "Exchange credit is used through a new order, not a refund.",
+            "ORDER_NOT_RETURNABLE": "This order cannot be returned now.",
+            "ORDER_NOT_PAID": "This order is not paid, so nothing can be returned for credit.",
+            "RETURN_QTY_EXCEEDED": "More items than were delivered cannot be returned.",
+            "RETURN_POLICY_WARNING": "This return is outside the shop's return policy. Write a reason to go ahead anyway.",
+            "RETURN_STATE_CHANGED": "This return changed while you were working on it. It has been reloaded.",
+            "RETURN_LINES_INCOMPLETE": "Say the condition of every returned item.",
+            "RETURN_NOT_FOUND": "This return was not found.",
+            "LOCATION_INACTIVE": "This location is switched off. Choose another.",
+            "SETTING_VERSION_CONFLICT": "Someone else changed this message. It has been reloaded; your text is kept below.",
+            "LINK_BASE_NOT_VERIFIED": "This link address is not a verified shop address.",
+            "NO_TEST_CONTACT": "Your account has no e-mail or mobile number to send the test to.",
+            "rate_limited": "Too many tries. Try again in {{minutes}} minutes.",
+            "ROLE_NOT_ALLOWED": "You do not have access to this at this location.",
+            "LOCATION_NOT_ALLOWED": "You do not have access to this at this location.",
+            "ACCESS_DENIED": "You do not have access to this at this location.",
+            "FEATURE_DISABLED": "This part of the shop is switched off for your institute."
+        },
+        "detail": {
+            "title": "Order {{number}}",
+            "backToDesk": "Back to the order desk",
+            "openOrder": "Open order {{number}}",
+            "dismiss": "Close",
+            "alerts": {
+                "stockShort": "Some items of this order are not in stock.",
+                "clear": "Clear",
+                "refundOpen": "{{amount}} is due back to the customer.",
+                "codAwaiting": "Delivered: {{amount}} is waiting to come from the courier.",
+                "exchangeOf": "This order is an exchange. Open the original order."
+            },
+            "items": {
+                "title": "Items",
+                "pieces": "Pieces: {{codes}}",
+                "cancelled": "{{quantity}} cancelled",
+                "shipped": "{{quantity}} shipped",
+                "returned": "{{quantity}} returned",
+                "stockShort": "{{quantity}} not in stock",
+                "qtyTimesPrice": "{{quantity}} × {{price}}",
+                "priceByStaff": "Price set by staff (list price {{price}})",
+                "discount": "Discount {{amount}}",
+                "tax": "Tax {{rate}}%"
+            },
+            "totals": {
+                "title": "Totals",
+                "subtotal": "Items",
+                "discount": "Discount",
+                "shipping": "Shipping",
+                "codCharge": "COD charge",
+                "tax": "Tax",
+                "roundOff": "Round off",
+                "total": "Total",
+                "paid": "Paid",
+                "refunded": "Refunded",
+                "refundOpen": "Refund due"
+            },
+            "parcel": {
+                "title": "Parcel",
+                "packedAt": "Packed",
+                "shippedAt": "Shipped",
+                "deliveredOn": "Delivered",
+                "rtoAt": "Returned by the courier",
+                "rtoReceivedAt": "Received back"
+            },
+            "payments": {
+                "title": "Payments",
+                "none": "No payment recorded yet."
+            },
+            "customer": {
+                "title": "Customer",
+                "profile": "Open customer profile",
+                "deliveryAddress": "Delivery address",
+                "billingAddress": "Billing address",
+                "sameAsDelivery": "Same as the delivery address",
+                "gstin": "Buyer GSTIN",
+                "customerNote": "Customer note",
+                "giftNote": "Gift note"
+            },
+            "documents": {
+                "title": "Documents",
+                "invoiceIssued": "Invoice issued",
+                "showCreditNotes": "Show credit notes",
+                "noCreditNotes": "No credit notes for this invoice.",
+                "creditNote": "Credit note",
+                "downloadCreditNote": "Download credit note",
+                "pdfNotReady": "The PDF is not ready yet. Try again in a minute."
+            },
+            "timeline": {
+                "title": "History"
+            },
+            "messages": {
+                "title": "Messages to the customer",
+                "refresh": "Refresh",
+                "empty": "No messages sent for this order yet.",
+                "whatsapp": "WhatsApp",
+                "email": "Email",
+                "hindi": "Hindi",
+                "english": "English",
+                "created": "Queued {{time}}",
+                "sent": "Sent {{time}}"
+            }
+        },
+        "dialogs": {
+            "reasonRequired": "Write a reason.",
+            "amount": "Amount",
+            "amountPositive": "Enter an amount above zero.",
+            "reference": "Reference",
+            "dateNotAfterToday": "Choose a date that is not after today.",
+            "pieceLookupFailed": "A piece label could not be looked up. Try again.",
+            "confirm": {
+                "title": "Confirm order {{number}}",
+                "customer": "Call the customer",
+                "deliverTo": "Deliver to:",
+                "done": "Order {{number}} confirmed",
+                "declineReason": "Customer declined on the phone"
+            },
+            "ship": {
+                "title": "Ship order {{number}}",
+                "done": "Shipped",
+                "noShipment": "This order has no packed parcel.",
+                "courierRequired": "Enter the courier.",
+                "courierTooLong": "Use at most 100 characters.",
+                "trackingRequired": "Enter the tracking number.",
+                "trackingInvalid": "Use letters, numbers, spaces and - _ / . only (at most 64).",
+                "linkHint": "The courier's tracking page, starting with https://",
+                "linkInvalid": "Enter a link that starts with https://",
+                "weightInvalid": "Enter whole grams from 1 to 1,000,000.",
+                "notifyHint": "A WhatsApp or email message with the tracking number."
+            },
+            "tracking": {
+                "done": "Tracking saved"
+            },
+            "deliver": {
+                "done": "Marked delivered",
+                "dateRequired": "Choose the delivery date.",
+                "dateFuture": "The date cannot be after today.",
+                "dateBeforeShipped": "The date cannot be before the parcel was shipped."
+            },
+            "rto": {
+                "done": "Parcel marked as returned",
+                "stockNote": "Stock comes back only when you receive the parcel.",
+                "noteRequired": "Write what happened."
+            },
+            "rtoReceive": {
+                "help": "For each item, say whether it can be sold again or is damaged.",
+                "submit": "Receive parcel",
+                "done": "Parcel received; stock is back for resaleable items",
+                "mustAddUp": "The two amounts must add up to {{quantity}}."
+            },
+            "reasonHelp": {
+                "UNPACK": "The invoice will be cancelled with a credit note; packing again issues a new one.",
+                "UNDO_SHIP": "Stock goes back on the shelf as packed.",
+                "UNDO_DELIVERY": "The order goes back to shipped.",
+                "CLEAR_STOCK_SHORT": "Clear it only when the missing stock is sorted out."
+            },
+            "reasonDone": {
+                "UNPACK": "Unpacked",
+                "UNDO_SHIP": "Back to packed",
+                "UNDO_DELIVERY": "Back to shipped",
+                "CLEAR_STOCK_SHORT": "\"Stock short\" cleared"
+            },
+            "cancel": {
+                "title": "Cancel order {{number}}",
+                "paidBack": "{{amount}} paid will be owed back to the customer.",
+                "refundAfter": "Refund it from the order after cancelling.",
+                "stockBack": "Stock goes back.",
+                "creditNote": "A credit note will be issued.",
+                "done": "Order {{number}} cancelled"
+            },
+            "cancelLine": {
+                "line": "Item",
+                "lineRequired": "Choose the item.",
+                "quantity": "Quantity to cancel",
+                "openHint": "At most {{quantity}}",
+                "quantityRange": "Enter a quantity from 1 up to what is still open.",
+                "pieces": "Pieces that leave the parcel",
+                "pickPieces": "Tick as many pieces as the quantity.",
+                "wholeOrder": "If every item is cancelled the whole order is cancelled.",
+                "done": "Item cancelled"
+            },
+            "receipt": {
+                "mode": "How it was paid",
+                "referenceHint": "UPI, bank or cheque reference",
+                "receivedOn": "Received on",
+                "done": "Payment of {{amount}} recorded"
+            },
+            "reissue": {
+                "help": "A new business invoice replaces the current one; the old one is cancelled with a credit note.",
+                "gstin": "Buyer GSTIN",
+                "legalName": "Buyer's legal name",
+                "submit": "Reissue invoice",
+                "done": "Business invoice issued"
+            },
+            "revoke": {
+                "help": "Links already sent to the customer will stop opening. New messages carry new links.",
+                "submit": "Revoke links",
+                "done": "Old order links no longer open"
+            }
+        },
+        "pack": {
+            "description": "Scan the packing slip, then every item, and pack the order.",
+            "scanPrompt": "Scan the packing slip or type the order number",
+            "scanItems": "Scan each item's label",
+            "allPacked": "All packed",
+            "done": "Packed. Invoice issued.",
+            "doneOrder": "Order {{number}} is ready to ship.",
+            "shipNow": "Ship now",
+            "next": "Next order",
+            "add": "Add",
+            "finding": "Looking for the order…",
+            "pick": "Several orders match. Pick one:",
+            "elsewhere": "Order {{number}} is not waiting to be packed. It is:",
+            "notFound": "No order with this number ({{text}}).",
+            "openOrder": "Open the order",
+            "changeOrder": "Another order",
+            "cannotPack": "This order cannot be packed now.",
+            "items": "Items to pack",
+            "packedOfNeeded": "Packed / to pack",
+            "pieceLine": "One-of-a-kind: scan each piece label",
+            "pieces": "Scanned pieces",
+            "removePiece": "Remove piece {{code}}",
+            "customer": "Customer",
+            "city": "City",
+            "payment": "Payment",
+            "collectOnDelivery": "Collect {{amount}} on delivery",
+            "weightInvalid": "Enter whole grams from 1 to 1,000,000.",
+            "incomplete": "Scan or tick every item to pack the order.",
+            "packing": "Packing…",
+            "leaveConfirm": "Leave without packing? The scans will be lost.",
+            "scanOff": "Scanning needs the Stock feature; tick the items instead.",
+            "scan": {
+                "alreadyScanned": "This piece is already scanned.",
+                "notInOrder": "This item is not in this order.",
+                "enoughAlready": "Enough of this item is packed already.",
+                "scanPieceLabel": "Scan the piece label of this item, not the product label.",
+                "pieceNotInStock": "This piece is {{status}}, not in stock.",
+                "pieceElsewhere": "This piece is at another location.",
+                "codeNotFound": "Code not found.",
+                "tickNotAllowed": "This item is one-of-a-kind: scan its piece label instead of ticking."
+            }
+        },
+        "print": {
+            "title": "Packing slips",
+            "shop": "Shop",
+            "slipTitle": "Packing slip",
+            "date": "Ordered on {{date}}",
+            "qr": "QR code of order {{number}}",
+            "shipTo": "Ship to",
+            "item": "Item",
+            "sku": "SKU",
+            "quantity": "Quantity",
+            "pieces": "Pieces: {{codes}}",
+            "customerNote": "Customer note",
+            "giftNote": "Gift note",
+            "print": "Print",
+            "ready": "{{count}} slips ready to print.",
+            "loading": "Loading {{done}} of {{count}}…",
+            "failed": "Order {{id}} could not be loaded.",
+            "none": "No orders were chosen to print."
         }
     }
 }

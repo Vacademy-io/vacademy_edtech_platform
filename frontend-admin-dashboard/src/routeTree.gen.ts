@@ -248,6 +248,10 @@ import { Route as CommerceSettingsLocationsIndexRouteImport } from "./routes/com
 import { Route as CommerceSettingsBusinessIndexRouteImport } from "./routes/commerce/settings/business/index"
 import { Route as CommerceProductsImportIndexRouteImport } from "./routes/commerce/products/import/index"
 import { Route as CommerceProductsProductIdIndexRouteImport } from "./routes/commerce/products/$productId/index"
+import { Route as CommerceOrdersRemittancesIndexRouteImport } from "./routes/commerce/orders/remittances/index"
+import { Route as CommerceOrdersPrintIndexRouteImport } from "./routes/commerce/orders/print/index"
+import { Route as CommerceOrdersPackIndexRouteImport } from "./routes/commerce/orders/pack/index"
+import { Route as CommerceOrdersOrderIdIndexRouteImport } from "./routes/commerce/orders/$orderId/index"
 import { Route as AudienceManagerListCampaignUsersIndexRouteImport } from "./routes/audience-manager/list/campaign-users/index"
 import { Route as AudienceManagerLeadAgentAgentIdIndexRouteImport } from "./routes/audience-manager/lead-agent/$agentId/index"
 import { Route as AssessmentExportAssessmentIdIndexRouteImport } from "./routes/assessment/export/$assessmentId/index"
@@ -2094,6 +2098,39 @@ const CommerceProductsProductIdIndexRoute =
       (d) => d.Route,
     ),
   )
+const CommerceOrdersRemittancesIndexRoute =
+  CommerceOrdersRemittancesIndexRouteImport.update({
+    id: "/commerce/orders/remittances/",
+    path: "/commerce/orders/remittances/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/orders/remittances/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceOrdersPrintIndexRoute =
+  CommerceOrdersPrintIndexRouteImport.update({
+    id: "/commerce/orders/print/",
+    path: "/commerce/orders/print/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/orders/print/index.lazy").then((d) => d.Route),
+  )
+const CommerceOrdersPackIndexRoute = CommerceOrdersPackIndexRouteImport.update({
+  id: "/commerce/orders/pack/",
+  path: "/commerce/orders/pack/",
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() =>
+  import("./routes/commerce/orders/pack/index.lazy").then((d) => d.Route),
+)
+const CommerceOrdersOrderIdIndexRoute =
+  CommerceOrdersOrderIdIndexRouteImport.update({
+    id: "/commerce/orders/$orderId/",
+    path: "/commerce/orders/$orderId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/orders/$orderId/index.lazy").then((d) => d.Route),
+  )
 const AudienceManagerListCampaignUsersIndexRoute =
   AudienceManagerListCampaignUsersIndexRouteImport.update({
     id: "/audience-manager/list/campaign-users/",
@@ -2677,6 +2714,10 @@ export interface FileRoutesByFullPath {
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
   "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
+  "/commerce/orders/$orderId/": typeof CommerceOrdersOrderIdIndexRoute
+  "/commerce/orders/pack/": typeof CommerceOrdersPackIndexRoute
+  "/commerce/orders/print/": typeof CommerceOrdersPrintIndexRoute
+  "/commerce/orders/remittances/": typeof CommerceOrdersRemittancesIndexRoute
   "/commerce/products/$productId/": typeof CommerceProductsProductIdIndexRoute
   "/commerce/products/import/": typeof CommerceProductsImportIndexRoute
   "/commerce/settings/business/": typeof CommerceSettingsBusinessIndexRoute
@@ -2959,6 +3000,10 @@ export interface FileRoutesByTo {
   "/assessment/export/$assessmentId": typeof AssessmentExportAssessmentIdIndexRoute
   "/audience-manager/lead-agent/$agentId": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users": typeof AudienceManagerListCampaignUsersIndexRoute
+  "/commerce/orders/$orderId": typeof CommerceOrdersOrderIdIndexRoute
+  "/commerce/orders/pack": typeof CommerceOrdersPackIndexRoute
+  "/commerce/orders/print": typeof CommerceOrdersPrintIndexRoute
+  "/commerce/orders/remittances": typeof CommerceOrdersRemittancesIndexRoute
   "/commerce/products/$productId": typeof CommerceProductsProductIdIndexRoute
   "/commerce/products/import": typeof CommerceProductsImportIndexRoute
   "/commerce/settings/business": typeof CommerceSettingsBusinessIndexRoute
@@ -3244,6 +3289,10 @@ export interface FileRoutesById {
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
   "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
+  "/commerce/orders/$orderId/": typeof CommerceOrdersOrderIdIndexRoute
+  "/commerce/orders/pack/": typeof CommerceOrdersPackIndexRoute
+  "/commerce/orders/print/": typeof CommerceOrdersPrintIndexRoute
+  "/commerce/orders/remittances/": typeof CommerceOrdersRemittancesIndexRoute
   "/commerce/products/$productId/": typeof CommerceProductsProductIdIndexRoute
   "/commerce/products/import/": typeof CommerceProductsImportIndexRoute
   "/commerce/settings/business/": typeof CommerceSettingsBusinessIndexRoute
@@ -3530,6 +3579,10 @@ export interface FileRouteTypes {
     | "/assessment/export/$assessmentId/"
     | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
+    | "/commerce/orders/$orderId/"
+    | "/commerce/orders/pack/"
+    | "/commerce/orders/print/"
+    | "/commerce/orders/remittances/"
     | "/commerce/products/$productId/"
     | "/commerce/products/import/"
     | "/commerce/settings/business/"
@@ -3812,6 +3865,10 @@ export interface FileRouteTypes {
     | "/assessment/export/$assessmentId"
     | "/audience-manager/lead-agent/$agentId"
     | "/audience-manager/list/campaign-users"
+    | "/commerce/orders/$orderId"
+    | "/commerce/orders/pack"
+    | "/commerce/orders/print"
+    | "/commerce/orders/remittances"
     | "/commerce/products/$productId"
     | "/commerce/products/import"
     | "/commerce/settings/business"
@@ -4096,6 +4153,10 @@ export interface FileRouteTypes {
     | "/assessment/export/$assessmentId/"
     | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
+    | "/commerce/orders/$orderId/"
+    | "/commerce/orders/pack/"
+    | "/commerce/orders/print/"
+    | "/commerce/orders/remittances/"
     | "/commerce/products/$productId/"
     | "/commerce/products/import/"
     | "/commerce/settings/business/"
@@ -4372,6 +4433,10 @@ export interface RootRouteChildren {
   AssessmentExportAssessmentIdIndexRoute: typeof AssessmentExportAssessmentIdIndexRoute
   AudienceManagerLeadAgentAgentIdIndexRoute: typeof AudienceManagerLeadAgentAgentIdIndexRoute
   AudienceManagerListCampaignUsersIndexRoute: typeof AudienceManagerListCampaignUsersIndexRoute
+  CommerceOrdersOrderIdIndexRoute: typeof CommerceOrdersOrderIdIndexRoute
+  CommerceOrdersPackIndexRoute: typeof CommerceOrdersPackIndexRoute
+  CommerceOrdersPrintIndexRoute: typeof CommerceOrdersPrintIndexRoute
+  CommerceOrdersRemittancesIndexRoute: typeof CommerceOrdersRemittancesIndexRoute
   CommerceProductsProductIdIndexRoute: typeof CommerceProductsProductIdIndexRoute
   CommerceProductsImportIndexRoute: typeof CommerceProductsImportIndexRoute
   CommerceSettingsBusinessIndexRoute: typeof CommerceSettingsBusinessIndexRoute
@@ -6124,6 +6189,34 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof CommerceProductsProductIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/commerce/orders/remittances/": {
+      id: "/commerce/orders/remittances/"
+      path: "/commerce/orders/remittances"
+      fullPath: "/commerce/orders/remittances/"
+      preLoaderRoute: typeof CommerceOrdersRemittancesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/orders/print/": {
+      id: "/commerce/orders/print/"
+      path: "/commerce/orders/print"
+      fullPath: "/commerce/orders/print/"
+      preLoaderRoute: typeof CommerceOrdersPrintIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/orders/pack/": {
+      id: "/commerce/orders/pack/"
+      path: "/commerce/orders/pack"
+      fullPath: "/commerce/orders/pack/"
+      preLoaderRoute: typeof CommerceOrdersPackIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/orders/$orderId/": {
+      id: "/commerce/orders/$orderId/"
+      path: "/commerce/orders/$orderId"
+      fullPath: "/commerce/orders/$orderId/"
+      preLoaderRoute: typeof CommerceOrdersOrderIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/audience-manager/list/campaign-users/": {
       id: "/audience-manager/list/campaign-users/"
       path: "/audience-manager/list/campaign-users"
@@ -6691,6 +6784,10 @@ const rootRouteChildren: RootRouteChildren = {
     AudienceManagerLeadAgentAgentIdIndexRoute,
   AudienceManagerListCampaignUsersIndexRoute:
     AudienceManagerListCampaignUsersIndexRoute,
+  CommerceOrdersOrderIdIndexRoute: CommerceOrdersOrderIdIndexRoute,
+  CommerceOrdersPackIndexRoute: CommerceOrdersPackIndexRoute,
+  CommerceOrdersPrintIndexRoute: CommerceOrdersPrintIndexRoute,
+  CommerceOrdersRemittancesIndexRoute: CommerceOrdersRemittancesIndexRoute,
   CommerceProductsProductIdIndexRoute: CommerceProductsProductIdIndexRoute,
   CommerceProductsImportIndexRoute: CommerceProductsImportIndexRoute,
   CommerceSettingsBusinessIndexRoute: CommerceSettingsBusinessIndexRoute,

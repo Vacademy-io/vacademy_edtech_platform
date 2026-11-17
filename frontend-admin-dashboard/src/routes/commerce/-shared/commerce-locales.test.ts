@@ -13,6 +13,20 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { COMMERCE_NAV } from '@/lib/commerce/commerce-access';
+import { BULK_SHIP_CSV_ERRORS } from '../orders/-shared/bulk-ship-csv';
+import { CLIENT_ACTION_IDS } from '../orders/-shared/order-actions';
+import { ORDER_ERROR_CODES, ORDER_ERROR_FALLBACK_KEYS } from '../orders/-shared/order-errors';
+import { QUEUE_DEFINITIONS } from '../orders/-shared/order-queues';
+import {
+    CONDITIONS,
+    ORDER_ACTION_CODES,
+    ORDER_CHANNELS,
+    ORDER_QUEUES,
+    PAYMENT_METHODS,
+    RTO_REASONS,
+    TENDER_MODES,
+} from '../orders/-shared/order-types';
+import { PACK_REFUSALS } from '../orders/-shared/pack-session';
 import { NAMED_MEDIA_TAGS } from '../products/-components/media-tags';
 import { PRODUCT_LOCALES } from './catalogue-types';
 import { GST_STATE_CODES } from './gstin';
@@ -231,6 +245,29 @@ describe('commerce strings: every key the code asks for exists', () => {
         each('import.guide', ['column', 'level', 'required', 'description', 'example']);
         each('import.guide.levels', ['KEY', 'PRODUCT', 'VARIANT']);
         expect(need.length).toBeGreaterThan(60);
+        expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
+    });
+
+    it('order desk keys built at run time exist for every value', () => {
+        const need: string[] = [];
+        const each = (prefix: string, values: readonly string[]) =>
+            values.forEach((value) => need.push(`${prefix}.${value}`));
+        each('orders.queues', ORDER_QUEUES);
+        each('orders.empty', ORDER_QUEUES);
+        each('orders.actions', [...ORDER_ACTION_CODES, ...CLIENT_ACTION_IDS]);
+        each('orders.rto.reasons', RTO_REASONS);
+        each('orders.condition', CONDITIONS);
+        each('orders.tender', TENDER_MODES);
+        each('orders.channel', ORDER_CHANNELS);
+        each('orders.paymentMethod', PAYMENT_METHODS);
+        each('orders.errors', [...ORDER_ERROR_CODES, ...ORDER_ERROR_FALLBACK_KEYS]);
+        each('orders.pack.scan', PACK_REFUSALS);
+        each('orders.bulkShip.csvErrors', BULK_SHIP_CSV_ERRORS);
+        each(
+            'orders.list.columns',
+            QUEUE_DEFINITIONS.flatMap((queue) => (queue.extraColumn ? [queue.extraColumn] : []))
+        );
+        expect(need.length).toBeGreaterThan(120);
         expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
     });
 

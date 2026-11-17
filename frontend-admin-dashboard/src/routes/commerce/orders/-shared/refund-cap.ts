@@ -1,0 +1,38 @@
+import { round2 } from './order-format';
+import type { ReturnView, StaffOrderDetail } from './order-types';
+
+/**
+ * Money limits the dialogs show before the server checks them (contract §5.7.4,
+ * §5.9). The server stays the authority: its 409 REFUND_ABOVE_* /
+ * RECEIPT_ABOVE_DUE carries the amount, which the dialog then shows instead.
+ */
+
+type CapDetail = Pick<StaffOrderDetail, 'refund_open' | 'refund_committed' | 'order'>;
+type CapReturn = Pick<ReturnView, 'due_raised' | 'refunded'>;
+
+/**
+ * min(refund still open on the order, paid − already committed to refunds,
+ * the return's credit not yet refunded), floored at 0, two decimals.
+ */
+export function refundCap(detail: CapDetail, returnView?: CapReturn | null): number {
+    const open = detail.refund_open ?? 0;
+    const paidLeft = (detail.order.amount_paid ?? 0) - (detail.refund_committed ?? 0);
+    const returnLeft = returnView
+        ? (returnView.due_raised ?? 0) - (returnView.refunded ?? 0)
+        : Number.POSITIVE_INFINITY;
+    const cap = Math.min(open, paidLeft, returnLeft);
+    return Number.isFinite(cap) ? Math.max(0, round2(cap)) : 0;
+}
+
+/** What the customer still owes on the order: total − paid, floored at 0. */
+export function receiptDue(detail: Pick<StaffOrderDetail, 'order'>): number {
+    return Math.max(0, round2((detail.order.total ?? 0) - (detail.order.amount_paid ?? 0)));
+}
+
+/** Field check for a typed amount against a cap: null = fine. */
+export function amountProblem(amount: number | null, cap: number): 'required' | 'positive' | 'aboveCap' | null {
+    if (amount === null || !Number.isFinite(amount)) return 'required';
+    if (amount <= 0) return 'positive';
+    if (round2(amount) > cap) return 'aboveCap';
+    return null;
+}

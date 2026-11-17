@@ -7,8 +7,8 @@ import type { StatusType } from '@/components/design-system/status-chips';
  *
  * Values are the binding enum names of the backend. Labels live in the
  * `commerce` strings under `status.<kind>.<VALUE>`, in Hindi and English.
- * Maps for areas that are not built yet (orders, shipments, returns, POS
- * sessions) are added here by the work package that builds the screen.
+ * Maps for areas that are not built yet (POS sessions) are added here by the
+ * work package that builds the screen.
  */
 export interface CommerceStatusMeta {
     /** Key under the `commerce` namespace. */
@@ -85,6 +85,71 @@ export const IMPORT_SEVERITY_MAP = {
     WARNING: meta('importSeverity', 'WARNING', 'WARNING'),
 } as const;
 
+/** An order (`CommerceOrderStatus`). */
+export const ORDER_STATUS_MAP = {
+    PENDING_PAYMENT: meta('order', 'PENDING_PAYMENT', 'WARNING'),
+    COD_PENDING_CONFIRMATION: meta('order', 'COD_PENDING_CONFIRMATION', 'WARNING'),
+    CONFIRMED: meta('order', 'CONFIRMED', 'INFO'),
+    PACKED: meta('order', 'PACKED', 'INFO'),
+    SHIPPED: meta('order', 'SHIPPED', 'INFO'),
+    DELIVERED: meta('order', 'DELIVERED', 'SUCCESS'),
+    RTO: meta('order', 'RTO', 'DANGER'),
+    CANCELLED: meta('order', 'CANCELLED', 'DANGER'),
+} as const;
+
+export const PAYMENT_STATUS_MAP = {
+    UNPAID: meta('paymentStatus', 'UNPAID', 'WARNING'),
+    PARTIALLY_PAID: meta('paymentStatus', 'PARTIALLY_PAID', 'WARNING'),
+    PAID: meta('paymentStatus', 'PAID', 'SUCCESS'),
+} as const;
+
+/** A parcel. */
+export const SHIPMENT_STATUS_MAP = {
+    PACKED: meta('shipment', 'PACKED', 'INFO'),
+    SHIPPED: meta('shipment', 'SHIPPED', 'INFO'),
+    DELIVERED: meta('shipment', 'DELIVERED', 'SUCCESS'),
+    RTO: meta('shipment', 'RTO', 'DANGER'),
+    RTO_RECEIVED: meta('shipment', 'RTO_RECEIVED', 'WARNING'),
+    CANCELLED: meta('shipment', 'CANCELLED', 'INFO'),
+} as const;
+
+/** A customer return. */
+export const RETURN_STATUS_MAP = {
+    REQUESTED: meta('return', 'REQUESTED', 'WARNING'),
+    APPROVED: meta('return', 'APPROVED', 'INFO'),
+    REJECTED: meta('return', 'REJECTED', 'DANGER'),
+    RECEIVED: meta('return', 'RECEIVED', 'SUCCESS'),
+    CLOSED: meta('return', 'CLOSED', 'INFO'),
+} as const;
+
+export const REFUND_STATUS_MAP = {
+    PENDING: meta('refund', 'PENDING', 'WARNING'),
+    IN_PROGRESS: meta('refund', 'IN_PROGRESS', 'WARNING'),
+    PROCESSED: meta('refund', 'PROCESSED', 'SUCCESS'),
+    FAILED: meta('refund', 'FAILED', 'DANGER'),
+} as const;
+
+/** A WhatsApp or email message to the customer. */
+export const DELIVERY_STATUS_MAP = {
+    PENDING: meta('delivery', 'PENDING', 'INFO'),
+    SENDING: meta('delivery', 'SENDING', 'INFO'),
+    SENT: meta('delivery', 'SENT', 'SUCCESS'),
+    FAILED: meta('delivery', 'FAILED', 'DANGER'),
+    SKIPPED: meta('delivery', 'SKIPPED', 'WARNING'),
+    UNKNOWN: meta('delivery', 'UNKNOWN', 'WARNING'),
+    EXPIRED: meta('delivery', 'EXPIRED', 'INFO'),
+} as const;
+
+/** A WhatsApp template's approval. */
+export const TEMPLATE_STATUS_MAP = {
+    APPROVED: meta('templateStatus', 'APPROVED', 'SUCCESS'),
+    PENDING: meta('templateStatus', 'PENDING', 'WARNING'),
+    REJECTED: meta('templateStatus', 'REJECTED', 'DANGER'),
+    DRAFT: meta('templateStatus', 'DRAFT', 'INFO'),
+    MISSING: meta('templateStatus', 'MISSING', 'WARNING'),
+    UNKNOWN: meta('templateStatus', 'UNKNOWN', 'INFO'),
+} as const;
+
 export const COMMERCE_STATUS_MAPS = {
     product: PRODUCT_STATUS_MAP,
     collection: COLLECTION_STATUS_MAP,
@@ -96,6 +161,13 @@ export const COMMERCE_STATUS_MAPS = {
     importJob: IMPORT_JOB_STATUS_MAP,
     mediaRendition: MEDIA_RENDITION_STATUS_MAP,
     importSeverity: IMPORT_SEVERITY_MAP,
+    order: ORDER_STATUS_MAP,
+    paymentStatus: PAYMENT_STATUS_MAP,
+    shipment: SHIPMENT_STATUS_MAP,
+    return: RETURN_STATUS_MAP,
+    refund: REFUND_STATUS_MAP,
+    delivery: DELIVERY_STATUS_MAP,
+    templateStatus: TEMPLATE_STATUS_MAP,
 } as const;
 
 export type CommerceStatusKind = keyof typeof COMMERCE_STATUS_MAPS;
