@@ -472,3 +472,25 @@ Extend these for a new product:
 | Products page | `vacademy-health-check/src/pages/ProductsPage.tsx`, `src/components/products/` |
 | Website | `evalezy_landing/src/lib/site.ts`, PR #5 |
 | App launch steps | `frontend-admin-dashboard/EVALEZY_APP.md` |
+
+---
+
+## 10. VoomSales
+
+VoomSales uses the Evalezy flow at level A, plus a product host. It has no shell of its own: a new workspace is the normal dashboard with only the CRM category on.
+
+| Piece | Value |
+|---|---|
+| Settings row | `product.voomsales`, migration `V719__VoomSales_self_signup.sql`, created **closed** |
+| Sender | `hello@voomsales.com` (OTP and welcome mail). `voomsales.com` must be verified in SES with SPF and DKIM before sign-up opens |
+| Host | `voomsales.vacademy.io`: a Cloudflare Pages custom domain, no routing row (`product-host.ts`, blue theme, VoomSales logo) |
+| Not the host | `app.voomsales.com` stays routed to the VoomSales team institute. A routing row pins web logins to one institute, so customers cannot sign in there |
+| Theme | Preset `blue` on the institute; `theme_color` `#2558D9` in the OTP and welcome mail |
+| Sidebar | `VoomSalesDisplaySettings`: CRM category only (LMS, AI, ERP, Commerce hidden). Not an allow-list: CRM tabs come from the defaults |
+| Lands on | `/audience-manager/list` (app_path and post-login route) |
+| Trial | 7 days, 50 credits, 1 user (`ProductPlanAccessService.TRIAL_SEATS`) |
+| Plans | Starter ₹32,000 / 10 users, Growth ₹62,000 / 25, Pro ₹1,12,000 / 50, 12 months, 0 bundled credits (AI calls are per minute). Same as `voom-sales-landing/lib/pricing.ts` |
+| Form | Business types as Telleo's, teachers not asked, phone typed (no WhatsApp code) |
+| Website | `voom-sales-landing/lib/site.ts`: `signupHref()` points at the host; `SELF_SIGNUP_OPEN` turns the buttons on |
+
+Go live: verify `voomsales.com` in SES, add the Cloudflare domain, run the section 6 test on `voomsales.vacademy.io`, open sign-up on the Products page, then set `SELF_SIGNUP_OPEN = true` on the website.

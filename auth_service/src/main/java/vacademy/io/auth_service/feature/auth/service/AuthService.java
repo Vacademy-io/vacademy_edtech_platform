@@ -570,6 +570,12 @@ public class AuthService {
         if (ownProduct != null && StringUtils.hasText(ownProduct.getLoginUrl())) {
             loginUrl = ownProduct.getLoginUrl();
         }
+        // The institute theme is a preset code (blue, green), which as CSS is the browser named
+        // colour. A product mail uses the product hex instead, as its sign-up code mail does.
+        if (ownProduct != null && ownProduct.getThemeColor() != null
+                && ownProduct.getThemeColor().trim().matches("^#[0-9A-Fa-f]{6}$")) {
+            theme = ownProduct.getThemeColor().trim();
+        }
         GenericEmailRequest genericEmailRequest = new GenericEmailRequest();
         genericEmailRequest.setTo(user.getEmail());
         genericEmailRequest.setBody(NotificationEmailBody.createWelcomeEmailBody(instituteName, user.getFullName(),
