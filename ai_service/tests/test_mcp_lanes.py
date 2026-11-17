@@ -224,7 +224,7 @@ def test_only_the_six_read_only_crm_tools_run_off_the_loop():
     assert OFF_LOOP_TOOLS == {"crm_leads", "crm_calls", "crm_meetings", "crm_messages", "crm_reports", "crm_collections"}
     for name in OFF_LOOP_TOOLS:
         spec = reg.ASSISTANT_TOOLS[name]
-        assert spec.mode == "READ" and spec.mcp_only
+        assert spec.mode == "READ" and spec.topic == "crm"   # also the in-product assistant's CRM reads
     assert not OFF_LOOP_TOOLS & set(MCP_ALLOWED_WRITE_TOOLS)
 
 

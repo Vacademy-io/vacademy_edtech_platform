@@ -2246,7 +2246,9 @@ WRITE_SCHEMA: Dict[str, Any] = {
 CRM_MONEY_TOOLS: Dict[str, ToolSpec] = {
     READ_TOOL: ToolSpec(
         name=READ_TOOL, schema=READ_SCHEMA, executor=execute_crm_collections, required_permission=None,
-        setting_key=READ_GROUP, default_enabled=False, default_roles=None, phase=2, mode="READ", mcp_only=True,
+        # Both doors; in the assistant on for admins and counsellors by default, offered on CRM pages.
+        setting_key=READ_GROUP, default_enabled=False, default_roles=list(cd.ASSISTANT_READ_DEFAULT_ROLES),
+        phase=2, mode="READ", topic=cd.ASSISTANT_TOPIC,
         module_feature=MODULE_FEATURE, module_features_any=MONEY_FEATURES,
     ),
     WRITE_TOOL: ToolSpec(

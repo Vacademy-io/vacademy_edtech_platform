@@ -422,11 +422,18 @@ def _crm_specs():
     return [ASSISTANT_TOOLS[t] for t in CRM_TOOL_NAMES if t in ASSISTANT_TOOLS]
 
 
-def test_crm_specs_are_mcp_only_off_by_default_and_tied_to_a_module():
+def test_crm_specs_are_off_by_default_on_mcp_and_tied_to_a_module():
     """Runs over the CRM tools whose modules have landed (none yet = nothing to check)."""
     for spec in _crm_specs():
-        assert spec.mcp_only, spec.name                      # never offered to the in-product assistant
-        assert not spec.default_enabled and spec.default_roles is None, spec.name
+        if spec.mode == "WRITE":
+            assert spec.mcp_only, spec.name                  # writes: never offered to the in-product assistant
+            assert spec.default_roles is None, spec.name
+        else:
+            # Reads use both doors. default_roles only applies to the in-product assistant (an MCP
+            # setting is never empty, so the registry defaults never reach MCP).
+            assert not spec.mcp_only and spec.topic == "crm", spec.name
+            assert spec.default_roles == ["ADMIN", "COUNSELLOR", "COUNSELOR"], spec.name
+        assert not spec.default_enabled, spec.name
         assert spec.key() == CRM_GROUP[spec.name], spec.name
         assert spec.module_feature or spec.module_features_any, spec.name
         assert spec.mode == ("WRITE" if MCP_TOOL_PLACEMENT_LEVEL(spec.key()) == "edit" else "READ"), spec.name

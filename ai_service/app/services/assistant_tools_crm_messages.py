@@ -1766,10 +1766,12 @@ MESSAGE_TOOLS: Dict[str, ToolSpec] = {
         required_permission=None,
         setting_key=READ_GROUP_KEY,
         default_enabled=False,
-        default_roles=None,
+        # Both doors: MCP (its own settings) and the in-product assistant, where it is on for admins
+        # and counsellors until the institute saves assistant settings, offered on CRM pages.
+        default_roles=list(cd.ASSISTANT_READ_DEFAULT_ROLES),
         phase=2,
         mode="READ",
-        mcp_only=True,
+        topic=cd.ASSISTANT_TOPIC,
         module_feature=MODULE_FEATURE,
     ),
     SEND_TOOL_NAME: ToolSpec(

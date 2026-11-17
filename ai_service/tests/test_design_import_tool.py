@@ -408,8 +408,10 @@ def test_the_in_product_assistant_never_offers_design_import():
     offered = [t["function"]["name"] for t in build_offered_tools(p, None)]
     assert "design_import" not in offered and "website" in offered
     expected = [n for n, spec in ASSISTANT_TOOLS.items()
-                if n != "design_import" and (spec.default_enabled or "ADMIN" in (spec.default_roles or []))]
-    assert sorted(offered) == sorted(expected)
+                if n != "design_import" and not spec.topic and not spec.mcp_only
+                and (spec.default_enabled or "ADMIN" in (spec.default_roles or []))]
+    # Topic tools (the CRM reads) wait for their page; load_tools offers them meanwhile.
+    assert sorted(offered) == sorted(expected + ["load_tools"])
     on = [t["function"]["name"] for t in build_offered_tools(p, {"enabled_tools": ["design_import", "website_builder"]})]
     assert "design_import" not in on and "website" in on
 

@@ -18,6 +18,11 @@ export interface AssistantToolCatalogEntry {
     defaultRoles?: string[];
 }
 
+// The CRM reads are on for admins and counsellors until the institute saves this
+// setting (both spellings of the counsellor role are in use). The assistant offers
+// them on CRM pages; institutes without the CRM module never get them.
+const CRM_READ_DEFAULT_ROLES = ['ADMIN', 'COUNSELLOR', 'COUNSELOR'];
+
 export const ASSISTANT_TOOL_CATALOG: AssistantToolCatalogEntry[] = [
     {
         key: 'search_help_knowledge',
@@ -164,6 +169,68 @@ export const ASSISTANT_TOOL_CATALOG: AssistantToolCatalogEntry[] = [
         defaultEnabled: false,
     },
     {
+        key: 'crm_leads',
+        label: 'CRM leads: view',
+        description:
+            'Find leads and enquiries, see a lead’s details, timeline and today’s follow-ups, and ' +
+            'export a list as a private download link. Each person sees only the leads the CRM shows ' +
+            'them. Read-only. On by default for Admins and Counsellors.',
+        phase: 2,
+        defaultEnabled: false,
+        defaultRoles: CRM_READ_DEFAULT_ROLES,
+    },
+    {
+        key: 'crm_calls',
+        label: 'CRM calls: view',
+        description:
+            'See call logs, call transcripts, callbacks due, missed inbound calls and AI-calling ' +
+            'status. Read-only. On by default for Admins and Counsellors.',
+        phase: 2,
+        defaultEnabled: false,
+        defaultRoles: CRM_READ_DEFAULT_ROLES,
+    },
+    {
+        key: 'crm_meetings',
+        label: 'CRM meetings: view',
+        description:
+            'See your and your team’s meetings, a lead’s meetings, free slots and booking pages. ' +
+            'Read-only. On by default for Admins and Counsellors.',
+        phase: 2,
+        defaultEnabled: false,
+        defaultRoles: CRM_READ_DEFAULT_ROLES,
+    },
+    {
+        key: 'crm_messages',
+        label: 'CRM messages: view',
+        description:
+            'See a lead’s WhatsApp and email history, the inbox, approved templates and escalations. ' +
+            'Read-only. On by default for Admins and Counsellors.',
+        phase: 2,
+        defaultEnabled: false,
+        defaultRoles: CRM_READ_DEFAULT_ROLES,
+    },
+    {
+        key: 'crm_reports',
+        label: 'CRM reports: view',
+        description:
+            'Answer questions from the CRM reports — sources, funnel, counsellor performance, ' +
+            'follow-ups, SLA, revenue and custom reports — each with its date range and definition. ' +
+            'Read-only. On by default for Admins and Counsellors.',
+        phase: 2,
+        defaultEnabled: false,
+        defaultRoles: CRM_READ_DEFAULT_ROLES,
+    },
+    {
+        key: 'crm_collections',
+        label: 'CRM payments: view',
+        description:
+            'See admissions, a lead’s dues, who owes, what falls due and collections. Read-only. On ' +
+            'by default for Admins and Counsellors.',
+        phase: 2,
+        defaultEnabled: false,
+        defaultRoles: CRM_READ_DEFAULT_ROLES,
+    },
+    {
         key: 'announcements',
         label: 'Announcements',
         description:
@@ -203,6 +270,7 @@ export const NON_LEARNER_SYSTEM_ROLES = [
     'EVALUATOR',
     'CONTENT CREATOR',
     'ASSESSMENT CREATOR',
+    'COUNSELLOR',
 ];
 
 export interface AssistantToolsSettingData {

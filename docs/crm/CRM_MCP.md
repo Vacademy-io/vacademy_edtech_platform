@@ -8,6 +8,10 @@ and read the CRM reports, build custom reports and follow the live activity feed
 * Server plumbing, gates, OAuth: `ai_service/MCP_SERVER_GUIDE.md` (§1a covers the CRM tools).
 * Public docs: `vacademy-docs/mcp-server/` (the "MCP server" product of the Vacademy docs site, published from Vacademy-io/docs). Tool pages are generated: `cd ai_service && python scripts/gen_mcp_docs.py`.
 * Code: `ai_service/app/services/crm_data.py` (shared foundation) and `assistant_tools_crm_*.py`.
+* The read tools (no write in the table below) also serve the in-product assistant (the dashboard panel): on for
+  admins and counsellors until an institute saves assistant settings, offered on CRM pages, in conversations that
+  already used them, or after the model calls `load_tools` (`ASSISTANT_TOPICS` in `assistant_tool_registry.py`).
+  The writes stay MCP only.
 
 ## 1. Tools
 

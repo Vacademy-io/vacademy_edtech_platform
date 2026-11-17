@@ -55,8 +55,9 @@ MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
     "sub_orgs",             # READ:  sub-organisations, their courses / seats / admins / members, set-up options, CSV template
     "sub_org_edit",         # WRITE: live — create a sub-org, add courses / change seats / roles, add its admin; preview + confirm token
     "sub_org_enroll",       # WRITE: additive — adds LEARNERS to a sub-org's courses (CSV / list); preview + confirm token
-    # CRM (docs/crm/CRM_MCP.md): every CRM tool is mcp_only, verifies each id against the institute and the
-    # caller's dashboard lead scope, and needs its plan feature (ToolSpec.module_feature). Writes are opt-in.
+    # CRM (docs/crm/CRM_MCP.md): every CRM tool verifies each id against the institute and the caller's
+    # dashboard lead scope, and needs its plan feature (ToolSpec.module_feature). Writes are opt-in and
+    # mcp_only; the reads also serve the in-product assistant (on CRM pages, see ASSISTANT_TOPICS).
     "crm_leads",            # READ:  find / list / one lead, timeline, my day, the CRM catalog, export
     "crm_lead_activity",    # WRITE: live additive — log interactions and notes, schedule / move / complete follow-ups
     "crm_lead_edit",        # WRITE: live — status, tier, details, tags; preview + confirm token

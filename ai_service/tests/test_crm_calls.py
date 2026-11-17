@@ -113,7 +113,11 @@ def test_specs_schemas_and_action_spec_agree(tool, schema, spec):
         assert entry["confirm"] in cd.CONFIRM_KINDS
         assert entry["feature"] is None or ent.MODULE_OF.get(entry["feature"]) == "crm"
     ts = reg.ASSISTANT_TOOLS[tool]
-    assert ts.mcp_only and ts.default_enabled is False and ts.default_roles is None
+    if tool == m.CALLS_TOOL:   # the read: both doors, on for admins and counsellors in the assistant
+        assert not ts.mcp_only and ts.default_enabled is False and ts.topic == "crm"
+        assert ts.default_roles == cd.ASSISTANT_READ_DEFAULT_ROLES
+    else:                      # outbound: MCP only, off by default
+        assert ts.mcp_only and ts.default_enabled is False and ts.default_roles is None
     assert ts.mode == ("READ" if tool == m.CALLS_TOOL else "WRITE")
     assert ts.key() == {m.CALLS_TOOL: "crm_calls", m.DIAL_TOOL: "crm_calling_outbound",
                         m.CAMPAIGN_TOOL: "crm_ai_campaigns"}[tool]

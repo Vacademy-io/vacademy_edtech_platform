@@ -175,8 +175,10 @@ enables them.
 
 The 15 `crm_*` tools (`app/services/assistant_tools_crm_*.py`) share one
 foundation, `app/services/crm_data.py`; the design is
-`docs/crm/CRM_MCP.md`. All are `mcp_only` (never offered to the in-product
-assistant) and need module `crm` (`ToolSpec.module_feature`, checked in
+`docs/crm/CRM_MCP.md`. The writes are `mcp_only` (never offered to the in-product
+assistant); the six reads also serve the in-product assistant, offered on CRM pages
+or after `load_tools` (`ASSISTANT_TOPICS` in `assistant_tool_registry.py`). All
+need module `crm` (`ToolSpec.module_feature`, checked in
 `execute_tool` against `institute_module_entitlement` / `institute_module_policy`
 via `app/services/entitlements.py`; LEGACY institutes have everything on).
 

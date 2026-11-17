@@ -139,12 +139,100 @@ class ToolSpec:
     # refuses calls with module_not_enabled. Both None = not tied to a module.
     module_feature: Optional[str] = None
     module_features_any: Optional[Tuple[str, ...]] = None
+    # In-product assistant only: a tool with a topic (a key of ASSISTANT_TOPICS)
+    # is offered to the model only while that topic is active in the
+    # conversation (see ASSISTANT_TOPICS). It changes which schemas are sent,
+    # never who may call the tool. MCP lists tools without it.
+    topic: Optional[str] = None
 
     def key(self) -> str:
         return self.setting_key or self.name
 
     def keys_any(self) -> List[str]:
         return self.setting_keys_any or [self.key()]
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Topics: which tools the in-product assistant offers on which page.
+#
+# The assistant runs on the platform's model and every message is billed to the
+# institute, and some tool families have long schemas. A topic's tools are
+# offered only while the topic is active in the conversation:
+#   * the user's current page (the route the panel sends with each message)
+#     starts with one of ``route_prefixes`` — a hint for what to offer, never
+#     identity or scope;
+#   * or a tool of that topic was already called in this conversation;
+#   * or the model switched the topic on with ``load_tools`` (always offered
+#     while a topic the caller may use is not active; its schema is tiny).
+# The AND-gate and the module leg still decide whether the caller may use each
+# tool at all.
+# ──────────────────────────────────────────────────────────────────────────
+
+@dataclass(frozen=True)
+class AssistantTopic:
+    label: str
+    #: What the user is asking about when the topic is needed (shown to the model in load_tools).
+    summary: str
+    #: Dashboard routes (path prefixes) where the topic is active from the first message.
+    route_prefixes: Tuple[str, ...]
+
+
+CRM_TOPIC = "crm"
+
+ASSISTANT_TOPICS: Dict[str, AssistantTopic] = {
+    CRM_TOPIC: AssistantTopic(
+        label="CRM",
+        summary=("leads and enquiries, admissions, counsellors and their work, follow-ups, calls, meetings, "
+                 "lead messages, CRM reports, and fees owed or paid by leads"),
+        route_prefixes=(
+            "/audience-manager",            # lead lists, recent leads, lead board, follow-ups, call log, reports
+            "/counsellors",                 # counsellor workbench
+            "/sales-dashboard",
+            "/admissions",                  # admissions dashboard, admission list, enquiries, applications
+            "/calling",                     # calling dashboard, call queue, AI agents
+            "/meetings",                    # meetings dashboard, my schedule, team meetings
+            "/financial-management/collection-dashboard",
+            "/financial-management/pay-installments",
+            "/payment-dashboard",
+            "/manage-payments",
+        ),
+    ),
+}
+
+#: The always-small tool that switches a topic on for the rest of the conversation.
+LOAD_TOOLS_TOOL_NAME = "load_tools"
+
+
+def topics_for_route(route: Any) -> set:
+    """The topics whose pages include ``route`` (a dashboard pathname; query and hash ignored)."""
+    if not isinstance(route, str) or not route.startswith("/"):
+        return set()
+    path = route.split("?", 1)[0].split("#", 1)[0].rstrip("/") or "/"
+    return {
+        key for key, topic in ASSISTANT_TOPICS.items()
+        if any(path == p or path.startswith(p + "/") for p in topic.route_prefixes)
+    }
+
+
+def load_tools_schema(topics: List[str]) -> Dict[str, Any]:
+    """The ``load_tools`` schema for the topics the caller may use but has not loaded yet."""
+    lines = "; ".join(f"'{t}': {ASSISTANT_TOPICS[t].summary}" for t in topics)
+    return {
+        "type": "function",
+        "function": {
+            "name": LOAD_TOOLS_TOOL_NAME,
+            "description": (
+                "Loads more tools for the rest of this conversation. Call it FIRST when the user asks about one "
+                f"of these and you have no tool for it yet — {lines}. Never tell the user you cannot see that "
+                "data before trying this."
+            ),
+            "parameters": {
+                "type": "object",
+                "properties": {"topic": {"type": "string", "enum": list(topics)}},
+                "required": ["topic"],
+            },
+        },
+    }
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -2382,14 +2470,19 @@ def _effective_enabled_tools(setting: Optional[Dict[str, Any]], roles: Optional[
     - Setting configured     -> the institute-level ``enabled_tools`` UNION the
       ``enabled_tools`` of each of the caller's roles in ``role_overrides``
       (union across multiple roles — the broadest of the caller's roles wins).
+      A saved setting is the complete list: a group added to the registry later
+      stays off there until an admin switches it on.
+
+    ``default_roles`` match role names ignoring case and surrounding spaces
+    (institutes save "COUNSELLOR" and "Counsellor" alike).
     """
     if not setting:
-        caller_roles = set(roles or [])
+        caller_roles = {str(r).strip().upper() for r in roles or [] if r}
         return {
             spec.key()
             for spec in ASSISTANT_TOOLS.values()
             if spec.default_enabled
-            or (spec.default_roles and caller_roles.intersection(spec.default_roles))
+            or (spec.default_roles and caller_roles.intersection(r.upper() for r in spec.default_roles))
         }
 
     enabled = set(setting.get("enabled_tools") or [])
@@ -2458,16 +2551,46 @@ def missing_module_feature(spec: ToolSpec, ent: Any) -> Optional[str]:
     return None
 
 
+def in_product_specs(
+    principal: PinnedPrincipal,
+    setting: Optional[Dict[str, Any]],
+    entitlements: Optional[Any] = None,
+) -> List[ToolSpec]:
+    """
+    The tools this caller may use in the in-product assistant, on any page: not
+    ``mcp_only``, allowed by the AND-gate and, when ``entitlements`` is given,
+    included in the institute's plan. Without entitlements the module leg is
+    left to ``execute_tool`` (tests and DB-less callers).
+    """
+    specs = [
+        spec for spec in ASSISTANT_TOOLS.values()
+        if not spec.mcp_only and is_tool_allowed(spec.name, principal, setting)
+    ]
+    if entitlements is not None:
+        specs = [s for s in specs if missing_module_feature(s, entitlements) is None]
+    return specs
+
+
 def build_offered_tools(
     principal: PinnedPrincipal,
     setting: Optional[Dict[str, Any]],
+    *,
+    topics: Optional[Any] = None,
+    entitlements: Optional[Any] = None,
 ) -> List[Dict[str, Any]]:
-    """The LLM-facing function schemas for exactly the tools this caller may use."""
-    return [
-        spec.schema
-        for spec in ASSISTANT_TOOLS.values()
-        if not spec.mcp_only and is_tool_allowed(spec.name, principal, setting)
-    ]
+    """
+    The LLM-facing function schemas for the tools this caller may use, given the
+    conversation's active ``topics``: a tool with a topic is left out until its
+    topic is active, and ``load_tools`` is added while a topic the caller may
+    use is not (see ASSISTANT_TOPICS).
+    """
+    active = set(topics or ())
+    usable = in_product_specs(principal, setting, entitlements)
+    offered = [s.schema for s in usable if s.topic is None or s.topic in active]
+    loadable = sorted({s.topic for s in usable if s.topic and s.topic not in active and s.topic in ASSISTANT_TOPICS})
+    if loadable:
+        offered.append(load_tools_schema(loadable))
+    return offered
 
 
 async def execute_tool(
@@ -2488,6 +2611,21 @@ async def execute_tool(
     agent loop feeds tool output back to the LLM as a string, so raising here
     would bypass the graceful contract.
     """
+    spec_any = ASSISTANT_TOOLS.get(tool_name)
+    if spec_any is not None and spec_any.mcp_only and (in_product or not ctx.via_mcp):
+        # Never offered outside MCP; refuse a model that names it anyway (e.g. a
+        # settings row that enables the group for the in-product assistant).
+        # Checked before the settings leg so the answer never suggests enabling it.
+        logger.warning("Assistant refused MCP-only tool '%s' outside MCP for user=%s institute=%s",
+                       tool_name, ctx.principal.user_id, ctx.principal.institute_id)
+        return json.dumps({
+            "error": "tool_not_available",
+            "tool": tool_name,
+            "message": (
+                "This tool is only available to AI apps connected over the MCP server, not in this assistant. "
+                "Do not retry. Tell the user to make this change on the matching dashboard page."
+            ),
+        })
     if not is_tool_allowed(tool_name, ctx.principal, setting):
         logger.warning(
             "Assistant denied tool '%s' for user=%s institute=%s (roles=%s)",
@@ -2506,16 +2644,6 @@ async def execute_tool(
         })
 
     spec = ASSISTANT_TOOLS[tool_name]
-    if spec.mcp_only and (in_product or not ctx.via_mcp):
-        # Never offered outside MCP; refuse a model that names it anyway (e.g. a
-        # settings row that enables the group for the in-product assistant).
-        logger.warning("Assistant refused MCP-only tool '%s' outside MCP for user=%s institute=%s",
-                       tool_name, ctx.principal.user_id, ctx.principal.institute_id)
-        return json.dumps({
-            "error": "tool_not_available",
-            "tool": tool_name,
-            "message": "This tool is only available to AI apps connected over the MCP server. Do not retry.",
-        })
     if (spec.module_feature or spec.module_features_any) and ctx.db is not None:
         try:
             missing = missing_module_feature(spec, context_entitlements(ctx))
@@ -2608,6 +2736,13 @@ __all__ = [
     "ToolContext",
     "is_tool_allowed",
     "build_offered_tools",
+    "in_product_specs",
+    "ASSISTANT_TOPICS",
+    "AssistantTopic",
+    "CRM_TOPIC",
+    "LOAD_TOOLS_TOOL_NAME",
+    "load_tools_schema",
+    "topics_for_route",
     "execute_tool",
     "load_assistant_tools_setting",
     "load_entitlements",

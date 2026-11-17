@@ -79,11 +79,20 @@ const TOOL_ACTIVITY_LABELS: Record<string, string> = {
     get_assessment_leaderboard: 'Loading the leaderboard…',
     list_announcements: 'Loading announcements…',
     send_announcement: 'Preparing the announcement…',
+    load_tools: 'Loading the right tools…',
+    crm_leads: 'Looking up leads…',
+    crm_calls: 'Checking calls…',
+    crm_meetings: 'Checking meetings…',
+    crm_messages: 'Reading lead messages…',
+    crm_reports: 'Running the CRM report…',
+    crm_collections: 'Checking dues and collections…',
 };
 
 /**
  * Current page context sent with every message so the assistant can resolve
  * "this student" (route + the student open in the side view / profile overlay).
+ * The route also tells the backend which tools to offer (e.g. the CRM tools on
+ * CRM pages); it is only a hint and never decides what the user may see.
  * Read non-reactively at send time — always the state at the moment of asking.
  */
 function getPageContext(): Record<string, unknown> {

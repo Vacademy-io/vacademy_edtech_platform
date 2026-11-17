@@ -75,6 +75,30 @@
         "announcements": {
             "label": "Announcements",
             "description": "See planned/past announcements, and PROPOSE sending one to batches, roles, or specific learners — sending always requires pressing Confirm on a card. On by default for Admins."
+        },
+        "crm_leads": {
+            "label": "CRM leads: view",
+            "description": "Find leads and enquiries, see a lead’s details, timeline and today’s follow-ups, and export a list as a private download link. Each person sees only the leads the CRM shows them. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_calls": {
+            "label": "CRM calls: view",
+            "description": "See call logs, call transcripts, callbacks due, missed inbound calls and AI-calling status. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_meetings": {
+            "label": "CRM meetings: view",
+            "description": "See your and your team’s meetings, a lead’s meetings, free slots and booking pages. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_messages": {
+            "label": "CRM messages: view",
+            "description": "See a lead’s WhatsApp and email history, the inbox, approved templates and escalations. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_reports": {
+            "label": "CRM reports: view",
+            "description": "Answer questions from the CRM reports — sources, funnel, counsellor performance, follow-ups, SLA, revenue and custom reports — each with its date range and definition. Read-only. On by default for Admins and Counsellors."
+        },
+        "crm_collections": {
+            "label": "CRM payments: view",
+            "description": "See admissions, a lead’s dues, who owes, what falls due and collections. Read-only. On by default for Admins and Counsellors."
         }
     },
     "presets": {

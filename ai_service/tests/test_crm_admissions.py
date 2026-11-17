@@ -151,7 +151,7 @@ def test_actions_are_declared_admin_only_and_in_the_schema():
     assert set(props["plan"]["enum"]) == set(adm.PLAN)
     assert set(props["lead_state"]["enum"]) == set(adm.LEAD)
     assert "user_id" not in props
-    assert reg.ASSISTANT_TOOLS[money.READ_TOOL].mcp_only is True
+    assert reg.ASSISTANT_TOOLS[money.READ_TOOL].mcp_only is False   # a read: both doors
     assert fe.EXPORT_KINDS[adm.EXPORT_KIND].ttl_minutes == 15 and fe.EXPORT_KINDS[adm.EXPORT_KIND].max_downloads == 2
     text = money.READ_SCHEMA["function"]["description"]
     assert "plan='plan_missing'" in text and "lead_state='no_active_enquiry'" in text
