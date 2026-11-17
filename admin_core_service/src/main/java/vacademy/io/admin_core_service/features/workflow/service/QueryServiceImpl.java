@@ -293,7 +293,8 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
      * "Pay to continue" audience: plans ending within daysAhead days (or ended up
      * to graceDays ago) that autopay will NOT charge — autopay off, cancelled,
      * failed or dunning-expired. Pairs with the manual-renewal payment flow on
-     * the learner subscriptions page.
+     * the learner subscriptions page. exactDay=true keeps only plans ending exactly
+     * daysAhead days out. Items carry email (the member address).
      */
     private Map<String, Object> getManualRenewalDuePlans(Map<String, Object> params) {
         try {
@@ -303,6 +304,12 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
             }
             int daysAhead = readIntParam(params.get("daysAhead"), 1);
             int graceDays = readIntParam(params.get("graceDays"), 2);
+            // exactDay: only plans ending exactly daysAhead days from today (a "14 days before"
+            // reminder sent by a daily schedule reaches each member once). The window
+            // [today - graceDays, today + daysAhead] collapses to that one day.
+            if (Boolean.parseBoolean(String.valueOf(params.get("exactDay")))) {
+                graceDays = -daysAhead;
+            }
 
             List<Object[]> rows = ssigmRepo.findManualRenewalDuePlans(packageSessionIds, daysAhead, graceDays);
             List<Map<String, Object>> manualRenewalList = new ArrayList<>();
@@ -316,6 +323,9 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 item.put("planStatus", row[5] != null ? String.valueOf(row[5]) : "");
                 item.put("endDate", row[6]);
                 item.put("endDateLabel", row[7] != null ? String.valueOf(row[7]) : "");
+                // The member address. SEND_EMAIL reads 'email'; without it the node fell back to
+                // any email-shaped value, which is wrong (or missing) when username is not the email.
+                item.put("email", row.length > 8 && row[8] != null ? String.valueOf(row[8]) : "");
                 manualRenewalList.add(item);
             }
             return Map.of("manualRenewalList", manualRenewalList,

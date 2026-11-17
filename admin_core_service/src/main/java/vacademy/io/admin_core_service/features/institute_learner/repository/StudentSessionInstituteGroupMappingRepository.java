@@ -357,6 +357,8 @@ public interface StudentSessionInstituteGroupMappingRepository
    * autopay off (cancelled mandate) or plan CANCELED/PAYMENT_FAILED/EXPIRED.
    * The audience for "pay to continue your membership" messages carrying the
    * /subscriptions/<username> link. end_date_label preformatted for messages.
+   * email is the member address, needed because a username is not always an
+   * email address. It is the last column so earlier positions stay fixed.
    */
   @Query(value = """
       SELECT DISTINCT ON (up.id)
@@ -367,7 +369,8 @@ public interface StudentSessionInstituteGroupMappingRepository
           s.username AS username,
           up.status AS plan_status,
           up.end_date AS end_date,
-          to_char(up.end_date, 'DD Mon YYYY') AS end_date_label
+          to_char(up.end_date, 'DD Mon YYYY') AS end_date_label,
+          s.email AS email
       FROM user_plan up
       JOIN student_session_institute_group_mapping ssigm ON ssigm.user_plan_id = up.id
       JOIN student s ON s.user_id = up.user_id
