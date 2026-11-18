@@ -134,4 +134,11 @@ public class PortalRoutingConfig {
      */
     @JsonProperty("stack_name_below_logo")
     private Boolean stackNameBelowLogo;
+
+    /**
+     * Show the institute's custom terminology (Settings → Naming) on this
+     * portal's pre-login screens too. Null keeps the stored value.
+     */
+    @JsonProperty("apply_naming_setting")
+    private Boolean applyNamingSetting;
 }

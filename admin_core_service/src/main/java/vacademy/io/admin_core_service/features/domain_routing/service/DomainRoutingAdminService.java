@@ -228,8 +228,12 @@ public class DomainRoutingAdminService {
                         existing.setLogoWidthPx(request.getLogoWidthPx());
                         existing.setLogoHeightPx(request.getLogoHeightPx());
                         existing.setStackNameBelowLogo(request.getStackNameBelowLogo());
-                        existing.setApplyNamingSetting(
-                                        Boolean.TRUE.equals(request.getApplyNamingSetting()));
+                        // Keep on null, like primary below. The white-label wizard never
+                        // sent this field, and coercing its null to false switched custom
+                        // terminology off on the login page every time an admin saved.
+                        if (request.getApplyNamingSetting() != null) {
+                                existing.setApplyNamingSetting(request.getApplyNamingSetting());
+                        }
                         // Null means "not my business" rather than "false": the generic CRUD
                         // callers never send this field, and coercing their null to false would
                         // silently demote the row the white-label wizard chose as the portal URL.

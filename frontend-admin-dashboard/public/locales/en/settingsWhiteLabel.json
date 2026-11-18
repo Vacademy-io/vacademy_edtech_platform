@@ -45,6 +45,8 @@
             "hideNameHint": "Enable if your logo already contains the institute name. Hides the name in the sidebar and login page.",
             "stackNameLabel": "Stack name below logo",
             "stackNameHint": "Render the institute name centered underneath the logo instead of beside it, in the sidebar header.",
+            "applyNamingLabel": "Use custom names on login & sign-up pages",
+            "applyNamingHint": "Shows the terms set in Naming Settings (e.g. Course → Program) before anyone signs in, not only after.",
             "logoWidthLabel": "Logo width (px)",
             "logoWidthHint": "Leave blank to use default. Set 250+ AND clear the height to make the sidebar logo span the full width, edge to edge.",
             "logoHeightLabel": "Logo height (px)",

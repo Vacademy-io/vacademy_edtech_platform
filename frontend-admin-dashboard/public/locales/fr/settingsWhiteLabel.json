@@ -45,6 +45,8 @@
             "hideNameHint": "Activez cette option si votre logo contient déjà le nom de l'établissement. Masque le nom dans la barre latérale et la page de connexion.",
             "stackNameLabel": "Empiler le nom sous le logo",
             "stackNameHint": "Affiche le nom de l'établissement centré sous le logo au lieu d'à côté, dans l'en-tête de la barre latérale.",
+            "applyNamingLabel": "Noms personnalisés sur les pages de connexion et d'inscription",
+            "applyNamingHint": "Affiche les termes définis dans Paramètres → Nommage (ex. Cours → Programme) avant la connexion, pas seulement après.",
             "logoWidthLabel": "Largeur du logo (px)",
             "logoWidthHint": "Laissez vide pour utiliser la valeur par défaut. Définissez 250 ou plus ET effacez la hauteur pour que le logo de la barre latérale occupe toute la largeur, bord à bord.",
             "logoHeightLabel": "Hauteur du logo (px)",

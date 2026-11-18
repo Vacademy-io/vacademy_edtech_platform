@@ -450,6 +450,9 @@ public class WhiteLabelService {
                         .logoWidthPx(r.getLogoWidthPx())
                         .logoHeightPx(r.getLogoHeightPx())
                         .stackNameBelowLogo(r.getStackNameBelowLogo())
+                        // Set from the database only until now, so the wizard has to
+                        // read them back or a save would look like it cleared them.
+                        .applyNamingSetting(r.isApplyNamingSetting())
                         .build())
                 .collect(Collectors.toList());
 
@@ -820,6 +823,7 @@ public class WhiteLabelService {
             r.setLogoWidthPx(cfg.getLogoWidthPx());
             r.setLogoHeightPx(cfg.getLogoHeightPx());
             r.setStackNameBelowLogo(cfg.getStackNameBelowLogo());
+            r.setApplyNamingSetting(cfg.getApplyNamingSetting());
         } else {
             r.setAllowUsernamePasswordAuth(true);
             r.setConvertUsernamePasswordToLowercase(false);

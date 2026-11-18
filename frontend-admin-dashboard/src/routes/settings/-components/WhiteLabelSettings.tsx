@@ -166,6 +166,11 @@ interface RoutingConfig {
      */
     stack_name_below_logo?: boolean;
     /**
+     * Show the institute's custom terminology (Settings → Naming) on this
+     * portal's login / sign-up screens too, not only after login.
+     */
+    apply_naming_setting?: boolean;
+    /**
      * Sub-organisation this domain serves. Not styling — the routing row's
      * institute stays the PARENT, so this id is the only thing that tells one
      * sub-org's portal from another's. It drives the logo/name/theme overlay AND
@@ -952,6 +957,21 @@ const ConfigFormSection = ({
                         onCheckedChange={v => onUpdate('stack_name_below_logo', v)}
                     />
                 </div>
+                <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                        <Label className="text-xs font-medium text-slate-700 cursor-pointer" htmlFor="switch-apply_naming_setting">
+                            {t('configForm.branding.applyNamingLabel')}
+                        </Label>
+                        <p className="text-caption text-neutral-400">
+                            {t('configForm.branding.applyNamingHint')}
+                        </p>
+                    </div>
+                    <Switch
+                        id="switch-apply_naming_setting"
+                        checked={!!config.apply_naming_setting}
+                        onCheckedChange={v => onUpdate('apply_naming_setting', v)}
+                    />
+                </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1">
                         <Label className="text-xs text-slate-500">
@@ -1349,6 +1369,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                     logo_width_px: r.logo_width_px ?? undefined,
                     logo_height_px: r.logo_height_px ?? undefined,
                     stack_name_below_logo: r.stack_name_below_logo ?? undefined,
+                    apply_naming_setting: r.apply_naming_setting ?? undefined,
                     // Round-trip the linkage. Before this the wizard didn't know the
                     // field existed, so every save posted a config without it and the
                     // backend blanked sub_org_id — un-branding the portal and
@@ -1968,7 +1989,8 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
         entry.phone_country_geo_mode ||
         entry.hide_institute_name != null ||
         entry.logo_width_px != null || entry.logo_height_px != null ||
-        entry.stack_name_below_logo != null
+        entry.stack_name_below_logo != null ||
+        entry.apply_naming_setting
     );
 
     // Under GEO_FIRST the first configured country is NOT what a phone field
@@ -2139,6 +2161,7 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
                         <ConfigValue label={t('routingEntryCard.fields.logoWidth')} value={entry.logo_width_px} />
                         <ConfigValue label={t('routingEntryCard.fields.logoHeight')} value={entry.logo_height_px} />
                         <ConfigValue label={t('routingEntryCard.fields.stackNameBelowLogo')} value={entry.stack_name_below_logo} />
+                        <ConfigValue label={t('configForm.branding.applyNamingLabel')} value={entry.apply_naming_setting || undefined} />
                         <ConfigValue
                             label={t('configForm.phone.geoModeLabel')}
                             value={t(`configForm.phone.geoModes.${savedGeoMode}.label`)}
