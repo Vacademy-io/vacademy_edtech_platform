@@ -1,0 +1,75 @@
+{
+    "title": "Copie : {{name}}",
+    "loading": "Chargement des réponses…",
+    "loadError": "Impossible de charger cette copie. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "empty": "Aucune question dans cette section.",
+    "sectionFallback": "Section {{number}}",
+    "menu": {
+        "answerSheet": "Voir la copie jointe"
+    },
+    "summary": {
+        "marks": "Note",
+        "correct": "Correctes",
+        "partial": "Partiellement correctes",
+        "wrong": "Fausses",
+        "skipped": "Sans réponse",
+        "note": "Une note modifiée met le total à jour immédiatement. Si le résultat est déjà publié, l'apprenant voit la nouvelle note."
+    },
+    "question": {
+        "label": "Q{{number}}",
+        "time_one": "{{count}} s",
+        "time_other": "{{count}} s",
+        "studentAnswer": "Réponse de l'apprenant",
+        "correctAnswer": "Bonne réponse",
+        "modelAnswer": "Réponse modèle",
+        "notAnswered": "Sans réponse",
+        "picked": "Choix de l'apprenant",
+        "remark": "Remarque",
+        "noMarksRow": "Cette question ne faisait pas partie de cette tentative ; la note ne peut pas être modifiée.",
+        "aiMarking": "Correction de l'IA",
+        "aiFeedback": "Retour de l'IA",
+        "outOf": "{{marks}} / {{max}}"
+    },
+    "type": {
+        "MCQS": "Choix unique",
+        "MCQM": "Choix multiple",
+        "CMCQS": "Texte · choix unique",
+        "CMCQM": "Texte · choix multiple",
+        "NUMERIC": "Numérique",
+        "CNUMERIC": "Texte · numérique",
+        "TRUE_FALSE": "Vrai / Faux",
+        "ONE_WORD": "Un mot",
+        "LONG_ANSWER": "Réponse longue",
+        "CODING": "Code",
+        "CBE_RESPONSE": "Tableur et rédaction"
+    },
+    "status": {
+        "CORRECT": "Correcte",
+        "INCORRECT": "Fausse",
+        "PARTIAL_CORRECT": "Partiellement correcte",
+        "PENDING": "Sans réponse"
+    },
+    "source": {
+        "auto": "Corrigée automatiquement",
+        "ai": "Corrigée par l'IA",
+        "aiReviewed": "IA, revue par l'enseignant",
+        "teacher": "Modifiée par l'enseignant",
+        "manual": "Corrigée par l'enseignant"
+    },
+    "edit": {
+        "button": "Modifier la note",
+        "marksLabel": "Note (0 à {{max}})",
+        "marksLabelNoMax": "Note",
+        "remarkLabel": "Remarque pour l'apprenant (facultatif)",
+        "remarkPlaceholder": "ex. Points bonus : le corrigé de la question était faux",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "cancel": "Annuler",
+        "invalid": "Saisissez une note de 0 à {{max}}.",
+        "invalidNoMax": "Saisissez une note de 0 ou plus.",
+        "saved": "Note mise à jour. Nouveau total : {{total}}",
+        "savedNoTotal": "Note mise à jour.",
+        "error": "Impossible de mettre à jour la note. Veuillez réessayer."
+    }
+}
