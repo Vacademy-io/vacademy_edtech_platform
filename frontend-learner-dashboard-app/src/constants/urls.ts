@@ -123,8 +123,8 @@ export const LEARNER_PLAN_CHANGE = (userPlanId: string) =>
 
 export const EXPORT_ASSESSMENT_REPORT = `${BASE_URL}/assessment-service/assessment/learner/report/pdf`;
 export const EXPORT_AI_REPORT = `${BASE_URL}/assessment-service/assessment/learner/report/ai-pdf`;
-/** The same AI report as EXPORT_AI_REPORT, as an HTML page ({ html }) for the on-screen view. */
-export const AI_REPORT_WEB_HTML = `${BASE_URL}/assessment-service/assessment/learner/report/ai-html`;
+/** The same AI report as EXPORT_AI_REPORT, as data, for the on-screen cards and charts. */
+export const AI_REPORT_WEB_DATA = `${BASE_URL}/assessment-service/assessment/learner/report/ai-data`;
 export const ASSESSMENT_SUBMIT_MANUAL = `${BASE_URL}/assessment-service/assessment/learner/manual-status/submit`;
 
 export const ADD_UPDATE_VIDEO_ACTIVITY = `${BASE_URL}/admin-core-service/learner-tracking/v1/add-or-update-video-activity`;

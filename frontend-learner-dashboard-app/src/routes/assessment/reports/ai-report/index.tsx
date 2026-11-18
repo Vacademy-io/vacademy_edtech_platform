@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 import z from "zod";
 import { DashboardLoader } from "@/components/core/dashboard-loader";
 import AIReportDetailsPage from "@/components/common/my-reports/ai-report-details-page";
-import { AiReportWebView } from "@/components/common/my-reports/ai-report-web-view";
+import { AiReportRichView } from "@/components/common/my-reports/ai-report-rich-view";
 import { LayoutContainer } from "@/components/common/layout-container/layout-container";
 import { addHours } from "date-fns";
 import { formatTime } from "@/lib/format-date";
@@ -255,10 +255,11 @@ function RouteComponent() {
               </TabsList>
             </Tabs>
             {tab === "ai" ? (
-              <AiReportWebView
+              <AiReportRichView
                 assessmentId={assessmentId as string}
                 assessmentName={assessmentName as string}
                 attemptId={attemptId as string}
+                comparisonData={comparisonData}
                 fallback={
                   <AIReportDetailsPage
                     report={parsedProcessedJSON}
@@ -280,10 +281,11 @@ function RouteComponent() {
             )}
           </div>
         ) : (
-          <AiReportWebView
+          <AiReportRichView
             assessmentId={assessmentId as string}
             assessmentName={assessmentName as string}
             attemptId={attemptId}
+            comparisonData={comparisonData}
             fallback={
               <AIReportDetailsPage
                 report={parsedProcessedJSON}
