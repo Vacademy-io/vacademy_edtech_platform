@@ -11,8 +11,12 @@ What is caught:
   including websocket handshakes) that answers >= 400 or fails to connect: a trace hook added
   to every ClientSession;
 - every httpx request (the OpenAI-compatible LLM clients) that answers >= 400 or raises;
-- failures that arrive after a socket opened (Sarvam's 1003 refusal, pipecat switching to the
-  fallback vendor), recorded by the code that sees them through `record()`.
+- every error a pipecat vendor service raises during a call (Sarvam, Smallest, Navana, Rumik,
+  Deepgram, Google, Bedrock, the OpenAI-compatible LLMs, Edge): a websocket refused or closed
+  mid-call, a gRPC or SDK error, a vendor error message. Whatever the transport, these reach
+  the pipeline as an ErrorFrame, and the hook on FrameProcessor.push_frame sees each one once;
+- failures outside a call or outside HTTP (Sarvam/Navana key refusals, Rumik and Smallest
+  previews over websockets), recorded by the code that sees them through `record()`.
 
 Only host, method, the first two path segments, status and a short reason are kept: never a
 header, query string, body or key. Our own hosts are skipped. Nothing here can fail a call.
@@ -23,6 +27,7 @@ import collections
 import ipaddress
 import itertools
 import logging
+import re
 import threading
 import time
 import uuid
@@ -60,9 +65,19 @@ def _operation(method: str, path: str) -> str:
 
 
 def record(vendor: str, operation: str, *, http_status: Optional[int] = None,
-           reason: Optional[str] = None) -> None:
-    """Keep one failure. `vendor` is the host ("api.sarvam.ai"); `reason` must hold no secret."""
+           reason: Optional[str] = None, from_pipeline: bool = False) -> None:
+    """Keep one failure. `vendor` is the host ("api.sarvam.ai"); `reason` must hold no secret.
+
+    A pipeline error right after an HTTP failure to the same vendor is the same failure seen
+    twice (the service reports the HTTP error it got), so it is not kept again."""
     try:
+        family = _family(vendor)
+        now = time.monotonic()
+        if from_pipeline:
+            if now - _last_http.get(family, -1e9) < _DEDUPE_SECONDS:
+                return
+        elif http_status is not None or reason:
+            _last_http[family] = now
         entry = {
             # Unique across restarts: admin-core keys its insert on this id.
             "id": f"vb-{_boot}-{next(_seq)}",
@@ -78,12 +93,56 @@ def record(vendor: str, operation: str, *, http_status: Optional[int] = None,
         pass
 
 
-_SERVICE_HOSTS = (("sarvam", "api.sarvam.ai"), ("smallest", "waves-api.smallest.ai"), ("navana", "navana"),
-                  ("deepgram", "api.deepgram.com"), ("google", "google cloud speech"), ("openai", "openai"))
+# Service class name fragment -> the vendor's host (or name), most specific first.
+_SERVICE_HOSTS = (
+    ("sarvam", "api.sarvam.ai"),
+    ("smallest", "waves-api.smallest.ai"),
+    ("navana", "tts.navana.ai"), ("bodhi", "tts.navana.ai"),
+    ("rumik", "silk-api.rumik.ai"),
+    ("deepgram", "api.deepgram.com"),
+    ("vertex", "aiplatform.googleapis.com"),
+    ("google", "googleapis.com"),
+    ("bedrock", "bedrock (AWS)"), ("aws", "bedrock (AWS)"),
+    ("openrouter", "openrouter.ai"),
+    ("openai", "api.openai.com"),
+    ("edge", "speech.platform.bing.com"),
+)
+
+# A vendor's "family", so an HTTP failure and the pipeline error it causes count once.
+_FAMILIES = ("sarvam", "smallest", "navana", "rumik", "deepgram", "google", "bedrock", "openrouter",
+             "openai", "bing", "edge")
+_DEDUPE_SECONDS = 3.0
+_last_http: Dict[str, float] = {}
+
+
+def _family(vendor: str) -> str:
+    v = (vendor or "").lower()
+    return next((f for f in _FAMILIES if f in v), v)
+
+
+_SECRETISH = re.compile(r"(?i)(key|token|secret|authorization|bearer|password)[\s:=\"']+(?:bearer\s+)?[^\s,;\"'&]+")
+_LONG_TOKEN = re.compile(r"[A-Za-z0-9_\-]{24,}")
+
+
+def clean_reason(text: Any) -> str:
+    """An error message with anything that looks like a credential removed, kept short."""
+    t = str(text or "")
+    t = _SECRETISH.sub(lambda m: m.group(1) + "=<hidden>", t)
+    t = _LONG_TOKEN.sub("<hidden>", t)
+    return " ".join(t.split())[:300]
 
 
 def vendor_of(service: Any) -> str:
-    """A pipecat service object as the vendor's host where known, else its class name."""
+    """A pipecat service object as the vendor's host where known, else its class name.
+    An OpenAI-compatible client says where it really goes (Sarvam's or Google's LLM run
+    through OpenAILLMService), so its base URL wins over the class name."""
+    try:
+        base = getattr(getattr(service, "_client", None), "base_url", None)
+        host = urlsplit(str(base)).hostname if base else None
+        if host and _external(host):
+            return host
+    except Exception:  # noqa: BLE001
+        pass
     name = type(service).__name__.lower()
     for key, host in _SERVICE_HOSTS:
         if key in name:
@@ -163,13 +222,40 @@ def _install_httpx() -> None:
     httpx.Client.send, httpx.AsyncClient.send = send, asend
 
 
+def _install_pipeline() -> None:
+    from pipecat.frames.frames import ErrorFrame
+    from pipecat.processors.frame_processor import FrameProcessor
+    from pipecat.services.ai_service import AIService
+
+    original = FrameProcessor.push_frame
+
+    async def push_frame(self, frame, *args, **kwargs):  # noqa: ANN001
+        if isinstance(frame, ErrorFrame) and not getattr(frame, "_vendor_failure_seen", False):
+            source = getattr(frame, "processor", None) or self
+            if isinstance(source, AIService):
+                try:
+                    setattr(frame, "_vendor_failure_seen", True)
+                    # The capitalised kind in the class name, leftmost first: "SmallestTTSService"
+                    # is TTS, "SarvamSTTService" STT (lowercase, both contain "stt" and "tts").
+                    m = re.search(r"STT|TTS|LLM", type(source).__name__)
+                    kind = m.group(0) if m else "call"
+                    record(vendor_of(source), f"in-call {kind}",
+                           reason=clean_reason(getattr(frame, "error", "")) or type(source).__name__,
+                           from_pipeline=True)
+                except Exception:  # noqa: BLE001
+                    pass
+        return await original(self, frame, *args, **kwargs)
+
+    FrameProcessor.push_frame = push_frame
+
+
 def install() -> None:
-    """Hook aiohttp and httpx once per process. A library that is missing is skipped."""
+    """Hook aiohttp, httpx and the pipecat pipeline once per process. A missing one is skipped."""
     global _installed
     if _installed:
         return
     _installed = True
-    for hook in (_install_aiohttp, _install_httpx):
+    for hook in (_install_aiohttp, _install_httpx, _install_pipeline):
         try:
             hook()
         except Exception:  # noqa: BLE001

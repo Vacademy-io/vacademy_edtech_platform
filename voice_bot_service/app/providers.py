@@ -1685,6 +1685,12 @@ class NavanaKeyPool:
         """Rest a key: COOL_SECS after a capacity refusal; longer (BAD_KEY_SECS)
         after any other failure — a typo'd, revoked or out-of-credit key would
         otherwise look idle (load 0) and be picked FIRST for every call."""
+        from . import vendor_failures
+        bad = secs is not None and secs >= self.BAD_KEY_SECS
+        n = self.index(key)
+        vendor_failures.record("tts.navana.ai", f"key {n + 1}" if n >= 0 else "key",
+                               reason="Key refused: invalid, revoked or out of credit" if bad
+                               else "Refused for capacity: too many sockets on this key")
         if key:
             self._cool[key] = time.monotonic() + (self.COOL_SECS if secs is None else secs)
 
@@ -2893,6 +2899,9 @@ async def rumik_synthesize_wav(text: str, voice: str, api_key: str,
                         break
                     if j.get("type") == "error":
                         logger.warning("rumik preview: %s", str(j)[:200])
+                        from . import vendor_failures
+                        vendor_failures.record("silk-api.rumik.ai", "TTS stream", reason=vendor_failures.clean_reason(
+                            j.get("message") or j.get("error") or "Rumik returned an error"))
                         return b""
                 else:
                     break
@@ -2907,8 +2916,10 @@ async def rumik_synthesize_wav(text: str, voice: str, api_key: str,
             w.setframerate(24000)
             w.writeframes(bytes(pcm))
         return buf.getvalue()
-    except Exception:
+    except Exception as exc:
         logger.exception("rumik preview failed")
+        from . import vendor_failures
+        vendor_failures.record("silk-api.rumik.ai", "TTS stream", reason=type(exc).__name__)
         return b""
     finally:
         if own:

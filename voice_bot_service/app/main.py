@@ -543,8 +543,10 @@ def _google_tts_mp3(text: str, voice: str, pace: float) -> bytes:
             ),
         )
         return resp.audio_content or b""
-    except Exception:
+    except Exception as exc:
         logger.exception("preview: google tts failed voice=%s", voice)
+        vendor_failures.record("texttospeech.googleapis.com", "TTS", reason=vendor_failures.clean_reason(
+            f"{type(exc).__name__}: {exc}"))
         return b""
 
 
@@ -572,8 +574,10 @@ async def _edge_tts_mp3(text: str, voice: str, pace: float) -> bytes:
         async for chunk in edge_tts.Communicate(text, v, rate=f"{pct:+d}%").stream():
             if chunk.get("type") == "audio" and chunk.get("data"):
                 out += chunk["data"]
-    except Exception:
+    except Exception as exc:
         logger.exception("preview: edge synthesis failed for voice %r", v[:40])
+        vendor_failures.record("speech.platform.bing.com", "TTS", reason=vendor_failures.clean_reason(
+            f"{type(exc).__name__}: {exc}"))
         return b""
     return out
 
@@ -619,9 +623,12 @@ async def _smallest_tts_wav(text: str, voice: str, model: str, pace: float,
                 if status in ("complete", "error"):
                     if status == "error":
                         logger.warning("preview: smallest error %s", str(ev)[:200])
+                        vendor_failures.record("waves-api.smallest.ai", "TTS stream", reason=vendor_failures.clean_reason(
+                            ev.get("message") or ev.get("error") or "Smallest returned an error"))
                     break
-    except Exception:
+    except Exception as exc:
         logger.exception("preview: smallest tts failed voice=%s model=%s", voice, model)
+        vendor_failures.record("waves-api.smallest.ai", "TTS stream", reason=type(exc).__name__)
         return b""
     if not pcm:
         return b""
