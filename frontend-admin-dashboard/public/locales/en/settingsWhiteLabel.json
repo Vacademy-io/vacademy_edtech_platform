@@ -4,6 +4,14 @@
         "adminPortal": "Admin Portal",
         "teacherPortal": "Teacher Portal"
     },
+    "allowedRoles": {
+        "label": "Who can sign in",
+        "placeholderAdmin": "Only admins",
+        "placeholderTeacher": "Only teachers and admins",
+        "hintAdmin": "Admins can always sign in. Anyone without one of the ticked roles is refused on this domain.",
+        "hintTeacher": "Teachers and admins can always sign in. Anyone without one of the ticked roles is refused on this domain.",
+        "summary": "+ {{roles}}"
+    },
     "status": {
         "configured": "Configured",
         "notConfigured": "Not Configured"

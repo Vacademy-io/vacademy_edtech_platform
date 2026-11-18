@@ -36,7 +36,14 @@ import {
 } from 'lucide-react';
 import PreferredCountriesSelector from './PreferredCountriesSelector';
 import { SearchableSelect } from '@/components/design-system/searchable-select';
-import { getSubOrgs } from '@/routes/manage-custom-teams/-services/custom-team-services';
+import { getAllRoles, getSubOrgs } from '@/routes/manage-custom-teams/-services/custom-team-services';
+import { MultiSelect } from '@/components/design-system/multi-select';
+import {
+    getPortalType,
+    normalizeRoleName,
+    parsePortalRoles,
+    type PortalType,
+} from '@/lib/auth/portal-roles';
 import {
     parsePreferredCountriesString,
     stringifyPreferredCountries,
@@ -261,7 +268,27 @@ interface WhiteLabelStatusResponse {
 /** A single row in the setup form */
 interface DomainFormEntry {
     id: string;
-    role: 'LEARNER' | 'ADMIN' | 'TEACHER';
+    /** Which portal the host is. */
+    role: PortalType;
+    /**
+     * Roles besides the portal's own that may sign in on this host (e.g.
+     * COUNSELLOR on an admin portal). Saved as one comma-separated role string,
+     * "ADMIN,COUNSELLOR,TEACHER"; the login screen refuses anyone else.
+     */
+    allowedRoles: string[];
+    /**
+     * The saved routing row this entry was loaded from. Sent back so the entry
+     * updates its own row — two rows can display the same host (a "*" row and
+     * an exact one). Undefined for a domain added in this form.
+     */
+    routingId?: string;
+    /**
+     * The saved row named no portal (only custom roles, e.g. "MANAGE_LEAD").
+     * It shows as an admin portal, which is what serves it, but is saved back
+     * without an ADMIN entry until the admin picks a portal — adding one would
+     * make it a candidate admin portal URL and change how its host resolves.
+     */
+    portalImplied?: boolean;
     domain: string;
     isPrimary: boolean;
     expanded: boolean;
@@ -271,6 +298,35 @@ interface DomainFormEntry {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const ROLES = ['LEARNER', 'ADMIN', 'TEACHER'] as const;
+
+/**
+ * Splits a stored role string into the portal and the extra roles allowed to
+ * sign in. A row naming only custom roles ("MANAGE_LEAD") is served by the
+ * admin app, so it reads as an admin portal; ADMIN is admitted there anyway.
+ */
+const toFormRoles = (
+    role: string | null | undefined
+): Pick<DomainFormEntry, 'role' | 'allowedRoles' | 'portalImplied'> => {
+    const named = getPortalType(role);
+    const portal = named ?? 'ADMIN';
+    return {
+        role: portal,
+        allowedRoles: parsePortalRoles(role).filter((r) => r !== portal),
+        portalImplied: named === null && parsePortalRoles(role).length > 0,
+    };
+};
+
+/** The role string the setup API stores: the portal first, then the extra roles. */
+const toPayloadRole = (
+    entry: Pick<DomainFormEntry, 'role' | 'allowedRoles' | 'portalImplied'>
+): string => {
+    const extra = entry.allowedRoles.filter((r) => r !== entry.role);
+    if (entry.portalImplied && entry.role === 'ADMIN' && extra.length > 0) return extra.join(',');
+    return [entry.role, ...extra].join(',');
+};
+
+/** Roles that can never be ticked: learners never open a staff portal, and ADMIN always does. */
+const NON_TICKABLE_ROLES = new Set(['STUDENT', 'LEARNER', 'ADMIN']);
 
 const roleLabel = (role: string, t: (key: string) => string): string => {
     switch (role?.toUpperCase()) {
@@ -438,8 +494,8 @@ const DRAFT_STORAGE_PREFIX = 'vacademy:white-label-draft:';
 const draftKey = (instituteId: string) => `${DRAFT_STORAGE_PREFIX}${instituteId}`;
 
 const defaultFormEntries = (): DomainFormEntry[] => [
-    { id: makeFormId(), role: 'LEARNER', domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
-    { id: makeFormId(), role: 'ADMIN',   domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
+    { id: makeFormId(), role: 'LEARNER', allowedRoles: [], domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
+    { id: makeFormId(), role: 'ADMIN',   allowedRoles: [], domain: '', isPrimary: true, expanded: false, config: emptyConfig() },
 ];
 
 const readDraft = (instituteId: string | null | undefined): DomainFormEntry[] | null => {
@@ -451,19 +507,30 @@ const readDraft = (instituteId: string | null | undefined): DomainFormEntry[] | 
         if (!Array.isArray(parsed) || parsed.length === 0) return null;
         const entries: DomainFormEntry[] = parsed
             .filter((e): e is Record<string, unknown> => !!e && typeof e === 'object')
-            .map((e) => ({
-                id: makeFormId(),
-                role: (ROLES as readonly string[]).includes(String(e.role))
-                    ? (e.role as DomainFormEntry['role'])
-                    : 'LEARNER',
-                domain: typeof e.domain === 'string' ? e.domain : '',
-                isPrimary: e.isPrimary === true,
-                expanded: false,
-                config:
-                    e.config && typeof e.config === 'object'
-                        ? (e.config as RoutingConfig)
-                        : emptyConfig(),
-            }));
+            .map((e) => {
+                // A draft from the previous form version holds the whole stored
+                // role string ("ADMIN,EVALUATOR,…") and no allowedRoles. Reading
+                // anything outside ROLES as LEARNER turned such an admin domain
+                // into a learner portal on the next save.
+                const stored = toFormRoles(typeof e.role === 'string' ? e.role : 'LEARNER');
+                return {
+                    id: makeFormId(),
+                    role: stored.role,
+                    allowedRoles: Array.isArray(e.allowedRoles)
+                        ? e.allowedRoles.filter((r): r is string => typeof r === 'string')
+                        : stored.allowedRoles,
+                    routingId: typeof e.routingId === 'string' ? e.routingId : undefined,
+                    portalImplied:
+                        typeof e.portalImplied === 'boolean' ? e.portalImplied : stored.portalImplied,
+                    domain: typeof e.domain === 'string' ? e.domain : '',
+                    isPrimary: e.isPrimary === true,
+                    expanded: false,
+                    config:
+                        e.config && typeof e.config === 'object'
+                            ? (e.config as RoutingConfig)
+                            : emptyConfig(),
+                };
+            });
         return entries.length > 0 ? entries : null;
     } catch {
         return null;
@@ -480,6 +547,9 @@ const writeDraft = (instituteId: string | null | undefined, entries: DomainFormE
             JSON.stringify(
                 entries.map((e) => ({
                     role: e.role,
+                    allowedRoles: e.allowedRoles,
+                    routingId: e.routingId,
+                    portalImplied: e.portalImplied,
                     domain: e.domain,
                     isPrimary: e.isPrimary,
                     config: e.config,
@@ -1166,6 +1236,48 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
         };
     }, [instituteId]);
 
+    // The institute's roles, for each staff domain's "Who can sign in" picker.
+    // Best-effort like the sub-orgs: if the list fails to load, roles already
+    // saved on a domain still show (and can be removed) — only new ones can't
+    // be picked until a reload.
+    const [instituteRoles, setInstituteRoles] = useState<{ value: string; label: string }[]>([]);
+
+    useEffect(() => {
+        if (!instituteId) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const raw: unknown = await getAllRoles();
+                const list = Array.isArray(raw) ? (raw as { name?: string | null }[]) : [];
+                const byValue = new Map<string, string>();
+                for (const r of list) {
+                    if (!r?.name) continue;
+                    const value = normalizeRoleName(r.name);
+                    if (!value || NON_TICKABLE_ROLES.has(value) || byValue.has(value)) continue;
+                    byValue.set(value, r.name);
+                }
+                const options = [...byValue]
+                    .map(([value, label]) => ({ value, label }))
+                    .sort((a, b) => a.label.localeCompare(b.label));
+                if (!cancelled) setInstituteRoles(options);
+            } catch (err) {
+                console.error('[WhiteLabel] Failed to load roles', err);
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [instituteId]);
+
+    /** One entry's options: the institute's roles minus the portal's own, plus saved roles the list lacks. */
+    const allowedRoleOptions = (entry: DomainFormEntry) => {
+        const options = instituteRoles.filter((o) => o.value !== entry.role);
+        const saved = entry.allowedRoles
+            .filter((r) => !NON_TICKABLE_ROLES.has(r) && !options.some((o) => o.value === r))
+            .map((r) => ({ value: r, label: r }));
+        return [...options, ...saved];
+    };
+
     const subOrgSearchPlaceholder = t('subOrg.searchPlaceholder');
     const subOrgSearchEmpty = t('subOrg.searchEmpty');
 
@@ -1203,7 +1315,8 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
 
             return {
                 id: makeFormId(),
-                role: r.role as 'LEARNER' | 'ADMIN' | 'TEACHER',
+                ...toFormRoles(r.role),
+                routingId: r.id,
                 domain: fullDomain,
                 isPrimary,
                 expanded: false,
@@ -1337,7 +1450,8 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
         try {
             const payload = {
                 entries: nonEmpty.map(e => ({
-                    role: e.role,
+                    role: toPayloadRole(e),
+                    routing_id: e.routingId,
                     domain: e.domain.trim().toLowerCase(),
                     is_primary: e.isPrimary,
                     routing_config: e.config,
@@ -1371,7 +1485,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
         markEdited();
         setFormEntries(prev => [
             ...prev,
-            { id: makeFormId(), role: 'LEARNER', domain: '', isPrimary: false, expanded: false, config: emptyConfig() },
+            { id: makeFormId(), role: 'LEARNER', allowedRoles: [], domain: '', isPrimary: false, expanded: false, config: emptyConfig() },
         ]);
     };
 
@@ -1383,6 +1497,27 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
     const updateEntry = (id: string, field: keyof DomainFormEntry, value: any) => {
         markEdited();
         setFormEntries(prev => prev.map(e => e.id === id ? { ...e, [field]: value } : e));
+    };
+
+    /**
+     * A learner portal has no sign-in roles to keep, and a portal's own role is
+     * implied, so neither survives a change of portal.
+     */
+    const changePortal = (id: string, portal: PortalType) => {
+        markEdited();
+        setFormEntries(prev =>
+            prev.map(e =>
+                e.id === id
+                    ? {
+                          ...e,
+                          role: portal,
+                          portalImplied: false,
+                          allowedRoles:
+                              portal === 'LEARNER' ? [] : e.allowedRoles.filter((r) => r !== portal),
+                      }
+                    : e
+            )
+        );
     };
 
     const updateEntryConfig = (id: string, field: keyof RoutingConfig, value: any) => {
@@ -1590,7 +1725,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                                         <div className="space-y-1">
                                             <Label className="text-xs text-slate-500">{t('setupCard.roleLabel')}</Label>
                                             <Select value={entry.role}
-                                                    onValueChange={v => updateEntry(entry.id, 'role', v)}>
+                                                    onValueChange={v => changePortal(entry.id, v as PortalType)}>
                                                 <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                                                 <SelectContent>
                                                     {ROLES.map(r => (
@@ -1672,6 +1807,34 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                                         )}
                                     </div>
                                 </div>
+
+                                {/* Who can sign in. Staff portals only — the learner app
+                                    has no role gate. Indented to line up with the fields
+                                    above (past the entry number). */}
+                                {entry.role !== 'LEARNER' && (
+                                    <div className="space-y-1 px-4 pb-4 sm:ms-9">
+                                        <Label className="text-xs text-slate-500">
+                                            {t('allowedRoles.label')}
+                                        </Label>
+                                        <MultiSelect
+                                            options={allowedRoleOptions(entry)}
+                                            selected={entry.allowedRoles.filter((r) => !NON_TICKABLE_ROLES.has(r))}
+                                            onChange={(v) => updateEntry(entry.id, 'allowedRoles', v)}
+                                            placeholder={
+                                                entry.role === 'TEACHER'
+                                                    ? t('allowedRoles.placeholderTeacher')
+                                                    : t('allowedRoles.placeholderAdmin')
+                                            }
+                                            checkboxes
+                                            className="h-auto min-h-9 max-w-xl"
+                                        />
+                                        <p className="text-caption text-neutral-500">
+                                            {entry.role === 'TEACHER'
+                                                ? t('allowedRoles.hintTeacher')
+                                                : t('allowedRoles.hintAdmin')}
+                                        </p>
+                                    </div>
+                                )}
 
                                 {/* Expanded config section */}
                                 {entry.expanded && (
@@ -1787,6 +1950,10 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
 
     const [expanded, setExpanded] = useState(false);
     const full = fqdn(entry);
+    // "ADMIN,COUNSELLOR,TEACHER" is the admin portal plus the roles it lets in.
+    const { role: portalType, allowedRoles } = toFormRoles(entry.role);
+    const signInRoles =
+        portalType === 'LEARNER' ? [] : allowedRoles.filter((r) => !NON_TICKABLE_ROLES.has(r));
 
     const hasConfig = !!(
         entry.tab_text || entry.theme || entry.font_family || entry.tab_icon_file_id ||
@@ -1823,9 +1990,17 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
             {/* Summary row */}
             <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-3 min-w-0">
-                    <Badge variant="outline" className={roleBadgeClass(entry.role)}>
-                        {roleLabel(entry.role, t)}
+                    <Badge variant="outline" className={roleBadgeClass(portalType)}>
+                        {roleLabel(portalType, t)}
                     </Badge>
+                    {signInRoles.length > 0 && (
+                        <span
+                            className="truncate text-caption text-neutral-500"
+                            title={signInRoles.join(', ')}
+                        >
+                            {t('allowedRoles.summary', { roles: signInRoles.join(', ') })}
+                        </span>
+                    )}
                     <a href={`https://${full}`} target="_blank" rel="noopener noreferrer"
                        className="flex items-center gap-1 text-sm text-blue-600 hover:underline font-mono truncate">
                         {full}

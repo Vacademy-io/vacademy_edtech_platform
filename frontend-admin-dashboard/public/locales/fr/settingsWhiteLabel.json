@@ -4,6 +4,14 @@
         "adminPortal": "Portail administrateur",
         "teacherPortal": "Portail enseignant"
     },
+    "allowedRoles": {
+        "label": "Qui peut se connecter",
+        "placeholderAdmin": "Administrateurs uniquement",
+        "placeholderTeacher": "Enseignants et administrateurs uniquement",
+        "hintAdmin": "Les administrateurs peuvent toujours se connecter. Toute personne sans l'un des rôles cochés est refusée sur ce domaine.",
+        "hintTeacher": "Les enseignants et les administrateurs peuvent toujours se connecter. Toute personne sans l'un des rôles cochés est refusée sur ce domaine.",
+        "summary": "+ {{roles}}"
+    },
     "status": {
         "configured": "Configuré",
         "notConfigured": "Non configuré"
