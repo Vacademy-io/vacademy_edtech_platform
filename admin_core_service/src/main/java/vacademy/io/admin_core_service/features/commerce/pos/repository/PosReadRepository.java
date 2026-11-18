@@ -397,6 +397,52 @@ public class PosReadRepository {
                         """)
                 .setParameter("sessionId", sessionId).setParameter("instituteId", instituteId)
                 .setParameter("limit", pageSize).setParameter("offset", (long) page * pageSize));
+        return new SalePage(saleRows(found), total);
+    }
+
+    /**
+     * Delivered orders of any channel and location (a return is taken at any store), at most
+     * {@code limit}, newest first, found by an exact order number, an exact document number of
+     * the order, a normalised phone ({@code phone}, null when {@code q} is not one) or a piece
+     * code ({@code pieceCode}: the order of the line the piece was sold on).
+     */
+    public List<PosDtos.SaleRow> lookupSales(String instituteId, String q, String phone, String pieceCode,
+                                             int limit) {
+        List<Object[]> found = rows(entityManager.createNativeQuery("""
+                        SELECT o.id, o.order_number, o.channel, o.status,
+                               (SELECT i.invoice_number FROM invoice i
+                                WHERE i.commerce_order_id = o.id AND i.institute_id = o.institute_id
+                                ORDER BY i.cancelled_at NULLS FIRST, i.created_at DESC LIMIT 1),
+                               o.document_date, l.name, o.total, o.customer_name, o.customer_phone, o.created_at
+                        FROM commerce_order o
+                        LEFT JOIN stock_location l ON l.id = o.fulfilment_location_id
+                        WHERE o.institute_id = :instituteId AND o.status = 'DELIVERED' AND o.id IN (
+                            SELECT x.id FROM commerce_order x
+                            WHERE x.institute_id = :instituteId AND x.order_number = :q
+                            UNION
+                            SELECT i.commerce_order_id FROM invoice i
+                            WHERE i.institute_id = :instituteId AND i.invoice_number = :q
+                              AND i.commerce_order_id IS NOT NULL
+                            UNION
+                            SELECT x.id FROM commerce_order x
+                            WHERE x.institute_id = :instituteId AND x.customer_phone = :phone
+                            UNION
+                            SELECT ol.order_id FROM commerce_piece p
+                            JOIN commerce_order_line ol ON ol.id = p.order_line_id
+                            WHERE p.institute_id = :instituteId AND p.code = :pieceCode)
+                        ORDER BY o.created_at DESC, o.id DESC
+                        LIMIT :limit
+                        """)
+                .setParameter("instituteId", instituteId)
+                .setParameter("q", q)
+                .setParameter("phone", phone == null ? "" : phone)
+                .setParameter("pieceCode", pieceCode == null ? "" : pieceCode)
+                .setParameter("limit", limit));
+        return saleRows(found);
+    }
+
+    /** Sale rows from the columns of {@link #sessionSales} / {@link #lookupSales}, with each bill's tender modes. */
+    private List<PosDtos.SaleRow> saleRows(List<Object[]> found) {
         Map<String, List<String>> modes = new HashMap<>();
         List<String> ids = found.stream().map(r -> text(r[0])).toList();
         if (!ids.isEmpty()) {
@@ -419,7 +465,7 @@ public class PosReadRepository {
                     text(r[6]), money(r[7]), text(r[8]), last4(text(r[9])), date(r[10]),
                     modes.getOrDefault(id, List.of())));
         }
-        return new SalePage(out, total);
+        return out;
     }
 
     // ================================================================== helpers

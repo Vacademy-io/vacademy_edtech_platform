@@ -278,15 +278,15 @@ class CommerceReturnServiceTest {
     }
 
     @Test
-    void r1_onlyADeliveredPaidOrderNotSoldAtTheCounterIsReturned() {
-        line("l1", 2, "1050.00");
+    void r1_onlyADeliveredPaidOrderIsReturnedACounterBillToo() {
+        line("l1", 3, "1050.00");
         f.order.setStatus("SHIPPED");
         assertTrue(assertThrows(ConflictException.class, () -> created(create("l1", 1))).getMessage()
                 .startsWith("ORDER_NOT_RETURNABLE"));
         f.order.setStatus("DELIVERED");
+        // WP-42: a bill of the billing counter is returned like any delivered order.
         f.order.setChannel("POS");
-        assertTrue(assertThrows(ConflictException.class, () -> created(create("l1", 1))).getMessage()
-                .startsWith("ORDER_NOT_RETURNABLE"));
+        assertEquals("REQUESTED", created(create("l1", 1)).getStatus());
         f.order.setChannel("ADMIN");
         f.order.setPaymentStatus("PARTIALLY_PAID");
         f.order.setPaymentMethod("OFFLINE");
@@ -661,5 +661,85 @@ class CommerceReturnServiceTest {
                 .filter(e -> CommerceOrderEvents.RETURN_APPROVED.equals(e.type()))
                 .map(CommerceOrderEvents.OrderEvent::refId).toList();
         assertEquals(java.util.List.of(now.getId(), later), publishedRefs);
+    }
+
+    // ------------------------------------------------------------------ WP-42: counter bills and counter returns
+
+    /** A counter bill: channel POS, delivered at the counter, no parcel. */
+    private void counterBill() {
+        f.order.setChannel("POS");
+        lenient().when(shipments.findByOrderIdOrderByCreatedAtAsc(ORDER)).thenReturn(List.of());
+    }
+
+    private ReturnDtos.CreateReturnRequest counterBody(String lineId, int quantity) {
+        return ReturnDtos.CreateReturnRequest.builder().clientRequestId("pos-return-key-1").orderId(ORDER)
+                .reason("DEFECTIVE").requestedVia("PHONE").approveNow(false)
+                .lines(List.of(ReturnDtos.LineRequest.builder().orderLineId(lineId).quantity(quantity).build()))
+                .build();
+    }
+
+    @Test
+    void pos_aCounterReturnIsCreatedApprovedAndReceivedInOneCallAtTheCounter() {
+        counterBill();
+        line("l1", 3, "1500.00");
+        CommerceReturnService.CounterReturn made = service.counterReturnInside(INST, counterBody("l1", 2), "loc-2",
+                "RET-000007", "hash-1", "cashier-1",
+                List.of(named("l1", "RESALEABLE", 1), named("l1", "DAMAGED", 1)));
+
+        CommerceReturn ret = f.returns.get(0);
+        assertEquals(ret.getId(), made.returnId());
+        assertEquals("RET-000007", made.returnNumber());
+        assertEquals("cn-1", made.creditNoteId());
+        assertEquals(0, new BigDecimal("1000.00").compareTo(made.credit()));
+        assertEquals("RECEIVED", ret.getStatus());
+        assertEquals("COUNTER", ret.getRequestedVia(), "requested_via is the counter whatever the body said");
+        assertEquals("loc-2", ret.getLocationId(), "the goods come back at the counter's location");
+        assertEquals("cashier-1", ret.getApprovedBy());
+        assertEquals("cashier-1", ret.getReceivedBy());
+        assertEquals("hash-1", ret.getRequestHash());
+        assertEquals("pos-return-key-1", ret.getClientRequestId());
+        assertEquals(2, lines.get(0).getQtyReturned());
+        assertEquals(0, new BigDecimal("1000.00").compareTo(f.order.getRefundDue()));
+        verify(f.requestGuard, never()).run(any(), any(), any());
+        verify(f.desk, never()).authorize(any(), anyString(), any(), any());
+        assertTrue(f.eventTypes.contains(CommerceOrderEvents.RETURN_APPROVED));
+        assertEquals(2, posted.size());
+        assertEquals("loc-2", posted.get(0).getLocationId());
+    }
+
+    @Test
+    void pos_theReturnOfACounterBillCostsItsLinesCostPerUnit() {
+        counterBill();
+        CommerceOrderLine l1 = line("l1", 3, "1500.00");
+        l1.setCostTotal(new BigDecimal("100.00"));
+        service.counterReturnInside(INST, counterBody("l1", 1), LOC, "RET-000008", "hash-2", "cashier-1",
+                List.of(named("l1", "RESALEABLE", 1)));
+        StockPosting back = posted.get(0);
+        assertEquals("RETURN", back.getType().name());
+        assertEquals(1, back.getQuantityDelta());
+        assertEquals(new BigDecimal("33.3333"), back.getUnitCost(), "cost_total / quantity, 4 decimals");
+        assertEquals(StockPosting.CostTreatment.KNOWN, back.getCostTreatment());
+    }
+
+    @Test
+    void pos_aCounterBillWithoutACostLetsTheLedgerTakeItsAverage() {
+        counterBill();
+        CommerceOrderLine l1 = line("l1", 2, "1000.00");
+        l1.setCostTotal(null);
+        service.counterReturnInside(INST, counterBody("l1", 1), LOC, "RET-000009", "hash-3", "cashier-1",
+                List.of(named("l1", "RESALEABLE", 1)));
+        assertNull(posted.get(0).getUnitCost());
+        assertNull(posted.get(0).getCostTreatment());
+    }
+
+    @Test
+    void pos_theCounterPreviewIsTheDeskPreviewWithoutTheAccessCheck() {
+        counterBill();
+        line("l1", 2, "1050.00");
+        ReturnDtos.ReturnPreview preview = service.previewForCounter(INST, counterBody("l1", 1));
+        assertEquals(1, preview.getLines().size());
+        assertEquals(2, preview.getLines().get(0).getReturnableQuantity());
+        assertEquals(0, new BigDecimal("525.00").compareTo(preview.getCreditEstimate()));
+        verify(f.desk, never()).authorize(any(), anyString(), any(), any());
     }
 }

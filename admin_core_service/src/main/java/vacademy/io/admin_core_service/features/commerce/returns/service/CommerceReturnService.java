@@ -112,6 +112,7 @@ public class CommerceReturnService {
     public static final String REFERENCE_RETURN_LINE = "RETURN_LINE";
     public static final String REASON_RETURN_DAMAGED = "RETURN_DAMAGED";
     public static final String COUNTER_SCOPE = "RET";
+    static final String POS_CHANNEL = "POS";
     static final Set<CommerceRole> MANAGER = Set.of(CommerceRole.STORE_MANAGER);
     static final Set<CommerceRole> FLOOR = Set.of(CommerceRole.STORE_MANAGER, CommerceRole.WAREHOUSE_STAFF);
     static final Set<CommerceRole> READERS = Set.of(CommerceRole.STORE_MANAGER, CommerceRole.WAREHOUSE_STAFF,
@@ -213,6 +214,19 @@ public class CommerceReturnService {
         CommerceOrder seen = desk.readOrder(instituteId, clean.orderId());
         desk.authorize(user, instituteId, clean.locationId() != null ? clean.locationId()
                 : seen.getFulfilmentLocationId(), MANAGER);
+        return previewOf(instituteId, clean);
+    }
+
+    /**
+     * The preview of a return at the billing counter (WP-42): the same answer as
+     * {@link #preview}, without its access check. The caller has checked who may ask (the
+     * counter's session guard); only the POS package calls this.
+     */
+    public ReturnDtos.ReturnPreview previewForCounter(String instituteId, ReturnDtos.CreateReturnRequest request) {
+        return previewOf(instituteId, validate(request, false));
+    }
+
+    private ReturnDtos.ReturnPreview previewOf(String instituteId, Clean clean) {
         return ownTransaction.execute(status -> {
             CommerceOrder order = orderRepository.findByIdAndInstituteId(clean.orderId(), instituteId)
                     .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND: no such order"));
@@ -340,6 +354,37 @@ public class CommerceReturnService {
             approveInside(order, ret, actor, clean.note());
         }
         return ret.getId();
+    }
+
+    /** What a counter return made: the return, its credit note and the credit. */
+    public record CounterReturn(String returnId, String returnNumber, String creditNoteId, String creditNoteNumber,
+                                BigDecimal credit) {
+    }
+
+    /**
+     * A return taken at the billing counter (WP-42), in the <b>caller's</b> transaction: created
+     * {@code COUNTER} and approved at once, then received at {@code locationId} with the units
+     * named by condition (and the pieces) in {@code received}: stock back, credit note, refund
+     * due raised, {@code qty_returned}. No request guard and no access check of its own: the
+     * POS route has both. {@code request} is a create body; its {@code requested_via} and
+     * {@code approve_now} are set here.
+     */
+    public CounterReturn counterReturnInside(String instituteId, ReturnDtos.CreateReturnRequest request,
+                                             String locationId, String number, String hash, String actor,
+                                             List<ReturnDtos.ReceiveLine> received) {
+        request.setRequestedVia(RequestedVia.COUNTER.name());
+        request.setApproveNow(Boolean.TRUE);
+        request.setLocationId(locationId);
+        Clean clean = validate(request, true);
+        Map<String, Named> named = named(received);
+        String returnId = createInside(instituteId, clean, locationId, number, hash, actor);
+        receiveInside(instituteId, returnId, clean.orderId(), ReturnStatus.APPROVED, null, named, actor,
+                clean.note());
+        CommerceReturn ret = returnRepository.findByIdAndInstituteId(returnId, instituteId).orElseThrow();
+        String noteNumber = ret.getCreditNoteId() == null ? null : creditNoteRepository.findById(ret.getCreditNoteId())
+                .map(CommerceCreditNote::getCreditNoteNumber).orElse(null);
+        return new CounterReturn(ret.getId(), ret.getReturnNumber(), ret.getCreditNoteId(), noteNumber,
+                ret.getCreditTotal());
     }
 
     /** {@code POST /returns/{id}/approve} (R2). */
@@ -534,6 +579,10 @@ public class CommerceReturnService {
                 rl.setPieceIdsJson(json(new ArrayList<>(n.pieces)));
             } else {
                 BigDecimal saleCost = saleCost(shipped, sales, line.getId());
+                if (saleCost == null && POS_CHANNEL.equals(order.getChannel())) {
+                    // A counter sale has no parcel: its line keeps the cost the POS_SALE took out at.
+                    saleCost = counterUnitCost(line);
+                }
                 StockPosting.StockPostingBuilder back = base.type(StockMovementType.RETURN)
                         .quantityDelta(rl.getQuantity()).idempotencyKey("RET:" + rl.getId());
                 if (saleCost != null) {
@@ -798,10 +847,12 @@ public class CommerceReturnService {
 
     // ================================================================== helpers
 
-    /** 409 unless the order is a delivered, paid (or COD awaiting remittance) order not sold at the counter. */
+    /**
+     * 409 unless the order is a delivered, paid (or COD awaiting remittance) order. A counter
+     * bill (channel POS) is returned the same way, at the counter or at this desk.
+     */
     static void requireReturnable(CommerceOrder order) {
-        if (CommerceOrderStatus.of(order.getStatus()) != CommerceOrderStatus.DELIVERED
-                || "POS".equals(order.getChannel())) {
+        if (CommerceOrderStatus.of(order.getStatus()) != CommerceOrderStatus.DELIVERED) {
             throw new ConflictException("ORDER_NOT_RETURNABLE: only a delivered order is returned here");
         }
         boolean paid = "PAID".equals(order.getPaymentStatus());
@@ -871,6 +922,17 @@ public class CommerceReturnService {
             }
         }
         return null;
+    }
+
+    /**
+     * The unit cost of a counter sale's line: its {@code cost_total} over its quantity (4
+     * decimals); null when the line has no cost.
+     */
+    static BigDecimal counterUnitCost(CommerceOrderLine line) {
+        if (line.getCostTotal() == null || line.getQuantity() == null || line.getQuantity() < 1) {
+            return null;
+        }
+        return line.getCostTotal().divide(BigDecimal.valueOf(line.getQuantity()), 4, RoundingMode.HALF_UP);
     }
 
     /** The order line's cost of the goods for {@code quantity} returned units; null when the line has none. */

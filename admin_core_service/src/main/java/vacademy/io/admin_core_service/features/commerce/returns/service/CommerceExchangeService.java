@@ -143,6 +143,15 @@ public class CommerceExchangeService {
      * remainder refund that still needs the gateway (executed after the commit), or null.
      */
     public String apply(Locked locked, CommerceOrder newOrder, Ask ask, String actor) {
+        return apply(locked, newOrder, ask, actor, null);
+    }
+
+    /**
+     * As {@link #apply(Locked, CommerceOrder, Ask, String)}, for an exchange at the till: the
+     * remainder refund is stamped with the counter session {@code posSessionId} (its cash leaves
+     * that drawer). The credit used on the new bill is not stamped: no money moves for it.
+     */
+    public String apply(Locked locked, CommerceOrder newOrder, Ask ask, String actor, String posSessionId) {
         CommerceOrder oldOrder = locked.oldOrder();
         CommerceReturn ret = locked.ret();
         BigDecimal applied = applied(locked.credit(), newOrder.getTotal());
@@ -175,7 +184,7 @@ public class CommerceExchangeService {
                     paymentId, null, null, reference, null,
                     status == RefundStatus.PROCESSED ? clock.today(oldOrder.getInstituteId()) : null,
                     "Exchange: the credit left over after order " + newOrder.getOrderNumber(),
-                    "EXCH_REST:" + newOrder.getId(), actor));
+                    "EXCH_REST:" + newOrder.getId(), actor, posSessionId));
             if (method == RefundMethod.GATEWAY) {
                 pendingGateway = remainder.getId();
             }

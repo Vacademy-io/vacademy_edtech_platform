@@ -335,9 +335,14 @@ public class PosSaleService {
             // The reason of every discount on the bill, line discounts included.
             reason = text(request.billDiscount().reason(), "bill_discount.reason", 200);
         }
+        if (reason == null) {
+            // A bill with line discounts only carries its reason at the top level.
+            reason = text(request.discountReason(), "discount_reason", 200);
+        }
         boolean lineDiscounts = lines.stream().anyMatch(l -> l.lineDiscount() != null && l.lineDiscount().signum() > 0);
         if ((billKind != null || lineDiscounts) && reason == null) {
-            throw validation("a discount needs a reason (bill_discount.reason, 1 to 200 characters)");
+            throw validation("a discount needs a reason (bill_discount.reason or discount_reason, 1 to 200 "
+                    + "characters)");
         }
 
         String phone = null;
@@ -874,8 +879,8 @@ public class PosSaleService {
         // 2.6 The exchange's refunds on the old order.
         boolean remainder = false;
         if (exchange != null) {
-            // B2 (WP-42 corrections) switches this to the overload that stamps the session.
-            remainder = exchanges().apply(exchange, order, clean.exchange(), actor) != null;
+            // The remainder refund (money out of this drawer) is stamped with the session.
+            remainder = exchanges().apply(exchange, order, clean.exchange(), actor, session.getId()) != null;
         }
 
         // 2.7 Paid: logs PAID, plans ACTIVE; the lines with their cost and piece. The logs were put

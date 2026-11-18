@@ -154,11 +154,25 @@ public class CommerceRefundService {
         this.ownTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
     }
 
-    /** One refund to write; see {@link #insertInside}. */
+    /**
+     * One refund to write; see {@link #insertInside}. {@code posSessionId} names the counter
+     * session whose drawer the money left (a counter return, an exchange's remainder at the
+     * till); null everywhere else.
+     */
     public record NewRefund(RefundKind kind, RefundSource source, RefundMethod method, RefundStatus status,
                             BigDecimal amount, String returnId, String creditNoteId, String gatewayPaymentId,
                             String gatewayRefundId, String gatewayStatus, String reference, String appliedOrderId,
-                            LocalDate paidOn, String reason, String idempotencyKey, String actor) {
+                            LocalDate paidOn, String reason, String idempotencyKey, String actor,
+                            String posSessionId) {
+
+        /** A refund outside the counter: no session. */
+        public NewRefund(RefundKind kind, RefundSource source, RefundMethod method, RefundStatus status,
+                         BigDecimal amount, String returnId, String creditNoteId, String gatewayPaymentId,
+                         String gatewayRefundId, String gatewayStatus, String reference, String appliedOrderId,
+                         LocalDate paidOn, String reason, String idempotencyKey, String actor) {
+            this(kind, source, method, status, amount, returnId, creditNoteId, gatewayPaymentId, gatewayRefundId,
+                    gatewayStatus, reference, appliedOrderId, paidOn, reason, idempotencyKey, actor, null);
+        }
     }
 
     /** What an outcome brings: who, the payout or bank reference, the payout day, the gateway's word. */
@@ -437,6 +451,7 @@ public class CommerceRefundService {
         }
         refund.setReference(n.reference());
         refund.setAppliedOrderId(n.appliedOrderId());
+        refund.setPosSessionId(n.posSessionId());
         refund.setPaidOn(n.paidOn());
         refund.setReason(n.reason());
         refund.setIdempotencyKey(n.idempotencyKey());

@@ -268,7 +268,8 @@ public final class PosDtos {
     /**
      * The body of {@code POST /pos/sales}, {@code POST /pos/quote} (without the key, tenders and
      * approval) and {@code POST /pos/bill-book-entries} (with {@code book_number} and
-     * {@code document_date}).
+     * {@code document_date}). {@code discount_reason} is the reason of the bill's discounts when
+     * {@code bill_discount} carries none (a bill with line discounts only).
      */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -276,12 +277,20 @@ public final class PosDtos {
                               BillDiscount billDiscount, Customer customer, List<Tender> tenders, Exchange exchange,
                               Approval approval,
                               @com.fasterxml.jackson.annotation.JsonProperty("notify") Boolean notifyBuyer,
-                              String bookNumber, String documentDate) {
+                              String bookNumber, String documentDate, String discountReason) {
+
+        /** A body without a top-level discount reason. */
+        public SaleRequest(String clientRequestId, String sessionId, List<SaleLine> lines,
+                           BillDiscount billDiscount, Customer customer, List<Tender> tenders, Exchange exchange,
+                           Approval approval, Boolean notifyBuyer, String bookNumber, String documentDate) {
+            this(clientRequestId, sessionId, lines, billDiscount, customer, tenders, exchange, approval, notifyBuyer,
+                    bookNumber, documentDate, null);
+        }
 
         /** The same body without the PIN: what the request hash is taken over. */
         public SaleRequest withoutApproval() {
             return new SaleRequest(clientRequestId, sessionId, lines, billDiscount, customer, tenders, exchange, null,
-                    notifyBuyer, bookNumber, documentDate);
+                    notifyBuyer, bookNumber, documentDate, discountReason);
         }
     }
 
@@ -407,5 +416,91 @@ public final class PosDtos {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record SaleAnswer(SaleDetail sale, Receipt receipt, boolean replayed) {
+    }
+
+    // ================================================================== corrections (void, tender change)
+
+    /** {@code POST /pos/sales/{orderId}/void}. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record VoidRequest(String clientRequestId, String reason, Approval approval) {
+
+        public VoidRequest withoutApproval() {
+            return new VoidRequest(clientRequestId, reason, null);
+        }
+    }
+
+    /** {@code POST /pos/sales/{orderId}/tenders/{tenderId}/change}. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TenderChangeRequest(String clientRequestId, String mode, String reference, Approval approval) {
+
+        public TenderChangeRequest withoutApproval() {
+            return new TenderChangeRequest(clientRequestId, mode, reference, null);
+        }
+    }
+
+    // ================================================================== sale lookup
+
+    /** {@code GET /pos/sales/lookup}: at most 10 delivered bills, newest first. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record SalesLookup(List<SaleRow> sales) {
+    }
+
+    // ================================================================== counter returns
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ReturnLine(String orderLineId, Integer quantity, String condition, List<String> pieceIds) {
+    }
+
+    /** {@code POST /pos/returns/preview}; {@code reason} is optional here. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ReturnPreviewRequest(String sessionId, String orderId, List<ReturnLine> lines, String reason,
+                                       Settle settle) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Returnable(String orderLineId, int returnable) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ReturnPreview(List<Returnable> returnable, List<String> warnings,
+                                vacademy.io.admin_core_service.features.commerce.returns.dto.ReturnDtos.Policy policy,
+                                BigDecimal creditEstimate, List<String> needsApproval) {
+    }
+
+    /** How a counter return is settled: money back (CASH, UPI, BANK_TRANSFER) or credit for a new bill. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Settle(String kind, String method, String reference) {
+    }
+
+    /** {@code POST /pos/returns}. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ReturnRequest(String clientRequestId, String sessionId, String orderId, List<ReturnLine> lines,
+                                String reason, String reasonNote, String overrideReason, Settle settle,
+                                Approval approval) {
+
+        public ReturnRequest withoutApproval() {
+            return new ReturnRequest(clientRequestId, sessionId, orderId, lines, reason, reasonNote, overrideReason,
+                    settle, null);
+        }
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record RefundRef(String id, String method, BigDecimal amount, String status) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ReturnAnswer(String returnId, String returnNumber, String creditNoteId, String creditNoteNumber,
+                               BigDecimal credit, RefundRef refund, BigDecimal exchangeCredit, boolean replayed) {
     }
 }
