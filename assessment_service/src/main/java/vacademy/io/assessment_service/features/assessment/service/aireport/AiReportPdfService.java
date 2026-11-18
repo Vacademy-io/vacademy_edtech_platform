@@ -142,6 +142,17 @@ public class AiReportPdfService {
         return builder.buildWeb(withReportOptions(model, assessmentId, profileService.resolve(assessmentId, instituteId)));
     }
 
+    /**
+     * The AI report as data for the learner app's on-screen report: the same model and report
+     * options as the PDF download, so the numbers on screen and in the file always agree.
+     */
+    public AiReportWebData renderWebData(String userId, String assessmentId, String attemptId, String instituteId,
+                                         StudentReportOverallDetailDto detail, String processedJson) throws Exception {
+        AiReportModel model = dataService.load(userId, assessmentId, attemptId, instituteId,
+                objectMapper.readTree(processedJson), branding(instituteId), detail);
+        return AiReportWebData.from(withReportOptions(model, assessmentId, profileService.resolve(assessmentId, instituteId)), builder);
+    }
+
     // The model and profile of the last render on this thread, so notification variables can be
     // built without loading the data twice.
     private final ThreadLocal<AiReportModel> lastModel = new ThreadLocal<>();
