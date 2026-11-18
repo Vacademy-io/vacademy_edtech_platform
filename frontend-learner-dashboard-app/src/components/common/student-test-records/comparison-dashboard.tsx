@@ -35,6 +35,7 @@ import {
   EXPORT_ASSESSMENT_REPORT,
 } from "@/constants/urls";
 import { reportQuestionTypeLabel } from "./cbe-review";
+import { RevisedTag } from "./revised-tag";
 import {
   renderStudentResponse,
   renderCorrectAnswer,
@@ -535,9 +536,14 @@ export function ComparisonDashboard({
           <p className="text-3xs font-semibold uppercase tracking-widest text-muted-foreground">
             {t("comparisonDashboard.masthead.reportType")}
           </p>
-          <h1 className="mt-1 text-h3 font-semibold text-foreground sm:text-h2">
-            {assessmentName}
-          </h1>
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h1 className="text-h3 font-semibold text-foreground sm:text-h2">
+              {assessmentName}
+            </h1>
+            {/* Marks changed after release; the server sends the date only
+                for a released result (spec W11). */}
+            <RevisedTag at={detailForStats?.result_revised_at} />
+          </div>
           {metaParts.length > 0 && (
             <p className="mt-1 text-caption text-muted-foreground">
               {metaParts.join(" · ")}

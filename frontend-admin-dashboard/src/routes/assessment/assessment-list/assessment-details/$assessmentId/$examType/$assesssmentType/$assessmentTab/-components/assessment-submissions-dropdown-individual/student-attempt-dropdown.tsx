@@ -11,17 +11,13 @@ import {
     DropdownMenuSubContent,
 } from '@/components/ui/dropdown-menu';
 import { MyButton } from '@/components/design-system/button';
-import { DotsThree, WarningCircle, Coins } from '@phosphor-icons/react';
-import { useToolCostPreview } from '@/components/common/ai-credits/useToolCostPreview';
-import { perPageCredits, typedPerAnswerCredits } from '@/services/ai-credits/get-ai-credits';
+import { DotsThree, WarningCircle } from '@phosphor-icons/react';
 import { AssessmentRevaluateStudentInterface } from '@/types/assessments/assessment-overview';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { StudentRevaluateQuestionWiseComponent } from './student-revaluate-question-wise-component';
 import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { SelectedFilterRevaluateInterface } from '@/types/assessments/assessment-revaluate-question-wise';
 import {
     getAttemptData,
-    getReleaseStudentResult,
     getRevaluateStudentResult,
     handleGetStudentReportExportPDF,
     provideReattemptToParticipants,
@@ -32,7 +28,6 @@ import { downloadFileFromUrl } from '@/lib/file-download';
 import { Route } from '../..';
 import { getInstituteId } from '@/constants/helper';
 import { toast } from 'sonner';
-import { SelectedReleaseResultFilterInterface } from '../AssessmentSubmissionsTab';
 import {
     getAssessmentDetails,
 } from '@/routes/assessment/create-assessment/$assessmentId/$examtype/-services/assessment-services';
@@ -45,7 +40,10 @@ import { UploadAnswerSheetDialog } from '@/routes/evaluation/evaluate/$assessmen
 import { ProctoringReviewDialog } from './ProctoringReviewDialog';
 import { StudentAiReportDialog } from './StudentAiReportDialog';
 import { useAiGradableQuestionCount } from '../../-utils/ai-gradable-questions';
-import { AttemptAnswersDialog } from './AttemptAnswersDialog';
+import { ReCheckWithAIConfirm, useAiCheckCost } from '../submission-review/ai-check-confirm';
+import { ReleaseSubmissionDialog } from '../submission-review/ReleaseSubmissionDialog';
+import { HideResultDialog, SendUpdateDialog } from '../submission-review/ResultActionDialogs';
+import { useAttemptMarking, useOpenSubmission } from '../submission-review/use-attempt-marking';
 
 const isEvaluatedStatus = (status?: string | null) => {
     const s = (status || '').toUpperCase();
@@ -122,80 +120,6 @@ const ProvideReattemptComponent = ({
     );
 };
 
-const ReleaseResultComponent = ({
-    student,
-    onClose,
-}: {
-    student: AssessmentRevaluateStudentInterface;
-    onClose: () => void;
-}) => {
-    const { t } = useTranslation('assessmentStudentAttemptDropdown');
-    const { assessmentId } = Route.useParams();
-    const instituteId = getInstituteId();
-    const getReleaseResultMutation = useMutation({
-        mutationFn: ({
-            assessmentId,
-            instituteId,
-            methodType,
-            selectedFilter,
-        }: {
-            assessmentId: string;
-            instituteId: string | undefined;
-            methodType: string;
-            selectedFilter: SelectedReleaseResultFilterInterface;
-        }) => getReleaseStudentResult(assessmentId, instituteId, methodType, selectedFilter),
-        onSuccess: () => {
-            toast.success(t('toasts.resultReleased'), {
-                className: 'success-toast',
-                duration: 4000,
-            });
-            onClose();
-        },
-        onError: (error: unknown) => {
-            throw error;
-        },
-    });
-
-    const handleReleaseResultStudent = () => {
-        getReleaseResultMutation.mutate({
-            assessmentId,
-            instituteId,
-            methodType: 'ENTIRE_ASSESSMENT_PARTICIPANTS',
-            selectedFilter: {
-                attempt_ids: [student.attempt_id],
-            },
-        });
-    };
-    return (
-        <DialogContent className="flex flex-col p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                {t('dialogs.releaseResult.title')}
-            </h1>
-            <div className="flex flex-col gap-2 p-4">
-                <div className="flex items-center text-danger-600">
-                    <p>{t('dialogs.attentionLabel')}</p>
-                    <WarningCircle size={18} />
-                </div>
-                <h1>
-                    {t('dialogs.releaseResult.confirmMessagePrefix')}{' '}
-                    <span className="text-primary-500">{student.full_name}</span>?
-                </h1>
-                <div className="flex justify-end">
-                    <MyButton
-                        type="button"
-                        scale="large"
-                        buttonType="primary"
-                        className="mt-4 font-medium"
-                        onClick={handleReleaseResultStudent} // Close the dialog when clicked
-                    >
-                        {t('dialogs.yes')}
-                    </MyButton>
-                </div>
-            </div>
-        </DialogContent>
-    );
-};
-
 /**
  * Starts the AI check on one attempt and opens its progress page. No model is
  * sent, so the platform's "evaluation" default decides; teachers do not pick one.
@@ -254,147 +178,6 @@ const useStartAiCheck = (student: AssessmentRevaluateStudentInterface, assessmen
             toast.error(serverReason || fallback, { id: toastId });
         },
     });
-};
-
-/**
- * What one AI check of this paper costs against the institute's balance. The dashboard's
- * server side only quotes (credit-check.dashboard-enforced=false in prod), so this is the
- * one thing stopping a check the institute cannot pay for. The check is billed per
- * question, and the saved sections carry no questions, so they come from the per-section
- * query (same count as the bulk quote). `enabled` keeps a row from fetching until its
- * menu is open.
- */
-const useAiCheckCost = (enabled: boolean, typedAnswerCount?: number) => {
-    // A copy: the pages are counted when the copy is read, so the screen shows the
-    // rate, and the balance check uses the minimum: one page. Typed (online) answers:
-    // billed per written answer at the row's typed_per_answer rate; a teacher's check
-    // grades every written question on the paper, so that count is the price.
-    const typed = typedAnswerCount != null;
-    const cost = useToolCostPreview(
-        'copy_check_evaluation',
-        typed
-            ? { answer_mode: 'TYPED', num_answers: Math.max(1, typedAnswerCount) }
-            : { num_pages: 1 },
-        enabled
-    );
-    return {
-        ...cost,
-        creditsPerPage: typed ? null : perPageCredits(cost.rate),
-        creditsPerAnswer: typed ? typedPerAnswerCredits(cost.rate) : null,
-    };
-};
-
-/**
- * A copy (or typed answers) already checked or under evaluation: a new check costs
- * credits and replaces its marks. Typed answers always come here first, also when not
- * marked yet (`firstCheck`): the teacher sees the price before the institute pays it.
- */
-const ReCheckWithAIConfirm = ({
-    student,
-    cost,
-    isStarting,
-    typedAnswers = false,
-    firstCheck = false,
-    onConfirm,
-    onClose,
-}: {
-    student: AssessmentRevaluateStudentInterface;
-    cost: ReturnType<typeof useAiCheckCost>;
-    isStarting: boolean;
-    /** An online test: the AI marks typed answers, billed per answer, not pages of a copy. */
-    typedAnswers?: boolean;
-    /** Typed answers not marked yet: a first check, not a re-check. */
-    firstCheck?: boolean;
-    onConfirm: () => void;
-    onClose: () => void;
-}) => {
-    const { t } = useTranslation('assessmentStudentAttemptDropdown');
-    const firstTyped = typedAnswers && firstCheck;
-    const perUnit = typedAnswers ? cost.creditsPerAnswer : cost.creditsPerPage;
-
-    return (
-        <DialogContent className="flex flex-col gap-4 p-0">
-            <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                {firstTyped
-                    ? t('dialogs.evaluateWithAI.checkTitleTyped')
-                    : typedAnswers
-                      ? t('dialogs.evaluateWithAI.recheckTitleTyped')
-                      : t('dialogs.evaluateWithAI.recheckTitle')}
-            </h1>
-            <div className="flex flex-col gap-4 p-4">
-                <p className="text-sm text-neutral-700">
-                    {firstTyped
-                        ? t('dialogs.evaluateWithAI.checkMessageTyped', { name: student.full_name })
-                        : typedAnswers
-                          ? t('dialogs.evaluateWithAI.recheckMessageTyped', {
-                                name: student.full_name,
-                            })
-                          : t('dialogs.evaluateWithAI.recheckMessage', {
-                                name: student.full_name,
-                            })}
-                </p>
-
-                {perUnit != null && (
-                    <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-neutral-50 p-3">
-                        <div className="flex items-center gap-2 text-sm text-neutral-700">
-                            <Coins size={16} className="text-primary-500" />
-                            <span>
-                                {t('dialogs.evaluateWithAI.estimatedCostLabel')}{' '}
-                                <span className="font-semibold text-neutral-900">
-                                    {typedAnswers
-                                        ? `${t('dialogs.evaluateWithAI.creditsCount', {
-                                              count: cost.credits ?? 0,
-                                          })} (${t('dialogs.evaluateWithAI.creditsPerAnswer', {
-                                              count: perUnit,
-                                          })})`
-                                        : t('dialogs.evaluateWithAI.creditsPerPage', {
-                                              count: perUnit,
-                                          })}
-                                </span>
-                            </span>
-                        </div>
-                        {cost.currentBalance != null && (
-                            <span className="text-xs text-neutral-500">
-                                {t('dialogs.evaluateWithAI.balance', {
-                                    count: cost.currentBalance,
-                                })}
-                            </span>
-                        )}
-                    </div>
-                )}
-
-                {cost.sufficient === false && (
-                    <div className="flex items-start gap-2 rounded-md bg-danger-50 p-3 text-xs text-danger-600">
-                        <WarningCircle size={16} className="mt-0.5 shrink-0" />
-                        <p>{t('dialogs.evaluateWithAI.insufficientCredits')}</p>
-                    </div>
-                )}
-
-                <div className="flex justify-end gap-2">
-                    <MyButton
-                        type="button"
-                        buttonType="secondary"
-                        onClick={onClose}
-                        disabled={isStarting}
-                    >
-                        {t('dialogs.cancel')}
-                    </MyButton>
-                    <MyButton
-                        type="button"
-                        buttonType="primary"
-                        onClick={onConfirm}
-                        disabled={isStarting || cost.sufficient === false}
-                    >
-                        {isStarting
-                            ? t('dialogs.evaluateWithAI.starting')
-                            : firstTyped
-                              ? t('dialogs.evaluateWithAI.checkConfirm')
-                              : t('dialogs.evaluateWithAI.recheckConfirm')}
-                    </MyButton>
-                </div>
-            </div>
-        </DialogContent>
-    );
 };
 
 const StudentRevaluateForEntireAssessmentComponent = ({
@@ -488,17 +271,24 @@ const StudentRevaluateForEntireAssessmentComponent = ({
     );
 };
 
-const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStudentInterface }) => {
+const StudentAttemptDropdown = ({
+    student,
+    getPageAttemptIds,
+}: {
+    student: AssessmentRevaluateStudentInterface;
+    /** The table page's attempt ids (as OpenCell passes), for Prev / Next on the Submission page. */
+    getPageAttemptIds?: () => string[];
+}) => {
     const { t } = useTranslation('assessmentStudentAttemptDropdown');
-    const { t: tAnswers } = useTranslation('assessmentAttemptAnswers');
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [proctoringOpen, setProctoringOpen] = useState(false);
     const [aiReportOpen, setAiReportOpen] = useState(false);
-    // Online test: "View Submission" opens every answer on screen, with marks to edit.
-    const [answersOpen, setAnswersOpen] = useState(false);
+    const [releaseOpen, setReleaseOpen] = useState(false);
+    const [sendUpdateOpen, setSendUpdateOpen] = useState(false);
+    const [hideOpen, setHideOpen] = useState(false);
     const { assessmentId, examType } = Route.useParams();
     const instituteId = getInstituteId();
     const navigate = useNavigate();
@@ -693,8 +483,13 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
     });
     // A released result is frozen against AI writes (the server answers 409), so the
     // item is not offered there. result_status is the row's report release status.
-    const isResultReleased =
-        (student as { result_status?: string | null }).result_status === 'RELEASED';
+    // Marking/Result for this row (seeded for the whole page by the tab): the release token
+    // and whether the result is out. Falls back to the row's own release status.
+    const { data: marking } = useAttemptMarking(assessmentId, student.attempt_id);
+    const openSubmission = useOpenSubmission();
+    const isResultReleased = marking
+        ? marking.result !== 'NOT_RELEASED'
+        : (student as { result_status?: string | null }).result_status === 'RELEASED';
     const canAiCheckTypedAnswers =
         !isManualEvaluation && !isResultReleased && (aiGradableQuestionCount ?? 0) > 0;
 
@@ -763,6 +558,23 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                     </MyButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
+                    {/* The Submission page. On an online test this is "View Submission" (the
+                        answers on screen, marks to edit); on a manual test "View Submission"
+                        below opens the learner's uploaded sheet, so the page is "Open submission". */}
+                    <DropdownMenuItem
+                        className="cursor-pointer font-semibold"
+                        onClick={() =>
+                            // Same list as the row's Open button: Prev / Next walk this page.
+                            // Without a page list, only this attempt, so an older list is not walked.
+                            openSubmission(student.attempt_id, {
+                                assessmentId,
+                                attemptIds: getPageAttemptIds?.() ?? [student.attempt_id],
+                                source: 'list',
+                            })
+                        }
+                    >
+                        {isManualEvaluation ? t('dropdown.openSubmission') : t('dropdown.viewSubmission')}
+                    </DropdownMenuItem>
                     {/* Manual attempts may have no uploaded answer sheet — offer
                         the admin an upload instead of a dead "View Submission". */}
                     {isManualEvaluation ? (
@@ -791,31 +603,21 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                             </DropdownMenuItem>
                         )
                     ) : (
-                        <>
-                            {/* Online test: the answers themselves, on screen (not the
-                                report PDF), with per-question marks the admin can change. */}
+                        /* A sheet attached to an online attempt (offline entry, admin
+                           upload) opens exactly as "View Submission" used to open it. */
+                        hasSubmissionFile && (
                             <DropdownMenuItem
                                 className="cursor-pointer"
-                                onClick={() => setAnswersOpen(true)}
+                                onSelect={(e) => {
+                                    e.preventDefault();
+                                    handleViewSubmission();
+                                }}
                             >
-                                {t('dropdown.viewSubmission')}
+                                {viewSubmissionMutation.isPending
+                                    ? t('dropdown.loadingSubmission')
+                                    : t('dropdown.viewAnswerSheet')}
                             </DropdownMenuItem>
-                            {/* A sheet attached to an online attempt (offline entry, admin
-                                upload) opens exactly as "View Submission" used to open it. */}
-                            {hasSubmissionFile && (
-                                <DropdownMenuItem
-                                    className="cursor-pointer"
-                                    onSelect={(e) => {
-                                        e.preventDefault();
-                                        handleViewSubmission();
-                                    }}
-                                >
-                                    {viewSubmissionMutation.isPending
-                                        ? t('dropdown.loadingSubmission')
-                                        : tAnswers('menu.answerSheet')}
-                                </DropdownMenuItem>
-                            )}
-                        </>
+                        )
                     )}
                     <DropdownMenuItem
                         className="cursor-pointer"
@@ -830,17 +632,14 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                         <DropdownMenuSubContent>
                             {!isManualEvaluation ? (
                                 <>
-                                    <DropdownMenuItem
-                                        className="cursor-pointer"
-                                        onClick={() => handleProvideReattempt('Question Wise')}
-                                    >
-                                        {t('dropdown.questionWise')}
-                                    </DropdownMenuItem>
+                                    {/* "Question Wise" is retired (spec §14): it re-scored a
+                                        question over AI and teacher marks. Per-question
+                                        re-marks live on the Submission page now. */}
                                     <DropdownMenuItem
                                         className="cursor-pointer"
                                         onClick={() => handleProvideReattempt('Entire Assessment')}
                                     >
-                                        {t('dropdown.entireAssessment')}
+                                        {t('dropdown.remarkWithKey')}
                                     </DropdownMenuItem>
                                     {canAiCheckTypedAnswers && (
                                         <DropdownMenuItem
@@ -864,7 +663,7 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                                         // to Evaluating just for opening it.
                                         onClick={handleManualEvaluate}
                                     >
-                                        {t('dropdown.manual')}
+                                        {t('dropdown.markOnSheet')}
                                     </DropdownMenuItem>
                                     <DropdownMenuItem
                                         className="cursor-pointer"
@@ -927,12 +726,32 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                             {t('dropdown.downloadAiReport')}
                         </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem
-                        className="cursor-pointer"
-                        onClick={() => handleProvideReattempt('Release Result')}
-                    >
-                        {t('dropdown.releaseResult')}
-                    </DropdownMenuItem>
+                    {isResultReleased ? (
+                        <>
+                            {/* Only when marks changed since the learner was last told. */}
+                            {marking?.result === 'RELEASED_CHANGED' && (
+                                <DropdownMenuItem
+                                    className="cursor-pointer"
+                                    onClick={() => setSendUpdateOpen(true)}
+                                >
+                                    {t('dropdown.sendUpdatedResult')}
+                                </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => setHideOpen(true)}
+                            >
+                                {t('dropdown.hideResultAgain')}
+                            </DropdownMenuItem>
+                        </>
+                    ) : (
+                        <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => setReleaseOpen(true)}
+                        >
+                            {t('dropdown.releaseResult')}
+                        </DropdownMenuItem>
+                    )}
                     {/* Always offered: an unproctored attempt simply shows an
                         empty log, and the reviewer learns that at a glance. */}
                     <DropdownMenuItem
@@ -943,17 +762,6 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
-
-            {answersOpen && (
-                <AttemptAnswersDialog
-                    open={answersOpen}
-                    onOpenChange={setAnswersOpen}
-                    assessmentId={assessmentId}
-                    instituteId={instituteId}
-                    attemptId={student.attempt_id}
-                    studentName={student.full_name}
-                />
-            )}
 
             {/* Admin-side answer sheet upload for manual attempts that have no
                 submission file. Lives outside the dropdown so it survives the
@@ -981,6 +789,31 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                 onOpenChange={setProctoringOpen}
             />
 
+            {/* Release / Send updated result / Hide result again (W1 row menu, W9 rules). */}
+            <ReleaseSubmissionDialog
+                attemptId={student.attempt_id}
+                assessmentId={assessmentId}
+                learnerName={student.full_name}
+                releaseToken={marking?.release_token}
+                aiDrafts={marking?.counts.ai_draft ?? 0}
+                open={releaseOpen}
+                onOpenChange={setReleaseOpen}
+            />
+            <SendUpdateDialog
+                attemptId={student.attempt_id}
+                assessmentId={assessmentId}
+                learnerName={student.full_name}
+                open={sendUpdateOpen}
+                onOpenChange={setSendUpdateOpen}
+            />
+            <HideResultDialog
+                attemptId={student.attempt_id}
+                assessmentId={assessmentId}
+                learnerName={student.full_name}
+                open={hideOpen}
+                onOpenChange={setHideOpen}
+            />
+
             {/* Dialog should be controlled by openDialog state */}
             <Dialog open={openDialog} onOpenChange={setOpenDialog}>
                 {selectedOption === 'Provide Reattempt' && (
@@ -989,20 +822,8 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                         onClose={() => setOpenDialog(false)}
                     />
                 )}
-                {selectedOption === 'Question Wise' && (
-                    <StudentRevaluateQuestionWiseComponent
-                        student={student}
-                        onClose={() => setOpenDialog(false)}
-                    />
-                )}
                 {selectedOption === 'Entire Assessment' && (
                     <StudentRevaluateForEntireAssessmentComponent
-                        student={student}
-                        onClose={() => setOpenDialog(false)}
-                    />
-                )}
-                {selectedOption === 'Release Result' && (
-                    <ReleaseResultComponent
                         student={student}
                         onClose={() => setOpenDialog(false)}
                     />

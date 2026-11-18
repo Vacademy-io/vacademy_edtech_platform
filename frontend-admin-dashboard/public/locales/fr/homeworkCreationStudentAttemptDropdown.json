@@ -21,7 +21,8 @@
         "revaluate": "Réévaluer",
         "questionWise": "Par question",
         "entireAssessment": "Évaluation entière",
-        "releaseResult": "Publier le résultat"
+        "releaseResult": "Publier le résultat",
+        "openSubmission": "Ouvrir la copie"
     },
     "toasts": {
         "releaseResultSuccess": "Votre tentative pour cette évaluation a été réévaluée. Veuillez vérifier votre e-mail !",

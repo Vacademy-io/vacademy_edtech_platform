@@ -35,7 +35,7 @@
             "recheckConfirm": "Re-check"
         },
         "revaluateEntireAssessment": {
-            "title": "Revaluate Entire Assessment",
+            "title": "Re-mark with answer key",
             "confirmMessagePrefix": "Are you sure you want to revaluate for",
             "confirmMessageSuffix": "for the entire assessment?"
         },
@@ -60,6 +60,7 @@
     "dropdown": {
         "checkingSubmission": "Checking Submission...",
         "viewSubmission": "View Submission",
+        "viewAnswerSheet": "View Answer Sheet",
         "loadingSubmission": "Loading Submission...",
         "uploadSubmission": "Upload Submission",
         "provideReattempt": "Provide Reattempt",
@@ -76,7 +77,12 @@
         "downloadReport": "Download Report",
         "releaseResult": "Release Result",
         "downloadAiReport": "Download AI Report",
-        "proctoring": "Proctoring"
+        "proctoring": "Proctoring",
+        "openSubmission": "Open submission",
+        "remarkWithKey": "Re-mark with answer key",
+        "markOnSheet": "Mark on the answer sheet",
+        "sendUpdatedResult": "Send updated result",
+        "hideResultAgain": "Hide result again"
     },
     "toasts": {
         "reattemptProvided": "Reattempt has been provided to {{name}}.",

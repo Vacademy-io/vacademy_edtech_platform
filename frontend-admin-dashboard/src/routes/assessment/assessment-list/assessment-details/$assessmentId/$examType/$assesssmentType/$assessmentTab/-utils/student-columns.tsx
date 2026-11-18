@@ -8,9 +8,10 @@ import { MyDropdown } from '@/components/design-system/dropdown';
 import { StudentTable } from '@/types/student-table-types';
 import { AssessmentStatusOptions } from '../-components/AssessmentStatusOptions';
 import { SubmissionFileCell } from '../-components/SubmissionFileCell';
-import { EvaluationStatusCell } from '../-components/EvaluationStatusCell';
+import { MarkingCell } from '../-components/submission-review/MarkingCell';
+import { ResultCell } from '../-components/submission-review/ResultCell';
+import { OpenCell, OpenScoreCell, pageAttemptIds } from '../-components/submission-review/OpenCell';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
-import { StatusChips } from '@/components/design-system/chips';
 import { useSidebar } from '@/components/ui/sidebar';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
@@ -159,64 +160,8 @@ const StudentIdentityCell = ({ row }: { row: Row<StudentTable> }) => {
     );
 };
 
-// Score arrives pre-formatted as "18.00 / 20". Splitting it lets the mark carry the weight
-// and the denominator recede, so a column of scores can be compared at a glance.
-const ScoreCell = ({ row }: { row: Row<StudentTable> }) => {
-    const { handleClick } = useClickHandlers();
-    const raw = String(row.getValue('score') ?? '');
-    const separator = raw.indexOf(' / ');
-
-    return (
-        <div
-            onClick={(event) => handleClick(event, row)}
-            className="cursor-pointer whitespace-nowrap"
-        >
-            {separator === -1 ? (
-                raw
-            ) : (
-                <>
-                    {/* The achieved mark carries the accent, the denominator recedes — but
-                        only once something has actually been awarded. Painting a zero green
-                        reads as "good" on an ungraded or blank attempt. */}
-                    <span
-                        className={
-                            parseFloat(raw) > 0
-                                ? 'font-semibold text-primary-500'
-                                : 'font-semibold text-neutral-700'
-                        }
-                    >
-                        {raw.slice(0, separator)}
-                    </span>
-                    <span className="text-neutral-400">{raw.slice(separator)}</span>
-                </>
-            )}
-        </div>
-    );
-};
-
-// Result Status chip.
-//
-// This used to call <StatusChips status="released" />, but `released` is not one of
-// ActivityStatusData's keys, so StatusChips bailed out on its `if (!statusData) return
-// null` guard and the column rendered *empty* for every released submission. This file
-// is @ts-nocheck'd, so the invalid status string was never typechecked. Map onto
-// statuses that actually exist and pass the label explicitly.
-//
-// Also replaces a second, hand-rolled copy on the external column set that used raw
-// bg-green-100 / bg-gray-100 palette colours instead of the design system.
-const ResultStatusCell = ({ row }: { row: Row<StudentTable> }) => {
-    const { t } = useTranslation('assessmentStudentColumns');
-    const status = row.original.result_status;
-    if (status !== 'RELEASED' && status !== 'PENDING') {
-        return <span className="text-body text-neutral-400">{t('status.notAvailable')}</span>;
-    }
-    const isReleased = status === 'RELEASED';
-    return (
-        <StatusChips status={isReleased ? 'success' : 'inactive'} className="whitespace-nowrap">
-            {isReleased ? t('status.released') : t('status.notReleased')}
-        </StatusChips>
-    );
-};
+// Score and Result cells for the Attempted tables live in ../-components/submission-review
+// (OpenScoreCell opens the Submission page; ResultCell knows "Released, changed").
 
 // Reusable ASC/DESC sortable column header. `sortKey` is the frontend column id
 // the parent's `meta.onSort` maps to a backend sort key (studentName, score,
@@ -283,14 +228,46 @@ const EndTimeHeaderCell = () => {
     return <>{t('columns.endTime')}</>;
 };
 
-const EvaluationStatusHeaderCell = () => {
-    const { t } = useTranslation('assessmentStudentColumns');
-    return <>{t('columns.evaluationStatus')}</>;
+// W1 (submission review): "Marking" and "Result" replace the three-state chip, and an
+// "Open" column (plus the Score cell) opens the Submission page. The Name cell keeps
+// opening the student sidebar.
+const MarkingHeaderCell = () => {
+    const { t } = useTranslation('assessmentSubmissionReviewList');
+    return <>{t('columns.marking')}</>;
 };
 
-const ResultStatusHeaderCell = () => {
-    const { t } = useTranslation('assessmentStudentColumns');
-    return <>{t('columns.resultStatus')}</>;
+const ResultHeaderCell = () => {
+    const { t } = useTranslation('assessmentSubmissionReviewList');
+    return <>{t('columns.result')}</>;
+};
+
+const OpenHeaderCell = () => {
+    const { t } = useTranslation('assessmentSubmissionReviewList');
+    return <span className="sr-only">{t('columns.open')}</span>;
+};
+
+const markingColumn: ColumnDef<StudentTable> = {
+    accessorKey: 'evaluation_status',
+    header: MarkingHeaderCell,
+    cell: ({ row }) => <MarkingCell row={row} />,
+};
+
+const attemptedScoreColumn: ColumnDef<StudentTable> = {
+    accessorKey: 'score',
+    header: ScoreHeaderCell,
+    cell: ({ row, table }) => <OpenScoreCell row={row} table={table} />,
+};
+
+const attemptedResultColumn: ColumnDef<StudentTable> = {
+    accessorKey: 'result_status',
+    header: ResultHeaderCell,
+    cell: ({ row }) => <ResultCell row={row} />,
+};
+
+const openColumn: ColumnDef<StudentTable> = {
+    id: 'open',
+    header: OpenHeaderCell,
+    cell: ({ row, table }) => <OpenCell row={row} table={table} />,
 };
 
 const EnrollmentNumberHeaderCell = () => {
@@ -400,22 +377,11 @@ export const assessmentStatusStudentAttemptedColumnsInternal: ColumnDef<StudentT
         header: DurationHeaderCell,
         cell: ({ row }) => <DurationCell row={row} />,
     },
-    {
-        accessorKey: 'evaluation_status',
-        header: EvaluationStatusHeaderCell,
-        // Chip + (manual evaluation only) an eye button to open the evaluated copy.
-        cell: ({ row }) => <EvaluationStatusCell row={row} />,
-    },
-    {
-        accessorKey: 'score',
-        header: ScoreHeaderCell,
-        cell: ({ row }) => <ScoreCell row={row} />,
-    },
-    {
-        accessorKey: 'result_status',
-        header: ResultStatusHeaderCell,
-        cell: ({ row }) => <ResultStatusCell row={row} />,
-    },
+    // Marking replaces the evaluation chip (it keeps the evaluated-copy eye button).
+    markingColumn,
+    attemptedScoreColumn,
+    attemptedResultColumn,
+    openColumn,
 
     // Contact columns, mirroring what this tab's own CSV export already carries. Appended
     // rather than placed next to the name so Score and the status chips stay where people
@@ -438,8 +404,12 @@ export const assessmentStatusStudentAttemptedColumnsInternal: ColumnDef<StudentT
     {
         id: 'options',
         header: 'Actions',
-        cell: ({ row }) => (
-            <AssessmentStatusOptions student={row.original} studentType="Attempted" />
+        cell: ({ row, table }) => (
+            <AssessmentStatusOptions
+                student={row.original}
+                studentType="Attempted"
+                getPageAttemptIds={() => pageAttemptIds(table)}
+            />
         ),
     },
 ];
@@ -690,16 +660,10 @@ export const assessmentStatusStudentAttemptedColumnsExternal: ColumnDef<StudentT
         header: DurationHeaderCell,
         cell: ({ row }) => <DurationCell row={row} />,
     },
-    {
-        accessorKey: 'score',
-        header: ScoreHeaderCell,
-        cell: ({ row }) => <ScoreCell row={row} />,
-    },
-    {
-        accessorKey: 'result_status',
-        header: ResultStatusHeaderCell,
-        cell: ({ row }) => <ResultStatusCell row={row} />,
-    },
+    markingColumn,
+    attemptedScoreColumn,
+    attemptedResultColumn,
+    openColumn,
 
     // Contact columns, mirroring what this tab's own CSV export already carries. Appended
     // rather than placed next to the name so Score and the status chips stay where people
@@ -722,8 +686,12 @@ export const assessmentStatusStudentAttemptedColumnsExternal: ColumnDef<StudentT
     {
         id: 'options',
         header: 'Actions',
-        cell: ({ row }) => (
-            <AssessmentStatusOptions student={row.original} studentType="Attempted" />
+        cell: ({ row, table }) => (
+            <AssessmentStatusOptions
+                student={row.original}
+                studentType="Attempted"
+                getPageAttemptIds={() => pageAttemptIds(table)}
+            />
         ),
     },
 ];

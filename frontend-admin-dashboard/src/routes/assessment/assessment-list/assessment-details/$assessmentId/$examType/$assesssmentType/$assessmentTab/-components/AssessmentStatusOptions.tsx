@@ -6,13 +6,18 @@ import { AssessmentRevaluateStudentInterface } from '@/types/assessments/assessm
 export const AssessmentStatusOptions = ({
     student,
     studentType,
+    getPageAttemptIds,
 }: {
     student: AssessmentRevaluateStudentInterface;
     studentType: string;
+    /** The table page's attempt ids, for Prev / Next on the Submission page. */
+    getPageAttemptIds?: () => string[];
 }) => {
     return (
         <>
-            {studentType === 'Attempted' && <StudentAttemptDropdown student={student} />}
+            {studentType === 'Attempted' && (
+                <StudentAttemptDropdown student={student} getPageAttemptIds={getPageAttemptIds} />
+            )}
             {studentType === 'Pending' && <StudentPendingDropdown student={student} />}
             {studentType === 'Ongoing' && <StudentOngoingDropdown student={student} />}
         </>

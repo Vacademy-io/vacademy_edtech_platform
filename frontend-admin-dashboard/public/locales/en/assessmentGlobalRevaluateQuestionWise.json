@@ -1,6 +1,6 @@
 {
     "trigger": {
-        "questionWise": "Question Wise"
+        "questionWise": "Re-mark with answer key (by question)"
     },
     "table": {
         "questionNumber": "Q.No.",

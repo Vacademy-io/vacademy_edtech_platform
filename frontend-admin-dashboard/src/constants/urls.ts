@@ -587,8 +587,6 @@ export const STUDENT_RE_REGISTER_OPERATION = `${BASE_URL}/admin-core-service/ins
 export const STUDENT_CSV_UPLOAD_URL = `${BASE_URL}/admin-core-service/institute/institute_learner-bulk/v1/upload-csv`;
 export const STUDENT_REPORT_URL = `${BASE_URL}/assessment-service/assessment/admin/get-student-report`;
 export const STUDENT_REPORT_DETAIL_URL = `${BASE_URL}/assessment-service/admin/participants/get-report-detail`;
-// PUT: staff sets one question's marks on one attempt (submission view).
-export const OVERRIDE_QUESTION_MARKS_URL = `${BASE_URL}/assessment-service/admin/participants/question-marks`;
 export const GET_INSTITUTE_USERS = `${BASE_URL}/auth-service/v1/user-roles/users-of-status`;
 export const GET_USER_ROLES_COUNT = `${BASE_URL}/auth-service/v1/user-roles/user-roles-count`;
 export const GET_USER_AUTOSUGGEST = `${BASE_URL}/auth-service/v1/user/autosuggest-users`;
@@ -682,6 +680,8 @@ export const GET_PARTICIPANT_REGISTRATION_DETAILS = `${BASE_URL}/assessment-serv
 export const GET_PARTICIPANTS_QUESTION_WISE = `${BASE_URL}/assessment-service/assessment/admin-participants/all/respondent-list`;
 export const GET_REVALUATE_STUDENT_RESULT = `${BASE_URL}/assessment-service/assessment/admin/revaluate`;
 export const GET_RELEASE_STUDENT_RESULT = `${BASE_URL}/assessment-service/admin/participants/release-result`;
+// Submission review (one submission's marks, history and release), phase 1a.
+export const SUBMISSION_REVIEW_BASE = `${BASE_URL}/assessment-service/assessment/submission-review/v1`;
 export const PROVIDE_REATTEMPT_URL = `${BASE_URL}/assessment-service/admin/participants/provide-reattempt`;
 // Learner-raised reattempt / time-extension requests awaiting an admin decision.
 export const REATTEMPT_REQUEST_LIST_URL = `${BASE_URL}/assessment-service/admin/reattempt-request/v1/list`;

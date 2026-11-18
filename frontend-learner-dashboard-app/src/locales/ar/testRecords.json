@@ -1,4 +1,7 @@
 {
+    "revisedTag": "عُدِّلت {{date}}",
+    "revisedTagShort": "عُدِّلت",
+    "revisedTagHint": "غيّر معلمك هذه النتيجة بعد إصدارها. الدرجات المعروضة هي الأحدث.",
     "common": {
         "correct": "صحيح",
         "incorrect": "غير صحيح",

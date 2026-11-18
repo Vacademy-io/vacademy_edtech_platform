@@ -47,7 +47,7 @@
             "recheckConfirm": "إعادة التصحيح"
         },
         "revaluateEntireAssessment": {
-            "title": "إعادة تقييم الاختبار بالكامل",
+            "title": "إعادة التصحيح بمفتاح الإجابة",
             "confirmMessagePrefix": "هل أنت متأكد أنك تريد إعادة التقييم لـ",
             "confirmMessageSuffix": "بالنسبة للاختبار بالكامل؟"
         },
@@ -72,6 +72,7 @@
     "dropdown": {
         "checkingSubmission": "جارٍ التحقق من المشاركة...",
         "viewSubmission": "عرض المشاركة",
+        "viewAnswerSheet": "عرض ورقة الإجابة",
         "loadingSubmission": "جارٍ تحميل المشاركة...",
         "uploadSubmission": "رفع المشاركة",
         "provideReattempt": "منح محاولة إعادة",
@@ -88,7 +89,12 @@
         "downloadReport": "تنزيل التقرير",
         "releaseResult": "نشر النتيجة",
         "downloadAiReport": "تنزيل تقرير الذكاء الاصطناعي",
-        "proctoring": "المراقبة"
+        "proctoring": "المراقبة",
+        "openSubmission": "فتح الإجابة",
+        "remarkWithKey": "إعادة التصحيح بمفتاح الإجابة",
+        "markOnSheet": "التصحيح على ورقة الإجابة",
+        "sendUpdatedResult": "إرسال النتيجة المحدّثة",
+        "hideResultAgain": "إخفاء النتيجة مجددًا"
     },
     "toasts": {
         "reattemptProvided": "تم منح {{name}} فرصة إعادة المحاولة.",

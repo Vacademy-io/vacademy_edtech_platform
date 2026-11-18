@@ -261,6 +261,7 @@ import { Route as CommerceOrdersOrderIdIndexRouteImport } from "./routes/commerc
 import { Route as CommerceCustomersCustomerIdIndexRouteImport } from "./routes/commerce/customers/$customerId/index"
 import { Route as AudienceManagerListCampaignUsersIndexRouteImport } from "./routes/audience-manager/list/campaign-users/index"
 import { Route as AudienceManagerLeadAgentAgentIdIndexRouteImport } from "./routes/audience-manager/lead-agent/$agentId/index"
+import { Route as AssessmentSubmissionAttemptIdIndexRouteImport } from "./routes/assessment/submission/$attemptId/index"
 import { Route as AssessmentExportAssessmentIdIndexRouteImport } from "./routes/assessment/export/$assessmentId/index"
 import { Route as AiCenterAiToolsVsmartUploadIndexRouteImport } from "./routes/ai-center/ai-tools/vsmart-upload/index"
 import { Route as AiCenterAiToolsVsmartSorterIndexRouteImport } from "./routes/ai-center/ai-tools/vsmart-sorter/index"
@@ -2218,6 +2219,12 @@ const AudienceManagerLeadAgentAgentIdIndexRoute =
       (d) => d.Route,
     ),
   )
+const AssessmentSubmissionAttemptIdIndexRoute =
+  AssessmentSubmissionAttemptIdIndexRouteImport.update({
+    id: "/assessment/submission/$attemptId/",
+    path: "/assessment/submission/$attemptId/",
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AssessmentExportAssessmentIdIndexRoute =
   AssessmentExportAssessmentIdIndexRouteImport.update({
     id: "/assessment/export/$assessmentId/",
@@ -2844,6 +2851,7 @@ export interface FileRoutesByFullPath {
   "/ai-center/ai-tools/vsmart-sorter/": typeof AiCenterAiToolsVsmartSorterIndexRoute
   "/ai-center/ai-tools/vsmart-upload/": typeof AiCenterAiToolsVsmartUploadIndexRoute
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
+  "/assessment/submission/$attemptId/": typeof AssessmentSubmissionAttemptIdIndexRoute
   "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
   "/commerce/customers/$customerId/": typeof CommerceCustomersCustomerIdIndexRoute
@@ -3143,6 +3151,7 @@ export interface FileRoutesByTo {
   "/ai-center/ai-tools/vsmart-sorter": typeof AiCenterAiToolsVsmartSorterIndexRoute
   "/ai-center/ai-tools/vsmart-upload": typeof AiCenterAiToolsVsmartUploadIndexRoute
   "/assessment/export/$assessmentId": typeof AssessmentExportAssessmentIdIndexRoute
+  "/assessment/submission/$attemptId": typeof AssessmentSubmissionAttemptIdIndexRoute
   "/audience-manager/lead-agent/$agentId": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users": typeof AudienceManagerListCampaignUsersIndexRoute
   "/commerce/customers/$customerId": typeof CommerceCustomersCustomerIdIndexRoute
@@ -3445,6 +3454,7 @@ export interface FileRoutesById {
   "/ai-center/ai-tools/vsmart-sorter/": typeof AiCenterAiToolsVsmartSorterIndexRoute
   "/ai-center/ai-tools/vsmart-upload/": typeof AiCenterAiToolsVsmartUploadIndexRoute
   "/assessment/export/$assessmentId/": typeof AssessmentExportAssessmentIdIndexRoute
+  "/assessment/submission/$attemptId/": typeof AssessmentSubmissionAttemptIdIndexRoute
   "/audience-manager/lead-agent/$agentId/": typeof AudienceManagerLeadAgentAgentIdIndexRoute
   "/audience-manager/list/campaign-users/": typeof AudienceManagerListCampaignUsersIndexRoute
   "/commerce/customers/$customerId/": typeof CommerceCustomersCustomerIdIndexRoute
@@ -3748,6 +3758,7 @@ export interface FileRouteTypes {
     | "/ai-center/ai-tools/vsmart-sorter/"
     | "/ai-center/ai-tools/vsmart-upload/"
     | "/assessment/export/$assessmentId/"
+    | "/assessment/submission/$attemptId/"
     | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
     | "/commerce/customers/$customerId/"
@@ -4047,6 +4058,7 @@ export interface FileRouteTypes {
     | "/ai-center/ai-tools/vsmart-sorter"
     | "/ai-center/ai-tools/vsmart-upload"
     | "/assessment/export/$assessmentId"
+    | "/assessment/submission/$attemptId"
     | "/audience-manager/lead-agent/$agentId"
     | "/audience-manager/list/campaign-users"
     | "/commerce/customers/$customerId"
@@ -4348,6 +4360,7 @@ export interface FileRouteTypes {
     | "/ai-center/ai-tools/vsmart-sorter/"
     | "/ai-center/ai-tools/vsmart-upload/"
     | "/assessment/export/$assessmentId/"
+    | "/assessment/submission/$attemptId/"
     | "/audience-manager/lead-agent/$agentId/"
     | "/audience-manager/list/campaign-users/"
     | "/commerce/customers/$customerId/"
@@ -4641,6 +4654,7 @@ export interface RootRouteChildren {
   AiCenterAiToolsVsmartSorterIndexRoute: typeof AiCenterAiToolsVsmartSorterIndexRoute
   AiCenterAiToolsVsmartUploadIndexRoute: typeof AiCenterAiToolsVsmartUploadIndexRoute
   AssessmentExportAssessmentIdIndexRoute: typeof AssessmentExportAssessmentIdIndexRoute
+  AssessmentSubmissionAttemptIdIndexRoute: typeof AssessmentSubmissionAttemptIdIndexRoute
   AudienceManagerLeadAgentAgentIdIndexRoute: typeof AudienceManagerLeadAgentAgentIdIndexRoute
   AudienceManagerListCampaignUsersIndexRoute: typeof AudienceManagerListCampaignUsersIndexRoute
   CommerceCustomersCustomerIdIndexRoute: typeof CommerceCustomersCustomerIdIndexRoute
@@ -6502,6 +6516,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AudienceManagerLeadAgentAgentIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/assessment/submission/$attemptId/": {
+      id: "/assessment/submission/$attemptId/"
+      path: "/assessment/submission/$attemptId"
+      fullPath: "/assessment/submission/$attemptId/"
+      preLoaderRoute: typeof AssessmentSubmissionAttemptIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/assessment/export/$assessmentId/": {
       id: "/assessment/export/$assessmentId/"
       path: "/assessment/export/$assessmentId"
@@ -7094,6 +7115,8 @@ const rootRouteChildren: RootRouteChildren = {
   AiCenterAiToolsVsmartUploadIndexRoute: AiCenterAiToolsVsmartUploadIndexRoute,
   AssessmentExportAssessmentIdIndexRoute:
     AssessmentExportAssessmentIdIndexRoute,
+  AssessmentSubmissionAttemptIdIndexRoute:
+    AssessmentSubmissionAttemptIdIndexRoute,
   AudienceManagerLeadAgentAgentIdIndexRoute:
     AudienceManagerLeadAgentAgentIdIndexRoute,
   AudienceManagerListCampaignUsersIndexRoute:

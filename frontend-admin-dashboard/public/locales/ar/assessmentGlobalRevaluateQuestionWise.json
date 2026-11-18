@@ -1,6 +1,6 @@
 {
     "trigger": {
-        "questionWise": "حسب السؤال"
+        "questionWise": "إعادة التصحيح بمفتاح الإجابة (حسب السؤال)"
     },
     "table": {
         "questionNumber": "رقم السؤال",

@@ -42,5 +42,6 @@
         "explanation": "Explication :",
         "noResponse": "Aucune réponse",
         "empty": "Aucune révision de réponse disponible"
-    }
+    },
+    "openSubmission": "Ouvrir la copie"
 }

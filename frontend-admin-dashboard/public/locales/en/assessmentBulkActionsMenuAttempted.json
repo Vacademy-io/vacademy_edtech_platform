@@ -6,7 +6,9 @@
         "entireAssessment": "Entire Assessment",
         "releaseResult": "Release Result",
         "exportReports": "Export Reports (ZIP)",
-        "checkWithAi": "Check / Re-check with AI"
+        "checkWithAi": "Check / Re-check with AI",
+        "remarkWithKey": "Re-mark with answer key",
+        "remarkByQuestion": "Re-mark with answer key (by question)"
     },
     "actionInfo": {
         "selectedStudents_one": "{{count}} student",

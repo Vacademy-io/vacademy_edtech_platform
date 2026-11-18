@@ -163,7 +163,8 @@
         "assign": "Assign learner",
         "skip": "Skip",
         "retry": "Retry",
-        "fixAnswers": "Fix flagged answers"
+        "fixAnswers": "Fix flagged answers",
+        "openSubmission": "Open submission"
     },
     "assign": {
         "title": "Assign this sheet to a learner",

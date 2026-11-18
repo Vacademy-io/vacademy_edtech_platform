@@ -9,7 +9,9 @@ const ATTEMPTED = [
     { accessorKey: 'package_session_id' },
     { accessorKey: 'attempt_date' },
     { accessorKey: 'score' },
+    { accessorKey: 'evaluation_status' },
     { accessorKey: 'result_status' },
+    { id: 'open' },
     { accessorKey: 'email' },
     { accessorKey: 'mobile_number' },
     { accessorKey: 'username' },
@@ -27,7 +29,8 @@ describe('columnIdOf', () => {
 });
 
 describe('toggleableColumnIds', () => {
-    it('never offers the select box, detail arrow or row menu', () => {
+    it('never offers the select box, detail arrow, Open button or row menu', () => {
+        expect(toggleableColumnIds(ATTEMPTED)).not.toContain('open');
         expect(toggleableColumnIds(ATTEMPTED)).not.toContain('checkbox');
         expect(toggleableColumnIds(ATTEMPTED)).not.toContain('details');
         expect(toggleableColumnIds(ATTEMPTED)).not.toContain('options');
@@ -72,6 +75,12 @@ describe('applyColumnLayout — ordering', () => {
         expect(out[1]).toBe('details');
         expect(out.at(-1)).toBe('options');
         expect(out.filter((id) => id === 'options')).toHaveLength(1);
+    });
+
+    it('keeps the Open button just before the row menu, whatever the order', () => {
+        const saved = ['result_status', 'full_name', 'username'];
+        const out = ids(applyColumnLayout(ATTEMPTED, new Set(['open']), saved));
+        expect(out.slice(-2)).toEqual(['open', 'options']);
     });
 
     it('applies the order the user dragged', () => {

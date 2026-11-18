@@ -65,6 +65,8 @@ import { ControlledStudentSidebarProvider } from '@/routes/manage-students/stude
 import { BulkActions } from './bulk-actions/bulk-actions';
 import { AssessmentSubmissionsStudentTable } from './AssessmentSubmissionsStudentTable';
 import { SubmissionsSummaryStrip } from './SubmissionsSummaryStrip';
+import { MarkingStatusLine } from './submission-review/MarkingStatusLine';
+import { seedPageMarkings } from './submission-review/use-attempt-marking';
 import { AssessmentReportZipExportDialog } from './AssessmentReportZipExportDialog';
 import { AiAssessmentReportDialog } from './AiAssessmentReportDialog';
 import { AssessmentExportCsvDialog } from './AssessmentExportCsvDialog';
@@ -82,7 +84,6 @@ import AssessmentGlobalLevelRevaluateAssessment from './assessment-global-level-
 import { AssessmentGlobalLevelRevaluateQuestionWise } from './assessment-global-level-revaluate/assessment-global-level-revaluate-question-wise';
 import { AssessmentGlobalLevelReleaseResultAssessment } from './assessment-global-level-revaluate/assessment-global-level-release-result-assessment';
 import { useRef } from 'react';
-import { SUBMISSIONS_REFRESH_EVENT } from '../-utils/submissions-refresh';
 import { useUsersCredentials } from '@/routes/manage-students/students-list/-services/usersCredentials';
 import { OpenStudentSidebar } from '@/routes/manage-students/students-list/-components/students-list/student-side-view/open-student-side-view';
 import { useNavigate } from '@tanstack/react-router';
@@ -102,6 +103,7 @@ import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import type { SubmissionStudentData } from '@/types/assessments/assessment-overview';
+import { placeToRestore, useSubmissionsListReturnStore } from './submission-review/list-return-store';
 import { SendMessageDialog } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/bulk-actions/send-message-dialog';
 import { SendEmailDialog } from '@/routes/manage-students/students-list/-components/students-list/student-list-section/bulk-actions/send-email-dialog';
 
@@ -186,7 +188,8 @@ const ATTEMPTED_COLUMN_WIDTH_TRIM: Record<string, string> = {
     duration: 'min-w-[110px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
     score: 'min-w-[110px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
     evaluation_status: 'min-w-[150px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
-    result_status: 'min-w-[140px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
+    result_status: 'min-w-[170px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
+    open: 'min-w-[96px]', // design-lint-ignore: pixel column widths, matching table-layout.tsx
 };
 
 /** Popover labels. Most headers are render functions (sort dropdowns, chips), so they
@@ -201,8 +204,8 @@ const COLUMN_LABELS: Record<string, string> = {
     duration: 'Duration',
     score: 'Score',
     submission_file: 'Submission',
-    evaluation_status: 'Evaluation Status',
-    result_status: 'Result Status',
+    evaluation_status: 'Marking',
+    result_status: 'Result',
     email: 'Email',
     mobile_number: 'Phone Number',
     username: 'Username',
@@ -281,27 +284,39 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     const { data: totalMarks } = useSuspenseQuery(
         handleGetAssessmentTotalMarksData({ assessmentId })
     );
-    const [selectedParticipantsTab, setSelectedParticipantsTab] = useState('internal');
-    const [selectedTab, setSelectedTab] = useState('Attempted');
+    // Coming back from the Submission page: the page, rows per page, tabs, filters and
+    // search the teacher left (list-return-store). null on any other visit.
+    const [restoredPlace] = useState(() =>
+        placeToRestore<SelectedSubmissionsFilterInterface>(assessmentId)
+    );
+    const [selectedParticipantsTab, setSelectedParticipantsTab] = useState(
+        restoredPlace?.selectedParticipantsTab ?? 'internal'
+    );
+    const [selectedTab, setSelectedTab] = useState(restoredPlace?.selectedTab ?? 'Attempted');
     // Start on the mode that has learners (see initialSelectionMode): correcting it after
     // mount raced the mount fetch below.
     const [initialMode] = useState(() =>
         initialSelectionMode(hasBatchRegistrations, hasIndividualRegistrations)
     );
-    const [batchSelectionTab, setBatchSelectionTab] = useState<string>(initialMode);
-    const [page, setPage] = useState(0);
+    const [batchSelectionTab, setBatchSelectionTab] = useState<string>(
+        restoredPlace?.batchSelectionTab ?? initialMode
+    );
+    const [page, setPage] = useState(restoredPlace?.page ?? 0);
     const [selectedStudent, setSelectedStudent] = useState<StudentTable | null>(null);
-    const [selectedFilter, setSelectedFilter] = useState<SelectedSubmissionsFilterInterface>({
-        name: '',
-        assessment_type: assesssmentType,
-        attempt_type: ['ENDED'],
-        registration_source: registrationSourceForMode(initialMode),
-        batches: [],
-        status: ['ACTIVE'],
-        evaluation_status: [],
-        submission_status: [],
-        sort_columns: {},
-    });
+    const [selectedFilter, setSelectedFilter] = useState<SelectedSubmissionsFilterInterface>(
+        () =>
+            restoredPlace?.selectedFilter ?? {
+                name: '',
+                assessment_type: assesssmentType,
+                attempt_type: ['ENDED'],
+                registration_source: registrationSourceForMode(initialMode),
+                batches: [],
+                status: ['ACTIVE'],
+                evaluation_status: [],
+                submission_status: [],
+                sort_columns: {},
+            }
+    );
 
     // The exact filter behind the rows on screen: tab (attempt type), participant source,
     // and only the search / batch / status filters that were actually applied.
@@ -309,10 +324,10 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     // type on the request only, and batch picks land there before Apply. The report-card
     // ZIP resolves its selection from this, so it exports what the table lists.
     const [listedFilter, setListedFilter] = useState<SelectedSubmissionsFilterInterface>(
-        () => selectedFilter
+        () => restoredPlace?.listedFilter ?? selectedFilter
     );
 
-    const [searchText, setSearchText] = useState('');
+    const [searchText, setSearchText] = useState(restoredPlace?.searchText ?? '');
     const [participantsData, setParticipantsData] = useState({
         content: [],
         total_pages: 0,
@@ -326,7 +341,38 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
     const [participantsRequestGuard] = useState(createLatestRequestGuard);
     // Rows per page. Every fetch in this file used to hard-code 10; the value now flows
     // from here so the footer selector actually changes the request.
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(restoredPlace?.pageSize ?? 10);
+
+    // Remember the place on every change, so Back from the Submission page returns here.
+    // The "coming back" mark is spent by this mount, whether or not it matched.
+    const saveListPlace = useSubmissionsListReturnStore((s) => s.save);
+    const clearListReturning = useSubmissionsListReturnStore((s) => s.clearReturning);
+    useEffect(() => {
+        clearListReturning();
+    }, [clearListReturning]);
+    useEffect(() => {
+        saveListPlace(assessmentId, {
+            page,
+            pageSize,
+            selectedFilter,
+            listedFilter,
+            searchText,
+            selectedTab,
+            selectedParticipantsTab,
+            batchSelectionTab,
+        });
+    }, [
+        saveListPlace,
+        assessmentId,
+        page,
+        pageSize,
+        selectedFilter,
+        listedFilter,
+        searchText,
+        selectedTab,
+        selectedParticipantsTab,
+        batchSelectionTab,
+    ]);
     // Only the very first load blanks the whole tab. Later fetches — page change, filter,
     // sub-tab switch — keep the toolbar, stat strip and column headers on screen and show
     // their loading state as skeleton rows inside the table body instead.
@@ -465,6 +511,14 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                 }
             }
             if (context && !participantsRequestGuard.isLatest(context.requestToken)) return;
+            // Marking / Result columns: one marking-summary call for the whole page,
+            // seeded into each row's cache (contract §9.3, acceptance 12). Not awaited:
+            // the rows render at once and the two columns fill in when it lands.
+            void seedPageMarkings(
+                queryClient,
+                assessmentId,
+                (data?.content ?? []).map((student) => student.attempt_id).filter(Boolean)
+            );
             setParticipantsData(data);
         },
         onError: (error: unknown) => {
@@ -976,17 +1030,6 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
         }
     };
 
-    // A mark changed in a row's submission view: reload the table and the summary so
-    // the new total shows without pressing Refresh. The ref keeps the listener on the
-    // current filters/page.
-    const refreshLeaderboardRef = useRef(handleRefreshLeaderboard);
-    refreshLeaderboardRef.current = handleRefreshLeaderboard;
-    useEffect(() => {
-        const onRefresh = () => refreshLeaderboardRef.current();
-        window.addEventListener(SUBMISSIONS_REFRESH_EVENT, onRefresh);
-        return () => window.removeEventListener(SUBMISSIONS_REFRESH_EVENT, onRefresh);
-    }, []);
-
     const clearSearch = () => {
         setSearchText('');
         // Commit through setState, not by mutating the object in place: every other
@@ -1307,17 +1350,35 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
         const timer = setTimeout(() => {
             const fetchInitialParticipants = async () => {
                 setIsParticipantsLoading(true);
+                // Back from the Submission page: the exact request behind the rows the
+                // teacher left (tab source and attempt type included), not the default.
+                const mountFilter = restoredPlace?.listedFilter ?? selectedFilter;
                 try {
                     const attemptedData = await getAdminParticipants(
                         assessmentId,
                         instituteId,
                         page,
                         pageSize,
-                        selectedFilter
+                        mountFilter
                     );
                     if (participantsRequestGuard.isLatest(requestToken)) {
-                        setListedFilter(selectedFilter);
-                        setParticipantsData(attemptedData);
+                        // Marking / Result columns: one call for the page, before the rows
+                        // mount (a row without data would fetch on its own). Also what brings
+                        // them up to date when the admin comes back from the Submission page:
+                        // the row caches never refetch on mount, so edits made there would
+                        // otherwise show the old marking state. Never throws.
+                        await seedPageMarkings(
+                            queryClient,
+                            assessmentId,
+                            (attemptedData?.content ?? [])
+                                .map((student: SubmissionStudentData) => student.attempt_id)
+                                .filter(Boolean)
+                        );
+                        // Still the newest request after that wait?
+                        if (participantsRequestGuard.isLatest(requestToken)) {
+                            setListedFilter(mountFilter);
+                            setParticipantsData(attemptedData);
+                        }
                     }
                 } catch (error) {
                     console.log(error);
@@ -1629,7 +1690,10 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                     </div>
                                 </DialogContent>
                             </Dialog>
-                            <AssessmentGlobalLevelReleaseResultAssessment triggerClassName="!h-9 px-3" />
+                            <AssessmentGlobalLevelReleaseResultAssessment
+                                triggerClassName="!h-9 px-3"
+                                onReleased={handleRefreshLeaderboard}
+                            />
                         </>
                     )}
                     {isOfflineEntryEnabled && (
@@ -1874,6 +1938,12 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                             totalMarks={totalMarks.total_achievable_marks}
                             refreshKey={summaryRefreshKey}
                             isManualEvaluation={isManualEvaluation}
+                        />
+                    )}
+                    {selectedTab === 'Attempted' && (
+                        <MarkingStatusLine
+                            assessmentId={assessmentId}
+                            refreshKey={summaryRefreshKey}
                         />
                     )}
                     <TabsContent value={selectedTab} ref={tableRef}>

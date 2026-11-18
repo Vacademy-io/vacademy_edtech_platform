@@ -38,7 +38,7 @@
             "recheckConfirm": "Recorriger"
         },
         "revaluateEntireAssessment": {
-            "title": "Réévaluer l’ensemble de l’évaluation",
+            "title": "Recorriger avec le corrigé",
             "confirmMessagePrefix": "Voulez-vous vraiment effectuer la réévaluation pour",
             "confirmMessageSuffix": "pour l’ensemble de l’évaluation ?"
         },
@@ -63,6 +63,7 @@
     "dropdown": {
         "checkingSubmission": "Vérification de la soumission...",
         "viewSubmission": "Voir la soumission",
+        "viewAnswerSheet": "Voir la copie jointe",
         "loadingSubmission": "Chargement de la soumission...",
         "uploadSubmission": "Importer la soumission",
         "provideReattempt": "Accorder une nouvelle tentative",
@@ -79,7 +80,12 @@
         "downloadReport": "Télécharger le rapport",
         "releaseResult": "Publier le résultat",
         "downloadAiReport": "Télécharger le rapport IA",
-        "proctoring": "Surveillance"
+        "proctoring": "Surveillance",
+        "openSubmission": "Ouvrir la copie",
+        "remarkWithKey": "Recorriger avec le corrigé",
+        "markOnSheet": "Corriger sur la copie",
+        "sendUpdatedResult": "Envoyer le résultat mis à jour",
+        "hideResultAgain": "Masquer à nouveau le résultat"
     },
     "toasts": {
         "reattemptProvided": "Une nouvelle tentative a été accordée à {{name}}.",

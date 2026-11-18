@@ -35,7 +35,7 @@
             "recheckConfirm": "दोबारा जाँचें"
         },
         "revaluateEntireAssessment": {
-            "title": "संपूर्ण आकलन का पुनर्मूल्यांकन करें",
+            "title": "उत्तर कुंजी से फिर जाँचें",
             "confirmMessagePrefix": "क्या आप वाकई इसके लिए पुनर्मूल्यांकन करना चाहते हैं",
             "confirmMessageSuffix": "संपूर्ण आकलन के लिए?"
         },
@@ -60,6 +60,7 @@
     "dropdown": {
         "checkingSubmission": "सबमिशन जांची जा रही है...",
         "viewSubmission": "सबमिशन देखें",
+        "viewAnswerSheet": "उत्तर पुस्तिका देखें",
         "loadingSubmission": "सबमिशन लोड हो रही है...",
         "uploadSubmission": "सबमिशन अपलोड करें",
         "provideReattempt": "पुनः प्रयास प्रदान करें",
@@ -76,7 +77,12 @@
         "downloadReport": "रिपोर्ट डाउनलोड करें",
         "releaseResult": "परिणाम जारी करें",
         "downloadAiReport": "AI रिपोर्ट डाउनलोड करें",
-        "proctoring": "प्रॉक्टरिंग"
+        "proctoring": "प्रॉक्टरिंग",
+        "openSubmission": "सबमिशन खोलें",
+        "remarkWithKey": "उत्तर कुंजी से फिर जाँचें",
+        "markOnSheet": "उत्तर पत्रिका पर जाँचें",
+        "sendUpdatedResult": "अपडेट किया गया परिणाम भेजें",
+        "hideResultAgain": "परिणाम फिर से छिपाएँ"
     },
     "toasts": {
         "reattemptProvided": "{{name}} को पुनः प्रयास प्रदान कर दिया गया है।",

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Viewer, Worker, SpecialZoomLevel } from '@react-pdf-viewer/core';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import { fullScreenPlugin } from '@react-pdf-viewer/full-screen';
@@ -11,13 +11,17 @@ import '@react-pdf-viewer/full-screen/lib/styles/index.css';
 
 interface SimplePDFViewerProps {
     pdfUrl: string;
+    /** 0-based page to open on (the Submission page jumps to a question's page). */
+    initialPage?: number;
+    /** 0-based page to move to while open, without reloading the document. */
+    page?: number;
 }
 
 /**
  * Simple PDF Viewer component without route dependencies
  * Can be used anywhere in the application
  */
-const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({ pdfUrl }) => {
+const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({ pdfUrl, initialPage, page }) => {
     // Fit the page to width when entering/exiting fullscreen so it fills the
     // (much wider) fullscreen viewport instead of keeping its load-time scale
     // and leaving large empty side margins. defaultLayoutPlugin doesn't expose
@@ -42,6 +46,12 @@ const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({ pdfUrl }) => {
 
     const defaultLayoutPluginInstance = defaultLayoutPlugin({ renderToolbar });
     const { renderDefaultToolbar } = defaultLayoutPluginInstance.toolbarPluginInstance;
+    const { jumpToPage } = defaultLayoutPluginInstance.toolbarPluginInstance.pageNavigationPluginInstance;
+
+    useEffect(() => {
+        if (page != null && page >= 0) jumpToPage(page);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page]);
 
     return (
         <Worker workerUrl={PDF_WORKER_URL}>
@@ -50,6 +60,7 @@ const SimplePDFViewer: React.FC<SimplePDFViewerProps> = ({ pdfUrl }) => {
                     fileUrl={pdfUrl}
                     plugins={[defaultLayoutPluginInstance, fullScreenPluginInstance]}
                     defaultScale={SpecialZoomLevel.PageWidth}
+                    initialPage={initialPage}
                 />
             </div>
         </Worker>

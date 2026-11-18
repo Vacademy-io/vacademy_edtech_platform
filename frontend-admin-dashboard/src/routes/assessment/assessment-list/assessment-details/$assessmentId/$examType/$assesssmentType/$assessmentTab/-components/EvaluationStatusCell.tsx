@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { toast } from 'sonner';
@@ -20,7 +20,21 @@ import { Route } from '..';
 // Evaluation Status cell: the usual status chip, plus — for MANUAL evaluation
 // assessments whose attempt is already evaluated — an eye button that opens the
 // evaluated (annotated) copy of the answer sheet.
-export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
+//
+// The Marking column (submission-review/MarkingCell) reuses it with its own chip
+// (`chip`), its own "is it marked" answer (`evaluated`) and an Edit copy that opens
+// the Submission page with the sheet beside the marks (`onEditCopy`).
+export const EvaluationStatusCell = ({
+    row,
+    chip,
+    evaluated,
+    onEditCopy,
+}: {
+    row: Row<StudentTable>;
+    chip?: ReactNode;
+    evaluated?: boolean;
+    onEditCopy?: () => void;
+}) => {
     const { t } = useTranslation('assessmentEvaluationStatusCell');
     const { assessmentId, examType } = Route.useParams();
     const instituteId = getInstituteId();
@@ -94,6 +108,10 @@ export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
     // tool, so there is nothing to warn about.
     const openManualEditor = () => {
         if (!rowData.attempt_id) return;
+        if (onEditCopy) {
+            onEditCopy();
+            return;
+        }
         stashEvalReturnUrl(window.location.href);
         navigate({
             to: '/evaluation/evaluate/$assessmentId/$attemptId/$examType',
@@ -109,10 +127,12 @@ export const EvaluationStatusCell = ({ row }: { row: Row<StudentTable> }) => {
 
     return (
         <div className="flex items-center gap-2">
-            <StatusChips status={mappedStatus}>
-                {statusLabels[mappedStatus] ?? mappedStatus}
-            </StatusChips>
-            {isManualEvaluation && status === 'COMPLETED' && (
+            {chip ?? (
+                <StatusChips status={mappedStatus}>
+                    {statusLabels[mappedStatus] ?? mappedStatus}
+                </StatusChips>
+            )}
+            {isManualEvaluation && (evaluated ?? status === 'COMPLETED') && (
                 <MyButton
                     type="button"
                     buttonType="secondary"

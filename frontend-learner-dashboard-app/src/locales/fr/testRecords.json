@@ -1,4 +1,7 @@
 {
+    "revisedTag": "Révisé le {{date}}",
+    "revisedTagShort": "Révisé",
+    "revisedTagHint": "Votre enseignant a modifié ce résultat après sa publication. Les notes affichées sont les plus récentes.",
     "common": {
         "correct": "Correct",
         "incorrect": "Incorrect",
