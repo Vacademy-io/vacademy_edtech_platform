@@ -65,6 +65,7 @@ import type {
     TrackingPatchBody,
     TransitionBody,
 } from './order-types';
+import { normaliseScannedCode } from './use-scan-input';
 
 /**
  * Order desk services: one function per endpoint, no React. Every answer is
@@ -480,7 +481,8 @@ export async function patchShipment(shipmentId: string, body: TrackingPatchBody)
 /** null = the code is unknown (404). Other failures throw. */
 export async function scanCode(code: string): Promise<ScanResult | null> {
     try {
-        const res = await authenticatedAxiosInstance.get<unknown>(COMMERCE_SCAN(code), {
+        // A label's QR link is read as its code, for callers with their own input.
+        const res = await authenticatedAxiosInstance.get<unknown>(COMMERCE_SCAN(normaliseScannedCode(code)), {
             params: instituteParams(),
         });
         return normalizeScan(res.data);

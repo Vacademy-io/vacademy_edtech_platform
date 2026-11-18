@@ -43,6 +43,30 @@ import {
     REGISTER_SETUP_WARNINGS,
     TENDER_MODES_POS,
 } from '../pos/-shared/pos-types';
+import { COUNT_REFUSALS } from '../inventory/-shared/count-sheet';
+import { INVENTORY_ERROR_CODES } from '../inventory/-shared/inventory-errors';
+import {
+    ADJUSTMENT_REASONS,
+    COUNT_KINDS,
+    DAMAGE_REASONS,
+    INVENTORY_TABS,
+    LABEL_LANGUAGES,
+    LABEL_REASONS,
+    LABEL_SOURCES,
+    LABEL_TEMPLATES,
+    MOVEMENT_REASONS,
+    MOVEMENT_TYPES,
+    QUICK_ADD_KINDS,
+    REPRINT_REASONS,
+    REVIEW_PIECE_GROUPS,
+    SHORTFALL_REASONS,
+    TRANSFER_DIRECTIONS,
+    TRANSFER_STATUSES,
+    TRANSFER_WARNINGS,
+    UNCOUNTED_CHOICES,
+} from '../inventory/-shared/inventory-types';
+import { RECEIVE_REFUSALS } from '../inventory/-shared/receive-lines';
+import { TRANSFER_REFUSALS } from '../inventory/-shared/transfer-lines';
 import { NAMED_MEDIA_TAGS } from '../products/-components/media-tags';
 import {
     DELIVERY_CODES,
@@ -342,6 +366,44 @@ describe('commerce strings: every key the code asks for exists', () => {
             'numbers', 'byMode', 'none', 'tax', 'taxRate', 'returns', 'returnCount', 'refund', 'cash', 'openingCash',
         ]);
         expect(need.length).toBeGreaterThan(90);
+        expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
+    });
+
+    it('inventory keys built at run time exist for every value', () => {
+        const need: string[] = [];
+        const each = (prefix: string, values: readonly string[]) =>
+            values.forEach((value) => need.push(`${prefix}.${value}`));
+        each('inventory.tabs', INVENTORY_TABS);
+        each('inventory.errors', [...INVENTORY_ERROR_CODES, 'uncertain']);
+        each('inventory.shortfall', SHORTFALL_REASONS);
+        each('inventory.labels.reprintReason', REPRINT_REASONS);
+        LABEL_TEMPLATES.forEach((value) => need.push(`inventory.labels.template${value}`));
+        each('inventory.labels.languages', LABEL_LANGUAGES);
+        each('inventory.labels.reasons', LABEL_REASONS);
+        each('inventory.labels.sources', LABEL_SOURCES);
+        each('inventory.labels.problems', ['nothing', 'tooMany', 'startPosition']);
+        UNCOUNTED_CHOICES.forEach((value) => need.push(`inventory.counts.uncounted${value}`));
+        each('inventory.reasons', [...ADJUSTMENT_REASONS, ...DAMAGE_REASONS, ...MOVEMENT_REASONS]);
+        each('status.movementType', MOVEMENT_TYPES);
+        each('status.transfer', TRANSFER_STATUSES);
+        each('inventory.transfers.warnings', TRANSFER_WARNINGS);
+        each('inventory.transfers.directions', TRANSFER_DIRECTIONS);
+        each('inventory.transferLines', TRANSFER_REFUSALS);
+        each('inventory.countSheet', COUNT_REFUSALS);
+        each('inventory.receive.refusals', RECEIVE_REFUSALS);
+        each('inventory.receive.problems', ['source', 'sourcePlace', 'note', 'lines']);
+        each('inventory.reprint.problems', ['lines', 'reason', 'note']);
+        each('inventory.counts.kinds', COUNT_KINDS);
+        each('inventory.review.groups', ['differences', 'agreeing', 'uncounted', ...REVIEW_PIECE_GROUPS]);
+        each('inventory.counts.summaryKeys', [
+            'lines', 'lines_with_difference', 'units_up', 'units_down', 'missing', 'found', 'misplaced', 'uncounted',
+        ]);
+        each('inventory.stock.filter', ['ALL', 'LOW', 'OUT']);
+        each('inventory.receipt.sources', ['OWN_SOURCE', 'SUPPLIER', 'OPENING', 'OTHER']);
+        QUICK_ADD_KINDS.forEach((value) =>
+            need.push(`products.selling.options.${value}.title`, `products.selling.options.${value}.description`)
+        );
+        expect(need.length).toBeGreaterThan(150);
         expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
     });
 

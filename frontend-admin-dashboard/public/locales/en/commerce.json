@@ -142,6 +142,53 @@
             "DRAFT": "Draft",
             "MISSING": "Not created",
             "UNKNOWN": "Could not check"
+        },
+        "transfer": {
+            "DRAFT": "Draft",
+            "DISPATCHED": "On the way",
+            "RECEIVED": "Received",
+            "CANCELLED": "Cancelled"
+        },
+        "stockCount": {
+            "OPEN": "Counting",
+            "POSTED": "Posted",
+            "CANCELLED": "Cancelled"
+        },
+        "labelRequest": {
+            "PENDING": "To print",
+            "PRINTED": "Printed",
+            "CANCELLED": "Cancelled"
+        },
+        "movementType": {
+            "RECEIPT": "Received",
+            "ADJUSTMENT": "Correction",
+            "DAMAGE": "Damage",
+            "TRANSFER_OUT": "Sent",
+            "TRANSFER_IN": "Arrived",
+            "SALE": "Online sale",
+            "POS_SALE": "Counter sale",
+            "RETURN": "Return",
+            "PURCHASE_RETURN": "Back to supplier"
+        },
+        "piece": {
+            "IN_STOCK": "In stock",
+            "RESERVED": "Packed for an order",
+            "SOLD": "Sold",
+            "IN_TRANSIT": "On the way",
+            "WRITTEN_OFF": "Written off",
+            "VOIDED": "Cancelled",
+            "RETURNED_TO_SUPPLIER": "Back to supplier"
+        },
+        "receipt": {
+            "POSTED": "Received",
+            "REVERSED": "Reversed"
+        },
+        "receiptBill": {
+            "NOT_APPLICABLE": "No bill needed",
+            "UNBILLED": "Bill not in yet",
+            "PARTLY_BILLED": "Partly billed",
+            "BILLED": "Billed",
+            "NO_BILL": "No bill will come"
         }
     },
     "home": {
@@ -2597,6 +2644,536 @@
         },
         "attempt": {
             "checked": "I checked: start again"
+        }
+    },
+    "inventory": {
+        "title": "Inventory",
+        "description": "Stock at every place, goods received, transfers, counts and labels.",
+        "tabs": {
+            "stock": "Stock",
+            "movements": "Movements",
+            "receive": "Receive",
+            "transfers": "Transfers",
+            "counts": "Counts",
+            "low": "Low stock",
+            "labels": "Labels"
+        },
+        "location": {
+            "label": "Location",
+            "all": "All my locations",
+            "pickOne": "This tab works at one place. Choose the location.",
+            "none": "You are not assigned to any location",
+            "noneHelp": "Ask an institute admin to give you a store or warehouse in Settings → Staff."
+        },
+        "columns": {
+            "item": "Item"
+        },
+        "stock": {
+            "onHand": "On hand",
+            "inTransit": "On the way",
+            "heldOnline": "Held online",
+            "sellableOnline": "Can sell online",
+            "reorderLevel": "Reorder at",
+            "adjust": "Adjust stock",
+            "damage": "Record damage",
+            "setReorder": "Set reorder level",
+            "search": "Search",
+            "show": "Show",
+            "filter": {
+                "ALL": "All items",
+                "LOW": "Low stock",
+                "OUT": "Out of stock"
+            },
+            "collection": "Collection",
+            "allCollections": "All collections",
+            "firstEight": "Showing the first {{count}} places by code. Pick one place to see it alone.",
+            "empty": "No stock to show",
+            "lowChip": "low",
+            "openMovements": "See the movements of this item here"
+        },
+        "adjust": {
+            "kind": "What happened",
+            "direction": "More or less",
+            "add": "Found more (add)",
+            "remove": "Less than shown (remove)",
+            "quantity": "Quantity",
+            "pieceCode": "Piece label code",
+            "reason": "Reason",
+            "reasonPlaceholder": "Choose a reason",
+            "note": "Note",
+            "save": "Save",
+            "done": "Stock updated",
+            "problems": {
+                "direction": "Choose add or remove.",
+                "quantity": "Type a quantity above zero.",
+                "reason": "Choose a reason.",
+                "piece": "Type the code of a piece of this item."
+            }
+        },
+        "reorder": {
+            "hint": "At {{place}}. Leave empty to clear it.",
+            "done": "Reorder level saved"
+        },
+        "reasons": {
+            "DATA_ENTRY_ERROR": "Typing mistake",
+            "FOUND": "Found",
+            "COUNT_DIFFERENCE": "Count difference",
+            "SET_SPLIT": "Set split",
+            "SAMPLE_OR_GIFT": "Sample or gift",
+            "DAMAGED_IN_STORE": "Damaged in the store",
+            "DAMAGED_IN_TRANSIT": "Damaged on the way",
+            "LOST": "Lost",
+            "THEFT": "Theft",
+            "QUALITY_REJECT": "Failed quality check",
+            "OPENING": "Opening stock",
+            "RECEIPT_REVERSAL": "Receipt reversed",
+            "POS_VOID": "Counter bill cancelled",
+            "SHIP_UNDO": "Shipment undone"
+        },
+        "movements": {
+            "time": "Time",
+            "place": "Place",
+            "type": "Type",
+            "allTypes": "All types",
+            "quantity": "Quantity",
+            "balance": "Balance after",
+            "reference": "Reference",
+            "open": "Open",
+            "reason": "Reason",
+            "note": "Note",
+            "unitCost": "Unit cost",
+            "from": "From date",
+            "to": "To date",
+            "oneItem": "One item",
+            "export": "Export CSV",
+            "exportHint": "The export needs a from and a to date (at most a year).",
+            "exportNeedsDates": "Choose a from and a to date first.",
+            "empty": "No movements for these filters"
+        },
+        "scan": {
+            "placeholder": "Scan a label or barcode, or type a name or SKU",
+            "notFound": "Code not found"
+        },
+        "picker": {
+            "placeholder": "Name, SKU, label code or barcode",
+            "none": "No item found",
+            "clear": "Clear",
+            "draft": "draft"
+        },
+        "receive": {
+            "from": "Where it came from",
+            "sourceLabel": "Source",
+            "sourceOwn": "One of our own places",
+            "sourceOpening": "Opening stock",
+            "sourceOther": "Other (write a note)",
+            "sourcePlace": "Which place",
+            "noSources": "No source place yet",
+            "note": "Note",
+            "items": "Items",
+            "quickAdd": "Quick add item",
+            "quickAddDraft": "Saved as a draft: a manager sets the price before it can be sold or labelled.",
+            "noLines": "Scan or search to add items.",
+            "quantity": "Quantity",
+            "piecesGetLabels": "Whole numbers: each piece gets its own label.",
+            "draftItem": "Draft item: a manager sets the price.",
+            "remove": "Remove",
+            "save": "Save receipt",
+            "done": "Received {{number}}",
+            "added": "Added: {{item}}",
+            "pieceAlready": "This piece is already in stock. Scan an item label or type a name.",
+            "printLabels": "Print labels",
+            "openReceipt": "Open receipt",
+            "more": "Receive more",
+            "recent": "Recent receipts here",
+            "noRecent": "No receipts yet",
+            "refusals": {
+                "untracked": "This item's stock is not counted; it cannot be received.",
+                "quantityRange": "That quantity is too large."
+            },
+            "problems": {
+                "source": "Choose where the goods came from.",
+                "sourcePlace": "Choose the place it came from.",
+                "note": "Write a note for Other.",
+                "lines": "Add at least one item."
+            }
+        },
+        "quickAdd": {
+            "nameHi": "Name in Hindi",
+            "nameEn": "Name in English",
+            "kind": "How it is sold",
+            "taxClass": "Tax class",
+            "taxClassPlaceholder": "Choose a tax class",
+            "noTaxClass": "No tax class",
+            "sku": "SKU (optional)",
+            "skuHint": "Left empty, a number like QA-000123 is given.",
+            "barcode": "Barcode (optional)",
+            "save": "Add item",
+            "problems": {
+                "name": "Type a name in Hindi or English.",
+                "nameLength": "A name is at most 120 letters.",
+                "kind": "Choose how it is sold.",
+                "taxClass": "Choose a tax class.",
+                "sku": "SKU: letters, digits, - and _ only.",
+                "barcode": "A barcode is at most 100 characters."
+            }
+        },
+        "receipt": {
+            "title": "Goods receipt",
+            "facts": "Receipt",
+            "number": "Number",
+            "date": "Date",
+            "place": "Place",
+            "source": "From",
+            "status": "Status",
+            "bill": "Bill",
+            "sources": {
+                "OWN_SOURCE": "Own place",
+                "SUPPLIER": "Supplier",
+                "OPENING": "Opening stock",
+                "OTHER": "Other"
+            },
+            "lines": "Items",
+            "pieces": "Pieces",
+            "labels": "Labels",
+            "noLabels": "No labels for this receipt",
+            "reverse": "Reverse receipt",
+            "reverseHelp": "The stock goes back out and its pieces are cancelled. Labels not printed yet are dropped.",
+            "reason": "Why",
+            "reasonRequired": "Write why.",
+            "reversed": "Receipt reversed",
+            "reversedAt": "Reversed on {{time}}",
+            "typeCost": "Type cost",
+            "unitCost": "Cost per unit (₹)",
+            "costHint": "Cost per base unit, tax not included.",
+            "costProblem": "Type a cost like 120 or 120.50.",
+            "costSaved": "Cost saved"
+        },
+        "transfers": {
+            "title": "Transfer",
+            "new": "New transfer",
+            "create": "Create",
+            "from": "From",
+            "to": "To",
+            "pickBoth": "Choose both places.",
+            "number": "Number",
+            "status": "Status",
+            "allStatuses": "All statuses",
+            "direction": "Direction",
+            "directions": {
+                "ANY": "All",
+                "OUT": "Sent",
+                "IN": "Received"
+            },
+            "challan": "Challan",
+            "lines": "Lines",
+            "quantity": "Quantity",
+            "created": "Created",
+            "dispatched": "Dispatched",
+            "received": "Received",
+            "documentDate": "Document date",
+            "empty": "No transfers yet",
+            "dispatch": "Dispatch",
+            "receive": "Receive",
+            "printChallan": "Print challan",
+            "challanNumbering": "Add challan numbering",
+            "needsDocument": "These two places have different GSTINs. A manager must record the document your CA asks for.",
+            "ewayBill": "E-way bill number",
+            "ewayHint": "Value above ₹50,000: an e-way bill may be needed.",
+            "promisedOnline": "{{count}} units are kept for online orders. Send them anyway?",
+            "shortReason": "Why is it short?",
+            "overdue": "On the way for more than {{days}} days",
+            "sent": "Sent",
+            "receivedQty": "Received",
+            "note": "Note",
+            "noLines": "Scan or search to add what you are sending.",
+            "onePiece": "1 piece",
+            "cancel": "Cancel transfer",
+            "cancelConfirm": "Yes, cancel it",
+            "cancelQuestion": "Cancel this draft? Nothing has moved yet.",
+            "askManagerSeries": "Ask a manager to add challan numbering before you dispatch.",
+            "warnings": {
+                "NO_CHALLAN_SERIES": "No challan numbering fits this place yet. Add it on the Transfers tab before you dispatch.",
+                "DESTINATION_INACTIVE": "The place it goes to is closed. Open it again or send it elsewhere.",
+                "NEEDS_DOCUMENT": "These two places have different GSTINs. A manager must record the document your CA asks for."
+            }
+        },
+        "transferLines": {
+            "scanPieceLabel": "Scan the piece label of this item.",
+            "untracked": "This item's stock is not counted; it cannot be sent.",
+            "notHere": "This piece is not in stock at the sending place.",
+            "alreadyOn": "This piece is already on the transfer.",
+            "notOnTransfer": "This is not on this transfer.",
+            "allReceived": "All of this item is already received.",
+            "quantityStep": "This item goes in fixed steps; change the quantity.",
+            "quantityRange": "That quantity is not allowed."
+        },
+        "dispatch": {
+            "value": "Value",
+            "documentType": "Document type",
+            "externalInvoice": "External invoice",
+            "documentNumber": "Document number",
+            "sendAnyway": "Send anyway",
+            "done": "Dispatched: {{number}}",
+            "ewayRule": "E-way bill number: letters and digits only.",
+            "documentRule": "Type the document number (letters, digits, / - _ .)."
+        },
+        "receiveTransfer": {
+            "title": "Receive what arrived",
+            "help": "Scan each piece label. Change a quantity if less came, and say why.",
+            "arrived": "Arrived",
+            "ticked": "Ticked {{code}}",
+            "needReasons": "Every short line needs a reason.",
+            "done": "Transfer received"
+        },
+        "shortfall": {
+            "DAMAGED_IN_TRANSIT": "Damaged on the way",
+            "LOST": "Lost"
+        },
+        "challan": {
+            "help": "A delivery challan number is taken from this numbering when stock is dispatched.",
+            "none": "No challan numbering yet.",
+            "prefix": "Prefix",
+            "place": "Place",
+            "everyPlace": "Every place",
+            "added": "Challan numbering added",
+            "prefixRule": "1 to 6 capital letters, digits, / or -.",
+            "placeRequired": "Choose the place."
+        },
+        "counts": {
+            "title": "Count",
+            "start": "Start a count",
+            "recount": "Blind recount",
+            "tradingNote": "Selling can go on. Sales after an item was counted are taken into account.",
+            "review": "Review differences",
+            "post": "Post count",
+            "uncounted": "Items not counted",
+            "uncountedSKIP": "Leave their stock as it is",
+            "uncountedZERO": "They are not here: set to zero",
+            "uncountedCount": "{{count}} items with stock were not counted.",
+            "agreement": "{{percent}}% of lines agree",
+            "agreementPass": "passes (98% or more)",
+            "agreementFail": "below 98%: count again",
+            "number": "Number",
+            "kind": "Kind",
+            "kinds": {
+                "COUNT": "Count",
+                "RECOUNT": "Blind recount"
+            },
+            "scope": "What is counted",
+            "wholePlace": "Whole place",
+            "oneCollection": "One collection",
+            "started": "Started",
+            "posted": "Posted",
+            "empty": "No counts yet",
+            "pickPlace": "Choose the place.",
+            "pickCollection": "Choose the collection.",
+            "postedDone": "Count posted",
+            "recountDone": "Recount finished",
+            "finishRecount": "Finish recount",
+            "recountHelp": "Count what you see. The first count's numbers are not shown to you.",
+            "recountRunning": "A blind recount of this count is open. Post after it is finished.",
+            "cancel": "Cancel count",
+            "cancelConfirm": "Yes, cancel it",
+            "cancelQuestion": "Cancel this count? Nothing is posted.",
+            "summary": "What the count changed",
+            "summaryKeys": {
+                "lines": "Lines",
+                "lines_with_difference": "Lines with a difference",
+                "units_up": "Units added",
+                "units_down": "Units removed",
+                "missing": "Pieces not found",
+                "found": "Pieces found again",
+                "misplaced": "Pieces from another place",
+                "uncounted": "Items not counted"
+            },
+            "missing": "Pieces not found",
+            "found": "Pieces found again",
+            "misplaced": "Pieces from another place"
+        },
+        "countSheet": {
+            "title": "Count here",
+            "lines": "Counted ({{count}})",
+            "empty": "Nothing counted yet. Scan labels or search for an item.",
+            "counted": "Counted: {{item}}",
+            "countedAt": "Counted at {{time}}",
+            "pieceCounted": "1 piece",
+            "alreadyCounted": "Already counted",
+            "scanPieceLabels": "Scan the piece labels of this item",
+            "untracked": "This item's stock is not counted.",
+            "notFound": "Code not found",
+            "waitForSaves": "Some lines are not saved yet. Wait, or tap retry on a line."
+        },
+        "review": {
+            "asOf": "As of {{time}}",
+            "refresh": "Refresh",
+            "close": "Close",
+            "totals": "{{lines}} lines differ: {{up}} up, {{down}} down",
+            "needsApproval": "Posting these differences needs a manager's PIN.",
+            "counted": "Counted",
+            "now": "Now",
+            "movedSince": "Sold or moved since",
+            "expected": "Expected then",
+            "difference": "Difference",
+            "value": "Value",
+            "uncountedHelp": "When you post you choose: leave these as they are, or set them to zero.",
+            "groups": {
+                "differences": "Differences",
+                "agreeing": "Matching",
+                "uncounted": "Not counted",
+                "missing_pieces": "Pieces not found",
+                "found_pieces": "Pieces found again",
+                "misplaced_pieces": "Pieces from another place",
+                "not_in_stock_pieces": "Scanned, but sold or gone",
+                "reserved_not_counted": "Packed for orders, not counted",
+                "arrived_during_count": "Arrived during the count"
+            }
+        },
+        "low": {
+            "show": "Show",
+            "reorder": "At or below reorder level",
+            "outOnline": "Out of stock online",
+            "shortBy": "Short by",
+            "lastSale": "Last sold",
+            "never": "never",
+            "elsewhere": "Elsewhere",
+            "transferFrom": "Transfer from {{place}}",
+            "empty": "Nothing is low here"
+        },
+        "labels": {
+            "queue": "Labels to print",
+            "history": "Labels",
+            "show": "Show",
+            "emptyQueue": "No labels waiting to be printed",
+            "emptyHistory": "No labels here",
+            "print": "Print",
+            "printCount": "Print {{count}} labels",
+            "printTitle": "Print labels",
+            "count": "{{count}} labels",
+            "template": "Label stock",
+            "templateSTICKER_50X25": "Sticker 50 × 25 mm",
+            "templateA4_65": "A4 sheet, 65 labels",
+            "language": "Name on the label",
+            "languages": {
+                "both": "Hindi, English small below",
+                "hi": "Hindi only",
+                "en": "English only"
+            },
+            "startAt": "Start at label number",
+            "startAtHint": "On a used sheet: the first free label, 1 to {{positions}}, counted across then down.",
+            "printHint": "In the print window choose the label printer, scale 100% (actual size) and no margins.",
+            "cameOutWell": "Did the labels print correctly?",
+            "cameOutWellHelp": "Yes marks them printed. If not, they stay in the queue to print again.",
+            "markPrinted": "Yes, mark printed",
+            "keepPending": "No, keep them to print",
+            "printAgain": "Print again",
+            "markedPrinted": "Labels marked printed",
+            "reprint": "Reprint",
+            "reprintReason": {
+                "TORN": "Torn",
+                "LOST": "Lost",
+                "PRICE_CHANGED": "Price changed",
+                "NOT_PRINTED": "Never printed",
+                "OTHER": "Other"
+            },
+            "reasons": {
+                "NEW_RECEIPT": "New stock",
+                "REPRINT": "Reprint",
+                "PRICE_CHANGE": "Price change"
+            },
+            "sources": {
+                "STOCK_RECEIPT": "Receipt",
+                "STOCK_TRANSFER": "Transfer",
+                "MANUAL": "Asked by hand"
+            },
+            "toReplace": "Tags to replace",
+            "toReplaceHelp": "Items whose price changed after their labels were printed.",
+            "queueLabels": "Queue labels",
+            "queued": "Labels queued",
+            "nothingToReplace": "No tags to replace",
+            "noPrice": "no price yet",
+            "cancelSelected": "Cancel selected",
+            "cancelConfirm": "Yes, cancel them",
+            "cancelQuestion": "Cancel {{count}} labels waiting to be printed?",
+            "cancelled": "{{count}} labels cancelled",
+            "problems": {
+                "nothing": "Choose the labels to print.",
+                "tooMany": "At most {{max}} labels at a time.",
+                "startPosition": "Start at a number from 1 to {{positions}}."
+            },
+            "mrp": "MRP {{price}}",
+            "inclTaxes": "incl. of all taxes"
+        },
+        "reprint": {
+            "queue": "Queue for printing",
+            "reason": "Why",
+            "note": "Note",
+            "quantity": "How many",
+            "alreadyOn": "This piece is already on the list.",
+            "done": "Labels queued",
+            "problems": {
+                "lines": "Scan or pick an item.",
+                "reason": "Choose why.",
+                "note": "Write a note for Other."
+            }
+        },
+        "approval": {
+            "title": "Manager approval",
+            "generic": "A manager of this place must approve this with their PIN.",
+            "adjust": "This correction is above the shop's limit. A manager approves it with their PIN.",
+            "shortfall": "Less came than was sent. A manager approves the shortfall with their PIN.",
+            "count": "This difference needs a manager's PIN.",
+            "managersFailed": "The list of managers could not be loaded. Try again."
+        },
+        "save": {
+            "saved": "Saved",
+            "saving": "Saving…",
+            "failed": "Not saved, retry"
+        },
+        "pdf": {
+            "downloaded": "The browser blocked a new tab, so the file was downloaded. Open it to print."
+        },
+        "errors": {
+            "TRANSFER_NOT_FOUND": "This transfer was not found.",
+            "TRANSFER_SAME_LOCATION": "From and to must be two different places.",
+            "TRANSFER_NOT_DRAFT": "This transfer is no longer a draft. The page was refreshed.",
+            "TRANSFER_EMPTY": "Add at least one line before dispatch.",
+            "TRANSFER_DISPATCHED": "A transfer on the way cannot be cancelled; send it back with a new transfer.",
+            "TRANSFER_NOT_DISPATCHED": "This transfer is not on the way.",
+            "TRANSFER_NEEDS_DOCUMENT": "These two places have different GSTINs. A manager must record the document your CA asks for.",
+            "TRANSFER_DOCUMENT_NOT_ALLOWED": "Places with the same GSTIN use a delivery challan.",
+            "PROMISED_ONLINE": "Some units are kept for online orders. A manager can send them anyway.",
+            "PIECE_NOT_HERE": "This piece is not in stock here.",
+            "RECEIVED_ABOVE_SENT": "Received cannot be more than sent.",
+            "SHORTFALL_REASON_REQUIRED": "Say why each short line is short.",
+            "LOCATION_HAS_TRANSFER_IN_TRANSIT": "A transfer to or from this place is on the way.",
+            "COUNT_NOT_FOUND": "This count was not found.",
+            "COUNT_ALREADY_OPEN": "A count is already open at this place.",
+            "COUNT_NOT_OPEN": "This count is no longer open.",
+            "COUNT_OUT_OF_SCOPE": "This item is not part of this count.",
+            "COUNT_TOO_LARGE": "This count has too many lines. Count one collection at a time.",
+            "RECOUNT_SAME_PERSON": "A recount must be done by another person.",
+            "RECOUNT_OPEN": "A blind recount of this count is still open.",
+            "RECOUNT_BLIND": "You are doing the recount, so the first count is hidden from you.",
+            "RECOUNT_NOT_FINISHED": "Finish the recount first.",
+            "LABEL_REQUEST_NOT_FOUND": "This label was not found.",
+            "LABEL_NOT_PENDING": "This label was already printed. Use Reprint.",
+            "LABEL_NO_PRICE": "{{sku}} has no price yet. A manager sets it first.",
+            "LABELS_TOO_MANY": "Too many labels at once. Print at most 500.",
+            "EXPORT_TOO_LARGE": "Too many rows. Narrow the dates.",
+            "CODE_NOT_FOUND": "Code not found",
+            "APPROVAL_REQUIRED": "This difference needs a manager's PIN.",
+            "PIN_INVALID": "Wrong PIN. Try again.",
+            "PIN_LOCKED": "This PIN is locked for a while after wrong tries.",
+            "ITEM_NOT_FOUND": "This item was not found.",
+            "ITEM_UNTRACKED": "This item's stock is not counted.",
+            "ITEM_ARCHIVED": "This item is archived.",
+            "LOCATION_NEEDS_GSTIN": "This place is in another state and needs its own GSTIN.",
+            "SERIES_NOT_CONFIGURED": "No challan numbering fits this place. A manager adds it on the Transfers tab.",
+            "SERIES_EXHAUSTED": "This numbering has run out. A manager adds a new one.",
+            "SERIES_PREFIX_IN_USE": "This prefix is already used. Choose another.",
+            "RECEIPT_BILLED": "This receipt is billed and cannot be reversed.",
+            "PROBABLY_SAVED": "This was probably saved already. Refresh the page and check before trying again.",
+            "uncertain": "No clear answer from the server. Try again: it will not be saved twice."
         }
     }
 }

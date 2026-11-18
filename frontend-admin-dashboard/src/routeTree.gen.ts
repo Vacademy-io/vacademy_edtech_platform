@@ -292,6 +292,9 @@ import { Route as CommercePosSessionIdReturnsIndexRouteImport } from "./routes/c
 import { Route as CommercePosSessionIdCloseIndexRouteImport } from "./routes/commerce/pos/$sessionId/close/index"
 import { Route as CommercePosSessionIdBillsIndexRouteImport } from "./routes/commerce/pos/$sessionId/bills/index"
 import { Route as CommercePosSessionIdBillBookIndexRouteImport } from "./routes/commerce/pos/$sessionId/bill-book/index"
+import { Route as CommerceInventoryTransfersTransferIdIndexRouteImport } from "./routes/commerce/inventory/transfers/$transferId/index"
+import { Route as CommerceInventoryReceiptsReceiptIdIndexRouteImport } from "./routes/commerce/inventory/receipts/$receiptId/index"
+import { Route as CommerceInventoryCountsCountIdIndexRouteImport } from "./routes/commerce/inventory/counts/$countId/index"
 import { Route as AudienceManagerListCampaignUsersAddIndexRouteImport } from "./routes/audience-manager/list/campaign-users/add/index"
 import { Route as AssessmentEvaluationAiAttemptIdProcessIdIndexRouteImport } from "./routes/assessment/evaluation-ai/$attemptId/$processId/index"
 import { Route as AssessmentCreateAssessmentAssessmentIdExamtypeIndexRouteImport } from "./routes/assessment/create-assessment/$assessmentId/$examtype/index"
@@ -2483,6 +2486,36 @@ const CommercePosSessionIdBillBookIndexRoute =
       (d) => d.Route,
     ),
   )
+const CommerceInventoryTransfersTransferIdIndexRoute =
+  CommerceInventoryTransfersTransferIdIndexRouteImport.update({
+    id: "/commerce/inventory/transfers/$transferId/",
+    path: "/commerce/inventory/transfers/$transferId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/inventory/transfers/$transferId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceInventoryReceiptsReceiptIdIndexRoute =
+  CommerceInventoryReceiptsReceiptIdIndexRouteImport.update({
+    id: "/commerce/inventory/receipts/$receiptId/",
+    path: "/commerce/inventory/receipts/$receiptId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/inventory/receipts/$receiptId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommerceInventoryCountsCountIdIndexRoute =
+  CommerceInventoryCountsCountIdIndexRouteImport.update({
+    id: "/commerce/inventory/counts/$countId/",
+    path: "/commerce/inventory/counts/$countId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/inventory/counts/$countId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const AudienceManagerListCampaignUsersAddIndexRoute =
   AudienceManagerListCampaignUsersAddIndexRouteImport.update({
     id: "/audience-manager/list/campaign-users/add/",
@@ -2910,6 +2943,9 @@ export interface FileRoutesByFullPath {
   "/assessment/create-assessment/$assessmentId/$examtype/": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId/": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add/": typeof AudienceManagerListCampaignUsersAddIndexRoute
+  "/commerce/inventory/counts/$countId/": typeof CommerceInventoryCountsCountIdIndexRoute
+  "/commerce/inventory/receipts/$receiptId/": typeof CommerceInventoryReceiptsReceiptIdIndexRoute
+  "/commerce/inventory/transfers/$transferId/": typeof CommerceInventoryTransfersTransferIdIndexRoute
   "/commerce/pos/$sessionId/bill-book/": typeof CommercePosSessionIdBillBookIndexRoute
   "/commerce/pos/$sessionId/bills/": typeof CommercePosSessionIdBillsIndexRoute
   "/commerce/pos/$sessionId/close/": typeof CommercePosSessionIdCloseIndexRoute
@@ -3210,6 +3246,9 @@ export interface FileRoutesByTo {
   "/assessment/create-assessment/$assessmentId/$examtype": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add": typeof AudienceManagerListCampaignUsersAddIndexRoute
+  "/commerce/inventory/counts/$countId": typeof CommerceInventoryCountsCountIdIndexRoute
+  "/commerce/inventory/receipts/$receiptId": typeof CommerceInventoryReceiptsReceiptIdIndexRoute
+  "/commerce/inventory/transfers/$transferId": typeof CommerceInventoryTransfersTransferIdIndexRoute
   "/commerce/pos/$sessionId/bill-book": typeof CommercePosSessionIdBillBookIndexRoute
   "/commerce/pos/$sessionId/bills": typeof CommercePosSessionIdBillsIndexRoute
   "/commerce/pos/$sessionId/close": typeof CommercePosSessionIdCloseIndexRoute
@@ -3513,6 +3552,9 @@ export interface FileRoutesById {
   "/assessment/create-assessment/$assessmentId/$examtype/": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId/": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add/": typeof AudienceManagerListCampaignUsersAddIndexRoute
+  "/commerce/inventory/counts/$countId/": typeof CommerceInventoryCountsCountIdIndexRoute
+  "/commerce/inventory/receipts/$receiptId/": typeof CommerceInventoryReceiptsReceiptIdIndexRoute
+  "/commerce/inventory/transfers/$transferId/": typeof CommerceInventoryTransfersTransferIdIndexRoute
   "/commerce/pos/$sessionId/bill-book/": typeof CommercePosSessionIdBillBookIndexRoute
   "/commerce/pos/$sessionId/bills/": typeof CommercePosSessionIdBillsIndexRoute
   "/commerce/pos/$sessionId/close/": typeof CommercePosSessionIdCloseIndexRoute
@@ -3817,6 +3859,9 @@ export interface FileRouteTypes {
     | "/assessment/create-assessment/$assessmentId/$examtype/"
     | "/assessment/evaluation-ai/$attemptId/$processId/"
     | "/audience-manager/list/campaign-users/add/"
+    | "/commerce/inventory/counts/$countId/"
+    | "/commerce/inventory/receipts/$receiptId/"
+    | "/commerce/inventory/transfers/$transferId/"
     | "/commerce/pos/$sessionId/bill-book/"
     | "/commerce/pos/$sessionId/bills/"
     | "/commerce/pos/$sessionId/close/"
@@ -4117,6 +4162,9 @@ export interface FileRouteTypes {
     | "/assessment/create-assessment/$assessmentId/$examtype"
     | "/assessment/evaluation-ai/$attemptId/$processId"
     | "/audience-manager/list/campaign-users/add"
+    | "/commerce/inventory/counts/$countId"
+    | "/commerce/inventory/receipts/$receiptId"
+    | "/commerce/inventory/transfers/$transferId"
     | "/commerce/pos/$sessionId/bill-book"
     | "/commerce/pos/$sessionId/bills"
     | "/commerce/pos/$sessionId/close"
@@ -4419,6 +4467,9 @@ export interface FileRouteTypes {
     | "/assessment/create-assessment/$assessmentId/$examtype/"
     | "/assessment/evaluation-ai/$attemptId/$processId/"
     | "/audience-manager/list/campaign-users/add/"
+    | "/commerce/inventory/counts/$countId/"
+    | "/commerce/inventory/receipts/$receiptId/"
+    | "/commerce/inventory/transfers/$transferId/"
     | "/commerce/pos/$sessionId/bill-book/"
     | "/commerce/pos/$sessionId/bills/"
     | "/commerce/pos/$sessionId/close/"
@@ -4713,6 +4764,9 @@ export interface RootRouteChildren {
   AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute: typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   AssessmentEvaluationAiAttemptIdProcessIdIndexRoute: typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   AudienceManagerListCampaignUsersAddIndexRoute: typeof AudienceManagerListCampaignUsersAddIndexRoute
+  CommerceInventoryCountsCountIdIndexRoute: typeof CommerceInventoryCountsCountIdIndexRoute
+  CommerceInventoryReceiptsReceiptIdIndexRoute: typeof CommerceInventoryReceiptsReceiptIdIndexRoute
+  CommerceInventoryTransfersTransferIdIndexRoute: typeof CommerceInventoryTransfersTransferIdIndexRoute
   CommercePosSessionIdBillBookIndexRoute: typeof CommercePosSessionIdBillBookIndexRoute
   CommercePosSessionIdBillsIndexRoute: typeof CommercePosSessionIdBillsIndexRoute
   CommercePosSessionIdCloseIndexRoute: typeof CommercePosSessionIdCloseIndexRoute
@@ -6733,6 +6787,27 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof CommercePosSessionIdBillBookIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/commerce/inventory/transfers/$transferId/": {
+      id: "/commerce/inventory/transfers/$transferId/"
+      path: "/commerce/inventory/transfers/$transferId"
+      fullPath: "/commerce/inventory/transfers/$transferId/"
+      preLoaderRoute: typeof CommerceInventoryTransfersTransferIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/inventory/receipts/$receiptId/": {
+      id: "/commerce/inventory/receipts/$receiptId/"
+      path: "/commerce/inventory/receipts/$receiptId"
+      fullPath: "/commerce/inventory/receipts/$receiptId/"
+      preLoaderRoute: typeof CommerceInventoryReceiptsReceiptIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/inventory/counts/$countId/": {
+      id: "/commerce/inventory/counts/$countId/"
+      path: "/commerce/inventory/counts/$countId"
+      fullPath: "/commerce/inventory/counts/$countId/"
+      preLoaderRoute: typeof CommerceInventoryCountsCountIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/audience-manager/list/campaign-users/add/": {
       id: "/audience-manager/list/campaign-users/add/"
       path: "/audience-manager/list/campaign-users/add"
@@ -7192,6 +7267,12 @@ const rootRouteChildren: RootRouteChildren = {
     AssessmentEvaluationAiAttemptIdProcessIdIndexRoute,
   AudienceManagerListCampaignUsersAddIndexRoute:
     AudienceManagerListCampaignUsersAddIndexRoute,
+  CommerceInventoryCountsCountIdIndexRoute:
+    CommerceInventoryCountsCountIdIndexRoute,
+  CommerceInventoryReceiptsReceiptIdIndexRoute:
+    CommerceInventoryReceiptsReceiptIdIndexRoute,
+  CommerceInventoryTransfersTransferIdIndexRoute:
+    CommerceInventoryTransfersTransferIdIndexRoute,
   CommercePosSessionIdBillBookIndexRoute:
     CommercePosSessionIdBillBookIndexRoute,
   CommercePosSessionIdBillsIndexRoute: CommercePosSessionIdBillsIndexRoute,

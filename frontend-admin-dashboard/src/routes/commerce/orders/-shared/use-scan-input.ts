@@ -3,13 +3,29 @@ import { type KeyboardEvent, useCallback, useEffect, useRef, useState } from 're
 /**
  * Keyboard-wedge scanning (contract §5.3.2). A USB or Bluetooth scanner types
  * into the focused input and presses Enter; a person on a phone types and taps
- * Add. `onScan` gets the trimmed code (1..100 characters), the box clears, and a
+ * Add. `onScan` gets the trimmed code (1..100 characters; a label's QR link
+ * becomes its code, see `normaliseScannedCode`), the box clears, and a
  * repeat of the same code within 400 ms (scanner bounce) is dropped. The input
  * takes the focus back after a scan, after a dialog closes and when the window
  * regains focus, unless another field has it.
  */
 export const SCAN_BOUNCE_MS = 400;
 export const SCAN_MAX_LENGTH = 100;
+
+/** A shop label's QR holds `https://<shop>/q/<code>`; the code is the last path part. */
+const LABEL_URL = /^https?:\/\/[^\s]+\/q\/([A-Za-z0-9_-]{1,64})\/?(?:[?#].*)?$/i;
+
+/**
+ * What a scanner typed, as the code the server looks up: the text trimmed, and
+ * a label's QR link (`https://shop.example/q/PABCDEFGH2`) cut down to its code.
+ * Anything else (a bare code, an SKU, a barcode, an order number) is left as it
+ * is, so every existing scan reads the same as before.
+ */
+export function normaliseScannedCode(raw: string): string {
+    const text = (raw ?? '').trim();
+    const match = LABEL_URL.exec(text);
+    return match?.[1] ?? text;
+}
 
 export function useScanInput(onScan: (code: string) => void, options: { autoFocus?: boolean; paused?: boolean } = {}) {
     const { autoFocus = true, paused = false } = options;
@@ -34,7 +50,7 @@ export function useScanInput(onScan: (code: string) => void, options: { autoFocu
 
     const submit = useCallback(
         (raw?: string) => {
-            const code = (raw ?? inputRef.current?.value ?? value).trim();
+            const code = normaliseScannedCode(raw ?? inputRef.current?.value ?? value);
             setValue('');
             if (inputRef.current) inputRef.current.value = '';
             if (!code || code.length > SCAN_MAX_LENGTH) return;

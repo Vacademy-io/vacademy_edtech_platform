@@ -154,3 +154,43 @@ export const COMMERCE_POS_SETTINGS = `${COMMERCE_POS}/settings`;
 
 // Document series (CommerceDocumentSeriesController): bill books on the registers page
 export const COMMERCE_DOCUMENT_SERIES = `${COMMERCE_BASE}/document-series`;
+
+// Inventory (stock controllers, StockTransferController, StockCountController, StockOverviewController,
+// LabelController, CommerceQuickAddController)
+export const COMMERCE_STOCK = `${COMMERCE_BASE}/stock`;
+export const COMMERCE_STOCK_OVERVIEW = `${COMMERCE_STOCK}/overview`;
+export const COMMERCE_STOCK_LOW = `${COMMERCE_STOCK}/low`;
+export const COMMERCE_STOCK_VARIANTS = `${COMMERCE_STOCK}/variants`;
+export const COMMERCE_STOCK_APPROVERS = `${COMMERCE_STOCK}/approvers`;
+export const COMMERCE_STOCK_LEVELS = `${COMMERCE_STOCK}/levels`;
+export const COMMERCE_STOCK_REORDER_LEVEL = `${COMMERCE_STOCK_LEVELS}/reorder-level`;
+export const COMMERCE_STOCK_ADJUSTMENTS = `${COMMERCE_STOCK}/adjustments`;
+export const COMMERCE_STOCK_MOVEMENTS = `${COMMERCE_STOCK}/movements`;
+export const COMMERCE_STOCK_MOVEMENTS_EXPORT = `${COMMERCE_STOCK_MOVEMENTS}/export`;
+export const COMMERCE_STOCK_RECEIPTS = `${COMMERCE_STOCK}/receipts`;
+export const COMMERCE_STOCK_RECEIPT_BY_ID = (id: string) => `${COMMERCE_STOCK_RECEIPTS}/${id$(id)}`;
+export const COMMERCE_STOCK_RECEIPT_REVERSE = (id: string) => `${COMMERCE_STOCK_RECEIPT_BY_ID(id)}/reverse`;
+export const COMMERCE_STOCK_RECEIPT_COST = (id: string) => `${COMMERCE_STOCK_RECEIPT_BY_ID(id)}/cost`;
+export const COMMERCE_STOCK_CHALLAN_SERIES = `${COMMERCE_STOCK}/challan-series`;
+export const COMMERCE_STOCK_TRANSFERS = `${COMMERCE_STOCK}/transfers`;
+export const COMMERCE_STOCK_TRANSFER_BY_ID = (id: string) => `${COMMERCE_STOCK_TRANSFERS}/${id$(id)}`;
+export const COMMERCE_STOCK_TRANSFER_CANCEL = (id: string) => `${COMMERCE_STOCK_TRANSFER_BY_ID(id)}/cancel`;
+export const COMMERCE_STOCK_TRANSFER_DISPATCH = (id: string) => `${COMMERCE_STOCK_TRANSFER_BY_ID(id)}/dispatch`;
+export const COMMERCE_STOCK_TRANSFER_RECEIVE = (id: string) => `${COMMERCE_STOCK_TRANSFER_BY_ID(id)}/receive`;
+export const COMMERCE_STOCK_TRANSFER_CHALLAN = (id: string) =>
+    `${COMMERCE_STOCK_TRANSFER_BY_ID(id)}/challan.pdf`;
+export const COMMERCE_STOCK_COUNTS = `${COMMERCE_STOCK}/counts`;
+export const COMMERCE_STOCK_COUNT_BY_ID = (id: string) => `${COMMERCE_STOCK_COUNTS}/${id$(id)}`;
+export const COMMERCE_STOCK_COUNT_LINES = (id: string) => `${COMMERCE_STOCK_COUNT_BY_ID(id)}/lines`;
+export const COMMERCE_STOCK_COUNT_LINE = (id: string, lineId: string) =>
+    `${COMMERCE_STOCK_COUNT_LINES(id)}/${id$(lineId)}`;
+export const COMMERCE_STOCK_COUNT_REVIEW = (id: string) => `${COMMERCE_STOCK_COUNT_BY_ID(id)}/review`;
+export const COMMERCE_STOCK_COUNT_POST = (id: string) => `${COMMERCE_STOCK_COUNT_BY_ID(id)}/post`;
+export const COMMERCE_STOCK_COUNT_CANCEL = (id: string) => `${COMMERCE_STOCK_COUNT_BY_ID(id)}/cancel`;
+export const COMMERCE_LABELS = `${COMMERCE_BASE}/labels`;
+export const COMMERCE_LABELS_REQUESTS = `${COMMERCE_LABELS}/requests`;
+export const COMMERCE_LABELS_CANCEL = `${COMMERCE_LABELS}/cancel`;
+export const COMMERCE_LABELS_PRINT_DATA = `${COMMERCE_LABELS}/print-data`;
+export const COMMERCE_LABELS_MARK_PRINTED = `${COMMERCE_LABELS}/mark-printed`;
+export const COMMERCE_LABELS_TO_REPLACE = `${COMMERCE_LABELS}/to-replace`;
+export const COMMERCE_QUICK_ADD = `${COMMERCE_PRODUCTS}/quick-add`;
