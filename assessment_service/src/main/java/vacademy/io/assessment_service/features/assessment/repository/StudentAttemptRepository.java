@@ -604,6 +604,48 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                 FROM assessment_user_registration aur2
                 WHERE aur2.assessment_id = :assessmentId
             ),
+            AttemptMarks AS (
+                -- Same rule as AnswerStatus.readsByMarks and effective -- a positive mark the AI
+                -- or a person gave that still says PENDING (or nothing), or a status that is
+                -- none of the four (the PDF tool sent evaluated), reads by its marks; never a
+                -- row marked not answered. The max is the row max_marks, else the paper max as in
+                -- QuestionMaxResolver (newest mapping marking_json data.totalMark, else
+                -- marks_per_question). No apostrophes or colons in these comments.
+                SELECT
+                    qwm.attempt_id,
+                    qwm.marks,
+                    CASE
+                        WHEN qwm.mark_state IS DISTINCT FROM 'NOT_ANSWERED'
+                             AND (((qwm.status IS NULL OR qwm.status = 'PENDING')
+                                   AND qwm.marks > 0
+                                   AND qwm.marks_source IN ('AI', 'AI_REVIEWED', 'MANUAL', 'TEACHER'))
+                                  OR (qwm.status IS NOT NULL
+                                      AND qwm.status NOT IN ('CORRECT', 'INCORRECT', 'PARTIAL_CORRECT', 'PENDING')))
+                        THEN CASE
+                            WHEN qwm.marks <= 0 THEN 'INCORRECT'
+                            WHEN COALESCE(CASE WHEN qwm.max_marks > 0 THEN qwm.max_marks END,
+                                          NULLIF(CAST(pm.total_mark AS NUMERIC), 0),
+                                          CASE WHEN s.marks_per_question > 0 THEN s.marks_per_question END) > 0
+                                 AND qwm.marks < COALESCE(CASE WHEN qwm.max_marks > 0 THEN qwm.max_marks END,
+                                          NULLIF(CAST(pm.total_mark AS NUMERIC), 0),
+                                          CASE WHEN s.marks_per_question > 0 THEN s.marks_per_question END)
+                            THEN 'PARTIAL_CORRECT'
+                            ELSE 'CORRECT'
+                        END
+                        ELSE qwm.status
+                    END AS status
+                FROM question_wise_marks qwm
+                LEFT JOIN section s ON s.id = qwm.section_id
+                LEFT JOIN LATERAL (
+                    -- A regex, not a jsonb cast, so one malformed marking_json cannot fail the report.
+                    SELECT substring(m.marking_json FROM '"totalMark"\\s*:\\s*"?\\s*([0-9]+(?:\\.[0-9]+)?)') AS total_mark
+                    FROM question_assessment_section_mapping m
+                    WHERE m.question_id = qwm.question_id AND m.section_id = qwm.section_id
+                    ORDER BY m.created_at DESC NULLS LAST
+                    LIMIT 1
+                ) pm ON TRUE
+                WHERE qwm.attempt_id = :attemptId
+            ),
             AttemptInformation AS (
                 SELECT
                     attempt_id,
@@ -614,8 +656,7 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                     COALESCE(SUM(marks) FILTER (WHERE status = 'CORRECT'), 0) AS totalCorrectMarks,
                     COALESCE(SUM(marks) FILTER (WHERE status = 'INCORRECT'), 0) AS totalIncorrectMarks,
                     COALESCE(SUM(marks) FILTER (WHERE status = 'PARTIAL_CORRECT'), 0) AS totalPartialMarks
-                FROM question_wise_marks
-                WHERE attempt_id = :attemptId
+                FROM AttemptMarks
                 GROUP BY attempt_id
             ),
             RankedWithTotal AS (

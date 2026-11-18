@@ -223,7 +223,9 @@ public class MarkWriter {
             boolean needsReason = c.writer() == Writer.TEACHER || c.writer() == Writer.ANSWER_KEY
                     || c.writer() == Writer.ANSWER_KEY_FORCE;
             String r = c.reason() != null ? c.reason() : reason;
-            if (released && needsReason && (r == null || r.isBlank())) {
+            // A preview (the Edit marks dialog's live total) writes nothing: it may run before
+            // the reason is typed, so only the real save needs one.
+            if (write && released && needsReason && (r == null || r.isBlank())) {
                 throw SubmissionReviewException.unprocessable("REASON_REQUIRED",
                         "Say why the mark changed: the result is already released", null);
             }
@@ -277,6 +279,8 @@ public class MarkWriter {
             changes = withBlanks;
         }
 
+        boolean uploadedSheet = marksAnUploadedSheet(facts.kind(), assessment, attempt.getAttemptData());
+
         // 4-8. Check every item before writing anything.
         List<Plan> plans = new ArrayList<>();
         List<String> stale = new ArrayList<>();
@@ -299,7 +303,7 @@ public class MarkWriter {
                 }
             }
             SubmissionSnapshots.KeyState ks = before.find(c.sectionId(), c.questionId());
-            Plan plan = plan(c, key, target, ks, c.reason() != null ? c.reason() : reason);
+            Plan plan = plan(c, key, target, ks, c.reason() != null ? c.reason() : reason, uploadedSheet);
             if (plan != null) plans.add(plan);
         }
         if (!stale.isEmpty() && write) {
@@ -382,6 +386,16 @@ public class MarkWriter {
                     anyAiType = true;
                 }
             }
+            if (!changed && write && old != null && p.status != null) {
+                // Same mark, state and source: no history, no revision. Only bring a stale
+                // legacy status in line with the mark (rows the AI callback or the old review
+                // PUT wrote left it PENDING, which the learner report counts as skipped).
+                QuestionWiseMarks entity = entityById.get(old.id());
+                if (entity != null && !p.status.equals(entity.getStatus())) {
+                    entity.setStatus(p.status);
+                    marksRepository.save(entity);
+                }
+            }
             results.add(new RowResult(p.change.sectionId(), p.change.questionId(), old == null ? null : old.marks(),
                     p.marks, oldState, p.state.name(), old == null ? null : old.marksSource(), p.source, newRevision,
                     changed, false));
@@ -447,7 +461,7 @@ public class MarkWriter {
 
     /** What one change does to its answer, after precedence and range (contract 3.2 steps 6-8). */
     private Plan plan(MarkChange c, Review.PaperKey key, Review.MarkRow target, SubmissionSnapshots.KeyState ks,
-                      String reason) {
+                      String reason, boolean uploadedSheet) {
         MarkState oldState = ks != null ? ks.state()
                 : target == null ? MarkState.NOT_ANSWERED
                 : target.markState() != null ? MarkState.valueOf(target.markState()) : MarkState.MARKED;
@@ -473,8 +487,10 @@ public class MarkWriter {
                 p.marks = target.marks();
                 p.state = MarkState.MARKED;
                 p.source = MarksSource.AI_REVIEWED;
-                p.status = target.status() == null || "PENDING".equals(target.status())
-                        ? AnswerStatus.fromMarks(p.marks, max) : target.status();
+                // The status follows the accepted mark (an older keyword / pre-AI status no longer
+                // applies); a 0 on a blank answer stays PENDING (skipped).
+                p.status = AnswerStatus.forAcceptedAi(p.marks, max, target.status(),
+                        uploadedSheet ? null : MarkStateDeriver.isBlank(target, key));
                 p.reason = reason != null ? reason : "Accepted the AI mark";
                 return p;
             }
@@ -507,7 +523,9 @@ public class MarkWriter {
                 p.marks = marks;
                 p.state = MarkState.MARKED;
                 p.source = c.writer() == Writer.LEGACY_REVIEW_PUT ? MarksSource.AI_REVIEWED : MarksSource.MANUAL;
-                p.status = c.statusOverride() != null ? c.statusOverride() : AnswerStatus.fromMarks(marks, max);
+                // A status the caller sends counts only when it is a real one: the PDF evaluation
+                // tool sends "evaluated" with every mark, which no report counts.
+                p.status = AnswerStatus.knownOrFromMarks(c.statusOverride(), marks, max);
                 p.reason = reason != null && !reason.isBlank() ? reason
                         : c.writer() == Writer.LEGACY_MANUAL_SUBMIT ? "Marked on the answer sheet"
                         : "Edited on the AI review page";

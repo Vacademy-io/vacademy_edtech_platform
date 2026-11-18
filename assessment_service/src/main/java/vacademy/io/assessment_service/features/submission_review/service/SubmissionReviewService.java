@@ -824,7 +824,10 @@ public class SubmissionReviewService {
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("released", r.released());
         if (!r.released()) out.put("release_when_marked", r.releaseWhenMarked());
-        out.put("release", release(r.state(), null));
+        Map<String, Object> rel = release(r.state(), null);
+        // The answers left unmarked by this release (the history's RELEASED_WITH_UNMARKED count).
+        if (r.released()) rel.put("unmarked_at_release", r.unmarkedAtRelease());
+        out.put("release", rel);
         if (r.released()) {
             out.put("accepted_ai_drafts", r.acceptedAiDrafts());
             out.put("notified", r.notified());
@@ -841,10 +844,11 @@ public class SubmissionReviewService {
 
     public Map<String, Object> sendUpdate(CustomUserDetails user, StudentAttempt attempt) {
         access.requireRelease(user);
-        SubmissionReviewStore.AttemptState st = releaseService.sendUpdate(attempt.getId(), user.getUserId());
+        releaseService.sendUpdate(attempt.getId(), user.getUserId());
         evictSummary(attempt);
+        Loaded l = load(attempt); // unmarked_at_release = answers still unmarked (contract 5.1)
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("release", release(st, null));
+        out.put("release", release(l.state(), l.snapshot()));
         out.put("queued", true);
         return out;
     }

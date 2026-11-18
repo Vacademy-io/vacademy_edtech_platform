@@ -159,4 +159,77 @@ class SubmissionReviewDbTest {
         assertThat(counts.get(0).getChangedAfterRelease()).isTrue();
         assertThat(events.findQuestionHistory(att, sec, cbe, 10)).hasSize(2);
     }
+
+    /**
+     * Live follow-up B1 (2026-11-19): the learner report counted an AI-marked CBE (10 / 10,
+     * accepted on release, status left PENDING) as skipped while its marks were in the total.
+     * The report SQL now reads such a row by its marks; a "not answered" row stays skipped.
+     */
+    @Test
+    void report_counts_a_marked_answer_with_a_stale_pending_status_as_answered() {
+        String inst = "inst-" + UUID.randomUUID();
+        sql("INSERT INTO assessment_institute_mapping (id, assessment_id, institute_id) VALUES (?, ?, ?)",
+                UUID.randomUUID().toString(), a, inst);
+        sql("UPDATE question_wise_marks SET marks = 10, marks_source = 'AI_REVIEWED', mark_state = 'MARKED', max_marks = 10 "
+                + "WHERE attempt_id = ? AND question_id = ?", att, cbe);
+        sql("UPDATE student_attempt SET total_marks = 12, result_marks = 12 WHERE id = ?", att);
+        em.flush();
+        var d = attempts.findParticipantsQuestionOverallDetails(a, inst, att);
+        assertThat(d.getCorrectAttempt()).isEqualTo(2);
+        assertThat(d.getSkippedCount()).isZero();
+        assertThat(d.getTotalCorrectMarks()).isEqualTo(12.0);
+
+        sql("UPDATE question_wise_marks SET marks = 4 WHERE attempt_id = ? AND question_id = ?", att, cbe);
+        d = attempts.findParticipantsQuestionOverallDetails(a, inst, att);
+        assertThat(d.getPartialCorrectAttempt()).isEqualTo(1);
+        assertThat(d.getTotalPartialMarks()).isEqualTo(4.0);
+        assertThat(d.getSkippedCount()).isZero();
+
+        sql("UPDATE question_wise_marks SET marks = 0, marks_source = 'MANUAL', mark_state = 'NOT_ANSWERED' "
+                + "WHERE attempt_id = ? AND question_id = ?", att, cbe);
+        d = attempts.findParticipantsQuestionOverallDetails(a, inst, att);
+        assertThat(d.getSkippedCount()).isEqualTo(1);
+        assertThat(d.getCorrectAttempt()).isEqualTo(1);
+    }
+
+    /**
+     * Review issues B1-legacy-null-max-reads-correct / B1-reader-null-max, B1-blank-ai-zero and
+     * B1-pdf-tool-status-evaluated, against the real report SQL.
+     */
+    @Test
+    void report_reads_old_rows_with_the_papers_max_and_leaves_an_old_zero_skipped() {
+        String inst = "inst-" + UUID.randomUUID();
+        sql("INSERT INTO assessment_institute_mapping (id, assessment_id, institute_id) VALUES (?, ?, ?)",
+                UUID.randomUUID().toString(), a, inst);
+        // A pre-1a AI mark, 4 of the 10-mark CBE question, accepted at release: max_marks NULL.
+        sql("UPDATE question_wise_marks SET marks = 4, marks_source = 'AI_REVIEWED', mark_state = 'MARKED', max_marks = NULL "
+                + "WHERE attempt_id = ? AND question_id = ?", att, cbe);
+        em.flush();
+        var d = attempts.findParticipantsQuestionOverallDetails(a, inst, att);
+        assertThat(d.getPartialCorrectAttempt()).isEqualTo(1);
+        assertThat(d.getTotalPartialMarks()).isEqualTo(4.0);
+        assertThat(d.getCorrectAttempt()).isEqualTo(1);
+        assertThat(d.getSkippedCount()).isZero();
+
+        // A malformed marking_json falls back to the section marks_per_question, never an error.
+        sql("UPDATE question_assessment_section_mapping SET marking_json = '{not json' WHERE question_id = ?", cbe);
+        sql("UPDATE section SET marks_per_question = 10 WHERE id = ?", sec);
+        d = attempts.findParticipantsQuestionOverallDetails(a, inst, att);
+        assertThat(d.getPartialCorrectAttempt()).isEqualTo(1);
+
+        // An old AI 0 (the AI's no-answer verdict) stays skipped, as it read before.
+        sql("UPDATE question_wise_marks SET marks = 0, marks_source = 'AI', mark_state = NULL "
+                + "WHERE attempt_id = ? AND question_id = ?", att, cbe);
+        d = attempts.findParticipantsQuestionOverallDetails(a, inst, att);
+        assertThat(d.getSkippedCount()).isEqualTo(1);
+        assertThat(d.getWrongAttempt()).isZero();
+
+        // The PDF tool's "evaluated" reads by the mark (no source, no max on the row).
+        sql("UPDATE question_wise_marks SET marks = 10, marks_source = NULL, status = 'evaluated' "
+                + "WHERE attempt_id = ? AND question_id = ?", att, cbe);
+        d = attempts.findParticipantsQuestionOverallDetails(a, inst, att);
+        assertThat(d.getCorrectAttempt()).isEqualTo(2);
+        assertThat(d.getSkippedCount()).isZero();
+        assertThat(d.getTotalCorrectMarks()).isEqualTo(12.0);
+    }
 }

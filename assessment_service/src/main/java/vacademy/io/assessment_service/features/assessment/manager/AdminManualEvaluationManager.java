@@ -331,7 +331,8 @@ public class AdminManualEvaluationManager {
                 double questionMarks = dto.getMarks() != null ? dto.getMarks() : 0;
                 // Derive status from marks when admin doesn't explicitly send it
                 String resolvedStatus = dto.getStatus();
-                if (resolvedStatus == null) {
+                // The PDF evaluation tool sends "evaluated", which no report counts.
+                if (!vacademy.io.assessment_service.features.submission_review.model.AnswerStatus.isKnown(resolvedStatus)) {
                     resolvedStatus = deriveStatusFromMarks(questionMarks, maxMarksPerQuestion);
                 }
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +20,8 @@ import vacademy.io.assessment_service.features.learner_assessment.dto.context.Se
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 /**
  * Job-scoped, immutable-after-build carrier of all assessment-wide report
@@ -75,10 +78,31 @@ public class ReportClassContext {
     @Builder.Default
     private Map<String, Map<String, Double>> optionDistribution = new HashMap<>(); // qId -> optId -> pct
 
+    /**
+     * sectionId -> questionId -> the newest mapping's marking_json: the paper's max of an old
+     * question_wise_marks row that has none. Filled lazily, once per section, by the report
+     * reader ({@link #markingJsonForSection}); never snapshotted. Not a builder/constructor
+     * argument, so every context, however built, starts with an empty cache.
+     */
+    @JsonIgnore
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    private final ConcurrentHashMap<String, Map<String, String>> markingJsonBySection = new ConcurrentHashMap<>();
+
     // ---- provenance ----
     private int snapshotVersion;
     @JsonIgnore
     private boolean rebuiltAfterDriftFailure;
+
+    /**
+     * The section's question -> marking_json, loaded by {@code loader} the first time a
+     * section is asked for and reused for every later attempt of the job. A loader that
+     * returns null (a failed load) caches nothing and returns null.
+     */
+    public Map<String, String> markingJsonForSection(String sectionId,
+                                                     Function<String, Map<String, String>> loader) {
+        return markingJsonBySection.computeIfAbsent(sectionId, loader);
+    }
 
     public static String mappingKey(String questionId, String sectionId) {
         return questionId + '#' + sectionId;

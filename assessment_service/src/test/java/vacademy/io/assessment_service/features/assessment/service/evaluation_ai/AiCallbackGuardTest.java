@@ -130,6 +130,45 @@ class AiCallbackGuardTest {
         assertThat(open.getRevision()).isEqualTo(3);
     }
 
+    /** Live follow-up B1: the mirrored AI mark also moves the legacy status off PENDING ("skipped"). */
+    @Test
+    void ai_mark_sets_the_legacy_status_from_the_mark() {
+        QuestionWiseMarks open = row(null, 0.0);
+        when(marks.findAllByAttemptIdAndQuestionId("attempt-1", "q1")).thenReturn(List.of(open));
+        verdict(); // 3 of 10
+        assertThat(open.getStatus()).isEqualTo("PARTIAL_CORRECT");
+
+        QuestionWiseMarks full = row(null, 0.0);
+        when(marks.findAllByAttemptIdAndQuestionId("attempt-1", "q1")).thenReturn(List.of(full));
+        service.onQuestionDone(CopyCheckCallbackDto.QuestionDone.builder().processId("p1").questionId("q1")
+                .status("COMPLETED").marksAwarded(10.0).maxMarks(10.0).build());
+        assertThat(full.getStatus()).isEqualTo("CORRECT");
+
+        QuestionWiseMarks zero = row(null, 0.0);
+        when(marks.findAllByAttemptIdAndQuestionId("attempt-1", "q1")).thenReturn(List.of(zero));
+        service.onQuestionDone(CopyCheckCallbackDto.QuestionDone.builder().processId("p1").questionId("q1")
+                .status("COMPLETED").marksAwarded(0.0).maxMarks(10.0).extractedAnswer("Water boils at 50").build());
+        assertThat(zero.getStatus()).isEqualTo("INCORRECT");
+    }
+
+    /**
+     * Review issue B1-blank-ai-zero-now-incorrect: ai_service's verdict for a blank answer
+     * (typed_answers.unattempted_verdict: 0 marks, extracted_answer "", status COMPLETED)
+     * keeps the row PENDING, which the learner report counts as skipped, not wrong.
+     */
+    @Test
+    void ai_no_answer_verdict_keeps_the_row_skipped() {
+        QuestionWiseMarks blank = row(null, 0.0);
+        blank.setStatus("PENDING");
+        when(marks.findAllByAttemptIdAndQuestionId("attempt-1", "q1")).thenReturn(List.of(blank));
+        service.onQuestionDone(CopyCheckCallbackDto.QuestionDone.builder().processId("p1").questionId("q1")
+                .status("COMPLETED").marksAwarded(0.0).maxMarks(10.0).extractedAnswer("")
+                .feedback("No answer was submitted for this question.").build());
+        assertThat(blank.getStatus()).isEqualTo("PENDING");
+        assertThat(blank.getMarks()).isZero();
+        assertThat(blank.getMarksSource()).isEqualTo("AI");
+    }
+
     @Test
     void run_total_is_the_review_total_when_a_teacher_marked_a_graded_question() {
         SubmissionReleaseService release = mock(SubmissionReleaseService.class);

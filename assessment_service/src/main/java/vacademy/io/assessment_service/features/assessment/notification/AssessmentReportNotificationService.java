@@ -21,6 +21,13 @@ public class AssessmentReportNotificationService {
     private NotificationService notificationService;
 
     public void sendAssessmentReportsToLearners(Map<StudentAttempt, byte[]> participantPdfReport, String assessmentId, String instituteId) {
+        sendAssessmentReportsToLearners(participantPdfReport, assessmentId, instituteId, "Assessment Report",
+                AssessmentNotificationEmailBody.getAssessmentReportBody());
+    }
+
+    /** The same email with another subject and body (the "your result was updated" message). */
+    public void sendAssessmentReportsToLearners(Map<StudentAttempt, byte[]> participantPdfReport, String assessmentId,
+                                                String instituteId, String subject, String body) {
         List<AttachmentUsersDTO> usersList = new ArrayList<>();
 
         for (Map.Entry<StudentAttempt, byte[]> entry : participantPdfReport.entrySet()) {
@@ -50,6 +57,8 @@ public class AssessmentReportNotificationService {
             return;
         }
         AttachmentNotificationDTO attachmentNotificationDTO = getAttachmentNotificationDTO(usersList, assessmentId);
+        attachmentNotificationDTO.setSubject(subject);
+        attachmentNotificationDTO.setBody(body);
         sendNotification(attachmentNotificationDTO, instituteId);
     }
 

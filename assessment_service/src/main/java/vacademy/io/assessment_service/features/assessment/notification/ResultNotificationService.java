@@ -51,6 +51,19 @@ public class ResultNotificationService {
     public record Templates(Map<String, Object> email, Map<String, Object> whatsapp) {
     }
 
+    /**
+     * The templates of the one "your result was updated" message (submission review, Send
+     * updated result): the built-in email only. Not the institute's ASSESSMENT_RESULT_RELEASED
+     * email or WhatsApp - those say the result is out, and resending them is the "result
+     * released" message again (owner decision 4: one update message).
+     */
+    public static Templates updated(String assessmentName) {
+        Map<String, Object> email = new HashMap<>();
+        email.put("subject", AssessmentNotificationEmailBody.resultUpdatedSubject(assessmentName));
+        email.put("content", AssessmentNotificationEmailBody.getResultUpdatedBody());
+        return new Templates(email, null);
+    }
+
     public Templates resolve(String instituteId, String assessmentId) {
         return new Templates(adminCore.resolveResultTemplate(instituteId, assessmentId, "EMAIL"),
                 adminCore.resolveResultTemplate(instituteId, assessmentId, "WHATSAPP"));

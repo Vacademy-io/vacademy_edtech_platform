@@ -41,6 +41,7 @@ class SubmissionReviewServiceTest {
     private StudentAttempt attempt;
     private Assessment assessment;
     private MarkWriter markWriter;
+    private SubmissionReleaseService releaseService;
 
     @BeforeEach
     void setUp() {
@@ -50,7 +51,7 @@ class SubmissionReviewServiceTest {
         SubmissionSnapshots snapshots = new SubmissionSnapshots();
         markWriter = mock(MarkWriter.class);
         service = new SubmissionReviewService(mock(StudentAttemptRepository.class), mock(QuestionWiseMarksRepository.class),
-                store, paper, snapshots, markWriter, mock(SubmissionReleaseService.class),
+                store, paper, snapshots, markWriter, releaseService = mock(SubmissionReleaseService.class),
                 new SubmissionReviewAccess(), events, mock(AiVerdictMirror.class), new UserNames());
         assessment = ReviewFixtures.assessment("A", "AUTO", false);
         attempt = ReviewFixtures.attempt("att-1", assessment, "ENDED");
@@ -139,5 +140,30 @@ class SubmissionReviewServiceTest {
                 .isEqualTo("colour / color");
         assertThat(SubmissionReviewService.keyText(json.readTree("{\"answer\":{\"content\":\"  \"}}"))).isNull();
         assertThat(SubmissionReviewService.keyText(json.readTree("{}"))).isNull();
+    }
+
+    /** B3: "Release anyway" answers with the number of answers it left unmarked, as History does. */
+    @Test
+    @SuppressWarnings("unchecked")
+    void release_anyway_response_carries_the_unmarked_count() {
+        var released = ReviewFixtures.state("att-1", "ENDED", true, 2.0, 1, 1);
+        when(releaseService.releaseOne(eq("att-1"), eq(true), eq(true), eq(false), any(), any()))
+                .thenReturn(new SubmissionReleaseService.RowRelease(true, false, 0, true, released, 1));
+        Map<String, Object> out = service.release(ReviewFixtures.user("t-1", "TEACHER"), attempt, true, true, false,
+                "PENDING|0");
+        assertThat((Map<String, Object>) out.get("release")).containsEntry("status", "RELEASED")
+                .containsEntry("unmarked_at_release", 1);
+    }
+
+    /** Send updated result: the release block counts the answers still unmarked (contract 5.1). */
+    @Test
+    @SuppressWarnings("unchecked")
+    void send_update_response_counts_answers_still_unmarked() {
+        var released = ReviewFixtures.state("att-1", "ENDED", true, 2.0, 2, 2);
+        when(store.attempt("att-1")).thenReturn(released);
+        when(releaseService.sendUpdate("att-1", "t-1")).thenReturn(released);
+        Map<String, Object> out = service.sendUpdate(ReviewFixtures.user("t-1", "TEACHER"), attempt);
+        assertThat((Map<String, Object>) out.get("release")).containsEntry("unmarked_at_release", 1);
+        assertThat(out).containsEntry("queued", true);
     }
 }

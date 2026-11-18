@@ -14,6 +14,8 @@ import java.util.List;
 /**
  * Render + email the result of ONE attempt (contract 6.3): the existing release path
  * (report PDF, upload, email + WhatsApp, ASSESSMENT_RESULT_RELEASED) in a batch of one.
+ * SEND_UPDATE (a result the learner already has) sends only the "your result was updated"
+ * email: no ASSESSMENT_RESULT_RELEASED, no "result released" email / WhatsApp templates.
  * Async, after the caller's commit, so a slow PDF never holds a request or a row lock.
  */
 @Slf4j
@@ -43,8 +45,11 @@ public class SubmissionResultMailer {
         try {
             StudentAttempt attempt = attemptRepository.findById(attemptId).orElse(null);
             if (attempt == null || attempt.getRegistration() == null) return;
+            // An update goes to a learner who already has the result: no second
+            // ASSESSMENT_RESULT_RELEASED (the manager also sends the "updated" email for it).
+            boolean firstRelease = source != SubmissionReleaseService.Source.SEND_UPDATE;
             participantsManager.releaseAutomatically(List.of(attempt), attempt.getRegistration().getAssessment(),
-                    attempt.getRegistration().getInstituteId(), true,
+                    attempt.getRegistration().getInstituteId(), firstRelease,
                     new SubmissionReleaseService.ReleaseContext(actorUserId, source, false));
         } catch (Exception e) {
             log.error("[submission-review] could not send the result of attempt {}", attemptId, e);

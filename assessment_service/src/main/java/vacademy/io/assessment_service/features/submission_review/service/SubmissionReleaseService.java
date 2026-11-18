@@ -17,6 +17,7 @@ import vacademy.io.assessment_service.features.open_evaluation.policy.ApiCandida
 import vacademy.io.assessment_service.features.open_evaluation.submission.ApiSubmissionFeed;
 import vacademy.io.assessment_service.features.submission_review.model.ActorType;
 import vacademy.io.assessment_service.features.submission_review.model.MarkEventType;
+import vacademy.io.assessment_service.features.submission_review.model.AnswerStatus;
 import vacademy.io.assessment_service.features.submission_review.model.MarkState;
 import vacademy.io.assessment_service.features.submission_review.model.MarksSource;
 import vacademy.io.assessment_service.features.submission_review.model.SubmissionReviewException;
@@ -61,8 +62,9 @@ public class SubmissionReleaseService {
         }
     }
 
+    /** {@code unmarkedAtRelease}: answers still needing marking (or being checked) when it was released. */
     public record RowRelease(boolean released, boolean releaseWhenMarked, int acceptedAiDrafts, boolean notified,
-                             SubmissionReviewStore.AttemptState state) {
+                             SubmissionReviewStore.AttemptState state, int unmarkedAtRelease) {
     }
 
     private final StudentAttemptRepository attemptRepository;
@@ -147,6 +149,8 @@ public class SubmissionReleaseService {
             if (ctx.source() != Source.AUTO) {
                 Map<String, QuestionWiseMarks> byId = new LinkedHashMap<>();
                 for (QuestionWiseMarks q : rows) byId.put(q.getId(), q);
+                boolean uploadedSheet = MarkWriter.marksAnUploadedSheet(facts.kind(), assessment,
+                        attempt.getAttemptData());
                 List<String> draftKeys = new ArrayList<>();
                 Date now = new Date();
                 for (SubmissionSnapshots.KeyState k : snap.keys()) {
@@ -155,6 +159,12 @@ public class SubmissionReleaseService {
                     if (q == null) continue;
                     q.setMarkState(MarkState.MARKED.name());
                     q.setMarksSource(MarksSource.AI_REVIEWED);
+                    // The legacy status follows the mark (a PENDING row is "skipped" on the
+                    // learner report while its marks count in the total); a 0 on a blank
+                    // answer stays PENDING (skipped).
+                    Double max = QuestionMaxResolver.max(k.key());
+                    q.setStatus(AnswerStatus.forAcceptedAi(q.getMarks(), max != null ? max : q.getMaxMarks(),
+                            q.getStatus(), uploadedSheet ? null : MarkStateDeriver.isBlank(k.row(), k.key())));
                     q.setMarkedBy(ctx.actorUserId());
                     q.setMarkedAt(now);
                     q.setRevision(q.getRevision() + 1);
@@ -241,13 +251,14 @@ public class SubmissionReleaseService {
                 throw SubmissionReviewException.conflict("BLOCKERS", "Some answers are not marked yet", details);
             }
             attemptRepository.markReleaseWhenMarked(List.of(attemptId));
-            return new RowRelease(false, true, 0, false, store.attempt(attemptId));
+            return new RowRelease(false, true, 0, false, store.attempt(attemptId), 0);
         }
         ReleaseOutcome out = markReleased(attemptId, null, new ReleaseContext(actor, Source.ROW, allowUnmarked));
         if (notify) {
             MarkWriter.afterCommit(() -> mailer.render(attemptId, Source.RENDER, actor));
         }
-        return new RowRelease(true, false, out.acceptedAiDrafts(), notify, store.attempt(attemptId));
+        return new RowRelease(true, false, out.acceptedAiDrafts(), notify, store.attempt(attemptId),
+                out.unmarkedKeys().size());
     }
 
     /** A9: hide a released result again. */

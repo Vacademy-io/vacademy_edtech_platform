@@ -456,4 +456,56 @@ class SubmissionReleaseServiceTest {
                 r.marksSource(), r.markState(), r.revision(), r.maxMarks(), r.markedBy(), r.markedAt(), r.hasFeedback(),
                 r.answerPages(), r.aiQuestionEvaluationId(), r.createdAt(), r.responseJson());
     }
+
+    // ---------------------------------------------------------------- live follow-ups 2026-11-19
+
+    /** B1: release-time AI acceptance sets the legacy status from the mark (10 of 10 = CORRECT). */
+    @Test
+    void release_accepting_ai_drafts_sets_the_status_from_the_mark() {
+        rows.get(1).setMarksSource("AI");
+        rows.get(1).setMarks(10);
+        service.markReleased("att-1", null, new SubmissionReleaseService.ReleaseContext("teacher-1",
+                SubmissionReleaseService.Source.ROW, false));
+        assertThat(rows.get(1).getStatus()).isEqualTo("CORRECT");
+
+        rows.get(1).setMarksSource("AI");
+        rows.get(1).setMarkState(null);
+        rows.get(1).setMarks(6);
+        rows.get(1).setStatus("PENDING");
+        service.markReleased("att-1", null, new SubmissionReleaseService.ReleaseContext("teacher-1",
+                SubmissionReleaseService.Source.ROW, false));
+        assertThat(rows.get(1).getStatus()).isEqualTo("PARTIAL_CORRECT");
+    }
+
+    /**
+     * Review issue B1-blank-ai-zero-now-incorrect: Release taking the AI's 0 for a CBE answer
+     * left blank keeps it PENDING (skipped on the learner report); a 0 on a written one is
+     * INCORRECT.
+     */
+    @Test
+    void release_accepting_an_ai_zero_on_a_blank_answer_keeps_it_skipped() {
+        rows.get(1).setMarksSource("AI");
+        rows.get(1).setMarks(0);
+        rows.get(1).setResponseJson("{\"responseData\":{\"answer\":{\"parts\":{\"p1\":{\"html\":\"\"}}}}}");
+        service.markReleased("att-1", null, new SubmissionReleaseService.ReleaseContext("teacher-1",
+                SubmissionReleaseService.Source.ROW, false));
+        assertThat(rows.get(1).getMarksSource()).isEqualTo("AI_REVIEWED");
+        assertThat(rows.get(1).getStatus()).isEqualTo("PENDING");
+
+        rows.get(1).setMarksSource("AI");
+        rows.get(1).setMarkState(null);
+        rows.get(1).setResponseJson("{\"responseData\":{\"answer\":{\"parts\":{\"p1\":{\"html\":\"<p>Done</p>\"}}}}}");
+        service.markReleased("att-1", null, new SubmissionReleaseService.ReleaseContext("teacher-1",
+                SubmissionReleaseService.Source.ROW, false));
+        assertThat(rows.get(1).getStatus()).isEqualTo("INCORRECT");
+    }
+
+    /** B3: the 200 of "release anyway" carries the answers it left unmarked (history says the same). */
+    @Test
+    void release_anyway_reports_the_answers_left_unmarked() {
+        var r = service.releaseOne("att-1", false, true, false, "PENDING|0", "teacher-1");
+        assertThat(r.released()).isTrue();
+        assertThat(r.unmarkedAtRelease()).isEqualTo(1);
+        assertThat(savedEvents().get(0).getPayloadJson()).contains("\"count\":1");
+    }
 }

@@ -124,6 +124,9 @@ public class AiEvaluationReviewService {
             for (QuestionWiseMarks marksRow : questionWiseMarksRepository
                     .findAllByAttemptIdAndQuestionId(attemptId, questionId)) {
                 marksRow.setMarks(clamped);
+                marksRow.setStatus(vacademy.io.assessment_service.features.submission_review.model.AnswerStatus
+                        .fromMarks(clamped, marksRow.getMaxMarks() != null ? marksRow.getMaxMarks()
+                                : row.getMaxMarks() != null ? row.getMaxMarks().doubleValue() : null));
                 marksRow.setAiEvaluatedAt(new Date());
                 marksRow.setMarksSource("AI_REVIEWED");
                 // The teacher's edited feedback becomes the authoritative,

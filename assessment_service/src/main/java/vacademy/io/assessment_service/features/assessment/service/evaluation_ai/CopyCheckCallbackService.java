@@ -242,6 +242,14 @@ public class CopyCheckCallbackService {
                     continue;
                 }
                 marks.setMarks(payload.getMarksAwarded());
+                // The legacy status follows the mark (the learner report counts a PENDING row
+                // as skipped while its marks still count in the total). The AI's "no answer"
+                // verdict (0 marks, nothing extracted: a blank typed answer, a question with
+                // no ink) stays PENDING, as the scorer leaves an unanswered question.
+                marks.setStatus(vacademy.io.assessment_service.features.submission_review.model.AnswerStatus
+                        .forAiVerdict(payload.getMarksAwarded(),
+                                marks.getMaxMarks() != null ? marks.getMaxMarks() : payload.getMaxMarks(),
+                                payload.getExtractedAnswer()));
                 marks.setAiEvaluatedAt(now);
                 marks.setMarksSource("AI");
                 // Legacy derivation shows it as "Checked by AI, needs your OK" (or Marked once released).

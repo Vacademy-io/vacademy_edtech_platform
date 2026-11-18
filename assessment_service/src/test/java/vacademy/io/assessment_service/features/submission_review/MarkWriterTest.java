@@ -663,4 +663,122 @@ class MarkWriterTest {
             assertThat(e.getDetails()).containsEntry("marks_source", "MANUAL");
         });
     }
+
+    // ---------------------------------------------------------------- live follow-ups 2026-11-19
+
+    /** B1: every writer keeps the legacy status in line with the mark (learner report "skipped"). */
+    @Test
+    void teacher_marks_set_the_legacy_status_from_the_mark() {
+        state(false, 2.0, 0);
+        writer.apply(teacher("q2", 10.0, 0, token(false), null, false));
+        assertThat(rows.get(1).getStatus()).isEqualTo("CORRECT");
+        writer.apply(teacher("q2", 4.0, 1, token(false), null, false));
+        assertThat(rows.get(1).getStatus()).isEqualTo("PARTIAL_CORRECT");
+        writer.apply(teacher("q2", 0.0, 2, token(false), null, false));
+        assertThat(rows.get(1).getStatus()).isEqualTo("INCORRECT");
+        writer.apply(new MarkWriter.MarkChange("att-1", "s1", "q2", MarkWriter.Writer.TEACHER, null, null, null, true,
+                null, "teacher-1", 3, token(false), false, null, null, null));
+        assertThat(rows.get(1).getStatus()).isEqualTo("PENDING");
+        assertThat(rows.get(1).getMarkState()).isEqualTo("NOT_ANSWERED");
+    }
+
+    @Test
+    void accepting_an_ai_mark_sets_the_status_from_the_mark_even_over_an_old_keyword_status() {
+        state(false, 8.0, 0);
+        rows.get(1).setMarksSource("AI");
+        rows.get(1).setMarks(6);
+        rows.get(1).setStatus("INCORRECT"); // the keyword scorer's verdict from submit time
+        var accept = new MarkWriter.MarkChange("att-1", "s1", "q2", MarkWriter.Writer.ACCEPT_AI, null, null, null,
+                false, null, "teacher-1", null, token(false), false, null, null, null);
+        writer.applyAll("att-1", List.of(accept), new MarkWriter.BatchContext(null, token(false), false, "teacher-1",
+                MarkWriter.Writer.ACCEPT_AI));
+        assertThat(rows.get(1).getMarksSource()).isEqualTo("AI_REVIEWED");
+        assertThat(rows.get(1).getStatus()).isEqualTo("PARTIAL_CORRECT");
+    }
+
+    @Test
+    void saving_the_same_mark_repairs_a_stale_pending_status_without_history() {
+        state(true, 12.0, 2);
+        rows.get(1).setMarksSource("MANUAL");
+        rows.get(1).setMarkState("MARKED");
+        rows.get(1).setMarks(10);
+        rows.get(1).setStatus("PENDING"); // a stale status left by an older writer
+        rows.get(1).setRevision(2);
+        var r = writer.apply(teacher("q2", 10.0, 2, token(true), "Same mark", false));
+        assertThat(r.changed()).isZero();
+        assertThat(rows.get(1).getStatus()).isEqualTo("CORRECT");
+        assertThat(rows.get(1).getRevision()).isEqualTo(2);
+        verify(events, never()).saveAll(any());
+        verify(attempts, never()).applyMarkTotals(anyString(), anyDouble(), anyString(), anyBoolean(), any());
+    }
+
+    /**
+     * Review issue B1-pdf-tool-status-evaluated: the PDF evaluation tool sends status
+     * "evaluated" with every mark. It is none of the four statuses, so the status comes from
+     * the mark - on the first submit and on a re-submit of the same mark.
+     */
+    @Test
+    void manual_submit_ignores_the_pdf_tools_evaluated_status() {
+        state(false, 2.0, 0);
+        var change = new MarkWriter.MarkChange("att-1", "s1", "q2", MarkWriter.Writer.LEGACY_MANUAL_SUBMIT, 4.0, null,
+                null, false, null, "t", null, null, false, null, "evaluated", null);
+        writer.applyAll("att-1", List.of(change), new MarkWriter.BatchContext(null, null, false, "t",
+                MarkWriter.Writer.LEGACY_MANUAL_SUBMIT));
+        assertThat(rows.get(1).getMarks()).isEqualTo(4.0);
+        assertThat(rows.get(1).getStatus()).isEqualTo("PARTIAL_CORRECT");
+
+        // Same mark again (the tool re-submits every box): the status stays a real one.
+        rows.get(1).setStatus("evaluated"); // as a pre-fix submit stored it
+        var again = new MarkWriter.MarkChange("att-1", "s1", "q2", MarkWriter.Writer.LEGACY_MANUAL_SUBMIT, 4.0, null,
+                null, false, null, "t", null, null, false, null, "evaluated", null);
+        writer.applyAll("att-1", List.of(again), new MarkWriter.BatchContext(null, null, false, "t",
+                MarkWriter.Writer.LEGACY_MANUAL_SUBMIT));
+        assertThat(rows.get(1).getStatus()).isEqualTo("PARTIAL_CORRECT");
+
+        // A real status the caller sends is still kept.
+        var keyed = new MarkWriter.MarkChange("att-1", "s1", "q2", MarkWriter.Writer.LEGACY_MANUAL_SUBMIT, 10.0, null,
+                null, false, null, "t", null, null, false, null, "CORRECT", null);
+        writer.applyAll("att-1", List.of(keyed), new MarkWriter.BatchContext(null, null, false, "t",
+                MarkWriter.Writer.LEGACY_MANUAL_SUBMIT));
+        assertThat(rows.get(1).getStatus()).isEqualTo("CORRECT");
+    }
+
+    /**
+     * Review issue B1-blank-ai-zero-now-incorrect: accepting the AI's 0 on a blank online answer
+     * keeps it skipped (PENDING); a 0 on a written answer is wrong (INCORRECT).
+     */
+    @Test
+    void accepting_an_ai_zero_on_a_blank_answer_keeps_it_skipped() {
+        state(false, 2.0, 0);
+        rows.get(1).setMarksSource("AI");
+        rows.get(1).setMarks(0);
+        rows.get(1).setStatus("PENDING");
+        rows.get(1).setResponseJson("{\"responseData\":{\"answer\":\"  \"}}");
+        var accept = new MarkWriter.MarkChange("att-1", "s1", "q2", MarkWriter.Writer.ACCEPT_AI, null, null, null,
+                false, null, "teacher-1", null, token(false), false, null, null, null);
+        writer.applyAll("att-1", List.of(accept), new MarkWriter.BatchContext(null, token(false), false, "teacher-1",
+                MarkWriter.Writer.ACCEPT_AI));
+        assertThat(rows.get(1).getMarksSource()).isEqualTo("AI_REVIEWED");
+        assertThat(rows.get(1).getStatus()).isEqualTo("PENDING");
+
+        rows.get(1).setMarksSource("AI");
+        rows.get(1).setMarkState(null);
+        rows.get(1).setStatus("PENDING");
+        rows.get(1).setResponseJson("{\"responseData\":{\"answer\":\"Water boils at 50\"}}");
+        writer.applyAll("att-1", List.of(accept), new MarkWriter.BatchContext(null, token(false), false, "teacher-1",
+                MarkWriter.Writer.ACCEPT_AI));
+        assertThat(rows.get(1).getStatus()).isEqualTo("INCORRECT");
+    }
+
+    /** B5: the Edit marks dialog's live total runs before the reason is typed. */
+    @Test
+    void preview_after_release_needs_no_reason_but_the_save_does() {
+        state(true, 2.0, 1);
+        var r = writer.preview(teacher("q2", 5.0, 0, token(true), null, false));
+        assertThat(r.totalAfter()).isEqualTo(7.0);
+        verify(marks, never()).save(any());
+        assertThatThrownBy(() -> writer.apply(teacher("q2", 5.0, 0, token(true), null, false)))
+                .isInstanceOfSatisfying(SubmissionReviewException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("REASON_REQUIRED"));
+    }
 }

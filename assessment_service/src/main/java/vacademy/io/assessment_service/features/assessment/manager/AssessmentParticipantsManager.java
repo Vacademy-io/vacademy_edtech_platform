@@ -926,8 +926,11 @@ public class AssessmentParticipantsManager {
         ParticipantsQuestionOverallDetailDto questionOverallDetailDto = studentAttemptRepository
                 .findParticipantsQuestionOverallDetails(assessmentId, instituteId, attemptId);
 
+        // The paper's max for old rows comes from these same mappings: no further query.
+        Map<String, Map<String, String>> markingJsonBySection = newestMarkingJsonBySection(mappings);
         return StudentReportOverallDetailDto.builder()
-                .allSections(generateStudentReport(mappings, attemptId, buildQuestionOrderMap(mappings)))
+                .allSections(generateStudentReport(mappings, attemptId, buildQuestionOrderMap(mappings),
+                        sid -> markingJsonBySection.getOrDefault(sid, Collections.emptyMap())))
                 .questionOverallDetailDto(questionOverallDetailDto)
                 .evaluatedFileId(studentAttempt.get().getEvaluatedFileId())
                 .responseFileId(extractAttemptDataFileId(studentAttempt.get().getAttemptData(), "fileId"))
@@ -988,9 +991,53 @@ public class AssessmentParticipantsManager {
                     .filter(k -> k.endsWith('#' + sectionId))
                     .map(k -> k.substring(0, k.length() - sectionId.length() - 1))
                     .toList();
-            result.put(sectionId, getQuestionReviewForAttempt(sectionId, questionIds, attemptId, orderByKey));
+            result.put(sectionId, getQuestionReviewForAttempt(sectionId, questionIds, attemptId, orderByKey,
+                    sid -> ctx.markingJsonForSection(sid, this::loadNewestMarkingJson)));
         }
         return result;
+    }
+
+    /**
+     * One section's question -> newest mapping marking_json, for the bulk export's class
+     * context (cached there, so loaded once per section per job). A flat projection: the
+     * mapping entity would eagerly load every Question. Null on failure, so the context does
+     * not cache it and the next attempt tries again.
+     */
+    private Map<String, String> loadNewestMarkingJson(String sectionId) {
+        try {
+            Map<String, QuestionAssessmentSectionMappingRepository.MarkingSchemeRow> newest = new HashMap<>();
+            List<QuestionAssessmentSectionMappingRepository.MarkingSchemeRow> rows = questionAssessmentSectionMappingService
+                    .getMarkingSchemeRowsBySectionIds(List.of(sectionId));
+            for (QuestionAssessmentSectionMappingRepository.MarkingSchemeRow r : rows == null
+                    ? List.<QuestionAssessmentSectionMappingRepository.MarkingSchemeRow>of() : rows) {
+                if (r.getQuestionId() == null) continue;
+                newest.merge(r.getQuestionId(), r, (a, b) -> isNewer(a.getCreatedAt(), b.getCreatedAt()) ? b : a);
+            }
+            Map<String, String> out = new HashMap<>(newest.size() * 2);
+            newest.forEach((q, r) -> out.put(q, r.getMarkingJson()));
+            return out;
+        } catch (Exception e) {
+            log.warn("[report] paper max unavailable for section {}: {}", sectionId, e.getMessage());
+            return null;
+        }
+    }
+
+    /** sectionId -> questionId -> the newest mapping's marking_json, from already-loaded mappings. */
+    private static Map<String, Map<String, String>> newestMarkingJsonBySection(
+            List<QuestionAssessmentSectionMapping> mappings) {
+        Map<String, Map<String, String>> out = new HashMap<>();
+        newestMappings(mappings).values().forEach(m -> out
+                .computeIfAbsent(m.getSection().getId(), k -> new HashMap<>())
+                .put(m.getQuestion().getId(), m.getMarkingJson()));
+        return out;
+    }
+
+    /**
+     * Whether a mapping created at {@code b} replaces one created at {@code a} as the newest:
+     * a dated row beats an undated one, and the later date wins.
+     */
+    private static boolean isNewer(Date a, Date b) {
+        return a == null || (b != null && b.after(a));
     }
 
     // PR1 (bulk report export, C3 fix): the mappings are already bulk-loaded above
@@ -1008,26 +1055,27 @@ public class AssessmentParticipantsManager {
     }
 
     private static Map<String, Integer> buildQuestionOrderMap(List<QuestionAssessmentSectionMapping> mappings) {
-        if (CollectionUtils.isEmpty(mappings)) {
-            return new HashMap<>();
-        }
+        Map<String, QuestionAssessmentSectionMapping> newest = newestMappings(mappings);
+        Map<String, Integer> out = new HashMap<>(newest.size() * 2);
+        newest.forEach((k, m) -> out.put(k, m.getQuestionOrder()));
+        return out;
+    }
+
+    /** "questionId#sectionId" -> the newest mapping of that pair (see the caveat above). */
+    private static Map<String, QuestionAssessmentSectionMapping> newestMappings(
+            List<QuestionAssessmentSectionMapping> mappings) {
         Map<String, QuestionAssessmentSectionMapping> newest = new HashMap<>();
+        if (CollectionUtils.isEmpty(mappings)) {
+            return newest;
+        }
         for (QuestionAssessmentSectionMapping m : mappings) {
             if (m.getQuestion() == null || m.getSection() == null) {
                 continue;
             }
             String key = questionOrderMapKey(m.getQuestion().getId(), m.getSection().getId());
-            newest.merge(key, m, (a, b) -> {
-                Date da = a.getCreatedAt();
-                Date db = b.getCreatedAt();
-                if (da == null) return b;
-                if (db == null) return a;
-                return db.after(da) ? b : a;
-            });
+            newest.merge(key, m, (a, b) -> isNewer(a.getCreatedAt(), b.getCreatedAt()) ? b : a);
         }
-        Map<String, Integer> out = new HashMap<>(newest.size() * 2);
-        newest.forEach((k, m) -> out.put(k, m.getQuestionOrder()));
-        return out;
+        return newest;
     }
 
     // The attempt stores admin-attached file ids inside its attemptData JSON —
@@ -1045,7 +1093,8 @@ public class AssessmentParticipantsManager {
     }
 
     private Map<String, List<StudentReportAnswerReviewDto>> generateStudentReport(
-            List<QuestionAssessmentSectionMapping> mappings, String attemptId, Map<String, Integer> orderByKey) {
+            List<QuestionAssessmentSectionMapping> mappings, String attemptId, Map<String, Integer> orderByKey,
+            java.util.function.Function<String, Map<String, String>> markingJsonBySection) {
         if (CollectionUtils.isEmpty(mappings)) {
             return new HashMap<>();
         }
@@ -1060,12 +1109,20 @@ public class AssessmentParticipantsManager {
         return sectionToQuestionsMap.entrySet().stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
-                        entry -> getQuestionReviewForAttempt(entry.getKey(), entry.getValue(), attemptId, orderByKey)));
+                        entry -> getQuestionReviewForAttempt(entry.getKey(), entry.getValue(), attemptId, orderByKey,
+                                markingJsonBySection)));
 
     }
 
+    /**
+     * @param markingJsonBySection sectionId -> questionId -> the newest mapping's marking_json:
+     *        the paper's max of an old row that has none of its own. Both callers resolve it
+     *        without a per-attempt query (the 3-arg report from its loaded mappings, the bulk
+     *        export from the class context's per-section cache).
+     */
     private List<StudentReportAnswerReviewDto> getQuestionReviewForAttempt(String sectionId, List<String> questionIds,
-            String attemptId, Map<String, Integer> orderByKey) {
+            String attemptId, Map<String, Integer> orderByKey,
+            java.util.function.Function<String, Map<String, String>> markingJsonBySection) {
         if (CollectionUtils.isEmpty(questionIds)) {
             return Collections.emptyList();
         }
@@ -1077,8 +1134,31 @@ public class AssessmentParticipantsManager {
             return Collections.emptyList();
         }
 
+        // Asked for at most once per call, and only when an old row is read by its marks and
+        // has no max of its own.
+        @SuppressWarnings("unchecked")
+        Map<String, String>[] sectionMarking = new Map[1];
+        java.util.function.Function<QuestionWiseMarks, Double> paperMax = qwm -> {
+            if (sectionMarking[0] == null) {
+                Map<String, String> loaded = null;
+                try {
+                    loaded = markingJsonBySection.apply(sectionId);
+                } catch (Exception e) {
+                    // Without the paper's max a mark reads as correct; never drop the question.
+                    log.warn("[report] paper max unavailable for section {}: {}", sectionId, e.getMessage());
+                }
+                sectionMarking[0] = loaded != null ? loaded : Collections.emptyMap();
+            }
+            String markingJson = sectionMarking[0].get(qwm.getQuestion().getId());
+            Double perQuestion = qwm.getSection() != null ? qwm.getSection().getMarksPerQuestion() : null;
+            return vacademy.io.assessment_service.features.submission_review.service.QuestionMaxResolver.max(
+                    new vacademy.io.assessment_service.features.submission_review.service.Review.PaperKey(
+                            sectionId, null, 0, perQuestion, qwm.getQuestion().getId(), 0, 0,
+                            qwm.getQuestion().getQuestionType(), markingJson, null));
+        };
+
         return questionWiseMarksList.stream()
-                .map(qwm -> buildStudentReportReview(qwm, orderByKey))
+                .map(qwm -> buildStudentReportReview(qwm, orderByKey, paperMax))
                 .filter(Objects::nonNull) // Remove any null results
                 .toList();
     }
@@ -1102,7 +1182,7 @@ public class AssessmentParticipantsManager {
     }
 
     private StudentReportAnswerReviewDto buildStudentReportReview(QuestionWiseMarks questionWiseMarks,
-            Map<String, Integer> orderByKey) {
+            Map<String, Integer> orderByKey, java.util.function.Function<QuestionWiseMarks, Double> paperMax) {
         try {
             if (questionWiseMarks == null || questionWiseMarks.getQuestion() == null) {
                 return null; // Avoid throwing an exception, instead return null to filter later
@@ -1159,7 +1239,13 @@ public class AssessmentParticipantsManager {
                     .questionOrder(questionOrder)
                     .correctOptions(reportEvaluationJson(currentQuestion, questionWiseMarks))
                     .studentResponseOptions(questionWiseMarks.getResponseJson())
-                    .answerStatus(questionWiseMarks.getStatus())
+                    // A row the AI or a teacher marked shows as its marks say, also when it was
+                    // written before every writer kept the status (it said PENDING = "skipped",
+                    // or the PDF tool's "evaluated"). Old rows have no max_marks: the paper's.
+                    .answerStatus(vacademy.io.assessment_service.features.submission_review.model.AnswerStatus.effective(
+                            questionWiseMarks.getStatus(), questionWiseMarks.getMarks(),
+                            questionWiseMarks.getMaxMarks(), questionWiseMarks.getMarksSource(),
+                            questionWiseMarks.getMarkState(), () -> paperMax.apply(questionWiseMarks)))
                     .mark(questionWiseMarks.getMarks()) // primitive double on the entity; null-safe by construction
                     .explanationId(currentQuestion.getExplanationTextData() != null
                             ? currentQuestion.getExplanationTextData().getId()
@@ -1441,8 +1527,13 @@ public class AssessmentParticipantsManager {
             releaseStateWriter.release(attemptList);
             return;
         }
+        // "Send updated result" (submission review): the learner already has this result. They
+        // get one "your result was updated" email; ASSESSMENT_RESULT_RELEASED (institute
+        // workflows, e.g. WhatsApp) and the "result released" templates do not fire again.
+        final boolean update = isResultUpdate(releaseCtx);
+        final boolean publish = publishWorkflow && !update;
         if (assessment.getEvaluationType().equals("MANUAL")) {
-            handleParticipantsReportCreationForManualAssessment(attemptList, assessment, instituteId, publishWorkflow, releaseCtx);
+            handleParticipantsReportCreationForManualAssessment(attemptList, assessment, instituteId, publish, releaseCtx);
             return;
         }
 
@@ -1472,7 +1563,9 @@ public class AssessmentParticipantsManager {
         Map<StudentAttempt, byte[]> reportMap = new HashMap<>();
         // The result email / WhatsApp templates for this assessment, looked up once per release.
         final vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService.Templates resultTemplates =
-                resultNotificationService.resolve(instituteId, assessment.getId());
+                update ? vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService
+                        .updated(assessment.getName())
+                        : resultNotificationService.resolve(instituteId, assessment.getId());
         final Map<String, Map<String, String>> variablesByAttempt = new HashMap<>();
         final List<String> failedReleases = new ArrayList<>();
         attemptList.forEach(attempt -> {
@@ -1528,7 +1621,7 @@ public class AssessmentParticipantsManager {
                 reportMap.put(attempt, participantPdfReport);
                 if (reportMap.size() >= emailBatch) {
                     sendResultNotifications(reportMap, variablesByAttempt, assessment.getId(), instituteId, resultTemplates);
-                    if (publishWorkflow) publishResultReleasedFor(reportMap);
+                    if (publish) publishResultReleasedFor(reportMap);
                     reportMap.clear();
                 }
             } catch (Exception e) {
@@ -1539,7 +1632,7 @@ public class AssessmentParticipantsManager {
         });
         if (!reportMap.isEmpty()) {
             sendResultNotifications(reportMap, variablesByAttempt, assessment.getId(), instituteId, resultTemplates);
-            if (publishWorkflow) publishResultReleasedFor(reportMap);
+            if (publish) publishResultReleasedFor(reportMap);
         }
         logFailedReleases(assessment, failedReleases);
     }
@@ -1622,7 +1715,11 @@ public class AssessmentParticipantsManager {
                 reportMap.put(attempt, checkedCopy);
             }
         });
-        sendNotificationToStudent(reportMap, assessment.getId(), instituteId);
+        if (isResultUpdate(ctx)) {
+            sendResultUpdatedToStudent(reportMap, assessment, instituteId);
+        } else {
+            sendNotificationToStudent(reportMap, assessment.getId(), instituteId);
+        }
         if (publishWorkflow) publishResultReleasedFor(reportMap);
         logFailedReleases(assessment, failedReleases);
     }
@@ -1672,6 +1769,29 @@ public class AssessmentParticipantsManager {
             return;
         }
         assessmentWorkflowEventPublisher.publishResultReleased(new ArrayList<>(reportMap.keySet()));
+    }
+
+    /** The render + email of "Send updated result": a result the learner already has. */
+    private static boolean isResultUpdate(
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
+        return ctx != null && ctx.source()
+                == vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.Source.SEND_UPDATE;
+    }
+
+    /** Manual-evaluation tests: the checked copy again, in the "your result was updated" email. */
+    private void sendResultUpdatedToStudent(Map<StudentAttempt, byte[]> checkedCopies, Assessment assessment,
+            String instituteId) {
+        if (checkedCopies.isEmpty()) return;
+        if (!adminCoreServiceClient.isLearnerResultNotificationEnabled(instituteId)) {
+            log.info("[result-notification] learner notifications disabled for institute {} — skipping update email", instituteId);
+            return;
+        }
+        assessmentReportNotificationService.sendAssessmentReportsToLearners(checkedCopies, assessment.getId(),
+                instituteId,
+                vacademy.io.assessment_service.features.assessment.notification.AssessmentNotificationEmailBody
+                        .resultUpdatedSubject(assessment.getName()),
+                vacademy.io.assessment_service.features.assessment.notification.AssessmentNotificationEmailBody
+                        .getResultUpdatedBody());
     }
 
     /**

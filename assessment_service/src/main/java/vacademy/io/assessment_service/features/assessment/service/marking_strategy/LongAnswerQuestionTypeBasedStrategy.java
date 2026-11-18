@@ -49,57 +49,61 @@ public class LongAnswerQuestionTypeBasedStrategy extends IQuestionTypeBasedStrat
 
     @Override
     public double calculateMarks(String markingJsonStr, String correctAnswerJsonStr, String responseJson) {
+        // Until a rule below says otherwise the answer is left for a person (or the AI) to
+        // mark: 0 marks, PENDING ("Needs marking" on the submission page).
+        setAnswerStatus(QuestionResponseEnum.PENDING.name());
         try {
+            // Nothing to match against, or nothing answered: no keyword score. A question with
+            // no model answer is normal (the teacher or the AI marks it), so this is quiet.
+            if (isBlank(markingJsonStr) || isBlank(correctAnswerJsonStr) || isBlank(responseJson)) {
+                return 0.0;
+            }
             LongAnswerMarkingDto markingDto = (LongAnswerMarkingDto) validateAndGetMarkingData(markingJsonStr);
             LongAanswerCorrectAnswerDto correctAnswerDto = (LongAanswerCorrectAnswerDto) validateAndGetCorrectAnswerData(correctAnswerJsonStr);
             LongAnswerResponseDto responseDto = (LongAnswerResponseDto) validateAndGetResponseData(responseJson);
 
-            // Validate input objects and avoid NullPointerException
-            if (correctAnswerDto == null || markingDto == null || responseDto == null) {
-                setAnswerStatus(QuestionResponseEnum.PENDING.name());
+            String correctAnswer = modelAnswer(correctAnswerDto);
+            if (correctAnswer == null || markingDto == null || markingDto.getData() == null
+                    || responseDto == null || responseDto.getResponseData() == null
+                    || responseDto.getResponseData().getAnswer() == null) {
                 return 0.0;
             }
-            if (responseDto.getResponseData().getAnswer() == null) {
-                setAnswerStatus(QuestionResponseEnum.PENDING.name());
-                return 0.0;
-            }
-
-            // Extracting correct option IDs
-            String correctAnswer = correctAnswerDto.getData().getAnswer().getContent().toLowerCase();
 
             // Extracting student response
             String attemptedAnswer = responseDto.getResponseData().getAnswer().toLowerCase();
 
             // Extract marking scheme details safely
             LongAnswerMarkingDto.DataFields markingData = markingDto.getData();
-            if (markingData == null) {
-                setAnswerStatus(QuestionResponseEnum.PENDING.name());
-                return 0.0;
-            }
-
             double totalMarks = markingData.getTotalMark();
             double negativeMarks = markingData.getNegativeMark();
 
             // If the student did not attempt the question, return 0 marks
             if (attemptedAnswer.isEmpty()) {
-                setAnswerStatus(QuestionResponseEnum.PENDING.name());
                 return 0.0;
             }
             Pair<Double, String> marksStatusMap = calculateMarksViaMatching(attemptedAnswer, correctAnswer, totalMarks, negativeMarks);
-            if(marksStatusMap == null){
-                setAnswerStatus(QuestionResponseEnum.PENDING.name());
+            if (marksStatusMap == null) {
                 return 0.0;
             }
-            else{
-                setAnswerStatus(marksStatusMap.getSecond());
-                return marksStatusMap.getFirst();
-            }
-
-
+            setAnswerStatus(marksStatusMap.getSecond());
+            return marksStatusMap.getFirst();
         } catch (Exception e) {
-            log.error("Error Occurred: " + e.getMessage());
+            // Unreadable JSON: leave it for a person, and say which kind of data broke.
+            setAnswerStatus(QuestionResponseEnum.PENDING.name());
+            log.warn("Long answer not scored by keyword match: {}", e.getMessage());
             return 0.0;
         }
+    }
+
+    /** The model answer in lower case, or null when the question has none (no data, or blank). */
+    static String modelAnswer(LongAanswerCorrectAnswerDto dto) {
+        if (dto == null || dto.getData() == null || dto.getData().getAnswer() == null) return null;
+        String content = dto.getData().getAnswer().getContent();
+        return content == null || content.isBlank() ? null : content.toLowerCase();
+    }
+
+    private static boolean isBlank(String s) {
+        return s == null || s.isBlank() || "null".equals(s.trim());
     }
 
     @Override
