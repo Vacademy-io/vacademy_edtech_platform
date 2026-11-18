@@ -1,5 +1,138 @@
 {
   "aiReportDetails": {
+    "rich": {
+      "enrollment": "Enrollment no. {{value}}",
+      "hero": {
+        "skippedCount": "{{count}} skipped",
+        "kicker": "Your result",
+        "rankOf": "Rank {{rank}} of {{total}}",
+        "betterThan": "Better than {{value}}% of students who took this test",
+        "classLine": "Class average {{avg}} · Highest {{high}}",
+        "correct": "Correct",
+        "rightOrPartly": "Right or partly right",
+        "wrong": "Wrong",
+        "wrongEach": "Wrong ({{value}} each)",
+        "skipped": "Skipped",
+        "pending": "Being checked",
+        "timeUsed": "Time used",
+        "timeOf": "of {{value}} min",
+        "classTime": "class {{value}}",
+        "questions": "Questions"
+      },
+      "standing": {
+        "title": "📈 Where You Stand",
+        "caption": "How many of the {{total}} students scored in each range. Other students are counted, never named.",
+        "students": "Students",
+        "legend": "The darker bar is the range your score falls in."
+      },
+      "sections": {
+        "title": "📚 Marks by Section",
+        "caption": "Your score in each section. The dark tick is the class average.",
+        "captionNoClass": "Your score in each section.",
+        "avg": "Class avg {{value}}",
+        "top": "Top {{value}}",
+        "time": "Time {{value}}"
+      },
+      "time": {
+        "captionNoClass": "Minutes spent in each section.",
+        "title": "⏱️ Time by Section",
+        "caption": "Minutes spent in each section, compared with the class average.",
+        "allowed": "The test allowed {{value}} minutes.",
+        "you": "You",
+        "class": "Class average",
+        "minutes": "min"
+      },
+      "answers": {
+        "captionNoTime": "Each box is one question.",
+        "title": "🧾 Every Answer",
+        "caption": "Each box is one question, with the seconds you spent on it.",
+        "fast": "A yellow outline means it was answered in under 10 seconds.",
+        "skip": "skip"
+      },
+      "outcome": {
+        "CORRECT": "Correct",
+        "PARTIAL": "Partly right",
+        "WRONG": "Wrong",
+        "SKIPPED": "Skipped",
+        "PENDING": "Being checked"
+      },
+      "easy": {
+        "title": "🎯 Easy Marks Missed",
+        "caption": "Questions you missed that at least 3 in 5 classmates answered correctly.",
+        "skipped": "You skipped it",
+        "took": "You took {{value}} seconds",
+        "classRight": "{{value}}% of class right"
+      },
+      "expertise": {
+        "title": "⭐ Your Expertise",
+        "caption": "Questions 30% or fewer of your classmates answered correctly, and you did.",
+        "gotIt": "You got it right",
+        "onlyClass": "only {{value}}% of class right"
+      },
+      "potential": {
+        "title": "🚀 Your Potential",
+        "caption": "Had you attempted the skipped questions ({{count}}) as well as the class did, you could have scored {{score}}.",
+        "score": "Score",
+        "rank": "Rank",
+        "betterThan": "Better than"
+      },
+      "speed": {
+        "title": "⚡ Speed vs Accuracy",
+        "caption": "How often you were right, by the time spent on a question.",
+        "under10": "Under 10s",
+        "10to30": "10–30s",
+        "31to60": "31–60s",
+        "over60": "Over 60s",
+        "right": "{{right}}/{{total}} right"
+      },
+      "stamina": {
+        "title": "🔋 Stamina",
+        "caption": "Accuracy in each quarter of the paper, from start to finish."
+      },
+      "negative": {
+        "title": "➖ Negative Marking",
+        "caption": "Wrong answers cost {{value}} marks.",
+        "earned": "Marks earned",
+        "lost": "Lost to wrong answers",
+        "net": "Your score",
+        "withoutGuesses": "Without the answers given in under 10 seconds ({{count}}), your score would have been {{value}}."
+      },
+      "quadrant": {
+        "title": "🧭 Confidence",
+        "captionClass": "Quick means faster than the class average for that question. Rushed answers are the easiest marks to win back.",
+        "captionSelf": "Quick means faster than your usual pace. Rushed answers are the easiest marks to win back.",
+        "confident": "Confident",
+        "confidentSub": "quick and right",
+        "worked": "Worked it out",
+        "workedSub": "slow and right",
+        "rushed": "Rushed",
+        "rushedSub": "quick and wrong",
+        "stuck": "Stuck",
+        "stuckSub": "slow and wrong"
+      },
+      "progress": {
+        "title": "📉 Progress",
+        "caption": "Your score as a percentage in your last {{count}} tests here.",
+        "thisTest": "This test"
+      },
+      "qbq": {
+        "title": "📝 Question by Question",
+        "caption": "All {{count}} questions with your marks, time and how the class did.",
+        "yourAnswer": "Your answer",
+        "rightAnswer": "Right answer",
+        "notAttempted": "Not attempted",
+        "feedback": "Feedback:",
+        "howMarked": "How it was marked",
+        "criterionMarks": "{{marks}} marks",
+        "explanation": "Explanation:",
+        "marks": "{{marks}} of {{max}} marks",
+        "seconds": "{{value}} s",
+        "classRight": "{{value}}% of class right",
+        "classAvgTime": "class average {{value}} s",
+        "showAll": "Show all {{count}} questions",
+        "showLess": "Show fewer"
+      }
+    },
     "areasOfImprovement": {
       "title": "📝 Areas of Improvement"
     },
