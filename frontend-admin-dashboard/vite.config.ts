@@ -506,6 +506,7 @@ export default defineConfig(({ mode }) => {
                 'src/components/shared/whatsapp/**/*.test.{ts,tsx}',
                 'src/components/common/study-library/add-course/**/*.test.{ts,tsx}',
                 'src/components/common/payments/**/*.test.{ts,tsx}',
+                'src/components/common/assessment-folders/**/*.test.{ts,tsx}',
                 'src/components/cbe/**/*.test.{ts,tsx}',
             ],
         },
