@@ -136,13 +136,18 @@ public class CopyCheckOrchestratorService {
                 return null;
             }
             boolean awaiting = awaitingSubmitMarks(process, attemptId);
+            boolean apiTraffic = process.getApiKeyId() != null && !process.getApiKeyId().isBlank();
             return new DispatchFacts(awaiting,
                     AiEvaluationService.isReleased(process.getStudentAttempt()),
                     extractInstituteId(process),
                     process.getQuotedCredits(),
                     process.getRateSnapshot(),
-                    process.getApiKeyId() != null && !process.getApiKeyId().isBlank(),
-                    awaiting || process.getQuotedCredits() != null ? null : dashboardCharge(process, attemptId));
+                    apiTraffic,
+                    awaiting || process.getQuotedCredits() != null ? null : dashboardCharge(process, attemptId),
+                    // A CBE-only run exists because CBE answers always go to the AI, on an
+                    // institute that never opted in: it never runs on credit it does not
+                    // have, whatever the dashboard gate (off in prod) says.
+                    !apiTraffic && !awaiting && typedAnswerEvaluation.gradesCbeOnly(process));
         });
         if (facts == null) {
             return;
@@ -153,7 +158,7 @@ public class CopyCheckOrchestratorService {
             // unclaimed (and PENDING - a DISPATCHED row nobody owns would wait for the
             // sweeper) and the next tick picks it up once the rows exist.
             int handedBack = inNewTransaction(() -> processRepository.handBackClaim(processId, claimToken, new Date()));
-            log.info("[copy-check] attempt {} has no question rows yet; process {} requeued ({} row)",
+            log.info("[copy-check] attempt {} has no (or not yet submitted) question rows; process {} requeued ({} row)",
                     attemptId, processId, handedBack);
             return;
         }
@@ -251,7 +256,7 @@ public class CopyCheckOrchestratorService {
         if (typed) {
             // Objective questions were scored exactly on submit; only the written
             // ones need reading, and only those are charged for.
-            marksList = marksList.stream().filter(m -> TypedAnswerEvaluation.isAiGraded(m.getQuestion())).toList();
+            marksList = typedRowsToGrade(process, marksList);
             if (marksList.isEmpty()) {
                 failProcess(process, "no uploaded answer sheet and no written (long answer / CBE) question on attempt "
                         + attemptId + " — nothing for the AI to grade");
@@ -262,7 +267,11 @@ public class CopyCheckOrchestratorService {
             failProcess(process, "no questions found for attempt " + attemptId);
             return null;
         }
-        marksList = inPaperOrder(marksList, process.getAssessment());
+        // One entry per question, the first in paper order: a question in two sections
+        // used to insert a second tracking row, hit uq_ai_question_eval_process_question
+        // and roll the whole dispatch back. The verdict is applied to every marks row of
+        // the question when it comes back (CopyCheckCallbackService.onQuestionDone).
+        marksList = TypedAnswerEvaluation.oncePerQuestion(inPaperOrder(marksList, process.getAssessment()));
 
         // A re-dispatch (sweeper requeue, 429, stale claim) used to insert a second
         // set of tracking rows next to the first (T0.29). Clear this process's
@@ -464,7 +473,12 @@ public class CopyCheckOrchestratorService {
 
     /** What dispatch reads about a claimed row in its first, short transaction. */
     record DispatchFacts(boolean awaitingMarks, boolean released, String instituteId, java.math.BigDecimal quotedCredits,
-                         String rateSnapshot, boolean apiTraffic, AiEvaluationCharge fallbackCharge) {
+                         String rateSnapshot, boolean apiTraffic, AiEvaluationCharge fallbackCharge,
+                         boolean enforceBalance) {
+        DispatchFacts(boolean awaitingMarks, boolean released, String instituteId, java.math.BigDecimal quotedCredits,
+                      String rateSnapshot, boolean apiTraffic, AiEvaluationCharge fallbackCharge) {
+            this(awaitingMarks, released, instituteId, quotedCredits, rateSnapshot, apiTraffic, fallbackCharge, false);
+        }
     }
 
     /**
@@ -479,7 +493,7 @@ public class CopyCheckOrchestratorService {
         AiEvaluationCreditGate.DispatchCheck check;
         try {
             check = creditGate.checkAtDispatch(facts.instituteId(), facts.quotedCredits(), facts.rateSnapshot(),
-                    facts.fallbackCharge(), facts.apiTraffic());
+                    facts.fallbackCharge(), facts.apiTraffic(), facts.enforceBalance());
         } catch (Exception e) {
             // Never let the second look itself stop a dashboard copy.
             log.warn("[copy-check] credit re-check failed for process {}: {}", processId, e.getMessage());
@@ -540,12 +554,29 @@ public class CopyCheckOrchestratorService {
                 return AiEvaluationCharge.dashboardHandwritten(process.getPageCount());
             }
             List<QuestionWiseMarks> rows = questionWiseMarksRepository.findByStudentAttemptId(attemptId);
-            long count = rows.stream().filter(m -> TypedAnswerEvaluation.isAiGraded(m.getQuestion())).count();
-            return AiEvaluationCharge.dashboardTyped((int) count);
+            // Exactly what prepareRequest sends: the run's questions, each once.
+            int count = TypedAnswerEvaluation.oncePerQuestion(typedRowsToGrade(process, rows)).size();
+            return AiEvaluationCharge.dashboardTyped(count);
         } catch (Exception e) {
             log.warn("[copy-check] could not price process {}: {}", process.getId(), e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * The marks rows of an online attempt this run grades: its written answers. A run
+     * that exists only because CBE answers always go to the AI (the test's AI evaluation
+     * is off and nobody asked for it, see TypedAnswerEvaluation.cbeOnlyRun) grades the
+     * answered CBE questions only - long answers keep their submit-time score as before,
+     * and a blank CBE answer (nothing beyond the template, worth 0) is neither sent nor
+     * charged for.
+     */
+    private List<QuestionWiseMarks> typedRowsToGrade(AiEvaluationProcess process, List<QuestionWiseMarks> rows) {
+        boolean cbeOnly = typedAnswerEvaluation.gradesCbeOnly(process);
+        return rows.stream()
+                .filter(m -> TypedAnswerEvaluation.gradedInRun(m.getQuestion(), cbeOnly))
+                .filter(m -> !cbeOnly || typedAnswerEvaluation.typedAnswer(m) != null)
+                .toList();
     }
 
     /** Run {@code work} in a transaction of its own (dispatch has no outer one by design). */
@@ -912,7 +943,11 @@ public class CopyCheckOrchestratorService {
         if (attempt == null || !typedAnswerEvaluation.isTypedAttempt(attempt, assessmentOf(process))) return false;
         Date submitted = attempt.getSubmitTime();
         if (submitted == null || System.currentTimeMillis() - submitted.getTime() > SUBMIT_MARKS_GRACE_MS) return false;
-        return questionWiseMarksRepository.findByStudentAttemptId(attemptId).isEmpty();
+        List<QuestionWiseMarks> rows = questionWiseMarksRepository.findByStudentAttemptId(attemptId);
+        // Rows the live sync wrote before submit can still hold an older answer than the
+        // one submitted: grading that would mark stale text, and the AI mark then
+        // freezes the row against the submit-time recalculation. Wait for the marks job.
+        return rows.isEmpty() || typedAnswerEvaluation.answersBehindSubmit(attempt, rows);
     }
 
     private static Assessment assessmentOf(AiEvaluationProcess process) {

@@ -109,4 +109,23 @@ class AssessmentAttemptEndTaskExecutorTest {
         verify(typed, never()).isTypedAttempt(any(), any());
         verify(enqueuer, never()).enqueueIfEnabled(any(), any());
     }
+
+    @Test
+    void aTimedOutAttemptWithACbeAnswerIsQueuedEvenWithAiEvaluationOff() {
+        // Owner decision 2026-11-18: CBE answers always go to the AI.
+        StudentAttempt cbe = attempt("cbe-expired", 60, 90);
+        cbe.getRegistration().getAssessment().setAiEvaluationEnabled(null);
+        StudentAttempt mcq = attempt("mcq-expired", 60, 90);
+        mcq.getRegistration().getAssessment().setAiEvaluationEnabled(null);
+        when(attempts.getAllLiveAttempt()).thenReturn(List.of(cbe, mcq));
+        when(attempts.getOpenUntimedAttemptIds()).thenReturn(Set.of());
+        when(typed.cbeAlwaysAiGraded(eq(cbe), any())).thenReturn(true);
+        when(typed.cbeAlwaysAiGraded(eq(mcq), any())).thenReturn(false);
+        when(typed.isTypedAttempt(eq(cbe), any())).thenReturn(true);
+
+        executor.execute(new SchedulerActivityLog(), "TEST");
+
+        verify(enqueuer).enqueueIfEnabled(eq(cbe), any());
+        verify(enqueuer, never()).enqueueIfEnabled(eq(mcq), any());
+    }
 }

@@ -13,7 +13,7 @@ import {
 import { MyButton } from '@/components/design-system/button';
 import { DotsThree, WarningCircle, Coins } from '@phosphor-icons/react';
 import { useToolCostPreview } from '@/components/common/ai-credits/useToolCostPreview';
-import { perPageCredits } from '@/services/ai-credits/get-ai-credits';
+import { perPageCredits, typedPerAnswerCredits } from '@/services/ai-credits/get-ai-credits';
 import { AssessmentRevaluateStudentInterface } from '@/types/assessments/assessment-overview';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { StudentRevaluateQuestionWiseComponent } from './student-revaluate-question-wise-component';
@@ -44,6 +44,7 @@ import { stashEvalReturnUrl } from '@/routes/evaluation/evaluation-tool/-utils/e
 import { UploadAnswerSheetDialog } from '@/routes/evaluation/evaluate/$assessmentId/$attemptId/$examType/-components/UploadAnswerSheetDialog';
 import { ProctoringReviewDialog } from './ProctoringReviewDialog';
 import { StudentAiReportDialog } from './StudentAiReportDialog';
+import { useAiGradableQuestionCount } from '../../-utils/ai-gradable-questions';
 
 const isEvaluatedStatus = (status?: string | null) => {
     const s = (status || '').toUpperCase();
@@ -197,7 +198,8 @@ const ReleaseResultComponent = ({
 /**
  * Starts the AI check on one attempt and opens its progress page. No model is
  * sent, so the platform's "evaluation" default decides; teachers do not pick one.
- * A refusal (a released result, a paper with no questions) toasts the server's reason.
+ * Works for an uploaded copy and for typed online answers alike. A refusal (a
+ * released result is a 409, a paper with no questions) toasts the server's reason.
  */
 const useStartAiCheck = (student: AssessmentRevaluateStudentInterface, assessmentData: any) => {
     const { t } = useTranslation('assessmentStudentAttemptDropdown');
@@ -237,9 +239,18 @@ const useStartAiCheck = (student: AssessmentRevaluateStudentInterface, assessmen
         },
         onError: (error: unknown) => {
             console.error('Failed to trigger AI evaluation:', error);
-            const body = (error as { response?: { data?: { ex?: string; message?: string } } })
-                ?.response?.data;
-            toast.error(body?.ex || body?.message || t('toasts.evaluationError'), { id: toastId });
+            const response = (
+                error as {
+                    response?: { status?: number; data?: { ex?: string; message?: string } };
+                }
+            )?.response;
+            const serverReason = response?.data?.ex || response?.data?.message;
+            // 409: the result is already released; the server says to edit marks by hand.
+            const fallback =
+                response?.status === 409
+                    ? t('toasts.alreadyReleased')
+                    : t('toasts.evaluationError');
+            toast.error(serverReason || fallback, { id: toastId });
         },
     });
 };
@@ -252,49 +263,92 @@ const useStartAiCheck = (student: AssessmentRevaluateStudentInterface, assessmen
  * query (same count as the bulk quote). `enabled` keeps a row from fetching until its
  * menu is open.
  */
-const useAiCheckCost = (enabled: boolean) => {
-    // The pages are counted when the copy is read, so the screen shows the rate,
-    // and the balance check uses the minimum: one page.
-    const cost = useToolCostPreview('copy_check_evaluation', { num_pages: 1 }, enabled);
-    return { ...cost, creditsPerPage: perPageCredits(cost.rate) };
+const useAiCheckCost = (enabled: boolean, typedAnswerCount?: number) => {
+    // A copy: the pages are counted when the copy is read, so the screen shows the
+    // rate, and the balance check uses the minimum: one page. Typed (online) answers:
+    // billed per written answer at the row's typed_per_answer rate; a teacher's check
+    // grades every written question on the paper, so that count is the price.
+    const typed = typedAnswerCount != null;
+    const cost = useToolCostPreview(
+        'copy_check_evaluation',
+        typed
+            ? { answer_mode: 'TYPED', num_answers: Math.max(1, typedAnswerCount) }
+            : { num_pages: 1 },
+        enabled
+    );
+    return {
+        ...cost,
+        creditsPerPage: typed ? null : perPageCredits(cost.rate),
+        creditsPerAnswer: typed ? typedPerAnswerCredits(cost.rate) : null,
+    };
 };
 
-/** A copy already checked or under evaluation: a new check costs credits and replaces its marks. */
+/**
+ * A copy (or typed answers) already checked or under evaluation: a new check costs
+ * credits and replaces its marks. Typed answers always come here first, also when not
+ * marked yet (`firstCheck`): the teacher sees the price before the institute pays it.
+ */
 const ReCheckWithAIConfirm = ({
     student,
     cost,
     isStarting,
+    typedAnswers = false,
+    firstCheck = false,
     onConfirm,
     onClose,
 }: {
     student: AssessmentRevaluateStudentInterface;
     cost: ReturnType<typeof useAiCheckCost>;
     isStarting: boolean;
+    /** An online test: the AI marks typed answers, billed per answer, not pages of a copy. */
+    typedAnswers?: boolean;
+    /** Typed answers not marked yet: a first check, not a re-check. */
+    firstCheck?: boolean;
     onConfirm: () => void;
     onClose: () => void;
 }) => {
     const { t } = useTranslation('assessmentStudentAttemptDropdown');
+    const firstTyped = typedAnswers && firstCheck;
+    const perUnit = typedAnswers ? cost.creditsPerAnswer : cost.creditsPerPage;
 
     return (
         <DialogContent className="flex flex-col gap-4 p-0">
             <h1 className="rounded-md bg-primary-50 p-4 text-primary-500">
-                {t('dialogs.evaluateWithAI.recheckTitle')}
+                {firstTyped
+                    ? t('dialogs.evaluateWithAI.checkTitleTyped')
+                    : typedAnswers
+                      ? t('dialogs.evaluateWithAI.recheckTitleTyped')
+                      : t('dialogs.evaluateWithAI.recheckTitle')}
             </h1>
             <div className="flex flex-col gap-4 p-4">
                 <p className="text-sm text-neutral-700">
-                    {t('dialogs.evaluateWithAI.recheckMessage', { name: student.full_name })}
+                    {firstTyped
+                        ? t('dialogs.evaluateWithAI.checkMessageTyped', { name: student.full_name })
+                        : typedAnswers
+                          ? t('dialogs.evaluateWithAI.recheckMessageTyped', {
+                                name: student.full_name,
+                            })
+                          : t('dialogs.evaluateWithAI.recheckMessage', {
+                                name: student.full_name,
+                            })}
                 </p>
 
-                {cost.creditsPerPage != null && (
+                {perUnit != null && (
                     <div className="flex items-center justify-between rounded-md border border-neutral-200 bg-neutral-50 p-3">
                         <div className="flex items-center gap-2 text-sm text-neutral-700">
                             <Coins size={16} className="text-primary-500" />
                             <span>
                                 {t('dialogs.evaluateWithAI.estimatedCostLabel')}{' '}
                                 <span className="font-semibold text-neutral-900">
-                                    {t('dialogs.evaluateWithAI.creditsPerPage', {
-                                        count: cost.creditsPerPage,
-                                    })}
+                                    {typedAnswers
+                                        ? `${t('dialogs.evaluateWithAI.creditsCount', {
+                                              count: cost.credits ?? 0,
+                                          })} (${t('dialogs.evaluateWithAI.creditsPerAnswer', {
+                                              count: perUnit,
+                                          })})`
+                                        : t('dialogs.evaluateWithAI.creditsPerPage', {
+                                              count: perUnit,
+                                          })}
                                 </span>
                             </span>
                         </div>
@@ -332,7 +386,9 @@ const ReCheckWithAIConfirm = ({
                     >
                         {isStarting
                             ? t('dialogs.evaluateWithAI.starting')
-                            : t('dialogs.evaluateWithAI.recheckConfirm')}
+                            : firstTyped
+                              ? t('dialogs.evaluateWithAI.checkConfirm')
+                              : t('dialogs.evaluateWithAI.recheckConfirm')}
                     </MyButton>
                 </div>
             </div>
@@ -622,12 +678,33 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
     const isEvaluationPending = evaluationStatus === 'PENDING';
     const isEvaluated = isEvaluatedStatus(evaluationStatus);
 
-    const aiCheckCost = useAiCheckCost(isManualEvaluation && (menuOpen || openDialog));
+    // An online (non-MANUAL) test whose paper has questions the AI marks (CBE, long
+    // answer): its typed answers can be sent to the AI from this row. Owner decision
+    // 2026-11-18: an attempt held for marking must always have a way to be marked.
+    // One shared request for the whole table; MCQ-only tests never show the item.
+    const aiGradableQuestionCount = useAiGradableQuestionCount({
+        assessmentId,
+        instituteId,
+        enabled: !isManualEvaluation,
+    });
+    // A released result is frozen against AI writes (the server answers 409), so the
+    // item is not offered there. result_status is the row's report release status.
+    const isResultReleased =
+        (student as { result_status?: string | null }).result_status === 'RELEASED';
+    const canAiCheckTypedAnswers =
+        !isManualEvaluation && !isResultReleased && (aiGradableQuestionCount ?? 0) > 0;
+
+    const aiCheckCost = useAiCheckCost(
+        (isManualEvaluation || canAiCheckTypedAnswers) && (menuOpen || openDialog),
+        canAiCheckTypedAnswers ? aiGradableQuestionCount : undefined
+    );
 
     // A pending copy starts in one click. Anything else asks first, whichever menu label it
     // sits under ("Revaluate"): a teacher's half-marked copy is EVALUATING, not COMPLETED.
+    // Typed answers always ask first, with the price: the run marks every written answer
+    // and may be on a test whose institute never turned AI evaluation on.
     const handleCheckWithAi = () => {
-        if (!isEvaluationPending) {
+        if (!isEvaluationPending || !isManualEvaluation) {
             handleProvideReattempt('Evaluate with AI');
             return;
         }
@@ -745,6 +822,17 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                                     >
                                         {t('dropdown.entireAssessment')}
                                     </DropdownMenuItem>
+                                    {canAiCheckTypedAnswers && (
+                                        <DropdownMenuItem
+                                            className="cursor-pointer"
+                                            disabled={
+                                                startAiCheck.isPending || aiCheckCost.isLoading
+                                            }
+                                            onClick={handleCheckWithAi}
+                                        >
+                                            {t('dropdown.evaluateWithAI')}
+                                        </DropdownMenuItem>
+                                    )}
                                 </>
                             ) : (
                                 /* For MANUAL evaluation: grade by hand in the tool, or with AI */
@@ -893,6 +981,8 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                         student={student}
                         cost={aiCheckCost}
                         isStarting={startAiCheck.isPending}
+                        typedAnswers={!isManualEvaluation}
+                        firstCheck={isEvaluationPending}
                         onConfirm={() =>
                             startAiCheck.mutate(undefined, {
                                 onSettled: () => setOpenDialog(false),

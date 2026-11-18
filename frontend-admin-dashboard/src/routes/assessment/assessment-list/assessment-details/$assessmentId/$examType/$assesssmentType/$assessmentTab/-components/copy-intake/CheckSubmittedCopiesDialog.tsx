@@ -8,6 +8,7 @@ import {
     Coins,
     FileX,
     Files,
+    Info,
     Sparkle,
     WarningCircle,
 } from '@phosphor-icons/react';
@@ -52,6 +53,7 @@ export const CheckSubmittedCopiesDialog = ({
     instituteId,
     attemptIds,
     defaultIncludeChecked = false,
+    typedAnswersCheckedFromRow = false,
     onStarted,
 }: {
     open: boolean;
@@ -63,6 +65,12 @@ export const CheckSubmittedCopiesDialog = ({
     attemptIds?: string[];
     /** Start with "also re-check the copies already checked" ticked. */
     defaultIncludeChecked?: boolean;
+    /**
+     * An online test with AI-marked questions: attempts without an uploaded copy are
+     * typed answers, which this batch never picks up. Say where they are checked
+     * instead (the student's row menu), so "left out" is not a dead end.
+     */
+    typedAnswersCheckedFromRow?: boolean;
     onStarted: (batch: CopyIntakeBatch) => void;
 }) => {
     const { t } = useTranslation('assessmentCopyIntake');
@@ -212,6 +220,16 @@ export const CheckSubmittedCopiesDialog = ({
                             emphasis
                         />
                     </ul>
+                )}
+
+                {typedAnswersCheckedFromRow && p && p.no_copy > 0 && (
+                    <p
+                        role="note"
+                        className="flex items-start gap-2 rounded-md border border-info-200 bg-info-50 p-3 text-sm text-info-700"
+                    >
+                        <Info size={18} className="mt-px shrink-0" />
+                        {t('submitted.typedFromRowMenu')}
+                    </p>
                 )}
 
                 {p && p.already_checked > 0 && (

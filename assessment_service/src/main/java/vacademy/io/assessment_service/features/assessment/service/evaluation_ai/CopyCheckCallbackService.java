@@ -191,20 +191,25 @@ public class CopyCheckCallbackService {
         // Mirror ONLY successfully-graded questions into question_wise_marks. A
         // FAILED question is left untouched (no silent 0) — it surfaces on the
         // review page for the teacher to grade by hand, which then mirrors it.
+        // A question that sits in two sections has a marks row in each; it was graded
+        // once, and the verdict is the mark of every one of them (a LIMIT 1 lookup left
+        // the other copy at its submit-time 0).
         if (!failed && payload.getMarksAwarded() != null) {
-            QuestionWiseMarks marks = questionWiseMarksRepository
-                    .findByStudentAttemptIdAndQuestionId(
-                            process.getStudentAttempt() != null ? process.getStudentAttempt().getId() : null,
-                            payload.getQuestionId())
-                    .orElse(null);
-            if (marks != null) {
+            String attemptId = process.getStudentAttempt() != null ? process.getStudentAttempt().getId() : null;
+            String detailsJson = null;
+            try {
+                detailsJson = objectMapper.writeValueAsString(payload);
+            } catch (JsonProcessingException ignored) {
+                // Non-fatal — feedback is also on ai_question_evaluation row.
+            }
+            Date now = new Date();
+            for (QuestionWiseMarks marks : questionWiseMarksRepository
+                    .findAllByAttemptIdAndQuestionId(attemptId, payload.getQuestionId())) {
                 marks.setMarks(payload.getMarksAwarded());
-                marks.setAiEvaluatedAt(new Date());
+                marks.setAiEvaluatedAt(now);
                 marks.setMarksSource("AI");
-                try {
-                    marks.setAiEvaluationDetailsJson(objectMapper.writeValueAsString(payload));
-                } catch (JsonProcessingException ignored) {
-                    // Non-fatal — feedback is also on ai_question_evaluation row.
+                if (detailsJson != null) {
+                    marks.setAiEvaluationDetailsJson(detailsJson);
                 }
                 questionWiseMarksRepository.save(marks);
             }
@@ -293,6 +298,16 @@ public class CopyCheckCallbackService {
                     log.warn("[copy-check] process {} completed with {}/{} question(s) ungraded — "
                             + "attempt {} left EVALUATING for manual review",
                             process.getId(), ungraded, rows.size(), attempt.getId());
+                } else if (typedAnswerEvaluation.gradesCbeOnly(process)) {
+                    // A run nobody asked for (CBE answers always go to the AI, on a test
+                    // with AI evaluation off): its marks are a draft until a teacher
+                    // reviews them. COMPLETED would let "release after the assessment
+                    // ends" (AutoResultReleaseJob) publish them unreviewed. EVALUATING
+                    // keeps it in the teacher's queue; Release Result, or the review
+                    // page completing it, takes it from there.
+                    attempt.setResultStatus(AttemptResultStatusEnum.EVALUATING.name());
+                    log.info("[copy-check] process {} graded the CBE answers of attempt {}; held for teacher review",
+                            process.getId(), attempt.getId());
                 } else {
                     attempt.setResultStatus("COMPLETED");
                 }

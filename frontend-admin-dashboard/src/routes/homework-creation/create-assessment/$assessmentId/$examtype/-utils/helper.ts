@@ -333,7 +333,14 @@ export const syncStep1DataWithStore = (
     setBasicInfo(basicInfoData);
 };
 
-export const syncStep2DataWithStore = (form: UseFormReturn<SectionFormType>) => {
+/**
+ * @param savedForAssessmentId the assessment this save went to, recorded with the
+ *        section ids so a later wizard for another assessment does not reuse them.
+ */
+export const syncStep2DataWithStore = (
+    form: UseFormReturn<SectionFormType>,
+    savedForAssessmentId?: string
+) => {
     const setSectionDetails = useSectionDetailsStore.getState().setSectionDetails;
     const { getValues } = form;
 
@@ -341,6 +348,7 @@ export const syncStep2DataWithStore = (form: UseFormReturn<SectionFormType>) => 
         testDuration: getValues('testDuration'),
         status: getValues('status'),
         section: getValues('section'),
+        ...(savedForAssessmentId !== undefined && { savedForAssessmentId }),
     };
 
     // Update Zustand Store
@@ -510,7 +518,10 @@ export function classifySections(oldSectionData: Section[], newSectionData: Sect
                 oldSection?.section_duration !== newSection.section_duration ||
                 oldSection?.total_marks !== newSection.total_marks ||
                 oldSection?.cutoff_marks !== newSection.cutoff_marks ||
-                oldSection?.problem_randomization !== newSection.problem_randomization;
+                oldSection?.problem_randomization !== newSection.problem_randomization ||
+                // Moved: another section was removed or added before it. Unsent, it kept
+                // its old order and could share one with a new section.
+                oldSection?.section_order !== index + 1;
 
             // Create maps for quick lookup
             const oldQuestionsMap = new Map(

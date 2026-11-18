@@ -104,10 +104,9 @@ public class AiEvaluationReviewService {
         // table and (once released) the learner report read the reviewed value.
         String attemptId = process.getStudentAttempt() != null ? process.getStudentAttempt().getId() : null;
         if (attemptId != null) {
-            QuestionWiseMarks marksRow = questionWiseMarksRepository
-                    .findByStudentAttemptIdAndQuestionId(attemptId, questionId)
-                    .orElse(null);
-            if (marksRow != null) {
+            // Every marks row of the question: one per section it sits in.
+            for (QuestionWiseMarks marksRow : questionWiseMarksRepository
+                    .findAllByAttemptIdAndQuestionId(attemptId, questionId)) {
                 marksRow.setMarks(clamped);
                 marksRow.setAiEvaluatedAt(new Date());
                 marksRow.setMarksSource("AI_REVIEWED");

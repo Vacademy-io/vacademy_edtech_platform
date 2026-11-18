@@ -70,6 +70,7 @@ import { AiAssessmentReportDialog } from './AiAssessmentReportDialog';
 import { AssessmentExportCsvDialog } from './AssessmentExportCsvDialog';
 import { BulkAiCheckDialog } from './copy-intake/BulkAiCheckDialog';
 import { CheckSubmittedCopiesDialog } from './copy-intake/CheckSubmittedCopiesDialog';
+import { useAiGradableQuestionCount } from '../-utils/ai-gradable-questions';
 import { EnableAiChecking } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-components/enable-ai-checking';
 import { CopyIntakeBatchPanel } from './copy-intake/CopyIntakeBatchPanel';
 import {
@@ -244,6 +245,13 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
         getAssessmentDetails({ assessmentId, instituteId, type: 'EXAM' })
     );
     const isManualEvaluation = assessmentDetailsData?.[0]?.saved_data?.evaluation_type === 'MANUAL';
+    // Online test with CBE / long-answer questions: its typed answers are AI-checked from
+    // each student's row menu, which the copy-check dialog points to.
+    const aiGradableQuestionCount = useAiGradableQuestionCount({
+        assessmentId,
+        instituteId,
+        enabled: !isManualEvaluation,
+    });
     // For the "Enable AI checking" card on a placeholder-only offline test: the paper
     // PDF sits in the saved instructions, and the placeholder's marks are the section total.
     const savedInstructionsHtml: string | undefined =
@@ -1487,6 +1495,9 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         instituteId={instituteId}
                         attemptIds={submittedCheckScope}
                         defaultIncludeChecked={submittedCheckRecheck}
+                        typedAnswersCheckedFromRow={
+                            !isManualEvaluation && (aiGradableQuestionCount ?? 0) > 0
+                        }
                         onStarted={(batch) => {
                             setIntakeBatchId(batch.id);
                             setIntakePanelOpen(true);

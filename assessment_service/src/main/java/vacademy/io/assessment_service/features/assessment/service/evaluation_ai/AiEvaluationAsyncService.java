@@ -157,8 +157,10 @@ public class AiEvaluationAsyncService {
                         }
 
                         log.info("Fetching question-wise marks for attempt: {}", attemptId);
-                        List<QuestionWiseMarks> marksList = questionWiseMarksRepository
-                                        .findByStudentAttemptIdWithQuestionDetails(attemptId);
+                        // One per question: a question in two sections must not insert a
+                        // second tracking row (uq_ai_question_eval_process_question).
+                        List<QuestionWiseMarks> marksList = TypedAnswerEvaluation.oncePerQuestion(
+                                        questionWiseMarksRepository.findByStudentAttemptIdWithQuestionDetails(attemptId));
                         int totalQuestions = marksList.size();
                         log.info("Found {} questions to evaluate for attempt: {}", totalQuestions, attemptId);
 

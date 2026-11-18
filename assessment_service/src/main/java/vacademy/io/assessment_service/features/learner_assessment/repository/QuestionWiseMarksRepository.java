@@ -106,6 +106,19 @@ public interface QuestionWiseMarksRepository extends JpaRepository<QuestionWiseM
             @Param("attemptId") String attemptId,
             @Param("questionId") String questionId);
 
+    /**
+     * Every marks row of one question in an attempt: one per section the question sits
+     * in (normally one). An AI verdict or a teacher's override applies to each of them.
+     */
+    @Query(value = """
+            SELECT qwm.* FROM question_wise_marks qwm
+            WHERE qwm.attempt_id = :attemptId
+            AND qwm.question_id = :questionId
+            """, nativeQuery = true)
+    List<QuestionWiseMarks> findAllByAttemptIdAndQuestionId(
+            @Param("attemptId") String attemptId,
+            @Param("questionId") String questionId);
+
     @Query(value = """
             SELECT qwm.* FROM question_wise_marks qwm
             WHERE qwm.attempt_id = :attemptId

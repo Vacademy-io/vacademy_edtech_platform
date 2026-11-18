@@ -320,6 +320,19 @@ class AiEvaluationCreditGateTest {
         }
 
         @Test
+        void aRunNobodyAskedForIsRefusedOnAShortBalanceEvenWithTheDashboardGateOff() {
+                // CBE answers always go to the AI, on institutes that never opted in: that
+                // run must not take a balance negative, whatever the dashboard switch says.
+                AiEvaluationCreditGate relaxed = new AiEvaluationCreditGate(client, jdbc, json, Duration.ofSeconds(2), false);
+                quotes(quote("3", "0"));
+
+                assertThat(relaxed.checkAtDispatch("inst-1", null, null, AiEvaluationCharge.dashboardTyped(3), false, true)
+                                .verdict()).isEqualTo(DispatchVerdict.INSUFFICIENT);
+                assertThat(relaxed.checkAtDispatch("inst-1", null, null, AiEvaluationCharge.dashboardTyped(3), false, false)
+                                .verdict()).isEqualTo(DispatchVerdict.PROCEED);
+        }
+
+        @Test
         void atDispatchTheCreditLimitFromAcceptStillCounts() throws Exception {
                 quotes(quote("12", "-100"));
                 String snapshot = json.writeValueAsString(Map.of("tool_key", "copy_check_evaluation_api",
