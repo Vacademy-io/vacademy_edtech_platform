@@ -483,7 +483,12 @@ public class CbeSlideSubmitService {
      * confidence, which are never stored on the attempt or shown to a learner.
      */
     ObjectNode learnerEvaluation(JsonNode reply) {
-        ObjectNode out = objectMapper.createObjectNode();
+        return learnerEvaluationOf(reply);
+    }
+
+    /** {@link #learnerEvaluation} without an instance, for the quiz-slide CBE check. */
+    static ObjectNode learnerEvaluationOf(JsonNode reply) {
+        ObjectNode out = com.fasterxml.jackson.databind.node.JsonNodeFactory.instance.objectNode();
         for (String field : EVALUATION_FIELDS) {
             if (reply.has(field)) {
                 out.set(field, reply.get(field));
