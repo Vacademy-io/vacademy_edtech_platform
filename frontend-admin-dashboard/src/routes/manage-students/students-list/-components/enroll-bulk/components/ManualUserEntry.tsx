@@ -10,8 +10,11 @@ import { MyButton } from '@/components/design-system/button';
 import { Plus, Trash, CaretDown, CaretUp } from '@phosphor-icons/react';
 import { NewUserRow, CustomFieldValue } from '../../../-types/bulk-assign-types';
 import {
+    getCustomFieldSettings,
     getCustomFieldSettingsFromCache,
+    getEnrollmentFormCustomFields,
     CustomField,
+    CustomFieldSettingsData,
 } from '@/services/custom-field-settings';
 import { useUserIdentifierSetting } from '@/services/user-identifier-setting';
 import { useLearnerUsernamePolicy } from '@/services/student-display-settings';
@@ -22,6 +25,7 @@ import { noAutofillProps } from '@/lib/no-autofill';
 import { AutofillDecoy } from '@/components/design-system/autofill-decoy';
 import { CustomFieldRenderer } from '@/components/common/custom-fields/CustomFieldRenderer';
 import { isOptionFieldType } from '@/routes/audience-manager/list/-utils/parseFieldOptions';
+import { cn } from '@/lib/utils';
 
 // field_type is stored as dropdown / DROPDOWN / select / radio / multi_select depending on
 // where the field was created, so an exact 'dropdown' check left most choice fields as text.
@@ -255,6 +259,19 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
     );
     const [submitted, setSubmitted] = useState(false);
 
+    // Institute field settings. The cache is empty when this dialog opens from a
+    // page that never loaded them (course, batch), so fetch instead of showing
+    // no custom fields at all.
+    const [fieldSettings, setFieldSettings] = useState<CustomFieldSettingsData | null>(() =>
+        getCustomFieldSettingsFromCache()
+    );
+    useEffect(() => {
+        if (fieldSettings) return;
+        getCustomFieldSettings()
+            .then(setFieldSettings)
+            .catch((err) => console.error('Failed to load custom field settings:', err));
+    }, [fieldSettings]);
+
     // Default selected country + picker order from the institute's preferred countries.
     const { defaultCountry, preferredCountries } = useMemo(
         () => getPreferredPhoneCountries(),
@@ -270,7 +287,7 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
 
     // ─── Compute dynamic fields from institute settings ────
     const { visibleSystemFields, enrollmentCustomFields } = useMemo(() => {
-        const settings = getCustomFieldSettingsFromCache();
+        const settings = fieldSettings;
         const systemFieldMap = buildSystemFieldMap(t);
 
         // System fields
@@ -300,15 +317,16 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
             });
         }
 
-        // Custom fields with learnerEnrollment visibility
-        const cfFields = (settings?.customFields ?? []).filter(
-            (cf: CustomField) => cf.visibility?.learnerEnrollment === true
-        );
+        // Required custom fields + the ones switched on for "Learner's Enrollment"
+        return {
+            visibleSystemFields: sysFields,
+            enrollmentCustomFields: getEnrollmentFormCustomFields(settings),
+        };
+    }, [t, fieldSettings]);
 
-        return { visibleSystemFields: sysFields, enrollmentCustomFields: cfFields };
-    }, [t]);
-
-    const hasExtraFields = visibleSystemFields.length > 0 || enrollmentCustomFields.length > 0;
+    // Custom fields sit with the core fields; only optional system fields stay
+    // behind "More fields".
+    const hasExtraFields = visibleSystemFields.length > 0;
 
     const update = (idx: number, field: keyof EditableRow, value: string) => {
         setRows((prev) => prev.map((r, i) => (i === idx ? { ...r, [field]: value } : r)));
@@ -333,8 +351,12 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
     const removeRow = (idx: number) =>
         setRows((prev) => (prev.length === 1 ? prev : prev.filter((_, i) => i !== idx)));
 
+    const isMissingRequired = (row: EditableRow, cf: CustomField) =>
+        cf.required && !row.custom_fields[cf.id]?.trim();
+
     const validate = (row: EditableRow) => {
         if (!row.full_name.trim()) return false;
+        if (enrollmentCustomFields.some((cf) => isMissingRequired(row, cf))) return false;
         const phone = row.mobile_number?.trim();
         if (phoneRequired) {
             return isValidPhoneValue(phone);
@@ -350,8 +372,14 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
         if (valid.length === 0) return;
 
         onAdd(valid.map(editableRowToNewUser));
-        setRows([emptyRow()]);
-        setSubmitted(false);
+        // Keep typed-in rows that still fail (e.g. a required custom field left
+        // blank) so the admin can finish them instead of losing them silently.
+        // Blank extra rows are still dropped, as before.
+        const pending = rows.filter(
+            (row) => !validate(row) && !!(row.full_name.trim() || row.email.trim())
+        );
+        setRows(pending.length > 0 ? pending : [emptyRow()]);
+        setSubmitted(pending.length > 0);
     };
 
     const handleEditSave = () => {
@@ -508,6 +536,70 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                     {...noAutofillProps('password')}
                                 />
                             </div>
+
+                            {/* Custom fields — required ones + those on for "Learner's Enrollment" */}
+                            {enrollmentCustomFields.map((cf: CustomField) => {
+                                const missing = submitted && isMissingRequired(row, cf);
+                                return (
+                                    <div key={cf.id}>
+                                        <Label className="mb-1 text-xs text-neutral-500">
+                                            {cf.name}
+                                            {cf.required && (
+                                                <span className="ml-1 text-danger-500">*</span>
+                                            )}
+                                        </Label>
+                                        {choiceKindOf(cf) === 'multi' ? (
+                                            <div
+                                                className={cn(
+                                                    missing && 'rounded-md ring-1 ring-danger-400'
+                                                )}
+                                            >
+                                                <CustomFieldRenderer
+                                                    type="multi_select"
+                                                    name={`${cf.id}-${idx}`}
+                                                    options={cf.options}
+                                                    value={row.custom_fields[cf.id] || ''}
+                                                    onChange={(value) =>
+                                                        updateCustomField(idx, cf.id, value)
+                                                    }
+                                                />
+                                            </div>
+                                        ) : choiceKindOf(cf) === 'single' && cf.options ? (
+                                            <select
+                                                className={cn(
+                                                    'flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 py-1 text-sm transition-colors focus:border-primary-500 focus:outline-none',
+                                                    missing && 'border-danger-400'
+                                                )}
+                                                value={row.custom_fields[cf.id] || ''}
+                                                onChange={(e) =>
+                                                    updateCustomField(idx, cf.id, e.target.value)
+                                                }
+                                            >
+                                                <option value="">
+                                                    {t('extra.selectOption', { name: cf.name })}
+                                                </option>
+                                                {cf.options.map((opt) => (
+                                                    <option key={opt} value={opt}>
+                                                        {opt}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <Input
+                                                type={cf.type === 'number' ? 'number' : 'text'}
+                                                placeholder={t('extra.enterPlaceholder', {
+                                                    name: cf.name,
+                                                })}
+                                                value={row.custom_fields[cf.id] || ''}
+                                                onChange={(e) =>
+                                                    updateCustomField(idx, cf.id, e.target.value)
+                                                }
+                                                className={missing ? 'border-danger-400' : ''}
+                                            />
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
 
                         {/* Expandable extra fields */}
@@ -533,67 +625,6 @@ export const ManualUserEntry = ({ onAdd, editingRow, onEditSave, onEditCancel }:
                                                     update(idx, sf.rowKey, e.target.value)
                                                 }
                                             />
-                                        </div>
-                                    ))}
-
-                                    {/* Custom fields */}
-                                    {enrollmentCustomFields.map((cf: CustomField) => (
-                                        <div key={cf.id}>
-                                            <Label className="mb-1 text-xs text-neutral-500">
-                                                {cf.name}
-                                                {cf.required && (
-                                                    <span className="ml-1 text-danger-500">*</span>
-                                                )}
-                                            </Label>
-                                            {choiceKindOf(cf) === 'multi' ? (
-                                                <CustomFieldRenderer
-                                                    type="multi_select"
-                                                    name={`${cf.id}-${idx}`}
-                                                    options={cf.options}
-                                                    value={row.custom_fields[cf.id] || ''}
-                                                    onChange={(value) =>
-                                                        updateCustomField(idx, cf.id, value)
-                                                    }
-                                                />
-                                            ) : choiceKindOf(cf) === 'single' && cf.options ? (
-                                                <select
-                                                    className="flex h-9 w-full rounded-md border border-neutral-200 bg-white px-3 py-1 text-sm transition-colors focus:border-primary-500 focus:outline-none"
-                                                    value={row.custom_fields[cf.id] || ''}
-                                                    onChange={(e) =>
-                                                        updateCustomField(
-                                                            idx,
-                                                            cf.id,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                >
-                                                    <option value="">
-                                                        {t('extra.selectOption', { name: cf.name })}
-                                                    </option>
-                                                    {cf.options.map((opt) => (
-                                                        <option key={opt} value={opt}>
-                                                            {opt}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            ) : (
-                                                <Input
-                                                    type={
-                                                        cf.type === 'number'
-                                                            ? 'number'
-                                                            : 'text'
-                                                    }
-                                                    placeholder={t('extra.enterPlaceholder', { name: cf.name })}
-                                                    value={row.custom_fields[cf.id] || ''}
-                                                    onChange={(e) =>
-                                                        updateCustomField(
-                                                            idx,
-                                                            cf.id,
-                                                            e.target.value
-                                                        )
-                                                    }
-                                                />
-                                            )}
                                         </div>
                                     ))}
                                 </div>
