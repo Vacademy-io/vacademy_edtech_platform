@@ -166,6 +166,20 @@ class WhiteLabelServiceTest {
         return request;
     }
 
+    private static WhiteLabelSetupRequest.DomainEntry entry(String host, String role, boolean primary) {
+        WhiteLabelSetupRequest.DomainEntry entry = new WhiteLabelSetupRequest.DomainEntry();
+        entry.setDomain(host);
+        entry.setRole(role);
+        entry.setPrimary(primary);
+        return entry;
+    }
+
+    private static WhiteLabelSetupRequest setupRequest(WhiteLabelSetupRequest.DomainEntry... entries) {
+        WhiteLabelSetupRequest request = new WhiteLabelSetupRequest();
+        request.setEntries(List.of(entries));
+        return request;
+    }
+
     private void givenStoredRow(String host, String role, boolean primary) {
         InstituteDomainRouting r = new InstituteDomainRouting();
         r.setId("row-" + storedRows.size());
@@ -298,6 +312,39 @@ class WhiteLabelServiceTest {
                     setupRequest("admin.myschool.com", "ADMIN,BAD\u0000ROLE", true)));
         }
 
+        @Test
+        @DisplayName("An admin portal that lets teachers in and the teacher portal can both be primary")
+        void adminPortalWithTeacherDoesNotCollideWithTeacherPortal() {
+            cloudflareStatus.put("admin.myschool.com", "active");
+            cloudflareStatus.put("teach.myschool.com", "active");
+
+            service.setup(admin(), INSTITUTE_ID, setupRequest(
+                    entry("admin.myschool.com", "ADMIN,TEACHER", true),
+                    entry("teach.myschool.com", "TEACHER", true)));
+
+            assertEquals("https://admin.myschool.com", institute.getAdminPortalBaseUrl());
+            assertEquals("https://teach.myschool.com", institute.getTeacherPortalBaseUrl());
+        }
+
+        @Test
+        @DisplayName("Two primaries for the same portal are still refused")
+        void twoPrimaryAdminPortalsAreRejected() {
+            assertThrows(VacademyException.class, () -> service.setup(admin(), INSTITUTE_ID, setupRequest(
+                    entry("admin.myschool.com", "ADMIN,TEACHER", true),
+                    entry("staff.myschool.com", "ADMIN,COUNSELLOR", true))));
+        }
+
+        @Test
+        @DisplayName("Starring a teacher portal leaves the admin portal that lets teachers in starred")
+        void teacherPrimaryDoesNotDemoteAdminPortal() {
+            givenStoredRow("admin.myschool.com", "ADMIN,TEACHER", true);
+
+            service.setup(admin(), INSTITUTE_ID, setupRequest("teach.myschool.com", "TEACHER", true));
+
+            InstituteDomainRouting adminRow = storedRows.stream()
+                    .filter(r -> "admin".equals(r.getSubdomain())).findFirst().orElseThrow();
+            assertTrue(adminRow.isPrimary());
+        }
     }
 
     // ── Apex domains, extra settings, removal ────────────────────────────────

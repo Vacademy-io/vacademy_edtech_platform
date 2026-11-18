@@ -358,6 +358,56 @@ class PortalUrlReconcilerTest {
         }
 
         @Test
+        @DisplayName("The teacher portal beats an admin portal that only lets teachers in")
+        void ownPortalBeatsAllowedRole() {
+            // An admin portal that admits teachers ("ADMIN,TEACHER") and the
+            // institute's real teacher portal are both starred: teacher links must
+            // go to the teacher portal, whichever host sorts first.
+            active("admin.myschool.com");
+            active("teach.myschool.com");
+            Institute i = institute(null);
+
+            var result = reconcile(i,
+                    row("admin.myschool.com", "ADMIN,TEACHER", true),
+                    row("teach.myschool.com", "TEACHER", true));
+
+            assertEquals("https://admin.myschool.com", i.getAdminPortalBaseUrl());
+            assertEquals("https://teach.myschool.com", i.getTeacherPortalBaseUrl());
+            assertTrue(result.getWarnings().stream().noneMatch(w -> w.contains("More than one")),
+                    "no tie to report, got " + result.getWarnings());
+        }
+
+        @Test
+        @DisplayName("A live teacher URL on the admin host is not moved by a starred teacher portal")
+        void liveIncumbentStillHoldsAcrossPortalTypes() {
+            // Seen in prod: teacher_portal_base_url is the admin host,
+            // and both the admin portal (which lets teachers in) and the teacher
+            // portal are starred. Nobody asked for the teacher links to move, so
+            // the nightly sweep must not move them.
+            active("admin.myschool.com");
+            active("teach.myschool.com");
+            Institute i = institute(null);
+            i.setTeacherPortalBaseUrl("https://admin.myschool.com");
+
+            var result = reconcile(i,
+                    row("admin.myschool.com", "ADMIN,TEACHER", true),
+                    row("teach.myschool.com", "TEACHER", true));
+
+            assertEquals("https://admin.myschool.com", i.getTeacherPortalBaseUrl());
+            assertNull(result.getAdoptedUrlByRole().get("TEACHER"));
+        }
+
+        @Test
+        @DisplayName("Portal type: learner, then admin, then teacher; custom-only rows have none")
+        void portalTypeOf() {
+            assertEquals("LEARNER", PortalUrlReconciler.portalTypeOf("LEARNER,TEACHER"));
+            assertEquals("ADMIN", PortalUrlReconciler.portalTypeOf("COUNSELLOR, admin ,TEACHER"));
+            assertEquals("TEACHER", PortalUrlReconciler.portalTypeOf("COURSE CREATOR,TEACHER"));
+            assertNull(PortalUrlReconciler.portalTypeOf("MANAGE_LEAD"));
+            assertNull(PortalUrlReconciler.portalTypeOf(null));
+        }
+
+        @Test
         @DisplayName("A custom role has no column, so nothing is adopted for it")
         void customRoleIsSkipped() {
             active("leads.myschool.com");

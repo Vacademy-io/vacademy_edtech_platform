@@ -126,17 +126,20 @@ public class WhiteLabelService {
                     .replaceFirst("/.*$", ""));
         }
 
-        // Validate: at most one primary per *individual* role token. If a user marks
-        // one entry primary with roles "ADMIN,MANAGE_LEAD" and another entry primary
-        // with "ADMIN", they collide on ADMIN.
-        Map<String, Long> primaryTokenCounts = entries.stream()
+        // Validate: at most one primary per portal. The portal is the entry's
+        // LEARNER / ADMIN / TEACHER token; its other tokens are roles allowed to log
+        // in. Counting every token made an admin portal that lets teachers in
+        // ("ADMIN,TEACHER") collide with the institute's own teacher portal.
+        Map<String, Long> primaryPortalCounts = entries.stream()
                 .filter(WhiteLabelSetupRequest.DomainEntry::isPrimary)
-                .flatMap(e -> splitRoleTokens(e.getRole()).stream())
+                .map(e -> PortalUrlReconciler.portalTypeOf(e.getRole()))
+                .filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(r -> r, Collectors.counting()));
-        for (Map.Entry<String, Long> pc : primaryTokenCounts.entrySet()) {
+        for (Map.Entry<String, Long> pc : primaryPortalCounts.entrySet()) {
             if (pc.getValue() > 1) {
-                throw new VacademyException("At most one primary domain per role allowed. " +
-                        "Role '" + pc.getKey() + "' has " + pc.getValue() + " primary entries.");
+                throw new VacademyException("At most one primary domain per portal allowed. " +
+                        "The " + pc.getKey().toLowerCase(Locale.ROOT) + " portal has "
+                        + pc.getValue() + " primary entries.");
             }
         }
 
@@ -209,7 +212,7 @@ public class WhiteLabelService {
             upsertRoutingRow(instituteId, host, entry.getRole(), entry.isPrimary(), entry.getRoutingConfig());
         }
 
-        // 4) Keep "at most one primary row per role token" true across ALL of the
+        // 4) Keep "at most one primary row per portal" true across ALL of the
         // institute's rows, not just the ones in this request.
         List<InstituteDomainRouting> routings = routingRepository.findByInstituteId(instituteId);
         warnings.addAll(demoteSupersededPrimaries(routings, entries));
@@ -242,12 +245,14 @@ public class WhiteLabelService {
 
     /**
      * Clears {@code is_primary} on rows this request supersedes, so exactly one
-     * row stays primary per role token.
+     * row stays primary per portal (LEARNER / ADMIN / TEACHER).
      *
-     * <p>The flag is per-row while roles are per-token, so a row serving
-     * {@code "ADMIN,TEACHER"} that is superseded for ADMIN loses its TEACHER
-     * primacy too — there is no third state to demote it into. That is reported
-     * back rather than hidden; the fix is to give each role its own row.
+     * <p>A row is superseded only for its own portal: an admin portal that lets
+     * teachers in ({@code "ADMIN,TEACHER"}) keeps its star when a teacher portal
+     * is starred. It can still have been the teacher-URL fallback for an
+     * institute without a teacher portal, and the flag is per-row, so a row
+     * demoted for its own portal loses that fallback too. That is reported back
+     * rather than hidden; the fix is to give the other portal its own row.
      *
      * @return warnings to surface in the setup response
      */
@@ -258,8 +263,9 @@ public class WhiteLabelService {
         for (WhiteLabelSetupRequest.DomainEntry e : entries) {
             if (!e.isPrimary())
                 continue;
-            for (String token : splitRoleTokens(e.getRole())) {
-                requestedPrimaryHost.put(token, e.getDomain());
+            String portal = PortalUrlReconciler.portalTypeOf(e.getRole());
+            if (portal != null) {
+                requestedPrimaryHost.put(portal, e.getDomain());
             }
         }
         if (requestedPrimaryHost.isEmpty()) {
@@ -273,8 +279,10 @@ public class WhiteLabelService {
             }
             String host = PortalUrlReconciler.hostOf(routing);
             List<String> tokens = splitRoleTokens(routing.getRole());
-            boolean superseded = tokens.stream().anyMatch(
-                    t -> requestedPrimaryHost.containsKey(t) && !requestedPrimaryHost.get(t).equals(host));
+            String portal = PortalUrlReconciler.portalTypeOf(routing.getRole());
+            boolean superseded = portal != null
+                    && requestedPrimaryHost.containsKey(portal)
+                    && !requestedPrimaryHost.get(portal).equals(host);
             if (!superseded) {
                 continue;
             }
@@ -291,7 +299,7 @@ public class WhiteLabelService {
             if (!collateral.isEmpty()) {
                 warnings.add(host + " was also the primary domain for " + String.join(", ", collateral)
                         + ". It served several roles from one entry, so replacing it for "
-                        + String.join(", ", requestedPrimaryHost.keySet())
+                        + portal
                         + " cleared it for those too — add a separate entry if "
                         + String.join(", ", collateral) + " should keep this domain.");
             }
