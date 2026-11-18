@@ -56,11 +56,16 @@ public class WhiteLabelService {
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String ROLE_TEACHER = "TEACHER";
 
-    // Role names are simple uppercase tokens (system roles like
-    // LEARNER/ADMIN/TEACHER
-    // and institute custom roles like MANAGE_LEAD). Used to sanity-check request
-    // tokens.
-    private static final java.util.regex.Pattern ROLE_TOKEN_PATTERN = java.util.regex.Pattern.compile("[A-Z0-9_]+");
+    // A role name is whatever the roles table holds: system roles, seeded roles
+    // with a space ("COURSE CREATOR") and institute custom roles, which are free
+    // text ("Sales-Team", "HOD's", Devanagari). The comma is the only character
+    // the stored list cannot carry, and it never reaches a token; control
+    // characters are refused.
+    private static final java.util.regex.Pattern ROLE_TOKEN_PATTERN =
+            java.util.regex.Pattern.compile("[^,\\p{Cntrl}]+");
+
+    /** institute_domain_routing.role is varchar(100). */
+    private static final int ROLE_COLUMN_LENGTH = 100;
 
     @Value("${cloudflare.learner.target:learner.vacademy.io}")
     private String learnerCnameTarget;
@@ -642,9 +647,9 @@ public class WhiteLabelService {
 
     /**
      * Validates a comma-separated role string and returns its canonical form:
-     * tokens trimmed, uppercased, deduped, sorted alphabetically and rejoined
-     * with a single comma. Sorting makes "ADMIN,MANAGE_LEAD" and
-     * "MANAGE_LEAD,ADMIN" collapse to one canonical value so upserts match.
+     * tokens trimmed, inner whitespace collapsed to one space, uppercased,
+     * deduped, sorted alphabetically and rejoined with a single comma. Sorting
+     * makes "ADMIN,MANAGE_LEAD" and "MANAGE_LEAD,ADMIN" one stored value.
      *
      * Role names are NOT validated against the `roles` table: that table lives
      * in the auth service's database and is not reachable from
@@ -663,19 +668,23 @@ public class WhiteLabelService {
         }
         Set<String> tokens = new TreeSet<>();
         for (String raw : roleStr.split(",")) {
-            String token = raw == null ? "" : raw.trim().toUpperCase();
+            String token = raw == null ? "" : raw.trim().replaceAll("\\s+", " ").toUpperCase(Locale.ROOT);
             if (token.isEmpty())
                 continue;
             if (!ROLE_TOKEN_PATTERN.matcher(token).matches()) {
-                throw new VacademyException("Invalid role '" + token + "'. "
-                        + "Role names may contain only letters, digits and underscores.");
+                throw new VacademyException("Invalid role '" + token + "'.");
             }
             tokens.add(token);
         }
         if (tokens.isEmpty()) {
             throw new VacademyException("Role is required for each entry");
         }
-        return String.join(",", tokens);
+        String joined = String.join(",", tokens);
+        if (joined.length() > ROLE_COLUMN_LENGTH) {
+            throw new VacademyException("Too many roles on one domain (" + joined.length() + " of "
+                    + ROLE_COLUMN_LENGTH + " characters). Untick a few.");
+        }
+        return joined;
     }
 
     /**

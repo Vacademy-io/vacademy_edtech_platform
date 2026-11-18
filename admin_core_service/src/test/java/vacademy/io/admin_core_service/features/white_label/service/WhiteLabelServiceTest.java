@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelSetupRe
 import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelSetupResponse;
 import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelStatusResponse;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.admin_core_service.features.live_session.client.InstituteRoleUserClient;
 import vacademy.io.common.institute.entity.Institute;
 
@@ -28,6 +29,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -269,6 +271,58 @@ class WhiteLabelServiceTest {
                     .anyMatch(w -> w.contains("portal.myschool.com") && w.contains("TEACHER")),
                     "expected a collateral warning, got: " + response.getWarnings());
         }
+    }
+
+    // ── Roles allowed to log in ──────────────────────────────────────────────
+
+    @Nested
+    @DisplayName("setup() with several roles on one domain")
+    class AllowedRoles {
+
+        @Test
+        @DisplayName("Seeded role names with a space are accepted and stored canonically")
+        void rolesWithSpacesAreAccepted() {
+            service.setup(admin(), INSTITUTE_ID,
+                    setupRequest("admin.myschool.com", "ADMIN, course  creator,Counsellor", true));
+
+            ArgumentCaptor<DomainRoutingUpsertRequest> captor =
+                    ArgumentCaptor.forClass(DomainRoutingUpsertRequest.class);
+            verify(domainRoutingAdminService).create(captor.capture());
+            assertEquals("ADMIN,COUNSELLOR,COURSE CREATOR", captor.getValue().getRole());
+        }
+
+        @Test
+        @DisplayName("A role name carrying a control character is rejected")
+        void malformedRoleIsRejected() {
+            assertThrows(VacademyException.class, () -> service.setup(admin(), INSTITUTE_ID,
+                    setupRequest("admin.myschool.com", "ADMIN,BAD\u0000ROLE", true)));
+        }
+
+    }
+
+    // ── Apex domains, extra settings, removal ────────────────────────────────
+
+    @Nested
+    @DisplayName("Settings that used to need a database edit")
+    class FormerlyDatabaseOnly {
+
+        @Test
+        @DisplayName("Free-text custom role names are accepted; an over-long list is refused with a reason")
+        void roleNameRules() {
+            service.setup(admin(), INSTITUTE_ID,
+                    setupRequest("admin.myschool.com", "ADMIN,Sales-Team,HOD's", true));
+            ArgumentCaptor<DomainRoutingUpsertRequest> captor =
+                    ArgumentCaptor.forClass(DomainRoutingUpsertRequest.class);
+            verify(domainRoutingAdminService).create(captor.capture());
+            assertEquals("ADMIN,HOD'S,SALES-TEAM", captor.getValue().getRole());
+
+            String tooMany = "ADMIN,ASSESSMENT CREATOR,COUNSELLOR,COURSE CREATOR,CRM_ACCESS,EVALUATOR,"
+                    + "MANAGE_LEAD,TEACHER,SOCIAL MEDIA TEAM";
+            VacademyException e = assertThrows(VacademyException.class, () -> service.setup(admin(),
+                    INSTITUTE_ID, setupRequest("staff.myschool.com", tooMany, false)));
+            assertTrue(e.getMessage().contains("Too many roles"), e.getMessage());
+        }
+
     }
 
     // ── getStatus() ──────────────────────────────────────────────────────────
