@@ -503,6 +503,7 @@ function ActionCard({
                     <p className="mt-0.5 whitespace-pre-wrap text-caption text-neutral-700">
                         {action.summary}
                     </p>
+                    <ActionCardLines details={action.details} warnings={action.warnings} />
                 </div>
             </div>
             {isPending || isWorking ? (
@@ -535,10 +536,49 @@ function ActionCard({
                         ? 'Confirmed & applied'
                         : action.status === 'cancelled'
                           ? 'Cancelled'
-                          : 'Not applied'}
+                          : action.status === 'applying'
+                            ? 'Already being applied'
+                            : 'Not applied'}
                 </p>
             )}
         </div>
+    );
+}
+
+/** What a card changes (one line each) and what to know first, under its summary. */
+export function ActionCardLines({
+    details,
+    warnings,
+}: {
+    details?: string[];
+    warnings?: string[];
+}) {
+    if (!details?.length && !warnings?.length) return null;
+    return (
+        <>
+            {details?.length ? (
+                <ul className="mt-1.5 space-y-0.5 text-caption text-neutral-700">
+                    {details.map((line, i) => (
+                        <li key={i} className="break-words">
+                            {line}
+                        </li>
+                    ))}
+                </ul>
+            ) : null}
+            {warnings?.length ? (
+                <ul
+                    className="mt-2 space-y-1 rounded-md border border-warning-200 bg-white p-2 text-caption text-warning-700"
+                    aria-label="Before you confirm"
+                >
+                    {warnings.map((line, i) => (
+                        <li key={i} className="flex items-start gap-1.5 break-words">
+                            <Warning size={12} weight="bold" className="mt-0.5 shrink-0" />
+                            <span>{line}</span>
+                        </li>
+                    ))}
+                </ul>
+            ) : null}
+        </>
     );
 }
 

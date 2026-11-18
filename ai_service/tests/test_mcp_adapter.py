@@ -444,8 +444,12 @@ def test_crm_specs_are_off_by_default_on_mcp_and_tied_to_a_module():
     """Runs over the CRM tools whose modules have landed (none yet = nothing to check)."""
     for spec in _crm_specs():
         if spec.mode == "WRITE":
-            assert spec.mcp_only, spec.name                  # writes: never offered to the in-product assistant
+            # Writes: opt-in. The ones that contact nobody also serve the in-product assistant, confirmed on its
+            # card (crm_cards); the outbound ones stay MCP only.
             assert spec.default_roles is None, spec.name
+            assert spec.mcp_only != spec.card_bridge, spec.name
+            assert spec.mcp_only == (spec.name in ("crm_send", "crm_dial", "crm_ai_campaign",
+                                                   "crm_payment_reminders")), spec.name
         else:
             # Reads use both doors. default_roles only applies to the in-product assistant (an MCP
             # setting is never empty, so the registry defaults never reach MCP).
@@ -464,7 +468,7 @@ def _action_table(tool, module):
     """{action: meta} for one CRM tool: ACTION_SPEC is keyed by action, or by tool name and then action."""
     import importlib
     action_spec = getattr(importlib.import_module(f"app.services.{module}"), "ACTION_SPEC")
-    enum = ASSISTANT_TOOLS[tool].schema["function"]["parameters"]["properties"]["action"]["enum"]
+    enum = ASSISTANT_TOOLS[tool].schema_for(via_mcp=True)["function"]["parameters"]["properties"]["action"]["enum"]
     nested = all(isinstance(v, dict) and "confirm" not in v for v in action_spec.values())
     return (action_spec[tool] if nested else {a: m for a, m in action_spec.items() if a in enum}), enum, \
         (set() if nested else set(action_spec))

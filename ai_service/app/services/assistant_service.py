@@ -66,6 +66,12 @@ class _NoModules:
         return False
 
 
+def _runs_off_loop(tool_name: Any) -> bool:
+    """The CRM reads and the CRM writes confirmed on the card run on a worker thread (long synchronous queries)."""
+    spec = ASSISTANT_TOOLS.get(tool_name) if isinstance(tool_name, str) else None
+    return tool_name in OFF_LOOP_TOOLS or bool(spec is not None and spec.card_bridge)
+
+
 def _entitlements_or_none_on(db, institute_id: str) -> Any:
     try:
         return load_entitlements(db, institute_id)
@@ -298,13 +304,29 @@ class AssistantAgentService:
         return row
 
     @staticmethod
-    def _update_pending_action(db, row_id: int, meta: Dict[str, Any]) -> None:
+    def _move_pending_action(db, row_id: int, meta: Dict[str, Any], from_status: str) -> bool:
+        """
+        Write ``meta`` (its ``status`` is the new one) to a card only while the card is still in
+        ``from_status``; False when something else moved it first. Every change of a card goes
+        through here, so a Confirm, a Cancel and an expiry can never overwrite one another.
+        """
         from sqlalchemy import text as sql_text
-        db.execute(
-            sql_text("UPDATE chat_messages SET metadata = CAST(:m AS jsonb) WHERE id = :id"),
-            {"m": json.dumps(meta), "id": row_id},
-        )
+        row = db.execute(
+            sql_text(
+                "UPDATE chat_messages SET metadata = CAST(:m AS jsonb) "
+                "WHERE id = :id AND metadata->>'status' = :expected RETURNING id"
+            ),
+            {"m": json.dumps(meta), "id": row_id, "expected": from_status},
+        ).first()
         db.commit()
+        return row is not None
+
+    @staticmethod
+    def _handled(status: Any) -> Dict[str, Any]:
+        status = str(status or "UNKNOWN").lower()
+        if status == "executing":
+            return {"status": status, "message": "This change is already being applied."}
+        return {"status": status, "message": "This action was already handled."}
 
     async def confirm_action(
         self,
@@ -317,11 +339,14 @@ class AssistantAgentService:
 
         Validates: session ownership, nonce exists + PENDING + not expired, and
         re-checks the AND-gate (the grant may have been revoked since proposal).
-        The outcome is audited on the pending row and echoed into the
-        conversation as an assistant message.
+        The card is claimed atomically (PENDING → EXECUTING) before anything
+        runs, so it works once even when Confirm is pressed twice. A run that
+        raised returns the card to PENDING (the change may or may not have
+        been made). The outcome is audited on the pending row and echoed into
+        the conversation as an assistant message.
         """
         from datetime import datetime, timezone
-        from .assistant_tool_registry import WRITE_PERFORMERS
+        from .assistant_tool_registry import performer_for
 
         with self._get_db() as db:
             session = ChatSessionRepository(db).get_session_by_id(session_id)
@@ -333,15 +358,14 @@ class AssistantAgentService:
             setting = load_assistant_tools_setting(db, principal.institute_id)
 
         if meta.get("status") != "PENDING":
-            return {"status": meta.get("status", "UNKNOWN").lower(),
-                    "message": "This action was already handled."}
+            return self._handled(meta.get("status"))
         expires_at = meta.get("expires_at") or ""
         try:
             expired = datetime.fromisoformat(expires_at) < datetime.now(timezone.utc)
         except ValueError:
             expired = True
         tool = str(meta.get("tool") or "")
-        performer = WRITE_PERFORMERS.get(tool)
+        performer = performer_for(tool)
 
         outcome_meta = dict(meta)
         outcome_meta["decided_at"] = datetime.now(timezone.utc).isoformat()
@@ -354,21 +378,37 @@ class AssistantAgentService:
                 if expired else
                 "You no longer have permission for this action."
             )
+            from_status = "PENDING"
         else:
             with self._get_db() as db:
-                ctx = ToolContext(
-                    db=db, principal=principal, keys=(),
-                    bearer_token=bearer_token, session_id=session_id,
-                )
-                result = await performer(meta.get("args") or {}, ctx)
+                claimed = self._move_pending_action(db, row_id, {**meta, "status": "EXECUTING"}, "PENDING")
+            if not claimed:
+                return self._handled("EXECUTING")
+            try:
+                result = await self._perform(tool, performer, meta.get("args") or {}, principal, bearer_token,
+                                             session_id, setting)
+            except Exception as e:  # noqa: BLE001 — the card goes back to PENDING below
+                logger.exception("assistant WRITE %s raised: %s", tool, e)
+                result = {"ok": False, "retry": True, "message": (
+                    "Something went wrong while applying this change, so it may or may not have been made. "
+                    "Check it on its page before you press Confirm again.")}
+            if result.get("retry"):
+                # Not settled: an hourly limit refused it before anything ran, or the run broke off. The card
+                # stays open until it expires.
+                with self._get_db() as db:
+                    self._move_pending_action(db, row_id, meta, "EXECUTING")
+                return {"status": "pending", "message": str(result.get("message") or "Try again shortly.")}
             ok = bool(result.get("ok"))
             outcome_meta["status"] = "EXECUTED" if ok else "FAILED"
             outcome_meta["backend_result"] = str(result.get("detail"))[:400]
+            notes = " ".join(str(n) for n in result.get("notes") or [])
             message = (
-                f"✅ Done — {summary}"
+                f"✅ Done — {summary}" + (f". {notes}" if notes else "")
                 if ok else
-                "❌ The change could not be applied — the backend rejected it. Nothing was modified."
+                "❌ " + str(result.get("message") or
+                            "The change could not be applied — the backend rejected it. Nothing was modified.")
             )
+            from_status = "EXECUTING"
             logger.info(
                 "assistant WRITE %s %s by user=%s institute=%s (%s)",
                 tool, outcome_meta["status"], principal.user_id,
@@ -376,7 +416,8 @@ class AssistantAgentService:
             )
 
         with self._get_db() as db:
-            self._update_pending_action(db, row_id, outcome_meta)
+            if not self._move_pending_action(db, row_id, outcome_meta, from_status):
+                return self._handled(None)
             # Echo the outcome into the conversation so the model sees it in history.
             ChatMessageRepository(db).create_message(
                 session_id=session_id,
@@ -386,10 +427,27 @@ class AssistantAgentService:
             )
         return {"status": outcome_meta["status"].lower(), "message": message}
 
+    async def _perform(self, tool: str, performer: Callable, perform_args: Dict[str, Any],
+                       principal: PinnedPrincipal, bearer_token: Optional[str], session_id: str,
+                       setting: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Run an approved card. CRM writes run on a worker thread with their own DB session, as in the chat."""
+        async def run() -> Dict[str, Any]:
+            with self._get_db() as db:
+                ctx = ToolContext(
+                    db=db, principal=principal, keys=(),
+                    bearer_token=bearer_token, session_id=session_id,
+                )
+                ctx.gate_setting, ctx.gate_checked = setting, True
+                return await performer(perform_args, ctx)
+
+        if _runs_off_loop(tool):
+            return await asyncio.to_thread(asyncio.run, run())
+        return await run()
+
     async def cancel_action(
         self, session_id: str, principal: PinnedPrincipal, action_id: str
     ) -> Dict[str, Any]:
-        """Mark a pending WRITE as cancelled (no backend call is ever made)."""
+        """Mark a pending WRITE as cancelled (no backend call is ever made); only while it is still PENDING."""
         from datetime import datetime, timezone
 
         with self._get_db() as db:
@@ -400,12 +458,12 @@ class AssistantAgentService:
                 raise ValueError("This action no longer exists.")
             row_id, _summary, meta = row[0], row[1], dict(row[2] or {})
             if meta.get("status") != "PENDING":
-                return {"status": meta.get("status", "UNKNOWN").lower(),
-                        "message": "This action was already handled."}
+                return self._handled(meta.get("status"))
             meta["status"] = "CANCELLED"
             meta["decided_at"] = datetime.now(timezone.utc).isoformat()
             meta["decided_by"] = principal.user_id
-            self._update_pending_action(db, row_id, meta)
+            if not self._move_pending_action(db, row_id, meta, "PENDING"):
+                return self._handled(None)
             ChatMessageRepository(db).create_message(
                 session_id=session_id,
                 message_type="assistant",
@@ -674,9 +732,10 @@ class AssistantAgentService:
     ) -> tuple:
         """``(result, pending_action)`` for one tool call, through ``execute_tool``.
 
-        The CRM reads run long synchronous queries, so — as on the MCP server's
-        tool lane — they run on a worker thread with their own event loop and DB
-        session, keeping this loop free for every other request.
+        The CRM tools run long synchronous queries, so — as on the MCP server's
+        tool lane for the reads — they (reads, and writes that become a card) run on
+        a worker thread with their own event loop and DB session, keeping this loop
+        free for every other request.
         """
         async def run() -> tuple:
             with self._get_db() as db:
@@ -687,7 +746,7 @@ class AssistantAgentService:
                 result = await execute_tool(tool_name, tool_args, ctx, setting, in_product=True)
                 return result, ctx.pending_action
 
-        if tool_name in OFF_LOOP_TOOLS:
+        if _runs_off_loop(tool_name):
             return await asyncio.to_thread(asyncio.run, run())
         return await run()
 
@@ -783,6 +842,27 @@ class AssistantAgentService:
                 "the same name.\n"
             )
             crm_loaded = CRM_TOPIC in (active_topics or set())
+            crm_writes = sorted(spec.name for spec in usable_specs if spec.topic == CRM_TOPIC and spec.mode == "WRITE")
+            pages = ("[Recent Leads](/audience-manager/recent-leads), [Follow-ups](/audience-manager/follow-ups) or "
+                     "[Lead reports](/audience-manager/reports). There is no page link for a single lead.\n")
+            if crm_writes:
+                crm_writes_rule = (
+                    "- CRM changes this user may propose here: " + ", ".join(f"`{n}`" for n in crm_writes) + ". "
+                    "Each call only PROPOSES: the user sees a confirmation card listing the leads, what changes "
+                    "from → to and any warning, and only their Confirm makes the change. Call it once with the "
+                    "full request, restate what the card shows, and never claim it is done before the user "
+                    "confirmed. If the card warns (no course yet, automations that contact people, a similar "
+                    "lead), say so plainly.\n"
+                    "- Calling, messaging (WhatsApp / email), booking meetings, AI-call campaigns and fee reminders "
+                    "contact leads and are not available in this assistant: say so and point to the page, e.g. "
+                    + pages
+                )
+            else:
+                crm_writes_rule = (
+                    "- You can only READ CRM data here. Changing a lead, assigning, calling, messaging, booking or "
+                    "sending reminders is not available in this assistant: say so and point to the page, e.g. "
+                    + pages
+                )
             crm_section = (
                 "CRM (leads, enquiries, admissions, counsellors, follow-ups, calls, meetings, lead messages, "
                 "CRM reports, fees owed by leads):\n"
@@ -794,10 +874,7 @@ class AssistantAgentService:
                 "as lead_id, never as user_id.\n"
                 "- Every user sees exactly the leads the dashboard shows them, and the tools return only "
                 "those. Answer from what the tools return and never suggest there is more.\n"
-                "- You can only READ CRM data here. Changing a lead, assigning, calling, messaging, booking or "
-                "sending reminders is not available in this assistant: say so and point to the page, e.g. "
-                "[Recent Leads](/audience-manager/recent-leads), [Follow-ups](/audience-manager/follow-ups) or "
-                "[Lead reports](/audience-manager/reports). There is no page link for a single lead.\n"
+                + crm_writes_rule +
                 f"- {LEAD_CONTENT_RULE}\n"
                 "- Contacts may come masked: show them as returned, never guess the hidden part.\n"
                 "- When you give a CRM number, quote its date range and the definition the tool returned.\n"

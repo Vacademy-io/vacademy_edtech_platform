@@ -200,9 +200,15 @@ enables them.
 
 The 15 `crm_*` tools (`app/services/assistant_tools_crm_*.py`) share one
 foundation, `app/services/crm_data.py`; the design is
-`docs/crm/CRM_MCP.md`. The writes are `mcp_only` (never offered to the in-product
-assistant); the six reads also serve the in-product assistant, offered on CRM pages
-or after `load_tools` (`ASSISTANT_TOPICS` in `assistant_tool_registry.py`). All
+`docs/crm/CRM_MCP.md`. The outbound writes (`crm_send`, `crm_dial`,
+`crm_ai_campaign`, `crm_payment_reminders`) are `mcp_only`. The six reads and the
+writes that contact nobody (`crm_lead_activity`, `crm_lead_edit`, `crm_lead_merge`,
+`crm_lead_intake`, `crm_team_edit`, `crm_meetings_edit` without `book`) also serve
+the in-product assistant, offered on CRM pages or after `load_tools`
+(`ASSISTANT_TOPICS` in `assistant_tool_registry.py`). There a write's preview
+becomes the assistant's confirmation card and the card's Confirm runs the same
+executor with the preview's token (`ToolSpec.card_bridge`, `app/services/crm_cards.py`);
+the write groups are `opt_in` on both doors. All
 need module `crm` (`ToolSpec.module_feature`, checked in
 `execute_tool` against `institute_module_entitlement` / `institute_module_policy`
 via `app/services/entitlements.py`; LEGACY institutes have everything on).

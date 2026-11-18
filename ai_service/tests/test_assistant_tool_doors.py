@@ -15,7 +15,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.services.assistant_tool_registry import ASSISTANT_TOOLS  # noqa: E402
 from app.mcp.constants import MCP_EXPOSED_TOOLS  # noqa: E402
 
-_CRM_WRITE = "a CRM change or outbound contact; the in-product assistant reads the CRM only for now"
+_CRM_OUTBOUND = ("contacts leads (a call, a WhatsApp or email, an AI-call campaign or a fee reminder); the in-product "
+                 "assistant makes only the CRM changes that contact nobody")
 
 #: Tools served over MCP only (ToolSpec.mcp_only), with the reason.
 MCP_ONLY = {
@@ -25,17 +26,13 @@ MCP_ONLY = {
     "catalog_data_edit": "live additive data edits confirmed with a dry-run plan token",
     # Publishes live after the admin saw the diff; opt-in on MCP only.
     "website_publish": "publishes a site live with its own confirm token",
-    # CRM writes: each is a two-step preview + confirm token flow on MCP.
-    "crm_lead_activity": _CRM_WRITE,
-    "crm_lead_edit": _CRM_WRITE,
-    "crm_lead_merge": _CRM_WRITE,
-    "crm_lead_intake": _CRM_WRITE,
-    "crm_team_edit": _CRM_WRITE,
-    "crm_dial": _CRM_WRITE,
-    "crm_ai_campaign": _CRM_WRITE,
-    "crm_meetings_edit": _CRM_WRITE,
-    "crm_send": _CRM_WRITE,
-    "crm_payment_reminders": _CRM_WRITE,
+    # Outbound CRM writes. The other CRM writes use both doors: over MCP a preview + confirm token, in the
+    # in-product assistant the same executor confirmed on its card (crm_cards); crm_meetings_edit's book, which
+    # sends the lead an invite, is refused there (crm_cards.REFUSED_ACTIONS).
+    "crm_dial": _CRM_OUTBOUND,
+    "crm_ai_campaign": _CRM_OUTBOUND,
+    "crm_send": _CRM_OUTBOUND,
+    "crm_payment_reminders": _CRM_OUTBOUND,
 }
 
 #: Tools served in the in-product assistant only (not in MCP_EXPOSED_TOOLS), with the reason. Each one's job is
@@ -99,3 +96,16 @@ def test_each_assistant_only_tool_names_the_tool_that_covers_it_on_mcp():
     for name, cover in COVERED_ON_MCP_BY.items():
         assert cover in MCP_EXPOSED_TOOLS, f"{name}: {cover} is not served over MCP"
         assert not ASSISTANT_TOOLS[cover].mcp_only, f"{name}: {cover} should serve both doors"
+
+
+def test_crm_writes_that_contact_nobody_use_both_doors_with_the_card():
+    from app.services import crm_cards
+
+    for name in ("crm_lead_activity", "crm_lead_edit", "crm_lead_merge", "crm_lead_intake", "crm_team_edit",
+                 "crm_meetings_edit"):
+        spec = ASSISTANT_TOOLS[name]
+        assert _doors(name) == (True, True), name
+        assert spec.card_bridge and spec.opt_in and spec.mode == "WRITE", name
+    # The one action of those that contacts a lead is refused in the assistant.
+    assert set(crm_cards.REFUSED_ACTIONS) == {"crm_meetings_edit"}
+    assert set(crm_cards.REFUSED_ACTIONS["crm_meetings_edit"]) == {"book"}

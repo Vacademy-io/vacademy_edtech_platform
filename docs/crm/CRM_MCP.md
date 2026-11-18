@@ -11,7 +11,14 @@ and read the CRM reports, build custom reports and follow the live activity feed
 * The read tools (no write in the table below) also serve the in-product assistant (the dashboard panel): on for
   admins and counsellors until an institute saves assistant settings, offered on CRM pages, in conversations that
   already used them, or after the model calls `load_tools` (`ASSISTANT_TOPICS` in `assistant_tool_registry.py`).
-  The writes stay MCP only.
+* The writes that contact nobody (`crm_lead_activity`, `crm_lead_edit`, `crm_lead_merge`, `crm_lead_intake`,
+  `crm_team_edit`, `crm_meetings_edit` `log_outcome`) serve the in-product assistant too, off until an admin switches
+  each group on in Settings → AI access. The same executor builds the preview; there it becomes the assistant's
+  confirmation card (lead names, from → to, counts, warnings; contacts masked as here), and the card's Confirm runs
+  the executor again with the preview's token, so the confirm re-checks scope, state, opt-outs, caps and the admission
+  rule exactly as an MCP confirm does (`app/services/crm_cards.py`). A card works once and expires before its token.
+  The outbound writes (`crm_send`, `crm_dial`, `crm_ai_campaign`, `crm_payment_reminders`, and `crm_meetings_edit`
+  `book`) stay MCP only.
 
 ## 1. Tools
 

@@ -99,6 +99,12 @@ class ToolContext:
     # The institute's module entitlements (app/services/entitlements.py), loaded
     # once per call by ``context_entitlements`` — never shared across calls.
     entitlements: Optional[Any] = None
+    # In-product assistant only (crm_cards): True only while the confirm endpoint
+    # runs a card the user approved, so crm_data.preview_or_apply reads the card's
+    # confirm token; a model's tool call never sets it. ``card_applied`` is set
+    # by preview_or_apply once the change itself ran.
+    card_confirm: bool = False
+    card_applied: bool = False
 
     def may_use(self, tool_name: str) -> bool:
         """True iff this caller may also call ``tool_name`` (same gates as execute_tool)."""
@@ -157,6 +163,17 @@ class ToolSpec:
     # only makes sense in the dashboard (page context, the confirmation card).
     # Same executor; None = the assistant's schema.
     mcp_schema: Optional[Dict[str, Any]] = None
+    # In-product assistant: the group is turned on one by one in Settings → AI
+    # access, never by an area's Edit level or a role preset (the access catalogue
+    # reads it: app/mcp/adapter.py ``assistant_group_opt_in``). Set on every write
+    # whose change is an opt-in group over MCP (MCP_OPT_IN_GROUPS). A group that
+    # keeps the same key on both doors also has no default_enabled / default_roles,
+    # so it starts off in the assistant as it does over MCP (tests pin both).
+    opt_in: bool = False
+    # In-product assistant: a write whose executor runs crm_data's two-step
+    # (preview_or_apply). Its preview becomes the confirmation card and the
+    # card's Confirm runs the same executor with the preview's token (crm_cards).
+    card_bridge: bool = False
 
     def key(self, via_mcp: bool = False) -> str:
         if via_mcp and self.mcp_setting_key:
@@ -171,6 +188,41 @@ class ToolSpec:
     def schema_for(self, via_mcp: bool = False) -> Dict[str, Any]:
         """The schema shown on this door (MCP may word a tool for an app outside the dashboard)."""
         return self.mcp_schema if (via_mcp and self.mcp_schema) else self.schema
+
+
+#: How the in-product assistant's schema tells the model a card-confirmed write works (ToolSpec.card_bridge).
+CARD_CONFIRM_TEXT = (
+    "Every change is shown to the user as a confirmation card first: call the action ONCE with the full request "
+    "(nothing changes then), tell the user what the card shows, and never say it is done — only their Confirm on "
+    "the card makes the change. There is no confirm_token here. A card is refused at Confirm when the data "
+    "changed in between: then propose it again."
+)
+
+
+def card_schema(
+    schema: Dict[str, Any],
+    description: str,
+    *,
+    drop_actions: Tuple[str, ...] = (),
+    drop_props: Tuple[str, ...] = (),
+) -> Dict[str, Any]:
+    """
+    The in-product assistant's wording of a two-step write (``ToolSpec.card_bridge``):
+    ``description``, no ``confirm_token`` (the card carries it) and without the
+    actions — and their parameters — the assistant does not offer.
+    """
+    import copy
+
+    out = copy.deepcopy(schema)
+    fn = out["function"]
+    fn["description"] = description
+    props = fn.setdefault("parameters", {"type": "object"}).setdefault("properties", {})
+    for name in ("confirm_token",) + tuple(drop_props):
+        props.pop(name, None)
+    action = props.get("action")
+    if drop_actions and isinstance(action, dict) and isinstance(action.get("enum"), list):
+        action["enum"] = [a for a in action["enum"] if a not in drop_actions]
+    return out
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -1797,6 +1849,8 @@ async def _propose_action(
     state: Any = None,
     preview: Optional[Dict[str, Any]] = None,
     once_summary: Optional[Dict[str, Any]] = None,
+    card: Optional[Dict[str, Any]] = None,
+    expires_in_s: Optional[int] = None,
 ) -> str:
     """
     One door-aware confirmation for a WRITE tool; nothing changes on the first call.
@@ -1808,6 +1862,8 @@ async def _propose_action(
     product door never does), ``state`` the target's current state an edit token
     is bound to, ``preview`` extra facts shown in the MCP preview and
     ``once_summary`` the ids and counts a single-use token records.
+    ``card`` adds ``details`` and ``warnings`` lines to the product card, and
+    ``expires_in_s`` shortens the card's life to that of what it carries.
     """
     if ctx.via_mcp:
         return json.dumps(await _mcp_two_step(ctx, tool, perform_args, summary, args or {}, state=state,
@@ -1821,9 +1877,12 @@ async def _propose_action(
         return json.dumps({"error": "no_session"})
 
     nonce = str(uuid.uuid4())
-    expires_at = (
-        datetime.now(timezone.utc) + timedelta(minutes=PENDING_ACTION_TTL_MINUTES)
-    ).isoformat()
+    ttl_s = PENDING_ACTION_TTL_MINUTES * 60
+    if expires_in_s is not None:
+        ttl_s = max(0, min(ttl_s, int(expires_in_s) - 30))
+    expires_at = (datetime.now(timezone.utc) + timedelta(seconds=ttl_s)).isoformat()
+    shown = {k: [str(x) for x in (card or {}).get(k) or []] for k in ("details", "warnings")}
+    shown = {k: v for k, v in shown.items() if v}
     ChatMessageRepository(ctx.db).create_message(
         session_id=ctx.session_id,
         message_type=PENDING_ACTION_MESSAGE_TYPE,
@@ -1836,6 +1895,7 @@ async def _propose_action(
             "expires_at": expires_at,
             "proposed_by": ctx.principal.user_id,
             "institute_id": ctx.principal.institute_id,
+            **shown,
         },
     )
     ctx.pending_action = {
@@ -1843,15 +1903,17 @@ async def _propose_action(
         "tool": tool,
         "summary": summary,
         "expires_at": expires_at,
+        **shown,
     }
     return json.dumps({
         "status": "awaiting_user_confirmation",
         "summary": summary,
+        **shown,
         "note": (
             "A confirmation card has been shown to the user. The change has NOT been made. "
             "Tell the user to press Confirm on the card (or Cancel). Do not claim it is done."
         ),
-    })
+    }, ensure_ascii=False)
 
 
 async def _mcp_two_step(
@@ -2261,6 +2323,22 @@ WRITE_PERFORMERS: Dict[str, Callable[[Dict[str, Any], ToolContext], Awaitable[Di
 }
 
 
+def performer_for(tool: str) -> Optional[Callable[[Dict[str, Any], ToolContext], Awaitable[Dict[str, Any]]]]:
+    """
+    What the card's Confirm runs for ``tool``: its WRITE_PERFORMERS entry, or —
+    for a ``card_bridge`` write — the tool's own executor again with the
+    preview's confirm token (crm_cards.perform). None = not confirmable.
+    """
+    spec = ASSISTANT_TOOLS.get(tool)
+    if spec is not None and spec.card_bridge:
+        from . import crm_cards
+
+        async def perform(perform_args: Dict[str, Any], ctx: ToolContext) -> Dict[str, Any]:
+            return await crm_cards.perform(spec, perform_args, ctx)
+        return perform
+    return WRITE_PERFORMERS.get(tool)
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # The MCP wording of the tools above that both doors serve. Same executors;
 # only what an AI app outside the dashboard is told differs: it has no page
@@ -2600,6 +2678,8 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         mode="WRITE",
         # Over MCP: an opt-in group of its own; learner_edit is the MCP tool for profile edits.
         mcp_setting_key="learner_enrolment_changes",
+        # Turned on one by one in Settings → AI access (still on for admins by default here).
+        opt_in=True,
         mcp_schema=_MCP_MANAGE_ENROLLMENT_SCHEMA,
     ),
     # Audit roadmap 4–6 (2026-07-16): institute-wide lists, assessments,
@@ -2704,6 +2784,8 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         module_feature="communications.announcements",
         # Over MCP: an opt-in group of its own (it contacts people), never on with the view.
         mcp_setting_key="announcement_sends",
+        # Turned on one by one in Settings → AI access (still on for admins by default here).
+        opt_in=True,
         mcp_schema=_MCP_SEND_ANNOUNCEMENT_SCHEMA,
     ),
 }
@@ -2992,7 +3074,12 @@ async def execute_tool(
     import time
     started = time.monotonic()
     try:
-        result = await spec.executor(safe_args, ctx)
+        if spec.card_bridge and not via_mcp:
+            # The in-product assistant: the preview becomes a confirmation card (crm_cards).
+            from . import crm_cards
+            result = await crm_cards.propose(spec, safe_args, ctx)
+        else:
+            result = await spec.executor(safe_args, ctx)
         logger.info(
             "assistant tool '%s' ok in %dms (institute=%s)",
             tool_name, int((time.monotonic() - started) * 1000), ctx.principal.institute_id,
@@ -3057,6 +3144,9 @@ __all__ = [
     "load_tools_schema",
     "topics_for_route",
     "execute_tool",
+    "performer_for",
+    "card_schema",
+    "CARD_CONFIRM_TEXT",
     "load_assistant_tools_setting",
     "load_entitlements",
     "context_entitlements",

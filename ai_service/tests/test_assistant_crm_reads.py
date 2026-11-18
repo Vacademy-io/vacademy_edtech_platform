@@ -4,9 +4,10 @@ The CRM read tools in the in-product assistant (the dashboard panel).
 Pinned here: which roles get them by default and what a saved setting does;
 that they are offered on CRM pages, in conversations that already used them,
 and through ``load_tools`` everywhere else; that the plan's CRM module gates
-them; that a counsellor sees exactly what MCP shows them; that every CRM
-write stays MCP-only and is refused in the assistant; and the assistant loop
-end to end with a fake model.
+them; that a counsellor sees exactly what MCP shows them; that the outbound
+CRM writes stay MCP-only and are refused in the assistant (the other writes are
+confirmed on the assistant's card: test_assistant_crm_writes.py); and the
+assistant loop end to end with a fake model.
 """
 from __future__ import annotations
 
@@ -29,8 +30,10 @@ from app.services.entitlements import LEGACY, MODE_MANAGED, Entitlements  # noqa
 from crm_fakes import CrmBackend, make_ctx, principal  # noqa: E402
 
 CRM_READS = ("crm_leads", "crm_calls", "crm_meetings", "crm_messages", "crm_reports", "crm_collections")
-CRM_WRITES = ("crm_lead_activity", "crm_lead_edit", "crm_lead_merge", "crm_lead_intake", "crm_team_edit",
-              "crm_dial", "crm_ai_campaign", "crm_meetings_edit", "crm_send", "crm_payment_reminders")
+CARD_WRITES = ("crm_lead_activity", "crm_lead_edit", "crm_lead_merge", "crm_lead_intake", "crm_team_edit",
+               "crm_meetings_edit")
+OUTBOUND = ("crm_dial", "crm_ai_campaign", "crm_send", "crm_payment_reminders")
+CRM_WRITES = CARD_WRITES + OUTBOUND
 LEADS_PAGE = "/audience-manager/recent-leads"
 COURSES_PAGE = "/study-library/courses"
 
@@ -50,11 +53,14 @@ def managed(*on):
 
 # ── which tools ──────────────────────────────────────────────────────────
 
-def test_crm_reads_use_both_doors_and_writes_stay_mcp_only():
+def test_crm_reads_use_both_doors_and_outbound_writes_stay_mcp_only():
     for name in CRM_READS:
         spec = reg.ASSISTANT_TOOLS[name]
         assert spec.mode == "READ" and not spec.mcp_only and spec.topic == reg.CRM_TOPIC, name
-    for name in CRM_WRITES:
+    for name in CARD_WRITES:
+        spec = reg.ASSISTANT_TOOLS[name]
+        assert spec.mode == "WRITE" and not spec.mcp_only and spec.topic == reg.CRM_TOPIC and spec.card_bridge, name
+    for name in OUTBOUND:
         spec = reg.ASSISTANT_TOOLS[name]
         assert spec.mode == "WRITE" and spec.mcp_only and spec.topic is None, name
     # every CRM tool is one of the two lists
@@ -283,16 +289,16 @@ async def test_export_works_in_the_assistant_as_a_private_link(monkeypatch):
     assert "r-9" not in made["content"]
 
 
-# ── writes: MCP only, refused in the assistant ───────────────────────────
+# ── outbound writes: MCP only, refused in the assistant ──────────────────
 
-async def test_crm_writes_are_never_offered_and_are_refused_in_the_assistant(monkeypatch):
+async def test_outbound_crm_writes_are_never_offered_and_are_refused_in_the_assistant(monkeypatch):
     backend = CrmBackend().install(monkeypatch)
     every_group = {"enabled_tools": [reg.ASSISTANT_TOOLS[n].key() for n in CRM_READS + CRM_WRITES],
                    "role_overrides": {}}
     p = principal(roles=["ADMIN"])
     offered = names(reg.build_offered_tools(p, every_group, topics={"crm"}, entitlements=LEGACY))
-    assert not offered & set(CRM_WRITES) and set(CRM_READS) <= offered
-    for name in CRM_WRITES:
+    assert not offered & set(OUTBOUND) and set(CRM_READS) | set(CARD_WRITES) <= offered
+    for name in OUTBOUND:
         for setting in (None, every_group):
             ctx = make_ctx(via_mcp=False)
             out = json.loads(await reg.execute_tool(name, {"action": "preview"}, ctx, setting, in_product=True))
@@ -310,9 +316,11 @@ def test_the_prompt_says_crm_is_read_only_and_shares_the_lead_content_rule():
     assert "only READ CRM data" in prompt and "`load_tools`" in prompt
     loaded = svc._build_system_prompt(p, None, entitlements=LEGACY, active_topics={"crm"})
     assert "`load_tools`" not in loaded
-    # MCP-only groups are not presented as something an admin can switch on here
-    for name in CRM_WRITES:
+    # MCP-only groups are not presented as something an admin can switch on here; the card writes are
+    for name in OUTBOUND:
         assert reg.GROUP_LABELS[reg.ASSISTANT_TOOLS[name].key()] not in prompt, name
+    for name in CARD_WRITES:
+        assert reg.GROUP_LABELS[reg.ASSISTANT_TOOLS[name].key()] in prompt, name
 
 
 # ── the assistant loop, end to end with a fake model ─────────────────────

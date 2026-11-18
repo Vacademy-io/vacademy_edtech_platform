@@ -138,13 +138,18 @@ def test_specs_action_spec_and_schemas():
     for tool, actions in ((m.ACTIVITY_TOOL, m.ACTIVITY_ACTIONS), (m.EDIT_TOOL, m.EDIT_ACTIONS),
                           (m.MERGE_TOOL, m.MERGE_ACTIONS), (m.INTAKE_TOOL, m.INTAKE_ACTIONS)):
         spec = registry.ASSISTANT_TOOLS[tool]
-        assert spec.mcp_only and spec.mode == "WRITE" and spec.module_feature == "crm.leads"
+        # Both doors: MCP's two-step, and the in-product assistant's card (opt-in, on CRM pages).
+        assert not spec.mcp_only and spec.card_bridge and spec.opt_in and spec.topic == "crm"
+        assert spec.mode == "WRITE" and spec.module_feature == "crm.leads"
         assert not spec.default_enabled and spec.default_roles is None and spec.required_permission is None
-        params = spec.schema["function"]["parameters"]
-        assert params["properties"]["action"]["enum"] == list(actions)
-        assert "user_id" not in params["properties"] and "institute_id" not in params["properties"]
-        desc = spec.schema["function"]["description"]
-        assert "confirm_token" in desc
+        for schema in (spec.schema_for(via_mcp=True), spec.schema):
+            params = schema["function"]["parameters"]
+            assert params["properties"]["action"]["enum"] == list(actions)
+            assert "user_id" not in params["properties"] and "institute_id" not in params["properties"]
+        assert "confirm_token" in spec.schema_for(via_mcp=True)["function"]["description"]
+        assert "confirm_token" in spec.schema_for(via_mcp=True)["function"]["parameters"]["properties"]
+        assert "confirm_token" not in spec.schema["function"]["parameters"]["properties"]
+        assert registry.CARD_CONFIRM_TEXT in spec.schema["function"]["description"]
     assert set(m.ACTION_SPEC) == set(m.ACTIVITY_ACTIONS + m.EDIT_ACTIONS + m.MERGE_ACTIONS + m.INTAKE_ACTIONS)
     assert {a for a, s in m.ACTION_SPEC.items() if s["confirm"] == "none"} == {
         "add_note", "schedule_followup", "reschedule_followup"}

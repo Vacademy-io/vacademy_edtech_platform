@@ -86,7 +86,40 @@ const TOOL_ACTIVITY_LABELS: Record<string, string> = {
     crm_messages: 'Reading lead messages…',
     crm_reports: 'Running the CRM report…',
     crm_collections: 'Checking dues and collections…',
+    crm_lead_activity: 'Preparing the change…',
+    crm_lead_edit: 'Preparing the change…',
+    crm_lead_merge: 'Preparing the change…',
+    crm_lead_intake: 'Preparing the change…',
+    crm_team_edit: 'Preparing the change…',
+    crm_meetings_edit: 'Preparing the change…',
 };
+
+/**
+ * The card's state after Confirm / Cancel, from the endpoint's status. 'pending': not settled (an
+ * hourly limit, or a run that broke off) — the card stays open. 'executing': another Confirm of the
+ * same card is already applying it, which is not a failure.
+ */
+export function actionStatusFrom(status: string): AssistantActionStatus {
+    switch (status) {
+        case 'executed':
+            return 'executed';
+        case 'cancelled':
+            return 'cancelled';
+        case 'pending':
+            return 'pending';
+        case 'executing':
+            return 'applying';
+        default:
+            return 'failed';
+    }
+}
+
+/** A card's detail or warning lines from the event: strings only, at most 20. */
+export function cardLines(value: unknown): string[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+    const lines = value.filter((v): v is string => typeof v === 'string' && v.trim() !== '');
+    return lines.length ? lines.slice(0, 20) : undefined;
+}
 
 /**
  * Current page context sent with every message so the assistant can resolve
@@ -236,6 +269,8 @@ export function useVacademyAssistant() {
                                             actionId: data.action_id,
                                             summary: data.summary || '',
                                             status: 'pending',
+                                            details: cardLines(data.details),
+                                            warnings: cardLines(data.warnings),
                                         },
                                     },
                                 ]);
@@ -326,12 +361,7 @@ export function useVacademyAssistant() {
                         : ASSISTANT_ACTION_CANCEL(sessionId, actionId);
                 const resp = await authenticatedAxiosInstance.post(url);
                 const status = String(resp.data?.status || '').toLowerCase();
-                const mapped: AssistantActionStatus =
-                    status === 'executed'
-                        ? 'executed'
-                        : status === 'cancelled'
-                          ? 'cancelled'
-                          : 'failed';
+                const mapped = actionStatusFrom(status);
                 setActionStatus(actionId, mapped);
                 if (resp.data?.message) {
                     setMessages((prev) => [

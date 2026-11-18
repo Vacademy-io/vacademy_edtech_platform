@@ -18,6 +18,16 @@ const CRM_READ_GROUPS = [
     'crm_collections',
 ];
 
+// The CRM changes the assistant proposes on a confirmation card; opt-in on the AI access screen.
+const CRM_WRITE_GROUPS = [
+    'crm_lead_activity',
+    'crm_lead_edits',
+    'crm_lead_merges',
+    'crm_team_edits',
+    'crm_lead_intake',
+    'crm_meeting_edits',
+];
+
 type ToolCopy = Record<string, { label?: string; description?: string }>;
 
 describe('Assistant settings copy', () => {
@@ -27,7 +37,7 @@ describe('Assistant settings copy', () => {
 
     it('has an English label and description for every CRM group', () => {
         const tools = copy.tools as ToolCopy;
-        for (const key of CRM_READ_GROUPS) {
+        for (const key of [...CRM_READ_GROUPS, ...CRM_WRITE_GROUPS]) {
             expect(tools[key]?.label, key).toBeTruthy();
             expect(tools[key]?.description, key).toBeTruthy();
         }
@@ -48,6 +58,12 @@ describe('Assistant settings copy', () => {
         const tools = copy.tools as ToolCopy;
         for (const preset of ASSISTANT_ROLE_PRESETS) {
             for (const key of preset.tools) expect(tools[key]?.label, key).toBeTruthy();
+        }
+    });
+
+    it('never suggests a CRM change group', () => {
+        for (const preset of ASSISTANT_ROLE_PRESETS) {
+            for (const key of CRM_WRITE_GROUPS) expect(preset.tools).not.toContain(key);
         }
     });
 });

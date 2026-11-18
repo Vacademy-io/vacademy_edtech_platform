@@ -519,7 +519,13 @@
               "crm_meetings",
               "crm_messages",
               "crm_reports",
-              "crm_collections"
+              "crm_collections",
+              "crm_lead_activity",
+              "crm_lead_edits",
+              "crm_lead_merges",
+              "crm_team_edits",
+              "crm_lead_intake",
+              "crm_meeting_edits"
             ],
             "setup_steps": [],
             "routes": [

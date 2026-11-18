@@ -152,13 +152,12 @@ def _ordered_roles(specs: List[ToolSpec]) -> List[str]:
 def assistant_group_opt_in(key: str, specs: List[ToolSpec]) -> bool:
     """
     True when the assistant's group is turned on one by one, never by an area's
-    Edit level or a preset: the group is an MCP opt-in group itself, or one of
-    its changes is one over MCP (e.g. ``learner_edits`` changes enrolments,
-    which MCP keeps as ``learner_enrolment_changes``).
+    Edit level or a preset: one of its tools is ``ToolSpec.opt_in`` in the
+    registry, which every write whose change is an MCP opt-in group sets (e.g.
+    ``learner_edits`` changes enrolments, which MCP keeps as
+    ``learner_enrolment_changes``; test_mcp_ai_access_catalog pins that).
     """
-    if key in MCP_OPT_IN_GROUPS:
-        return True
-    return any(s.mode == "WRITE" and s.key(via_mcp=True) in MCP_OPT_IN_GROUPS for s in specs)
+    return any(s.opt_in for s in specs)
 
 
 def assistant_catalog(entitlements: Optional[Any] = None) -> List[Dict[str, Any]]:

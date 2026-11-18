@@ -85,23 +85,27 @@ def writes(backend):
 
 # ── registration ─────────────────────────────────────────────────────────
 
-def test_specs_are_mcp_only_off_by_default_and_tied_to_the_crm_module():
+def test_specs_use_both_doors_off_by_default_and_tied_to_the_crm_module():
     for name, group, mode in (("crm_meetings", "crm_meetings", "READ"),
                               ("crm_meetings_edit", "crm_meeting_edits", "WRITE")):
         spec = ASSISTANT_TOOLS[name]
-        if mode == "READ":   # both doors; in the assistant on for admins and counsellors, on CRM pages
-            assert not spec.mcp_only and not spec.default_enabled and spec.topic == "crm"
+        assert not spec.mcp_only and not spec.default_enabled and spec.topic == "crm"
+        if mode == "READ":   # in the assistant on for admins and counsellors, on CRM pages
             assert spec.default_roles == ["ADMIN", "COUNSELLOR", "COUNSELOR"]
-        else:
-            assert spec.mcp_only and not spec.default_enabled and spec.default_roles is None
+        else:                # opt-in; the assistant confirms on its card and never books
+            assert spec.default_roles is None and spec.opt_in and spec.card_bridge
+            assert spec.schema["function"]["parameters"]["properties"]["action"]["enum"] == ["log_outcome"]
+            assert "start_time" not in spec.schema["function"]["parameters"]["properties"]
         assert spec.key() == group and spec.mode == mode and spec.module_feature == "crm.leads"
-        props = spec.schema["function"]["parameters"]["properties"]
-        assert "user_id" not in props and "institute_id" not in props
+        for schema in (spec.schema, spec.schema_for(via_mcp=True)):
+            props = schema["function"]["parameters"]["properties"]
+            assert "user_id" not in props and "institute_id" not in props
 
 
 def test_action_spec_matches_the_enums():
     read = ASSISTANT_TOOLS["crm_meetings"].schema["function"]["parameters"]["properties"]["action"]["enum"]
-    edit = ASSISTANT_TOOLS["crm_meetings_edit"].schema["function"]["parameters"]["properties"]["action"]["enum"]
+    edit = ASSISTANT_TOOLS["crm_meetings_edit"].schema_for(via_mcp=True)["function"]["parameters"]["properties"][
+        "action"]["enum"]
     assert set(mt.ACTION_SPEC) == set(read) | set(edit)
     for action in read:
         assert mt.ACTION_SPEC[action]["writes"] is False and mt.ACTION_SPEC[action]["confirm"] == "none"

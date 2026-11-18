@@ -8,13 +8,24 @@ export interface AssistantCapabilities {
     groups: Array<{ key: string; mode: 'READ' | 'WRITE'; tools: string[] }>;
 }
 
-export type AssistantActionStatus = 'pending' | 'working' | 'executed' | 'cancelled' | 'failed';
+/** `applying`: another Confirm of the same card is already running it. */
+export type AssistantActionStatus =
+    | 'pending'
+    | 'working'
+    | 'applying'
+    | 'executed'
+    | 'cancelled'
+    | 'failed';
 
 /** A proposed write awaiting the user's Confirm/Cancel (nonce-backed card). */
 export interface AssistantAction {
     actionId: string;
     summary: string;
     status: AssistantActionStatus;
+    /** What changes, one line each (e.g. a lead and its status from → to). */
+    details?: string[];
+    /** What the user should know before confirming (shown highlighted). */
+    warnings?: string[];
 }
 
 export interface AssistantMessage {
@@ -33,6 +44,8 @@ export interface AssistantActionRequestData {
     tool: string;
     summary: string;
     expires_at?: string;
+    details?: string[];
+    warnings?: string[];
 }
 
 export type AssistantStatus = 'idle' | 'connecting' | 'streaming' | 'error';

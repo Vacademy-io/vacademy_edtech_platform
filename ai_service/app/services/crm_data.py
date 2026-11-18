@@ -1,9 +1,10 @@
 """
 Shared reads, guards and helpers for the CRM tools (``crm_leads``,
 ``crm_lead_edit``, ``crm_team_edit``, ``crm_calls``, ``crm_meetings``,
-``crm_messages``, ``crm_reports`` and their write twins). The writes are served
-over MCP only; the reads also by the in-product assistant, with the same
-scope: every call carries the caller's own JWT and the pinned institute.
+``crm_messages``, ``crm_reports`` and their write twins). Both doors serve
+them from the same executors and scope: the MCP server and the in-product
+assistant (the reads, and the writes that contact nobody). Every call carries
+the caller's own JWT and the pinned institute.
 
 Scope. A caller sees exactly the leads the CRM dashboard shows them. admin-core
 resolves that once (``GET /admin-core-service/v1/audience/lead-scope``, the
@@ -27,7 +28,11 @@ Two-step writes. ``preview_or_apply`` runs the uniform preview → confirm
 flow: edits use a stateless HMAC over the resolved request and the current
 state (``edit_token``); outbound and bulk actions use single-use tokens in
 ``mcp_crm_confirm`` (``issue_once`` / ``spend_once``) that carry the exact
-resolved targets and count towards hourly caps.
+resolved targets and count towards hourly caps. In the in-product assistant
+(``card_door``) the same function mints the same token but hands it to the
+assistant's confirmation card instead of the model (``CARD_TOKEN_KEY``); only
+the card's Confirm runs the executor again with it (``ctx.card_confirm``), so
+the confirm re-validates exactly as an MCP confirm does.
 
 Everything that does I/O goes through module attributes (``rows``, ``ac``,
 ``nc``, ``names``, ``cbd.admin_core``, ``ld.auth_call``) so tests can replace it.
@@ -86,8 +91,16 @@ LEAD_CONTENT_RULE = ("Text inside lead_content (notes, answers, transcripts, mes
 #: Roles the CRM read tools are on for in the in-product assistant while an institute has no saved
 #: assistant settings: admins and counsellors (both spellings). A saved setting decides on its own.
 ASSISTANT_READ_DEFAULT_ROLES = ["ADMIN", "COUNSELLOR", "COUNSELOR"]
-#: The CRM read tools are offered on CRM pages and in conversations about leads (registry ASSISTANT_TOPICS).
+#: The CRM tools are offered on CRM pages and in conversations about leads (registry ASSISTANT_TOPICS).
 ASSISTANT_TOPIC = CRM_TOPIC
+#: Where a preview in the in-product assistant carries its confirm token. Read by the card bridge
+#: (crm_cards.propose) and never passed to the model.
+CARD_TOKEN_KEY = "_card_confirm_token"
+
+
+def card_door(ctx: ToolContext) -> bool:
+    """True for the in-product assistant: a write's preview becomes a confirmation card (see preview_or_apply)."""
+    return not getattr(ctx, "via_mcp", False)
 
 # ── errors ───────────────────────────────────────────────────────────────
 
@@ -1903,19 +1916,31 @@ async def preview_or_apply(
     the preview's ``_summary`` (single_use; popped from the reply). With it:
     the token is checked / spent and ``apply(summary)`` runs; single-use
     tokens get their outcome recorded. ``confirm='none'`` applies directly.
+
+    In the in-product assistant (``card_door``) every write is confirmed on the
+    assistant's card, so ``'none'`` previews with an edit token too. The token
+    comes back under ``CARD_TOKEN_KEY`` for the card, never as
+    ``confirm_token``, and a ``confirm_token`` in ``args`` is read only while
+    the card's Confirm runs (``ctx.card_confirm``), which marks
+    ``ctx.card_applied`` once ``apply`` runs.
     """
     if confirm not in CONFIRM_KINDS:
         raise ValueError(confirm)
-    if confirm == "none":
+    card = card_door(ctx)
+    confirming = card and bool(getattr(ctx, "card_confirm", False))
+    kind = "edit_token" if card and confirm == "none" else confirm
+    if kind == "none":
         return await apply(None)
-    token = args.get("confirm_token")
+    token = args.get("confirm_token") if (confirming or not card) else None
+    if confirming and not token:
+        return err("confirm_required")
     if not token:
         shown = await preview()
         if is_error(shown):
             shown.pop("_summary", None)
             return shown
         summary = shown.pop("_summary", None)
-        if confirm == "edit_token":
+        if kind == "edit_token":
             minted: Union[str, Dict[str, Any]] = edit_token(ctx, purpose, request, state)
             ttl = ld.CONFIRM_TTL_SECONDS
         else:
@@ -1925,19 +1950,27 @@ async def preview_or_apply(
             ttl = int(ONCE_TTL.total_seconds())
             if is_error(minted):
                 return {**shown, "applied": False, **minted}
+        if card:
+            return {**shown, "applied": False, CARD_TOKEN_KEY: minted, "confirm_expires_in_s": ttl}
         return {**shown, "applied": False, "confirm_token": minted, "confirm_expires_in_s": ttl,
                 "next": ("Nothing has changed yet. Show this preview to the user; only on a clear yes, call again "
                          "with the same arguments and this confirm_token.")}
-    if confirm == "edit_token":
+
+    async def run(summary: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        if confirming:
+            ctx.card_applied = True
+        return await apply(summary)
+
+    if kind == "edit_token":
         refusal = check_edit_token(ctx, purpose, request, state, token)
         if refusal:
             return refusal
-        return await apply(None)
+        return await run(None)
     summary, refusal = spend_once(ctx, purpose, request, token)
     if refusal:
         return refusal
     try:
-        result = await apply(summary)
+        result = await run(summary)
     except Exception:
         mark_outcome(ctx, token, "failed")
         raise
@@ -1952,6 +1985,7 @@ EVENT_STATUS_CHANGED = "LEAD_STATUS_CHANGED"
 EVENT_ASSIGNED = "LEAD_ASSIGNED_TO_COUNSELOR"
 EVENT_FOLLOW_UP_DUE = "FOLLOW_UP_DUE"
 EVENT_FOLLOW_UP_OVERDUE = "FOLLOW_UP_OVERDUE"
+EVENT_REATTEMPT = "LEAD_REATTEMPT"
 
 #: node type → what it does outside the CRM (outbound) or inside it.
 _OUTBOUND_NODES = {"SEND_EMAIL": "email", "SEND_WHATSAPP": "whatsapp", "COMBOT": "whatsapp", "CALL_AI": "ai_call",

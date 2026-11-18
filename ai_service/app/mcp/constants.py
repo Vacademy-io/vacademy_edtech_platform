@@ -81,8 +81,9 @@ MCP_EXPOSED_TOOLS: Tuple[str, ...] = (
     "list_announcements",   # READ:  scheduled and sent announcements
     "send_announcement",    # WRITE: outbound — an announcement to batches / roles / learners; single-use confirm token
     # CRM (docs/crm/CRM_MCP.md): every CRM tool verifies each id against the institute and the caller's
-    # dashboard lead scope, and needs its plan feature (ToolSpec.module_feature). Writes are opt-in and
-    # mcp_only; the reads also serve the in-product assistant (on CRM pages, see ASSISTANT_TOPICS).
+    # dashboard lead scope, and needs its plan feature (ToolSpec.module_feature). Writes are opt-in. The reads
+    # and the writes that contact nobody also serve the in-product assistant (on CRM pages, see ASSISTANT_TOPICS;
+    # the writes confirmed on its card, app/services/crm_cards.py); the outbound writes are mcp_only.
     "crm_leads",            # READ:  find / list / one lead, timeline, my day, the CRM catalog, export
     "crm_lead_activity",    # WRITE: live additive — log interactions and notes, schedule / move / complete follow-ups
     "crm_lead_edit",        # WRITE: live — status, tier, details, tags; preview + confirm token
@@ -727,8 +728,8 @@ MCP_OPT_IN_GROUPS = frozenset({"website_data_edits", "website_publish",
 #: group with a label in the registry's GROUP_LABELS must be placed here.
 #:   level: "view" reads; "edit" proposes changes the user confirms in the assistant
 #: Which edits are turned on one by one (never by an area's Edit level or a
-#: preset) is decided by the catalogue, from MCP_OPT_IN_GROUPS (adapter.py
-#: ``assistant_group_opt_in``).
+#: preset) comes from the registry's ToolSpec.opt_in (adapter.py
+#: ``assistant_group_opt_in``), set for every change that is opt-in over MCP.
 ASSISTANT_GROUP_PLACEMENT: Dict[str, Dict[str, str]] = {
     "identity": {"area": "identity", "level": "view"},
     "search_help_knowledge": {"area": "help", "level": "view"},
@@ -761,8 +762,14 @@ ASSISTANT_GROUP_PLACEMENT: Dict[str, Dict[str, str]] = {
     "sub_org_edits": {"area": "sub_orgs", "level": "edit"},
     "sub_org_enrollments": {"area": "sub_orgs", "level": "edit"},
     "crm_leads": {"area": "crm_leads", "level": "view"},
+    "crm_lead_activity": {"area": "crm_leads", "level": "edit"},
+    "crm_lead_edits": {"area": "crm_leads", "level": "edit"},
+    "crm_team_edits": {"area": "crm_leads", "level": "edit"},
+    "crm_lead_intake": {"area": "crm_leads", "level": "edit"},
+    "crm_lead_merges": {"area": "crm_leads", "level": "edit"},
     "crm_calls": {"area": "crm_calls", "level": "view"},
     "crm_meetings": {"area": "crm_meetings", "level": "view"},
+    "crm_meeting_edits": {"area": "crm_meetings", "level": "edit"},
     "crm_messages": {"area": "crm_messages", "level": "view"},
     "crm_reports": {"area": "crm_reports", "level": "view"},
     "crm_collections": {"area": "crm_payments", "level": "view"},

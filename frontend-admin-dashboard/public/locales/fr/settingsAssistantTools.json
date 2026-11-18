@@ -107,6 +107,30 @@
         "crm_collections": {
             "label": "Paiements CRM : consultation",
             "description": "Voir les admissions, les sommes dues par un prospect, qui doit quoi, ce qui arrive à échéance et les encaissements. Lecture seule. Activé par défaut pour les administrateurs et les conseillers."
+        },
+        "crm_lead_activity": {
+            "label": "Prospects CRM : activité et relances",
+            "description": "Permettez à l'assistant de PROPOSER d'enregistrer un appel, un échange, une visite ou une note sur un prospect, et de planifier, déplacer ou terminer des relances. Chaque modification s'affiche d'abord sur une carte et n'est faite que lorsque l'utilisateur appuie sur Confirmer. Sur activation : désactivé tant que vous ne l'activez pas."
+        },
+        "crm_lead_edits": {
+            "label": "Prospects CRM : statut, niveau, coordonnées et étiquettes",
+            "description": "Permettez à l'assistant de PROPOSER de changer le statut des prospects (un ou plusieurs), leur niveau, leurs coordonnées, leurs réponses au formulaire et leurs étiquettes. La carte liste chaque prospect et ce qui change. Le passage à Converti suit votre règle d'admission. Sur activation : désactivé tant que vous ne l'activez pas."
+        },
+        "crm_lead_merges": {
+            "label": "Prospects CRM : fusionner les doublons",
+            "description": "Permettez aux administrateurs de fusionner une personne saisie deux fois avec celle à conserver, ou d'annuler une fusion, après confirmation d'une carte montrant les deux personnes. Sur activation : désactivé tant que vous ne l'activez pas."
+        },
+        "crm_team_edits": {
+            "label": "Prospects CRM : attribution et routage",
+            "description": "Permettez aux administrateurs et aux responsables d'équipe d'attribuer des prospects, de transférer les prospects d'un conseiller et de suspendre ou reprendre son routage de prospects, après confirmation d'une carte. Sur activation : désactivé tant que vous ne l'activez pas."
+        },
+        "crm_lead_intake": {
+            "label": "Prospects CRM : ajouter des prospects",
+            "description": "Permettez à l'assistant d'ajouter un prospect (visites et appels entrants compris) ou d'en importer jusqu'à 100 dans une liste, après confirmation d'une carte. Les personnes déjà présentes ou désinscrites sont signalées. Sur activation : désactivé tant que vous ne l'activez pas."
+        },
+        "crm_meeting_edits": {
+            "label": "Rendez-vous CRM : résultat",
+            "description": "Permettez à l'assistant d'indiquer si un rendez-vous avec un prospect a eu lieu ou non, après confirmation d'une carte. La réservation de rendez-vous reste dans le CRM (le prospect reçoit une invitation). Sur activation : désactivé tant que vous ne l'activez pas."
         }
     },
     "presets": {
