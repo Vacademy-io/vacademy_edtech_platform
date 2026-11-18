@@ -1206,3 +1206,34 @@ Feedback: teachers do not reach the planning screen. Two changes.
 Known limits: the email is English only; reading pictures are not generated for emailed drafts
 (placeholders are stripped); one email per teacher per batch, so a batch with five subject
 teachers gets five drafts (the daily cap still applies to learners).
+
+## 22. Flashcards, Poll and Game as course slides (2026-11-18)
+
+Feedback: teachers want the engagement formats inside the course. The formats are reused; the
+engines stay separate (slides are about the course path and completion, daily engagement is about
+time). Slides earn no per-item points; completing them counts like any other slide.
+
+All three are DOCUMENT slides with JSON in `document_slide.data` / `published_data`, like
+Discussion and Spreadsheet, so drafts, publish, copy, move and drip need nothing new. A new slide
+is always created as a DRAFT (an empty deck or poll must never go live by itself).
+
+- **FLASHCARDS**: the same `flashcards/v1` payload as an engagement Flashcards task. Admin reuses
+  the engagement deck editor (`FlashcardsEditor`, hosted in a one-item form) and preview. Learner
+  reuses the engagement flip card, round reducer and progress bar, without the submit path;
+  finishing the first pass completes the slide (`markSlideCompletion`), practice rounds are local.
+- **POLL**: `{question, options[{id,text}], settings{results: AFTER_VOTE|ALWAYS|TEACHER_ONLY,
+  allowChange}}`. Votes in `slide_activity_response` (V729), one per (slide, learner); results per
+  batch. The first vote completes the slide on the server. Learner access uses the quiz/discussion
+  membership check (`LearnerQuizAccessService`).
+- **GAME**: `{html, maxScore, instructions}`. The page runs in the sandboxed slide frame
+  (`HtmlSlideIframe`) and posts `vacademy:complete {score, maxScore}`; the server clamps to the
+  slide's maxScore (or the page's, capped at 1000) and keeps the best. The first result completes
+  the slide. Scores are self-reported by the page, so they are never used for points.
+- Endpoints: learner `/admin-core-service/slide-activity/learner/v1/{poll, poll/vote, game,
+  game/score}`; staff `/admin-core-service/slide-activity/admin/v1/{poll/results, game/scores}`
+  (institute staff, slide must belong to one of the institute's courses).
+- POLL and GAME are online-only (votes and scores live on the server); the AI tutor gets the
+  cards, the poll question or the game instructions, never the raw JSON.
+
+Not done: per-role content-type toggles for the three types (they always show in the add menu);
+"Save to course as a slide" from a daily task, and the reverse for flashcards/poll slides.
