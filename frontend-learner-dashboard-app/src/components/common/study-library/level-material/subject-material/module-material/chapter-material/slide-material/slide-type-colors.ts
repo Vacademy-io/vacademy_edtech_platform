@@ -13,6 +13,9 @@
 import {
   BookOpen,
   ChatsCircle,
+  Cards,
+  ChartBar,
+  GameController as GameIcon,
   ChatText,
   Exam,
   FileDoc,
@@ -141,6 +144,9 @@ export const getSlideTypeColors = (
       // "voice" hue with the feedback slide.
       if (slide.document_slide?.type?.toUpperCase() === "DISCUSSION")
         return PALETTE.pink!;
+      // Flashcards, polls and games are activities, not readings.
+      if (["FLASHCARDS", "POLL", "GAME"].includes(slide.document_slide?.type?.toUpperCase() ?? ""))
+        return PALETTE.purple!;
       return PALETTE.amber!;
     case "QUESTION":
       return PALETTE.purple!;
@@ -173,6 +179,9 @@ export function getSlideTypeIcon(slide: Slide): PhosphorIcon {
     case "DOCUMENT":
       if (slide.document_slide?.type?.toUpperCase() === "DISCUSSION")
         return ChatsCircle;
+      if (slide.document_slide?.type?.toUpperCase() === "FLASHCARDS") return Cards;
+      if (slide.document_slide?.type?.toUpperCase() === "POLL") return ChartBar;
+      if (slide.document_slide?.type?.toUpperCase() === "GAME") return GameIcon;
       // Guess PDF vs DOC by available fields; fall back to FileDoc.
       if (slide.document_slide?.type?.toLowerCase().includes("pdf"))
         return FilePdf;

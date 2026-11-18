@@ -39,6 +39,9 @@ import { JupyterNotebookSlide } from "./jupyter-notebook-slide";
 import { ScratchProjectSlide } from "./scratch-project-slide";
 import { DiscussionSlide } from "./discussion/discussion-slide";
 import { SpreadsheetSlide } from "./spreadsheet/spreadsheet-slide";
+import { FlashcardsSlide } from "./activity/flashcards-slide";
+import { PollSlide } from "./activity/poll-slide";
+import { GameSlide } from "./activity/game-slide";
 import { SplitScreenVideoSlide } from "./split-screen-video-slide";
 import { DocumentQuizSlide } from "./document-quiz-slide";
 import { parseDocumentQuizRef } from "./document-quiz-ref";
@@ -1398,6 +1401,31 @@ export const SlideMaterial = ({
                 <DiscussionSlide key={activeItem.id} slide={activeItem} />
               </div>
             );
+          } else if (activeItem.document_slide?.type === "FLASHCARDS") {
+            // A course deck: flip, Got it / Still learning; the first pass completes it.
+            setContent(
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                <FlashcardsSlide
+                  key={activeItem.id}
+                  slide={activeItem}
+                  completionContext={completionContext}
+                />
+              </div>
+            );
+          } else if (activeItem.document_slide?.type === "POLL") {
+            // Voting completes it (on the server); results per the teacher's setting.
+            setContent(
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                <PollSlide key={activeItem.id} slide={activeItem} />
+              </div>
+            );
+          } else if (activeItem.document_slide?.type === "GAME") {
+            // The teacher's HTML game; the first reported result completes it.
+            setContent(
+              <div className="h-full w-full animate-in fade-in duration-100 motion-reduce:animate-none">
+                <GameSlide key={activeItem.id} slide={activeItem} />
+              </div>
+            );
           } else if (activeItem.document_slide?.type === "SPREADSHEET") {
             // Read-only workbook grid (all tabs) + download of the original file.
             setContent(
@@ -1659,8 +1687,9 @@ export const SlideMaterial = ({
                 MANUALLY_COMPLETABLE_SLIDE_TYPES.has(
                   activeItem.source_type || ""
                 ) &&
-                // A discussion completes by posting a reply, not by hand.
-                activeItem.document_slide?.type !== "DISCUSSION" && (
+                // A discussion completes by posting a reply, a poll by voting: not by hand.
+                activeItem.document_slide?.type !== "DISCUSSION" &&
+                activeItem.document_slide?.type !== "POLL" && (
                   <MarkCompleteButton
                     slideId={activeItem.id}
                     slideType={activeItem.source_type as string}
@@ -1719,8 +1748,9 @@ export const SlideMaterial = ({
             MANUALLY_COMPLETABLE_SLIDE_TYPES.has(
               activeItem.source_type || ""
             ) &&
-            // A discussion completes by posting a reply, not by hand.
-            activeItem.document_slide?.type !== "DISCUSSION" && (
+            // A discussion completes by posting a reply, a poll by voting: not by hand.
+            activeItem.document_slide?.type !== "DISCUSSION" &&
+            activeItem.document_slide?.type !== "POLL" && (
               <MarkCompleteButton
                 slideId={activeItem.id}
                 slideType={activeItem.source_type as string}

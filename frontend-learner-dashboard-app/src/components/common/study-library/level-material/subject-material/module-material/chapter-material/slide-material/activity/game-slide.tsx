@@ -1,0 +1,92 @@
+import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { GameController, Trophy } from "@phosphor-icons/react";
+import type { Slide } from "@/hooks/study-library/use-slides";
+import { HtmlSlideIframe, type SlideResult } from "../html-slide-iframe";
+import { useDiscussionContext } from "../discussion/use-discussion";
+import { fetchGame, sendGameScore, type GameView } from "./activity-api";
+import { parseGameSlide } from "./activity-utils";
+
+/**
+ * A game: the teacher's HTML page in the sandboxed slide frame. When the page posts
+ * `vacademy:complete`, the score is saved (the server caps it and keeps the best) and the
+ * first result completes the slide.
+ */
+export function GameSlide({ slide }: { slide: Slide }) {
+  const { t, i18n } = useTranslation("studyContent");
+  const queryClient = useQueryClient();
+  const game = useMemo(
+    () => parseGameSlide(slide.document_slide?.published_data),
+    [slide.document_slide?.published_data]
+  );
+  const { ids, ready } = useDiscussionContext(slide.id);
+  const key = ["slide-game", slide.id, ids.packageSessionId ?? ""];
+  const view = useQuery({ queryKey: key, queryFn: () => fetchGame(ids), enabled: ready && !!game, staleTime: 30_000 });
+  const [last, setLast] = useState<number | null>(null);
+  const save = useMutation({
+    mutationFn: (r: SlideResult) => sendGameScore(ids, r.score, r.maxScore),
+    onSuccess: (data: GameView) => {
+      const first = (view.data?.attempts ?? 0) === 0;
+      queryClient.setQueryData(key, data);
+      if (first && ids.chapterId) queryClient.invalidateQueries({ queryKey: ["slides", ids.chapterId] });
+    },
+  });
+
+  if (!game) {
+    return (
+      <div className="flex h-full w-full items-center justify-center p-6">
+        <p className="text-sm text-muted-foreground">{t("activity.unavailable")}</p>
+      </div>
+    );
+  }
+
+  const data = view.data;
+  const fmt = (n: number | null | undefined) =>
+    n == null ? "—" : n.toLocaleString(i18n.language, { maximumFractionDigits: 1 });
+  const max = data?.maxScore ?? game.maxScore;
+
+  return (
+    <div className="flex w-full flex-col gap-3 p-3 sm:p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <GameController size={20} weight="duotone" className="shrink-0 text-primary-500" aria-hidden />
+          {game.instructions ? (
+            <p dir="auto" className="min-w-0 text-body text-foreground">{game.instructions}</p>
+          ) : (
+            <p className="text-body text-muted-foreground">{t("activity.game.label")}</p>
+          )}
+        </div>
+        {data && data.attempts > 0 && (
+          <p className="flex items-center gap-1.5 text-caption font-semibold tabular-nums text-foreground" role="status">
+            <Trophy weight="fill" className="size-4 text-warning-500" aria-hidden />
+            {max
+              ? t("activity.game.bestOf", { best: fmt(data.bestScore), max: fmt(max) })
+              : t("activity.game.best", { best: fmt(data.bestScore) })}
+          </p>
+        )}
+      </div>
+      {last != null && (
+        <p className="text-caption text-muted-foreground" role="status">
+          {save.isError
+            ? t("activity.game.saveFailed")
+            : save.isPending
+              ? t("activity.game.saving")
+              : t("activity.game.scored", { score: fmt(last) })}
+        </p>
+      )}
+      <HtmlSlideIframe
+        html={game.html}
+        measure="content"
+        minHeight={420}
+        title={slide.title}
+        lang={i18n.language}
+        className="block rounded-lg border border-border bg-card"
+        onComplete={(r) => {
+          setLast(typeof r.score === "number" ? r.score : 0);
+          save.mutate(r);
+        }}
+      />
+    </div>
+  );
+}

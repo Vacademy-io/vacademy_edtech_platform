@@ -21,6 +21,7 @@ import { getTokenFromStorage } from "@/lib/auth/sessionUtility";
 import { TokenKey } from "@/constants/auth/tokens";
 import { enqueueMessage, peekQueue, dequeueMessage, QueuedMessage } from "@/services/offline-queue";
 import { useContentStore } from "@/stores/study-library/chapter-sidebar-store";
+import { activityTutorText } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/activity/activity-utils";
 import { readDiscussionPrompt } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/discussion/discussion-utils";
 import { spreadsheetTutorText } from "@/components/common/study-library/level-material/subject-material/module-material/chapter-material/slide-material/spreadsheet/spreadsheet-grid-loader";
 import { useInstituteDetailsStore } from "@/stores/study-library/useInstituteDetails";
@@ -336,6 +337,16 @@ export const useChatbot = () => {
             // A discussion's data is JSON (question + moderation settings);
             // the tutor only needs the question itself.
             slideContent = readDiscussionPrompt(activeSlide.document_slide.published_data);
+          } else if (
+            activeSlide.document_slide?.type === "FLASHCARDS" ||
+            activeSlide.document_slide?.type === "POLL" ||
+            activeSlide.document_slide?.type === "GAME"
+          ) {
+            // JSON slides: the tutor gets the cards, the question, or the game's instructions.
+            slideContent = activityTutorText(
+              activeSlide.document_slide.type,
+              activeSlide.document_slide.published_data
+            );
           } else if (activeSlide.document_slide?.type === "SPREADSHEET") {
             // The slide data holds only metadata; the grid is its own file. The
             // tutor gets the cell values as capped text (cached, 5 s limit), or

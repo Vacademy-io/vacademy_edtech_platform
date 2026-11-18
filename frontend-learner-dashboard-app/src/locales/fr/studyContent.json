@@ -30,7 +30,10 @@
         "assignment": "Devoir",
         "scormModule": "Module SCORM",
         "content": "Contenu",
-        "discussion": "Discussion"
+        "discussion": "Discussion",
+        "flashcards": "Cartes mémoire",
+        "poll": "Sondage",
+        "game": "Jeu"
     },
     "slideDetails": {
         "pageCount_one": "{{count}} page",
@@ -442,6 +445,28 @@
             "shared": "Merci d'avoir partagé",
             "sentForReview": "Envoyé à votre enseignant pour vérification",
             "reported": "Merci d'avoir prévenu votre enseignant"
+        }
+    },
+    "activity": {
+        "unavailable": "Cette activité n'est pas encore prête.",
+        "loading": "Chargement…",
+        "loadFailed": "Chargement impossible. Vérifiez votre connexion et réessayez.",
+        "poll": {
+            "label": "Sondage",
+            "pick": "Choisissez-en un. Il n'y a pas de bonne réponse.",
+            "voteFailed": "Votre vote n'a pas été pris en compte. Réessayez.",
+            "votes_one": "{{count}} vote de votre classe",
+            "votes_other": "{{count}} votes de votre classe",
+            "thanksHidden": "Merci d'avoir voté. Votre enseignant verra les résultats.",
+            "canChange": "Vous pouvez changer votre vote."
+        },
+        "game": {
+            "label": "Jouez. Votre meilleur score est enregistré.",
+            "best": "Meilleur : {{best}}",
+            "bestOf": "Meilleur : {{best}} / {{max}}",
+            "scored": "Votre score : {{score}}.",
+            "saving": "Enregistrement de votre score…",
+            "saveFailed": "Votre score n'a pas pu être enregistré. Rejouez pour réessayer."
         }
     }
 }

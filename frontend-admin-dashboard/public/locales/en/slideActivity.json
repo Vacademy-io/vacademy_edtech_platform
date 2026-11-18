@@ -1,0 +1,71 @@
+{
+    "status": {
+        "unsaved": "Unsaved changes. Use Save Draft or Publish above.",
+        "live": "Live for learners.",
+        "unsync": "Saved changes are not live yet. Publish to share them.",
+        "draft": "Draft. Learners can't see this until you publish."
+    },
+    "tabs": {
+        "setup": "Setup",
+        "results": "Results",
+        "scores": "Scores"
+    },
+    "flashcards": {
+        "title": "Flashcards",
+        "hint": "Learners flip each card, then mark it Got it or Still learning. Cards they are still learning come back until they know them all.",
+        "empty": "Add at least one card with a front and a back before you publish."
+    },
+    "poll": {
+        "title": "Poll",
+        "question": "Question",
+        "questionPlaceholder": "What would you like to ask the class?",
+        "options": "Choices",
+        "optionLabel": "Choice {{n}}",
+        "optionPlaceholder": "Choice {{n}}",
+        "removeOption": "Remove choice {{n}}",
+        "addOption": "Add a choice",
+        "optionsHint": "2 to 8 choices. There is no right answer; learners see how the class voted.",
+        "results": "Learners see the results",
+        "resultsOption": {
+            "AFTER_VOTE": "After they vote",
+            "ALWAYS": "Always, even before voting",
+            "TEACHER_ONLY": "Never (only you see them)"
+        },
+        "allowChange": "Learners can change their vote",
+        "errors": {
+            "question": "Write the question.",
+            "options": "Fill in at least 2 choices.",
+            "duplicate": "Two choices say the same thing."
+        }
+    },
+    "game": {
+        "title": "Game",
+        "page": "Game page (HTML)",
+        "upload": "Upload .html",
+        "pagePlaceholder": "Paste a complete HTML page here, or upload a file.",
+        "protocol": "To save a score, the page posts:",
+        "noScore": "This page never reports a result, so no score will be saved. Learners can still mark it complete.",
+        "tooBig": "That file is over 2 MB. Use a smaller page.",
+        "maxScore": "Top score",
+        "maxScoreHint": "Scores above this are capped. Leave empty if the page reports its own maximum.",
+        "instructions": "Instructions for learners",
+        "instructionsPlaceholder": "For example: Match each word to its meaning before the timer runs out.",
+        "preview": "Preview"
+    },
+    "results": {
+        "loading": "Loading…",
+        "error": "Results could not load.",
+        "publishFirst": "Publish the poll to collect votes.",
+        "batch": "Batch",
+        "allBatches": "All batches",
+        "votes_one": "{{count}} vote",
+        "votes_other": "{{count}} votes",
+        "optionCount": "{{count}} · {{pct}}%",
+        "players_one": "{{count}} learner played",
+        "players_other": "{{count}} learners played",
+        "learner": "Learner",
+        "scoreOf": "{{score}} / {{max}}",
+        "attempts_one": "{{count}} try",
+        "attempts_other": "{{count}} tries"
+    }
+}

@@ -15,6 +15,8 @@ import {
     BookOpen,
     GameController,
     ChatsCircle,
+    Cards,
+    ChartBar,
     ClipboardText,
     PresentationChart,
     FileText,
@@ -284,6 +286,21 @@ const getSlideTypeInfo = (sourceType: string | null | undefined) => {
             return {
                 icon: <ChatsCircle size={14} className="shrink-0 text-gray-500" />,
                 name: tSlideType('discussion'),
+            };
+        case 'FLASHCARDS':
+            return {
+                icon: <Cards size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('flashcards'),
+            };
+        case 'POLL':
+            return {
+                icon: <ChartBar size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('poll'),
+            };
+        case 'GAME':
+            return {
+                icon: <GameController size={14} className="shrink-0 text-gray-500" />,
+                name: tSlideType('game'),
             };
         case 'QUESTION':
             return {
