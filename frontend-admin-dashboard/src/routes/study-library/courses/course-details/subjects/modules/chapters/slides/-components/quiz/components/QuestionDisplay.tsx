@@ -4,6 +4,9 @@ import { TransformedQuestion } from '../types';
 import { CaretDown, CaretUp } from '@phosphor-icons/react';
 import { isRichTextEmpty } from '@/lib/utils';
 import { normaliseNumericTolerance } from '@/routes/assessment/question-papers/-utils/numeric-tolerance';
+import { useFormContext } from 'react-hook-form';
+import { isCbeQuestionType } from '@/routes/assessment/question-papers/-utils/cbe-question';
+import { CbeQuestionSummary } from '@/routes/assessment/question-papers/-components/QuestionPaperTemplatesTypes/CbeResponse/cbe-question-summary';
 
 interface QuestionDisplayProps {
     question: TransformedQuestion;
@@ -26,6 +29,9 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
     onDelete,
 }) => {
     const { t } = useTranslation('studyLibraryQuestionDisplay');
+    // The quiz editor renders this inside its form; the CBE summary reads the question from it.
+    const formContext = useFormContext();
+    const isCbe = isCbeQuestionType(question.questionType);
 
     const renderOptions = (options: Array<{ id: string; name: string; isSelected: boolean }>) => {
         const correctCount = options.filter((opt) => opt.isSelected).length;
@@ -337,6 +343,13 @@ const QuestionDisplay: React.FC<QuestionDisplayProps> = ({
                         </div>
                         {/* Options/Answers and Explanation will be rendered below */}
                     </>
+                ) : isCbe && formContext ? (
+                    // Spreadsheet & Written Response: scenario, requirements and parts with their marks.
+                    <CbeQuestionSummary
+                        form={formContext}
+                        basePath={`questions.${questionIndex}`}
+                        className="mb-3"
+                    />
                 ) : (
                     <>
                         <div className="mb-3">
