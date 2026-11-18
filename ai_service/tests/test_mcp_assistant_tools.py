@@ -442,7 +442,7 @@ async def test_enrolment_change_refusals(backend, enrolment):
     # A group switched off after the preview refuses the apply.
     result, out = await call("manage_enrollment", {**move, "new_state": "b-2", "confirm_token": out["confirm_token"]},
                              ["batch_data"], db=FakeDb())
-    assert result.is_error and out["error"] == "tool_not_permitted" and "MCP settings" in out["message"]
+    assert result.is_error and out["error"] == "tool_not_permitted" and "Settings → AI access" in out["message"]
     assert backend.to("/institute_learner-operation") == []
 
 

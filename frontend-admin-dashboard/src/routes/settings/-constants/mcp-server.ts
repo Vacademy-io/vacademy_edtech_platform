@@ -58,6 +58,10 @@ export interface McpToolCatalogEntry {
      * area's Edit level or the "Turn everything on" preset.
      */
     opt_in?: boolean;
+    /** The plan feature the tool needs, if any. */
+    module_feature?: string | null;
+    /** False when the institute's plan leaves the tool out (sent by the AI access catalogue). */
+    entitled?: boolean;
 }
 
 /**

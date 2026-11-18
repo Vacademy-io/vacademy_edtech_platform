@@ -4,7 +4,7 @@ description: "See which AI apps are connected to your institute, who connected t
 icon: "plug-circle-xmark"
 ---
 
-**Active connections** in **Settings → MCP Server** lists every AI app that is signed in to your institute right now. Admins can see and revoke all of them.
+**Active connections** in **Settings → AI access** lists every AI app that is signed in to your institute right now. Admins can see and revoke all of them.
 
 ## What each row shows
 
@@ -37,7 +37,7 @@ Click **Revoke** on the row. The connection ends at once: the app's next request
 |---|---|---|
 | One person's app | **Revoke** their row | Their next request |
 | Everyone with a role | Remove the role from **Who can connect**, then save | Each app's next request |
-| One area or one change, for everyone | Set the area to **Off** or switch the change off in the main list **and** in every customized role under **Per-role access**, then save | Each app's next request |
+| One area or one change, for everyone | Set the area to **Off** or switch the change off for **Everyone** **and** for every customized role (pick each in **Settings for**), then save | Each app's next request |
 | Everything | Turn off **MCP server enabled**, then save | Each app's next request |
 
 Settings changes do not delete connections. When a role, area or the whole server is turned back on, apps that are still signed in work again. Revoke the connections too if you want everyone to sign in again.
@@ -45,7 +45,7 @@ Settings changes do not delete connections. When a role, area or the whole serve
 ## What the person sees
 
 - A **revoked** connection: their app is no longer signed in. Most apps then ask them to sign in again.
-- A **switched-off** server or a **removed role**: the app's list of tools is empty, and using a tool returns a message such as *"The MCP server is not enabled for this institute"* or *"This user's role is not allowed to connect to the MCP server"*, with a pointer to the MCP settings.
+- A **switched-off** server or a **removed role**: the app's list of tools is empty, and using a tool returns a message such as *"The MCP server is not enabled for this institute"* or *"This user's role is not allowed to connect to the MCP server"*, with a pointer to **Settings → AI access**.
 - An area set to **Off**: its tools disappear from the app's list.
 
 ## When someone leaves your team

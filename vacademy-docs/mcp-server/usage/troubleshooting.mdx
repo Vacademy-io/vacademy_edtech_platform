@@ -14,7 +14,7 @@ After any fix, start a new chat and ask: `Who am I connected as?` If that answer
 
 <AccordionGroup>
   <Accordion title="Check the server URL" icon="link" defaultOpen>
-    Copy the URL from **Settings → MCP Server → Server URL** in your admin portal. Don't type it by hand. It looks like this:
+    Copy the URL from **Settings → AI access → Server URL** in your admin portal. Don't type it by hand. It looks like this:
 
     ```text
     https://<your backend>/ai-service/mcp/i/<institute_id>
@@ -23,7 +23,7 @@ After any fix, start a new chat and ask: `Who am I connected as?` If that answer
     It must include `/i/<institute_id>`. That part tells the server which institute you're connecting to, and the sign-in screen opens on that institute's own admin portal.
   </Accordion>
   <Accordion title="Check the server is on" icon="power-off">
-    An admin must turn on **MCP server enabled** in **Settings → MCP Server** and save. Until then nobody can connect, and the connection details are not shown.
+    An admin must turn on **MCP server enabled** in **Settings → AI access** and save. Until then nobody can connect, and the connection details are not shown.
   </Accordion>
   <Accordion title="Check your AI app supports remote MCP servers with sign-in" icon="plug">
     The server uses streamable HTTP and OAuth sign-in. Claude, ChatGPT, Claude Code, Cursor and VS Code support both. Some plans of some apps don't allow custom connectors. See the setup page for your app under **Connect your AI app**, and your app's own help, because menus move.
@@ -42,7 +42,7 @@ The approval page in your admin portal shows the reason. The common ones:
 | "This link is incomplete." | The app opened a broken link. | Start the connection again from your AI app. |
 | "This request has expired or was already handled." | Approval requests last 15 minutes and work once. | Start the connection again from your AI app, and approve within 15 minutes. |
 | "You're signed in to a different institute." | You approved while signed in to another institute. | Sign out, sign in with your account for the institute in the URL, then approve. See [Wrong institute](#wrong-institute). |
-| "The MCP server is not enabled for this institute." | The server is off. | An admin turns it on in **Settings → MCP Server**. |
+| "The MCP server is not enabled for this institute." | The server is off. | An admin turns it on in **Settings → AI access**. |
 | "…could not read this institute's MCP settings just now…" | Temporary trouble on the server. Nothing about your access changed. | Wait a little, then reload the approval page. |
 | "This user's role is not allowed to connect…" | None of your roles is in **Who can connect**. | An admin adds your role. Only Admin is allowed by default. |
 | "The MCP server is available to institute staff only." | Learner and parent accounts can never connect. | Use a staff account. |
@@ -59,16 +59,16 @@ The AI app only sees tools you're allowed to use. Check these in order:
     - **Only `whoami` (Who is connected):** you are connected, but every area is Off for your role. Ask an admin to set one to View.
   </Step>
   <Step title="Is the area on?">
-    In **Settings → MCP Server → What AI apps can do**, each area is **Off**, **View** or **Edit**. View gives the reading tools. Edit adds the editing tools. Ask an admin to raise the area.
+    In **Settings → AI access → What AI can do**, in the **AI apps** column, each area is **Off**, **View** or **Edit**. View gives the reading tools. Edit adds the editing tools. Ask an admin to raise the area.
   </Step>
   <Step title="Is it an edit turned on separately (opt-in)?">
     Publishing websites, enrolling learners, editing learner details, changing course structure, setting up course data and every CRM edit (logging, changing leads, calling, messaging, booking) are **turned on separately**. Setting the area to Edit, or pressing "Turn everything on", does not switch them on. See [Opt-in edits](/mcp-server/settings/opt-in-features).
   </Step>
   <Step title="Is it on for your role?">
-    The main settings apply to everyone who can connect. **Per-role access** can give a role more, never less. If a colleague with another role has the tool and you don't, check the per-role settings.
+    The settings for **Everyone** apply to everyone who can connect. A role's own list (pick the role in **Settings for**) can give it more, never less. If a colleague with another role has the tool and you don't, check that role's list.
   </Step>
   <Step title="Is it a CRM area?">
-    The CRM areas show in **Settings → MCP Server** for every institute, but the AI app gets CRM tools only when your plan includes the CRM. Without it, the tools do not appear (or answer `module_not_enabled` if called). Some CRM actions are for admins or managers only; the tool says so (`admin_only`, `not_available_for_role`).
+    The CRM areas show in **Settings → AI access** for every institute, but the AI app gets CRM tools only when your plan includes the CRM. Without it, the tools do not appear (or answer `module_not_enabled` if called). Some CRM actions are for admins or managers only; the tool says so (`admin_only`, `not_available_for_role`).
   </Step>
   <Step title="Has your app refreshed its tool list?">
     Settings changes apply on the server at once, but many apps keep the tool list they loaded when the chat started. Start a new chat. If that's not enough, refresh or reconnect the connector in your app (in ChatGPT, open the connection under **Plugins** and select **Refresh**).
@@ -104,7 +104,7 @@ Each institute has its own server URL. A connection belongs to the institute in 
 
 - **You work for two institutes?** Add two connectors, one per URL, with clear names (for example "City Campus" and "Online Academy"). Sign in to each with the matching account.
 - **"You're signed in to a different institute"** at approval: your portal session is for the other institute. Sign out of the portal, sign in to the institute in the URL, and approve again.
-- **"This token was issued for a different server URL"**: the connector's URL was changed after sign-in, or you used an old URL. Remove the connector and add it again with the URL from **Settings → MCP Server**.
+- **"This token was issued for a different server URL"**: the connector's URL was changed after sign-in, or you used an old URL. Remove the connector and add it again with the URL from **Settings → AI access**.
 
 ## My app asks for a client ID
 
@@ -112,7 +112,7 @@ Claude, ChatGPT, Cursor, Claude Code and VS Code usually register themselves, so
 
 <Steps>
   <Step title="Use your institute's client ID, if your app is on its list">
-    **Your client ID** in **Settings → MCP Server** accepts the web callbacks of Claude, the older ChatGPT address and `cursor.com/connector/callback`. For those, paste it into the app's OAuth client ID field. Desktop and command-line tools (Claude Code, Cursor desktop, VS Code) need a client ID of their own; see the tabs below.
+    **Your client ID** in **Settings → AI access** accepts the web callbacks of Claude, the older ChatGPT address and `cursor.com/connector/callback`. For those, paste it into the app's OAuth client ID field. Desktop and command-line tools (Claude Code, Cursor desktop, VS Code) need a client ID of their own; see the tabs below.
   </Step>
   <Step title="Leave the client secret empty">
     There is no client secret. If the app requires one, use a different option in its sign-in settings (for example "register automatically").

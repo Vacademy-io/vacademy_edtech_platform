@@ -274,7 +274,7 @@ export const SidebarSearch: React.FC<SidebarSearchProps> = ({
                                         return (
                                             <CommandItem
                                                 key={entry.tab}
-                                                value={`${entry.value} ${domain} ${entry.group} settings`}
+                                                value={`${entry.value} ${(entry.keywords ?? []).join(' ')} ${domain} ${entry.group} settings`}
                                                 onSelect={() => handleSettingsSelect(entry)}
                                                 className="gap-3 px-3 py-2.5"
                                             >

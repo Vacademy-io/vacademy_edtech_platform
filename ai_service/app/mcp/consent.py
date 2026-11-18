@@ -13,6 +13,9 @@ Two groups:
   the tool catalogue, manually-issued OAuth client ids (for LLM apps that cannot
   self-register), and the live connections an admin can revoke.
 
+* **Access catalogue** — the rows of Settings → AI access: each capability area
+  with the in-product assistant's settings groups and the MCP tools placed in it.
+
 Every endpoint here authenticates with the normal platform contract
 (``Authorization: Bearer <JWT>`` + ``clientId``), so it inherits the same trust
 boundary as the rest of the admin surface.
@@ -37,12 +40,13 @@ from ..schemas.auth import PinnedPrincipal
 from ..services.institute_setting_reader import SettingReadError
 from . import lanes
 from .access import check_mcp_access, load_mcp_setting, normalize_role
-from .adapter import tool_catalog
+from .adapter import access_areas, assistant_catalog, assistant_default_setting, tool_catalog
 from .constants import (
     AUTO_CLIENT_ID_PREFIX,
     AUTO_CLIENT_NAME,
     AUTO_CLIENT_REDIRECT_URIS,
     DENIAL_MESSAGES,
+    LEARNER_ROLES,
     MCP_SCOPE_READ,
     REASON_SERVER_BUSY,
     REASON_SETTINGS_UNAVAILABLE,
@@ -413,6 +417,59 @@ async def connection_info(
                 key=lambda c: not c.is_primary,
             ),
             connections=repo.list_connections(principal.institute_id),
+        )
+
+    return await _consent_db_work(db, read, total_s=lanes.OAUTH_READ_LIMIT_S)
+
+
+class AccessCatalogResponse(BaseModel):
+    #: The page's rows, in display order.
+    areas: List[Dict[str, Any]]
+    #: The MCP tool catalogue (as /connection-info, with ``entitled`` per tool).
+    mcp_tools: List[Dict[str, Any]]
+    #: The in-product assistant's settings groups, each placed in an area.
+    assistant_groups: List[Dict[str, Any]]
+    #: What the assistant allows before the institute first saves its setting.
+    assistant_default_setting: Dict[str, Any]
+
+
+def _require_staff(principal: PinnedPrincipal) -> None:
+    """Any role in the institute other than a learner's: the catalogue only names capabilities."""
+    roles = {normalize_role(r) for r in (principal.roles or [])}
+    if roles and not roles.issubset(LEARNER_ROLES):
+        return
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail={"reason": "not_staff", "message": "Only institute staff can read the AI access settings."},
+    )
+
+
+@router.get(
+    "/access-catalog",
+    response_model=AccessCatalogResponse,
+    summary="The rows of Settings → AI access: both doors' capabilities per area",
+)
+async def access_catalog(
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+    db: Session = Depends(db_dependency),
+    opt_in: bool = Query(False),
+) -> AccessCatalogResponse:
+    """
+    One catalogue for the in-product assistant and AI apps, area by area, with
+    the institute's plan applied (``entitled``) so the page can grey out what
+    the plan leaves out. Reads no institute setting: the page reads and saves
+    those itself.
+    """
+    _require_staff(principal)
+    from ..services.assistant_tool_registry import load_entitlements
+
+    def read(session: Session) -> AccessCatalogResponse:
+        ent = load_entitlements(session, principal.institute_id)
+        return AccessCatalogResponse(
+            areas=access_areas(),
+            mcp_tools=tool_catalog(include_opt_in=opt_in, entitlements=ent),
+            assistant_groups=assistant_catalog(entitlements=ent),
+            assistant_default_setting=assistant_default_setting(),
         )
 
     return await _consent_db_work(db, read, total_s=lanes.OAUTH_READ_LIMIT_S)

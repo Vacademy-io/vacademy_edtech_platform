@@ -472,7 +472,7 @@ export const SETTINGS_TAB_ICONS: Record<string, React.FC<IconProps>> = {
     customFields: Sliders,
     language: Translate,
     aiSettings: Brain,
-    assistantTools: Robot,
+    aiAccess: Robot,
     course: BookOpen,
     lms: Stack,
     assessment: ClipboardText,
@@ -550,6 +550,7 @@ const SettingsTabsList: React.FC<SettingsTabsListProps> = ({ tabs, activeTab, on
     const isSearching = trimmedQuery.length > 0;
     const matchesQuery = (tab: SettingsTabEntry, domain: string) =>
         tab.value.toLowerCase().includes(trimmedQuery) ||
+        (tab.keywords ?? []).some((k) => k.toLowerCase().includes(trimmedQuery)) ||
         tab.group.toLowerCase().includes(trimmedQuery) ||
         domain.toLowerCase().includes(trimmedQuery);
 

@@ -4,7 +4,14 @@ description: "What changed in Vacademy MCP, newest first."
 icon: "clock-rotate-left"
 ---
 
-New tools and edits always start **off**. Nothing new is reachable until an admin switches it on in **Settings → MCP Server**. The one exception is **How-to help**, which reads none of your institute's data and is always on. Most edits that go live, call or message people, or enrol learners are opt-in: they are never switched on by an area's Edit level or by **Turn everything on**. See [Risk levels](/mcp-server/settings/risk-levels).
+New tools and edits always start **off**. Nothing new is reachable until an admin switches it on in **Settings → AI access**. The one exception is **How-to help**, which reads none of your institute's data and is always on. Most edits that go live, call or message people, or enrol learners are opt-in: they are never switched on by an area's Edit level or by **Turn everything on**. See [Risk levels](/mcp-server/settings/risk-levels).
+
+<Update label="2026-11-18" description="Settings → AI access replaces Settings → MCP Server">
+  - **One settings screen for AI:** **Settings → MCP Server** and the in-product assistant's settings are now one screen, **Settings → AI access**. Under **What AI can do**, each area appears once, with a control for the **In-product assistant** and one for **AI apps** side by side. The two stay separate settings: turning an area on for one does not turn it on for the other. Everything the MCP Server screen did is still there, under **Connected AI apps**: turning the server on, **Who can connect**, the server URL and client IDs, and **Active connections**. Opt-in edits keep their badges, and an area your plan does not include shows **Not in your plan**. Your saved settings did not change, and links to the old screen open the new one.
+  - **Extras for one role:** pick the role under **Settings for** above the area list and turn on **Customize AI apps for this role**. See [Who can connect](/mcp-server/settings/roles#give-some-roles-more-access).
+  - **Saving** changes only what you changed on the screen. A change a colleague saved in the meantime is kept.
+  - Messages that send an admin to the settings, such as `tool_not_permitted` or a switched-off server, now name **Settings → AI access**.
+</Update>
 
 <Update label="2026-11-17" description="How-to help; batches, tests, live classes, fees and announcements; enrolment changes">
   - **How-to help (new area):** ask your AI app how or where to do something in the admin portal, for example "How do I create a course?" or "Where are the payment gateway settings?". It answers with the documented steps and a link to the right page on your institute's own admin portal, on your own domain when you have one. Without one, the link goes to the main Vacademy dashboard. When no documented how-to matches, the AI app is told to say so rather than guess. The how-tos shown follow the connected person's role, and the tool reads none of your institute's data. Tool `search_help_knowledge`. It is always on for everyone who can connect, like the identity tool, because it reads none of your institute's data.

@@ -28,6 +28,7 @@ from sqlalchemy.orm import Session
 from ..schemas.auth import PinnedPrincipal
 from ..services.assistant_tool_registry import (
     ASSISTANT_TOOLS,
+    GROUP_LABELS,
     ToolContext,
     ToolSpec,
     execute_tool,
@@ -37,6 +38,7 @@ from ..services.assistant_tool_registry import (
 )
 from .access import setting_for_tool_gate
 from .constants import (
+    ASSISTANT_GROUP_PLACEMENT,
     MCP_EXPOSED_TOOLS,
     MCP_OPT_IN_GROUPS,
     MCP_ALWAYS_ON_TOOLS,
@@ -121,6 +123,94 @@ def tool_catalog(include_opt_in: bool = True, entitlements: Optional[Any] = None
         if entitlements is not None:
             catalog[-1]["entitled"] = missing_module_feature(spec, entitlements) is None
     return catalog
+
+
+def access_areas() -> List[Dict[str, Any]]:
+    """The settings page's rows, in display order: one per capability area."""
+    return [{"key": key, "label": area["label"], "summary": area["summary"], "order": index}
+            for index, (key, area) in enumerate(MCP_TOOL_AREAS.items())]
+
+
+def _in_product_groups() -> Dict[str, List[ToolSpec]]:
+    """In-product assistant settings group → its specs (MCP-only tools are never offered in-product)."""
+    groups: Dict[str, List[ToolSpec]] = {}
+    for spec in ASSISTANT_TOOLS.values():
+        if not spec.mcp_only:
+            groups.setdefault(spec.key(), []).append(spec)
+    return groups
+
+
+def _ordered_roles(specs: List[ToolSpec]) -> List[str]:
+    roles: List[str] = []
+    for spec in specs:
+        for role in spec.default_roles or []:
+            if role not in roles:
+                roles.append(role)
+    return roles
+
+
+def assistant_catalog(entitlements: Optional[Any] = None) -> List[Dict[str, Any]]:
+    """
+    The in-product assistant's settings groups, each placed in an area of the
+    settings page (ASSISTANT_GROUP_PLACEMENT) next to the MCP tools of that area.
+
+    Served from the backend for the same reason as ``tool_catalog``: the
+    dashboard renders it and keeps no list of its own. Each entry carries the
+    group's out-of-the-box defaults (``default_enabled``, ``default_roles``) and
+    the plan feature its tools need; with ``entitlements`` also ``entitled``.
+    """
+    groups = _in_product_groups()
+    catalog: List[Dict[str, Any]] = []
+    for key, place in ASSISTANT_GROUP_PLACEMENT.items():
+        specs = groups.get(key)
+        if not specs:
+            # A group renamed in the registry must be loud, not a silently missing switch.
+            logger.error("ASSISTANT_GROUP_PLACEMENT names '%s', which no in-product tool uses.", key)
+            continue
+        features = [f for s in specs for f in ([s.module_feature] if s.module_feature else
+                                               list(s.module_features_any or ()))]
+        area = MCP_TOOL_AREAS.get(place["area"]) or {"label": place["area"], "summary": ""}
+        entry: Dict[str, Any] = {
+            "key": key,
+            "label": GROUP_LABELS.get(key, key.replace("_", " ").capitalize()),
+            "tools": [s.name for s in specs],
+            "mode": "WRITE" if any(s.mode == "WRITE" for s in specs) else "READ",
+            "always_on": any(s.always_allowed for s in specs),
+            "default_enabled": any(s.default_enabled for s in specs),
+            "default_roles": _ordered_roles(specs),
+            "module_feature": features[0] if features else None,
+            "area": place["area"],
+            "area_label": area["label"],
+            "area_order": list(MCP_TOOL_AREAS).index(place["area"]) if place["area"] in MCP_TOOL_AREAS else 99,
+            "level": place["level"],
+        }
+        if entitlements is not None:
+            # On when the plan includes at least one of the group's tools.
+            entry["entitled"] = any(missing_module_feature(s, entitlements) is None for s in specs)
+        catalog.append(entry)
+    return catalog
+
+
+def assistant_default_setting() -> Dict[str, Any]:
+    """
+    What the assistant allows while an institute has never saved its setting
+    (``_effective_enabled_tools`` with no setting), written out as a setting:
+    groups on for everyone in ``enabled_tools``, role defaults in
+    ``role_overrides``. A first save starts from this, so it keeps what each
+    role already had.
+    """
+    enabled: List[str] = []
+    overrides: Dict[str, Dict[str, List[str]]] = {}
+    for key, specs in _in_product_groups().items():
+        if any(s.always_allowed for s in specs):
+            continue
+        if any(s.default_enabled for s in specs):
+            enabled.append(key)
+        for role in _ordered_roles(specs):
+            node = overrides.setdefault(role, {"enabled_tools": []})
+            if key not in node["enabled_tools"]:
+                node["enabled_tools"].append(key)
+    return {"enabled_tools": enabled, "role_overrides": overrides}
 
 
 def _to_mcp_tool(spec: ToolSpec) -> Tool:

@@ -366,7 +366,7 @@ live on their own admin portal with their own brand. OAuth discovery is per
 resource URL, so the URL the admin pastes carries the institute:
 
 ```
-https://<backend>/ai-service/mcp/i/<institute_id>      ← what Settings → MCP Server shows
+https://<backend>/ai-service/mcp/i/<institute_id>      ← what Settings → AI access shows
 https://<backend>/ai-service/mcp                        ← legacy: platform dashboard + institute picker
 ```
 
@@ -435,7 +435,13 @@ does this whenever ai_service is enabled.
 ### Institute (settings)
 
 Stored under `MCP_SERVER_SETTING` in `institutes.setting_json`, edited at
-**Settings → MCP Server**:
+**Settings → AI access** (`/settings?selectedTab=aiAccess`; the older `mcpServer` and
+`assistantTools` tab ids open it too). That screen shows each area once, with the
+in-product assistant's groups (`ASSISTANT_TOOLS_SETTING`) and the MCP tools side by
+side, from `GET /ai-service/mcp/oauth/access-catalog` (areas, `mcp_tools`,
+`assistant_groups` placed by `ASSISTANT_GROUP_PLACEMENT`, and the assistant's
+defaults). Each save reads the stored value first and applies only the screen's
+changes, so keys it does not show are kept:
 
 ```json
 {

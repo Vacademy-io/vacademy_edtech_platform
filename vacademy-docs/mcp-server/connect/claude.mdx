@@ -14,7 +14,7 @@ Menus may move. These steps match Anthropic's help article as of October 2026. I
 ## Before you start
 
 - An admin has turned the server on and allowed your role. See the [Quickstart](/mcp-server/quickstart).
-- You have the **server URL** from **Settings → MCP Server**. It looks like `https://<your backend>/ai-service/mcp/i/<institute_id>`.
+- You have the **server URL** from **Settings → AI access**. It looks like `https://<your backend>/ai-service/mcp/i/<institute_id>`.
 - Custom connectors are available on Claude's Free, Pro, Max, Team and Enterprise plans. Free plans are limited to one custom connector.
 
 ## Pro and Max (your own account)
@@ -102,7 +102,7 @@ Claude's Research mode can call connector tools without asking each time. Turn o
     Remove the connector and add it again. Under **OAuth client**, choose **Register automatically**. You cannot edit a connector in place, so removing and re-adding is the only way to change this.
   </Accordion>
   <Accordion title="Claude asks for a client ID">
-    Choose **Use your own OAuth client** and paste **Your client ID** from **Settings → MCP Server**. It already accepts Claude's callback addresses. Leave the client secret empty.
+    Choose **Use your own OAuth client** and paste **Your client ID** from **Settings → AI access**. It already accepts Claude's callback addresses. Leave the client secret empty.
   </Accordion>
   <Accordion title="Connected, but no tools appear">
     - **No tools at all:** the server is off, the settings were not saved, or your role is not under **Who can connect**.
@@ -115,4 +115,4 @@ Claude's Research mode can call connector tools without asking each time. Turn o
 ## Disconnecting
 
 - **You:** go to **Customize → Connectors** and click **Remove**, or use the three dots next to the connector.
-- **An admin:** can revoke any connection in **Settings → MCP Server → Active connections**. It stops working on its next request.
+- **An admin:** can revoke any connection in **Settings → AI access → Active connections**. It stops working on its next request.

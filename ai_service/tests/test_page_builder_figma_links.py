@@ -88,7 +88,7 @@ def test_the_ai_facing_guidance_is_white_label_and_says_mcp_is_opt_in():
     text = figma_links.FIGMA_LINK_GUIDANCE_FOR_AI
     assert text.startswith("Figma links can't be opened here.") and "upload screenshots of your frames" in text
     assert "Vacademy" not in text and "this institute's MCP connection" in text
-    assert "Settings → MCP Server" in text
+    assert "Settings → AI access" in text
 
 
 # ── reference_url: never screenshotted ───────────────────────────────────────

@@ -16,7 +16,7 @@ Every person signs in as themselves, on your institute's own admin portal. The A
     A **Connect an AI app** page opens on your institute's admin portal, with your institute's name and brand. If they are not signed in, they sign in first, the same way they always do.
   </Step>
   <Step title="They check the request">
-    The page shows which app is asking, which institute it wants, and which site they will be sent back to. It also explains that the app will act as them, within your institute's MCP settings, and that the connection can be ended at any time from **Settings → MCP Server**.
+    The page shows which app is asking, which institute it wants, and which site they will be sent back to. It also explains that the app will act as them, within your institute's MCP settings, and that the connection can be ended at any time from **Settings → AI access**.
 
     <Frame caption="The Connect an AI app page: the app, the institute, and the Approve and Deny buttons.">
       <img src="/mcp-server/images/screenshots/approval-page.svg" alt="Placeholder for a screenshot of the approval page" />
@@ -66,7 +66,7 @@ The connection carries the person's own sign-in. Every tool acts as that person,
 | *You're signed in to a different institute…* | The server URL names another institute than the one the person is signed in to. | Sign in to the institute in the URL, or use your own institute's URL. |
 | *This request has expired or was already handled.* | The 15 minutes passed, or the page was used already. | Start again from the AI app. |
 | *This connection's … session has expired…* | The person's sign-in could not be renewed. | Reconnect from the AI app. |
-| *This token was issued for a different server URL…* | The app was connected with another URL. | Reconnect using the URL from **Settings → MCP Server**. |
+| *This token was issued for a different server URL…* | The app was connected with another URL. | Reconnect using the URL from **Settings → AI access**. |
 
 ## For technical readers
 
@@ -88,10 +88,10 @@ The connection carries the person's own sign-in. Every tool acts as that person,
     5. The server sends the browser to your admin portal's approval page. On approval, the browser returns to the app with a one-time code.
     6. The app exchanges the code and its PKCE verifier at `token` for an access token and a refresh token.
 
-    Copy `<your backend>` and `<institute_id>` from the server URL in **Settings → MCP Server**.
+    Copy `<your backend>` and `<institute_id>` from the server URL in **Settings → AI access**.
   </Accordion>
   <Accordion title="Scope">
-    The server has one scope, `vacademy.read`. It means "may connect". It is not what limits the app to reading or allows it to edit: that is decided per area and per role in **Settings → MCP Server**, and checked on every request.
+    The server has one scope, `vacademy.read`. It means "may connect". It is not what limits the app to reading or allows it to edit: that is decided per area and per role in **Settings → AI access**, and checked on every request.
   </Accordion>
   <Accordion title="Tokens">
     Access and refresh tokens are random, opaque strings (they start with `vcm_at_` and `vcm_rt_`). They carry no readable data. The server stores only a hash of each one. Send the access token as `Authorization: Bearer <token>`. See [Tokens and expiry](/mcp-server/oauth/tokens-and-expiry).

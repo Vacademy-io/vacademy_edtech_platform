@@ -102,9 +102,9 @@ def load_topic(args: Dict[str, Any], usable_specs: List[Any]) -> tuple:
             "error": "topic_not_available",
             "topic": topic,
             "message": (
-                "These tools are not available to this user: the role does not have them in Assistant "
+                "These tools are not available to this user: the role does not have them in the AI access "
                 "settings, or the institute's plan does not include them. Do not retry. Tell the user an "
-                "admin can check [Assistant settings](/settings?selectedTab=assistantTools)."
+                "admin can check [AI access settings](/settings?selectedTab=aiAccess)."
             ),
         }), None
     return json.dumps({
@@ -770,7 +770,7 @@ class AssistantAgentService:
             caps += (
                 " Exists but NOT enabled for this user's role: " + ", ".join(not_enabled) + ". "
                 "If asked for one of these, say the capability exists and an admin can turn it on "
-                "in [Assistant settings](/settings?selectedTab=assistantTools) — never pretend it "
+                "in [AI access settings](/settings?selectedTab=aiAccess) — never pretend it "
                 "doesn't exist, and never claim you did something you cannot do."
             )
 

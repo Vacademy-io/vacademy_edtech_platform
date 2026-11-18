@@ -17,7 +17,7 @@ Menus and commands may change. These steps match the VS Code documentation as of
   <Tab title="Guided">
     1. Open the Command Palette and run **MCP: Add Server**.
     2. Choose **HTTP**.
-    3. Paste the server URL from **Settings → MCP Server** in your admin portal.
+    3. Paste the server URL from **Settings → AI access** in your admin portal.
     4. Name it, for example `vacademy`, and choose whether to save it for your user or this workspace.
   </Tab>
   <Tab title="Edit mcp.json">
@@ -70,5 +70,5 @@ Click **Configure Tools** in the chat input to turn individual Vacademy tools on
 
 Only needed if your organisation requires every app to use a pre-registered client.
 
-1. An admin creates a client ID in **Settings → MCP Server → Client IDs for other apps** with VS Code's redirect URLs. VS Code's developer guide lists `http://127.0.0.1:33418` and `https://vscode.dev/redirect`. Check the [VS Code MCP developer guide](https://code.visualstudio.com/api/extension-guides/ai/mcp) for the current list.
+1. An admin creates a client ID in **Settings → AI access → Client IDs for other apps** with VS Code's redirect URLs. VS Code's developer guide lists `http://127.0.0.1:33418` and `https://vscode.dev/redirect`. Check the [VS Code MCP developer guide](https://code.visualstudio.com/api/extension-guides/ai/mcp) for the current list.
 2. When VS Code asks for a client ID, paste it. There is no client secret.

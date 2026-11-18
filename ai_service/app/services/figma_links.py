@@ -31,7 +31,7 @@ FIGMA_LINK_GUIDANCE = (
 #: platform, and says MCP access may need turning on (it is opt-in per institute).
 FIGMA_LINK_GUIDANCE_FOR_AI = (
     "Figma links can't be opened here. Either upload screenshots of your frames, or use an AI app that has both "
-    "the Figma connector and this institute's MCP connection (an admin can turn MCP on in Settings → MCP Server)."
+    "the Figma connector and this institute's MCP connection (an admin can turn MCP on in Settings → AI access)."
 )
 
 _FIGMA_HOST = r"(?:[a-z0-9-]+\.)*figma\.com(?![a-z0-9-]|\.[a-z0-9])(?::\d+)?"

@@ -319,7 +319,7 @@ async def _authorize_chain(db: Session, settings: Settings) -> Tuple[PinnedPrinc
         raise McpAuthError(
             "wrong_resource",
             "This token was issued for a different server URL. Reconnect using the URL shown "
-            "in your institute's MCP settings.",
+            "in your institute's Settings → AI access.",
         )
 
     try:
@@ -573,7 +573,7 @@ async def _may_read_guides() -> Tuple[bool, str]:
     if principal is None:
         return False, denial
     if not is_tool_allowed(_GUIDE_TOOL, principal, setting_for_tool_gate(setting, principal)):
-        return False, "The website tool is not enabled for you in this institute's MCP settings."
+        return False, "The website tool is not enabled for you in this institute's Settings → AI access."
     if key is not None:
         if len(_guide_grants) >= _GUIDE_GRANT_MAX:
             for k in [k for k, exp in _guide_grants.items() if exp <= now] or list(_guide_grants):

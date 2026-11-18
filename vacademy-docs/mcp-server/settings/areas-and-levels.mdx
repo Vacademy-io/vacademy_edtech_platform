@@ -5,7 +5,7 @@ description: "Set each area to Off, View or Edit, and see exactly what each leve
 icon: "sliders"
 ---
 
-**What AI apps can do** in **Settings → MCP Server** shows one row per area of your institute. Each row has a level:
+**What AI can do** in **Settings → AI access** shows one row per area of your institute. Each row has two controls: one for the **In-product assistant** (the assistant inside your admin portal) and one for **AI apps** connected over MCP. The two are set separately: turning an area on for one does not turn it on for the other. This page is about the **AI apps** column. Each row has a level:
 
 | Level | What it means |
 |---|---|
@@ -13,22 +13,22 @@ icon: "sliders"
 | **View** | The AI app can read this area. It cannot change anything. |
 | **Edit** | The AI app can read the area and make the changes listed in the row. Edit always includes View. |
 
-Areas that have nothing to change only offer **Off** and **View**.
+Areas that have nothing to change only offer **Off** and **View**. An area your plan does not include shows **Not in your plan** instead of a level; anything saved for it is kept.
 
 <Info>
 
 **Words used in the MCP docs**
 
-- **Area**: one row in **What AI apps can do**, such as Website or CRM: Leads.
+- **Area**: one row in **What AI can do**, such as Website or CRM: Leads.
 - **Level**: Off, View or Edit, set per area.
 - **Edit** (or **edit switch**): one change an area offers, with its own switch inside the open row.
 - **Turned on separately**: the settings page's badge for edits that no level or shortcut switches on. We also say **opt-in**.
-- **Admin portal**: your institute's own admin site, where **Settings → MCP Server** lives.
+- **Admin portal**: your institute's own admin site, where **Settings → AI access** lives.
 </Info>
 
 ## Open a row to see the details
 
-Click a row's name to open it. Inside you see:
+Click a row's name to open it. Inside you see the in-product assistant's capabilities on one side and, for AI apps:
 
 - what **View** shows, in one sentence;
 - each change the area offers, with a [risk badge](/mcp-server/settings/risk-levels) such as **Drafts only** or **Changes live**;
@@ -40,7 +40,7 @@ If every change in an area is turned on separately (for example **Learners**), c
 
 ## The two shortcuts
 
-At the top of the list:
+Above the list, next to **AI apps**:
 
 - **View only** sets every area to View and turns every change off, including the ones turned on separately.
 - **Turn everything on** sets every area to Edit with all its changes, **except** the ones turned on separately. Those keep whatever state they had.
@@ -186,7 +186,7 @@ Always on. Not a setting. The AI app can read the connected person's name and co
 
 ## CRM areas
 
-The CRM areas bring your leads, calls, meetings and messages to the AI app. They show in **Settings → MCP Server** for every institute, but the AI app gets CRM tools only when your plan includes the CRM. Without it, the tools do not appear (or answer `module_not_enabled` if called). They follow the same Off / View / Edit model, with three extra rules:
+The CRM areas bring your leads, calls, meetings and messages to the AI app. They show in **Settings → AI access** for every institute, but the AI app gets CRM tools only when your plan includes the CRM. Without it, the tools do not appear (or answer `module_not_enabled` if called). They follow the same Off / View / Edit model, with three extra rules:
 
 - **Every CRM change is turned on separately.** Choosing **Edit** on a CRM area turns nothing on by itself. You switch on each change.
 - **Each person sees the leads their admin portal shows them.** A counsellor sees their own leads, or their team's if they manage one. An admin sees the whole institute. Some actions are for admins only.

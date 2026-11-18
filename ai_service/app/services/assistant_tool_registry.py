@@ -2926,12 +2926,12 @@ async def execute_tool(
         )
         spec_denied = ASSISTANT_TOOLS.get(tool_name)
         if via_mcp:
-            from ..mcp.constants import MCP_SETTINGS_PATH, MCP_TOOL_GROUP_LABELS
+            from ..mcp.constants import AI_ACCESS_SETTINGS_NAME, MCP_SETTINGS_PATH, MCP_TOOL_GROUP_LABELS
             key = spec_denied.key(via_mcp=True) if spec_denied else tool_name
-            group, where = MCP_TOOL_GROUP_LABELS.get(key, key), f"MCP settings ({MCP_SETTINGS_PATH})"
+            group, where = MCP_TOOL_GROUP_LABELS.get(key, key), f"{AI_ACCESS_SETTINGS_NAME} ({MCP_SETTINGS_PATH})"
         else:
             group = GROUP_LABELS.get(spec_denied.key(), spec_denied.key()) if spec_denied else tool_name
-            where = "[Assistant settings](/settings?selectedTab=assistantTools)"
+            where = "[AI access settings](/settings?selectedTab=aiAccess)"
         return json.dumps({
             "error": "tool_not_permitted",
             "tool": tool_name,

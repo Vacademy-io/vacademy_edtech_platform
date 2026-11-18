@@ -521,7 +521,7 @@ async def _action_save_draft(args: Dict[str, Any], ctx: ToolContext) -> Dict[str
     if not ctx.may_use(WEBSITE_EDIT_TOOL_NAME):
         return _err("tool_not_permitted", tool=WEBSITE_EDIT_TOOL_NAME, message=(
             "Saving a draft needs the 'Website: edit drafts' capability (website_edit), which is not enabled for "
-            "this user's role. Hand the admin the plan instead, or ask them to enable it under MCP settings."))
+            "this user's role. Hand the admin the plan instead, or ask them to enable it under Settings → AI access."))
     import_id = str(args.get("import_id") or "").strip().lower()
     if not _IMPORT_ID_RE.match(import_id):
         return _err("missing_argument", action="save_draft", needs=["import_id"],

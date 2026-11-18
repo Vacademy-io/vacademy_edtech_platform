@@ -82,8 +82,7 @@ export const SETTINGS_TAB_FEATURES: Readonly<Record<SettingsTabs, readonly strin
     [SettingsTabs.AiSettings]: null,
     [SettingsTabs.ScheduledReports]: null,
     [SettingsTabs.BatchReports]: null,
-    [SettingsTabs.AssistantTools]: null,
-    [SettingsTabs.McpServer]: null,
+    [SettingsTabs.AiAccess]: null,
     // ── LMS ──
     [SettingsTabs.Course]: ['lms.courses'], // COURSE_SETTING
     [SettingsTabs.Lms]: ['lms.courses'], // LMS_SETTING

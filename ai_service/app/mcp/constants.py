@@ -18,8 +18,16 @@ from typing import Any, Dict, Tuple
 #:     }
 MCP_SERVER_SETTING_KEY = "MCP_SERVER_SETTING"
 
+#: Deep link to Settings → AI access, where admins configure both the in-product
+#: assistant and AI apps connected over MCP. The dashboard still opens the older
+#: tab ids (assistantTools, mcpServer) on this screen.
+AI_ACCESS_SETTINGS_PATH = "/settings?selectedTab=aiAccess"
+
 #: Deep link the denial messages point admins at.
-MCP_SETTINGS_PATH = "/settings?selectedTab=mcpServer"
+MCP_SETTINGS_PATH = AI_ACCESS_SETTINGS_PATH
+
+#: How texts name that screen.
+AI_ACCESS_SETTINGS_NAME = "Settings → AI access"
 
 #: The ONLY registry tools this server exposes. Everything else in
 #: ASSISTANT_TOOLS stays invisible and uncallable over MCP regardless of any
@@ -711,6 +719,37 @@ MCP_OPT_IN_GROUPS = frozenset({"website_data_edits", "website_publish",
                                "crm_calling_outbound", "crm_ai_campaigns", "crm_meeting_edits",
                                "crm_messaging_outbound", "crm_payment_reminders"})
 
+#: Where each in-product assistant settings group sits on the same settings page,
+#: so Settings → AI access shows one row per area with the assistant and AI apps
+#: side by side. Keys are ASSISTANT_TOOLS_SETTING groups (``ToolSpec.key()``);
+#: the order here is the order within an area. Only these groups are offered as
+#: assistant switches; any other saved group is left as it is.
+#:   level: "view" reads; "edit" proposes changes the user confirms in the assistant
+ASSISTANT_GROUP_PLACEMENT: Dict[str, Dict[str, str]] = {
+    "identity": {"area": "identity", "level": "view"},
+    "search_help_knowledge": {"area": "help", "level": "view"},
+    "institute_overview": {"area": "institute", "level": "view"},
+    "website_builder": {"area": "website", "level": "view"},
+    "website_builder_edits": {"area": "website", "level": "edit"},
+    "audience_forms": {"area": "lead_forms", "level": "view"},
+    "audience_forms_edits": {"area": "lead_forms", "level": "edit"},
+    "workflows": {"area": "automations", "level": "view"},
+    "workflows_edits": {"area": "automations", "level": "edit"},
+    "learner_data": {"area": "learners", "level": "view"},
+    "learner_edits": {"area": "learners", "level": "edit"},
+    "batch_data": {"area": "batches", "level": "view"},
+    "assessments": {"area": "assessments", "level": "view"},
+    "schedule": {"area": "live_classes", "level": "view"},
+    "payments": {"area": "fees", "level": "view"},
+    "announcements": {"area": "announcements", "level": "edit"},
+    "crm_leads": {"area": "crm_leads", "level": "view"},
+    "crm_calls": {"area": "crm_calls", "level": "view"},
+    "crm_meetings": {"area": "crm_meetings", "level": "view"},
+    "crm_messages": {"area": "crm_messages", "level": "view"},
+    "crm_reports": {"area": "crm_reports", "level": "view"},
+    "crm_collections": {"area": "crm_payments", "level": "view"},
+}
+
 #: Roles that must NEVER reach this server, even if an admin lists them. The MCP
 #: surface is staff-only by product decision.
 LEARNER_ROLES = frozenset({"STUDENT", "LEARNER", "PARENT"})
@@ -761,12 +800,12 @@ DENY_ROLE = "role_not_allowed"
 DENIAL_MESSAGES = {
     DENY_DISABLED: (
         "The MCP server is not enabled for this institute. An admin can turn it on "
-        f"under MCP settings ({MCP_SETTINGS_PATH})."
+        f"under {AI_ACCESS_SETTINGS_NAME} ({MCP_SETTINGS_PATH})."
     ),
     DENY_LEARNER: "The MCP server is available to institute staff only.",
     DENY_ROLE: (
         "This user's role is not allowed to connect to the MCP server. An admin can "
-        f"grant the role under MCP settings ({MCP_SETTINGS_PATH})."
+        f"grant the role under {AI_ACCESS_SETTINGS_NAME} ({MCP_SETTINGS_PATH})."
     ),
 }
 
@@ -862,6 +901,9 @@ def tool_timeout_payload(limit_s: int = TOOL_LANE_DEADLINE_S) -> Dict[str, Any]:
 
 __all__ = [
     "MCP_SERVER_SETTING_KEY",
+    "AI_ACCESS_SETTINGS_PATH",
+    "AI_ACCESS_SETTINGS_NAME",
+    "ASSISTANT_GROUP_PLACEMENT",
     "MCP_SETTINGS_PATH",
     "MCP_EXPOSED_TOOLS",
     "MCP_ALLOWED_WRITE_TOOLS",

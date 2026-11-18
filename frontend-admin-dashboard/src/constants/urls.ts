@@ -41,12 +41,14 @@ export const ASSISTANT_ACTION_CANCEL = (sessionId: string, actionId: string) =>
     `${AI_SERVICE_BASE_URL}/assistant/session/${sessionId}/action/${actionId}/cancel`;
 export const ASSISTANT_CAPABILITIES = `${AI_SERVICE_BASE_URL}/assistant/capabilities`;
 
-// Vacademy MCP server (Model Context Protocol). These back the MCP settings tab
+// Vacademy MCP server (Model Context Protocol). These back Settings → AI access
 // and the OAuth consent page; all require Authorization + clientId headers
 // except MCP_OAUTH_TXN, which the consent page reads before the user logs in.
 // See ai_service app/mcp/consent.py.
 export const MCP_OAUTH_BASE = `${AI_SERVICE_BASE_URL}/mcp/oauth`;
 export const MCP_CONNECTION_INFO = `${MCP_OAUTH_BASE}/connection-info`;
+/** Settings → AI access: both doors' capabilities per area (assistant groups + MCP tools). */
+export const AI_ACCESS_CATALOG = `${MCP_OAUTH_BASE}/access-catalog`;
 export const MCP_OAUTH_CONSENT = `${MCP_OAUTH_BASE}/consent`;
 export const MCP_OAUTH_TXN = (txn: string) => `${MCP_OAUTH_BASE}/txn/${txn}`;
 export const MCP_MANUAL_CLIENT = `${MCP_OAUTH_BASE}/manual-client`;
