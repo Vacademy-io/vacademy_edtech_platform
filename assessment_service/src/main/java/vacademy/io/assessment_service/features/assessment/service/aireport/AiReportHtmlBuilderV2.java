@@ -33,39 +33,88 @@ public class AiReportHtmlBuilderV2 {
     static final int CONTENT_W = 722;
     static final int HALF_W = 340;
 
+    /**
+     * Drawing widths of the full-width charts in the on-screen report. A chart is scaled down to
+     * fit a phone, so drawing it narrower than the A4 page keeps its labels readable there.
+     */
+    static final int WEB_CHART_W = 520;
+    static final int WEB_RADAR_W = 560;
+    static final int WEB_BLOOM_W = 600;
+
+    /** Web fonts for the on-screen report: the same families the PDF embeds (see fonts/report/README.md). */
+    private static final String WEB_FONTS = "<link rel=\"stylesheet\" href=\"https://fonts.googleapis.com/css2?"
+            + "family=Baloo+2:wght@600;700;800&family=Mukta:wght@400;700&family=Noto+Sans+Math&display=swap\"/>";
+
+    /** The A4 PDF. */
     public String build(AiReportModel m) {
+        return render(m, false);
+    }
+
+    /**
+     * The same report for a screen (the learner app's AI analysis tab): the same sections, text,
+     * numbers and charts as the PDF, as one scrolling page with a single header and no page
+     * breaks. Extra CSS stacks the two-column parts on a phone. The screen and the download
+     * therefore never drift apart.
+     */
+    public String buildWeb(AiReportModel m) {
+        return render(m, true);
+    }
+
+    private String render(AiReportModel m, boolean web) {
         ReportPalette p = new ReportPalette(m.getBrandColor(), m.getAccentColor());
         JsonNode ai = m.getAi();
 
         List<String> pages = new ArrayList<>();
-        pages.add(page1(m, p, ai));
+        pages.add(page1(m, p, ai, web));
         boolean qw = !m.isHideQuestionWise();
-        addIfAny(pages, page(m, p, false, blocks(classBlock(m, p), timeBlock(m, p), qw ? answerMapBlock(m, p) : "")));
-        addIfAny(pages, page(m, p, false, topicsBlock(ai, p)));
-        addIfAny(pages, page(m, p, false, blocks(bloomBlock(ai, p), qw ? easyMarksBlock(m, p, ai) : "", qw ? expertiseBlock(m, p) : "", potentialBlock(m, p))));
-        addIfAny(pages, page(m, p, false, behaviourBlock(m, p, ai)));
-        String fix = qw ? fixBlock(m, ai, p) : "", plan = planBlock(ai, p), cards = cardsAndProgress(m, p, ai);
+        // Page 1 already shows the answer map when there is no section scorecard; print it once.
+        boolean mapOnPage1 = qw && m.getSections().size() < 2;
+        addIfAny(pages, page(m, p, false, web, blocks(classBlock(m, p, web), timeBlock(m, p, web), qw && !mapOnPage1 ? answerMapBlock(m, p) : "")));
+        addIfAny(pages, page(m, p, false, web, topicsBlock(ai, p, web)));
+        addIfAny(pages, page(m, p, false, web, blocks(bloomBlock(ai, p, web), qw ? easyMarksBlock(m, p, ai) : "", qw ? expertiseBlock(m, p) : "", potentialBlock(m, p))));
+        addIfAny(pages, page(m, p, false, web, behaviourBlock(m, p, ai)));
+        String fix = qw ? fixBlock(m, ai, p) : "", plan = planBlock(ai, p), cards = cardsAndProgress(m, p, ai, web);
         if ((qw ? estimateFix(ai) : 0) + estimatePlan(ai) + (cards.isEmpty() ? 0 : 300) <= 960) {
-            addIfAny(pages, page(m, p, false, blocks(fix, plan, cards)));
+            addIfAny(pages, page(m, p, false, web, blocks(fix, plan, cards)));
         } else {
-            addIfAny(pages, page(m, p, false, fix));
-            addIfAny(pages, page(m, p, false, blocks(plan, cards)));
+            addIfAny(pages, page(m, p, false, web, fix));
+            addIfAny(pages, page(m, p, false, web, blocks(plan, cards)));
         }
 
-        if (qw) addIfAny(pages, page(m, p, false, questionByQuestion(m, p)));
+        if (qw) addIfAny(pages, page(m, p, false, web, questionByQuestion(m, p)));
 
         StringBuilder html = new StringBuilder(64 * 1024);
-        html.append("<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/><style>").append(css(m, p)).append("</style></head><body>");
+        html.append("<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/>");
+        if (web) html.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"/>").append(WEB_FONTS);
+        html.append("<style>").append(css(m, p));
+        if (web) html.append(webCss());
+        html.append("</style></head><body>");
+        if (web) html.append("<div class=\"sheet\">");
         for (int i = 0; i < pages.size(); i++) {
-            html.append("<div class=\"page").append(i > 0 ? " break" : "").append("\">").append(pages.get(i)).append("</div>");
+            html.append("<div class=\"page").append(i > 0 && !web ? " break" : "").append("\">").append(pages.get(i)).append("</div>");
         }
+        if (web) html.append("</div>");
         html.append("</body></html>");
-        return html.toString();
+        return web ? withFontFallbacks(html.toString()) : html.toString();
+    }
+
+    /**
+     * iText gets its fonts from the bundled files, so the PDF CSS names one family with no
+     * fallback. A browser loads them from the web, and until they arrive (or if they never do)
+     * it would fall back to its default serif. Add sans-serif fallbacks for the screen.
+     */
+    static String withFontFallbacks(String html) {
+        return html
+                .replace("font-family:'Baloo 2';", "font-family:'Baloo 2',Mukta,sans-serif;")
+                .replace("font-family:Mukta;", "font-family:Mukta,sans-serif;")
+                .replace("font-family:'Noto Sans Math'\"", "font-family:'Noto Sans Math',sans-serif\"")
+                .replace("font-family=\"" + DISPLAY_FONT + "\"", "font-family=\"'" + DISPLAY_FONT + "', " + BODY_FONT + ", sans-serif\"")
+                .replace("font-family=\"" + BODY_FONT + "\"", "font-family=\"" + BODY_FONT + ", sans-serif\"");
     }
 
     // ── Page 1: result ──
 
-    private String page1(AiReportModel m, ReportPalette p, JsonNode ai) {
+    private String page1(AiReportModel m, ReportPalette p, JsonNode ai, boolean web) {
         StringBuilder s = new StringBuilder();
         s.append(band(m, p, true));
         s.append(hero(m, p));
@@ -83,7 +132,7 @@ public class AiReportHtmlBuilderV2 {
             s.append(block("Marks by section", head,
                     "Each bar is your score as a share of that section's marks." + (m.hasClass() ? " The dark tick is the class average." : ""),
                     legend(p, m.hasClass(), m.getSections().stream().anyMatch(r -> r.score() < 0))
-                            + sectionScorecard(m.getSections(), p, CONTENT_W)));
+                            + sectionScorecard(m.getSections(), p, web ? WEB_CHART_W : CONTENT_W)));
         } else if (!m.isHideQuestionWise()) {
             s.append(answerMapBlock(m, p));
         }
@@ -126,7 +175,7 @@ public class AiReportHtmlBuilderV2 {
         s.append("<div class=\"h1\">").append(esc(heroHeadline(m))).append("</div>");
         String sub = heroSubline(m);
         if (!sub.isEmpty()) s.append("<div class=\"hero-p\">").append(esc(sub)).append("</div>");
-        s.append("</td><td class=\"hero-r\"><div class=\"big\">").append(num(m.getScore()))
+        s.append("</td><td class=\"hero-r\"><div class=\"big\"").append(bigScoreFit(m)).append(">").append(num(m.getScore()))
                 .append("<span class=\"big-of\">/").append(num(m.getMaxScore())).append("</span></div>");
         if (m.hasClass() && m.getParticipants() >= 5) {
             s.append("<div class=\"big-sub\">Rank ").append(m.getRank()).append(" of ").append(m.getParticipants()).append("</div>");
@@ -160,6 +209,34 @@ public class AiReportHtmlBuilderV2 {
         }
         s.append("</tr></table></div>");
         return s.toString();
+    }
+
+    /** Advance widths of "0123456789.−" in Baloo 2 ExtraBold at 96px and Baloo 2 Bold at 30px ("/" is 10px). */
+    private static final String SCORE_CHARS = "0123456789.−";
+    private static final double[] BIG_W = {58.2, 37.7, 50.1, 49.7, 57.8, 50.1, 53.6, 46.3, 53.8, 53.6, 22.8, 48.5};
+    private static final double[] OF_W = {18.0, 11.5, 15.6, 15.4, 17.7, 15.8, 16.7, 14.3, 16.9, 16.7, 6.4, 15.2};
+    static final int BIG_BOX_W = 228;
+
+    /**
+     * A smaller font for the big score, only when two-decimal marks (12.25/30) make it wider than
+     * its 230px box. Scores that print as they did before (12.3, 98.5) keep the 96px size exactly.
+     */
+    static String bigScoreFit(AiReportModel m) {
+        String score = num(m.getScore()), max = num(m.getMaxScore());
+        if (score.equals(oneDecimal(m.getScore())) && max.equals(oneDecimal(m.getMaxScore()))) return "";
+        double big = width(score, BIG_W), of = 10.0 + width(max, OF_W);
+        if (big + of <= BIG_BOX_W) return "";
+        long px = Math.max(56, (long) Math.floor(96 * (BIG_BOX_W - of) / big));
+        return " style=\"font-size:" + px + "px\"";
+    }
+
+    private static double width(String text, double[] widths) {
+        double w = 0;
+        for (char c : text.toCharArray()) {
+            int i = SCORE_CHARS.indexOf(c);
+            w += i >= 0 ? widths[i] : widths[0];
+        }
+        return w;
     }
 
     private String tile(String value, String label, String color) {
@@ -205,7 +282,7 @@ public class AiReportHtmlBuilderV2 {
 
     // ── Page 2: class ──
 
-    private String classBlock(AiReportModel m, ReportPalette p) {
+    private String classBlock(AiReportModel m, ReportPalette p, boolean web) {
         if (!m.hasClass() || m.getParticipants() < 5) return "";
         List<Double> all = new ArrayList<>(m.getClassScores());
         Collections.sort(all);
@@ -215,13 +292,13 @@ public class AiReportHtmlBuilderV2 {
                 : "Where your " + num(m.getScore()) + " sits in the class";
         return block("Where you stand", head,
                 "How many of the " + m.getParticipants() + " students scored in each range. Other students are counted, never named.",
-                histogram(m.getClassScores(), m.getScore(), m.getMaxScore(), m.getClassAverage(), p, CONTENT_W));
+                histogram(m.getClassScores(), m.getScore(), m.getMaxScore(), m.getClassAverage(), p, web ? WEB_CHART_W : CONTENT_W));
     }
 
-    private String timeBlock(AiReportModel m, ReportPalette p) {
+    private String timeBlock(AiReportModel m, ReportPalette p, boolean web) {
         List<SectionRow> secs = m.getSections();
         if (secs.size() < 2 || secs.stream().mapToLong(SectionRow::timeSeconds).sum() <= 0) return "";
-        String chart = timeBySection(secs, m.getDurationLimitMinutes(), p, CONTENT_W);
+        String chart = timeBySection(secs, m.getDurationLimitMinutes(), p, web ? WEB_CHART_W : CONTENT_W);
         if (chart.isEmpty()) return "";
         boolean hasClass = secs.stream().allMatch(r -> r.classAverageTimeSeconds() != null);
         String head = "Where your time went";
@@ -299,7 +376,7 @@ public class AiReportHtmlBuilderV2 {
 
     // ── Page 3: topics and Bloom's ──
 
-    private String topicsBlock(JsonNode ai, ReportPalette p) {
+    private String topicsBlock(JsonNode ai, ReportPalette p, boolean web) {
         JsonNode topics = ai.path("topic_analysis");
         List<String[]> strong = new ArrayList<>(), weak = new ArrayList<>();
         List<Double> strongAcc = new ArrayList<>(), weakAcc = new ArrayList<>();
@@ -331,7 +408,7 @@ public class AiReportHtmlBuilderV2 {
         List<TopicPoint> radar = new ArrayList<>();
         for (int i = 0; i < strong.size(); i++) radar.add(new TopicPoint(strong.get(i)[0], strongAcc.get(i)));
         for (int i = 0; i < weak.size(); i++) radar.add(new TopicPoint(weak.get(i)[0], weakAcc.get(i)));
-        String chart = topicRadar(radar, p, CONTENT_W);
+        String chart = topicRadar(radar, p, web ? WEB_RADAR_W : CONTENT_W);
         String body = chart + "<table class=\"cols\"><tr><td class=\"col\">" + topicColumn("Strengths", strong, strongAcc, p, true)
                 + "</td><td class=\"col-gap\"></td><td class=\"col\">" + topicColumn("Needs work", weak, weakAcc, p, false) + "</td></tr></table>";
         return block("Topic mastery", head, "Questions right in each topic, with a 4-step mastery level: Beginner, Developing, Proficient, Expert.", body);
@@ -378,7 +455,7 @@ public class AiReportHtmlBuilderV2 {
             {"remember", "Remember", "recalling facts and names"},
     };
 
-    private String bloomBlock(JsonNode ai, ReportPalette p) {
+    private String bloomBlock(JsonNode ai, ReportPalette p, boolean web) {
         JsonNode b = ai.path("blooms_taxonomy");
         if (!b.isObject()) return "";
         Map<String, JsonNode> byKey = new HashMap<>();
@@ -405,7 +482,7 @@ public class AiReportHtmlBuilderV2 {
                 : "Thinking skills across the paper";
         return block("Bloom's taxonomy", head,
                 "Each question is tagged with the kind of thinking it needs, from remembering at the base to creating at the top.",
-                bloomPyramid(levels, p, CONTENT_W));
+                bloomPyramid(levels, p, web ? WEB_BLOOM_W : CONTENT_W));
     }
 
     private static String verb(String level) {
@@ -757,7 +834,7 @@ public class AiReportHtmlBuilderV2 {
         return block("This week's plan", head, "Tick each step when it's done.", s.toString());
     }
 
-    private String cardsAndProgress(AiReportModel m, ReportPalette p, JsonNode ai) {
+    private String cardsAndProgress(AiReportModel m, ReportPalette p, JsonNode ai, boolean web) {
         JsonNode cards = ai.path("flashcards");
         boolean hasCards = cards.isArray() && !cards.isEmpty();
         boolean hasHistory = m.getHistory() != null && m.getHistory().size() >= 2;
@@ -769,7 +846,7 @@ public class AiReportHtmlBuilderV2 {
             double first = h.get(0).percent(), last = h.get(h.size() - 1).percent();
             String head = last >= first + 5 ? "Your scores are rising" : last <= first - 5 ? "Lower than your earlier tests" : "Holding steady";
             progressHtml = titled("Progress", head, "Your score as a percentage in your last " + h.size() + " tests here.",
-                    progress(h, p, hasCards ? HALF_W : CONTENT_W));
+                    progress(h, p, hasCards ? HALF_W : web ? WEB_CHART_W : CONTENT_W));
         }
         if (hasCards && hasHistory) {
             return "<table class=\"cols\"><tr><td class=\"col\">" + titled("Flashcards", "Cut, fold, test yourself", null, cardsHtml)
@@ -830,9 +907,10 @@ public class AiReportHtmlBuilderV2 {
 
     // ── Building blocks ──
 
-    private String page(AiReportModel m, ReportPalette p, boolean first, String content) {
+    private String page(AiReportModel m, ReportPalette p, boolean first, boolean web, String content) {
         if (content.isBlank()) return "";
-        return band(m, p, first) + "<div class=\"body\">" + content + "</div>";
+        // On screen the report is one page: only page 1 carries the header band.
+        return (web ? "" : band(m, p, first)) + "<div class=\"body\">" + content + "</div>";
     }
 
     private static void addIfAny(List<String> pages, String page) {
@@ -1016,6 +1094,54 @@ public class AiReportHtmlBuilderV2 {
                 + ".qc-f{font-size:11.5px;color:" + INK + ";padding-bottom:5px !important;}"
                 + ".qc-m{font-size:11px;color:" + MUTED + ";padding-bottom:7px !important;}"
                 + ".qc-x{font-size:11.5px;line-height:1.45;color:" + INK + ";background:" + p.brand50 + ";padding:7px 12px !important;}";
+    }
+
+    /**
+     * Browser-only additions for {@link #buildWeb}: an A4-wide centred sheet, charts that shrink
+     * to fit, and on a phone every two-column table (hero, tiles, columns, fix cards, answers,
+     * flashcards) stacked into one column. Flex is fine here; iText never sees this CSS.
+     */
+    private static String webCss() {
+        return "html{-webkit-text-size-adjust:100%;}"
+                + "body{background:" + PAPER + ";}"
+                + ".sheet{max-width:794px;margin:0 auto;padding-bottom:24px;overflow-x:hidden;}"
+                + "svg{max-width:100%;height:auto;}"
+                + ".tiles{width:calc(100% + 16px);}"
+                + ".quad{width:calc(100% + 12px);}"
+                + "@media (max-width:640px){"
+                + ".band td{padding:10px 0;}"
+                + ".band-logo{width:1% !important;padding-left:16px !important;padding-right:12px !important;}"
+                + ".band-right{padding-right:16px !important;}"
+                + ".band-i1,.band-r1{font-size:14px;}"
+                + ".band-i2,.band-r2{font-size:10.5px;}"
+                + ".hero{padding:2px 16px 18px 16px;}"
+                + ".hero-t,.hero-t>tbody,.hero-t>tbody>tr,.hero-t>tbody>tr>td{display:block;width:auto;}"
+                + ".hero-l{padding-right:0;}"
+                + ".hero-r{text-align:left;padding-top:6px;}"
+                + ".h1{font-size:30px;}"
+                + ".big{font-size:60px !important;}"
+                + ".big-of{font-size:22px;}"
+                + ".pct-top,.pct-top>tbody,.pct-top>tbody>tr,.pct-top>tbody>tr>td{display:block;width:auto;text-align:left !important;}"
+                + ".tiles,.tiles>tbody{display:block;width:auto;margin:14px 0 0 0;}"
+                + ".tiles>tbody>tr{display:flex;flex-wrap:wrap;gap:8px;}"
+                + ".tiles>tbody>tr>td{display:block;flex:1 1 40%;}"
+                + ".pot{margin:4px 0 0 0;}"
+                + ".body{padding:16px 16px 0 16px;}"
+                + ".h3{font-size:19px;}"
+                + ".cols,.cols>tbody,.cols>tbody>tr,.cols>tbody>tr>td{display:block;width:auto !important;}"
+                + ".col-gap{display:none !important;}"
+                + ".amap,.amap>tbody,.amap>tbody>tr,.amap>tbody>tr>td{display:block;width:auto;}"
+                + ".amap-l{padding-top:0 !important;margin-bottom:4px;}"
+                + ".miss-r{width:110px;}"
+                + ".fix,.fix>tbody,.fix>tbody>tr,.fix>tbody>tr>td{display:block;width:auto !important;}"
+                + ".qc-at,.qc-at>tbody,.qc-at>tbody>tr,.qc-at>tbody>tr>td{display:block;width:auto;}"
+                + ".plan-box{width:34px;padding-left:10px !important;}"
+                + ".plan-time{width:64px;}"
+                + ".cards,.cards>tbody,.cards>tbody>tr,.cards>tbody>tr>td{display:block;width:auto;}"
+                + ".card-cell{padding-right:0;margin-bottom:10px;}"
+                + ".quad{border-spacing:4px;margin:0 -4px;width:calc(100% + 8px);}"
+                + ".qd-n{font-size:24px;}"
+                + "}";
     }
 
     // ── Text helpers ──

@@ -99,7 +99,7 @@ final class AiReportCharts {
             if (neg && i == 0) label = "below 0";
             else {
                 int k = neg ? i - 1 : i;
-                label = num(max * k / 10.0) + "–" + num(max * (k + 1) / 10.0);
+                label = oneDecimal(max * k / 10.0) + "–" + oneDecimal(max * (k + 1) / 10.0);
             }
             s.append(text(bx + barW / 2, base + 17, label, nb > 10 ? 10.5 : 11.5, me ? 700 : 400, me ? p.brandInk : MUTED, "middle"));
         }
@@ -280,28 +280,55 @@ final class AiReportCharts {
     static String waterfall(double earned, double lost, double score, Double withoutGuesses, int guesses,
                             ReportPalette p, int w) {
         int h = 222;
-        double base = 180, maxV = Math.max(earned, 1), scale = 150 / maxV;
+        boolean dashed = withoutGuesses != null && guesses > 0;
+        // One scale from the highest point (marks earned) to the lowest (a total below zero).
+        // Scaling by the marks earned alone sent the lost-marks bar off the chart and over its
+        // labels whenever nothing was right or the total was negative.
+        double hi = Math.max(0, earned), lo = Math.min(0, Math.min(score, earned + lost));
+        if (dashed) {
+            hi = Math.max(hi, withoutGuesses);
+            lo = Math.min(lo, withoutGuesses);
+        }
+        if (hi - lo < 1) hi = lo + 1;
+        final double plotTop = 30, plotBottom = 180, top = hi, scale = (plotBottom - plotTop) / (hi - lo);
+        java.util.function.DoubleUnaryOperator y = v -> plotTop + (top - v) * scale;
+        double y0 = y.applyAsDouble(0), yEarned = y.applyAsDouble(earned), yAfter = y.applyAsDouble(earned + lost);
+        double yScore = y.applyAsDouble(score);
+
         double bw = 64, gap = (w - 3 * bw) / 4;
         double xa = gap, xb = gap * 2 + bw, xc = gap * 3 + bw * 2;
         StringBuilder s = new StringBuilder();
-        s.append(line(8, base, w - 4, base, LINE, 1.5, null));
-        double ha = earned * scale, hl = Math.abs(lost) * scale, hc = Math.max(0, score) * scale;
-        s.append(rect(xa, base - ha, bw, ha, 6, OK));
-        s.append(rect(xb, base - ha, bw, Math.max(3, hl), 3, BAD));
-        if (hc > 0) s.append(rect(xc, base - hc, bw, hc, 6, p.brand));
-        s.append(line(xa + bw, base - ha, xb, base - ha, MUTED, 1, "2 3"));
-        s.append(line(xb + bw, base - ha + hl, xc, base - ha + hl, MUTED, 1, "2 3"));
-        s.append(textD(xa + bw / 2, base - ha - 8, num(earned), 16, OK));
-        s.append(textD(xb + bw / 2, base - ha - 8, "−" + num(Math.abs(lost)), 16, BAD));
-        s.append(textD(xc + bw / 2, hc > 40 ? base - hc + 24 : base - hc - 8, num(score), 16, hc > 40 ? p.onBrand : INK));
-        if (withoutGuesses != null && guesses > 0) {
-            double yg = base - withoutGuesses * scale;
-            s.append(line(xc - 6, yg, xc + bw + 6, yg, INK, 1.5, "4 3"));
-            s.append(text(xc + bw + 10, yg + 4, num(withoutGuesses), 12.5, 700, INK, "start"));
+        s.append(line(8, y0, w - 4, y0, LINE, 1.5, null));
+        if (y0 - yEarned > 0) s.append(rect(xa, yEarned, bw, y0 - yEarned, 6, OK));
+        s.append(rect(xb, yEarned, bw, Math.max(3, yAfter - yEarned), 3, BAD));
+        double hc = y0 - yScore;
+        if (hc > 0) s.append(rect(xc, yScore, bw, hc, 6, p.brand));
+        else if (hc < 0) s.append(rect(xc, y0, bw, -hc, 3, BAD_50));
+        s.append(line(xa + bw, yEarned, xb, yEarned, MUTED, 1, "2 3"));
+        s.append(line(xb + bw, yAfter, xc, yAfter, MUTED, 1, "2 3"));
+        s.append(textD(xa + bw / 2, yEarned - 8, num(earned), 16, OK));
+        s.append(textD(xb + bw / 2, yEarned - 8, "−" + num(Math.abs(lost)), 16, BAD));
+        if (hc >= 0) {
+            s.append(textD(xc + bw / 2, hc > 40 ? yScore + 24 : yScore - 8, num(score), 16, hc > 40 ? p.onBrand : INK));
+        } else {
+            s.append(textD(xc + bw / 2, y0 - 8, num(score), 16, BAD));
         }
-        s.append(text(xa + bw / 2, base + 18, "right answers", 11.5, 400, MUTED, "middle"));
-        s.append(text(xb + bw / 2, base + 18, "wrong answers", 11.5, 400, MUTED, "middle"));
-        s.append(text(xc + bw / 2, base + 18, "your score", 11.5, 400, MUTED, "middle"));
+        if (dashed) {
+            double yg = y.applyAsDouble(withoutGuesses);
+            String label = num(withoutGuesses);
+            s.append(line(xc - 6, yg, xc + bw + 6, yg, INK, 1.5, "4 3"));
+            // Beside the line when it fits (as before), else right-aligned just above it so a
+            // longer label such as "−0.25" is not cut at the edge. Widths are Mukta Bold at 12.5px.
+            double labelW = label.chars().mapToDouble(ch -> ch == '.' ? 3.2 : 6.9).sum();
+            if (xc + bw + 10 + labelW <= w) {
+                s.append(text(xc + bw + 10, yg + 4, label, 12.5, 700, INK, "start"));
+            } else {
+                s.append(text(w - 2, yg - 5, label, 12.5, 700, INK, "end"));
+            }
+        }
+        s.append(text(xa + bw / 2, plotBottom + 18, "right answers", 11.5, 400, MUTED, "middle"));
+        s.append(text(xb + bw / 2, plotBottom + 18, "wrong answers", 11.5, 400, MUTED, "middle"));
+        s.append(text(xc + bw / 2, plotBottom + 18, "your score", 11.5, 400, MUTED, "middle"));
         return svg(w, h, s);
     }
 
@@ -516,8 +543,27 @@ final class AiReportCharts {
         return max > 0 ? 100.0 * score / max : 0;
     }
 
-    /** Marks: whole numbers without a decimal, otherwise one decimal; a real minus sign. */
+    /**
+     * Marks: whole numbers without a decimal, otherwise up to two decimals (0.25, 1.5, 0.33);
+     * a real minus sign. One decimal printed a quarter-mark penalty of −0.25 as "−0.2"
+     * (Math.round(−2.5) is −2), so six wrong answers read as −1.2 beside a score of −1.5.
+     * The magnitude is rounded, so a value and its negative always print alike.
+     */
     static String num(double v) {
+        long hundredths = Math.round(Math.abs(v) * 100);
+        if (hundredths == 0) return "0";
+        String s = hundredths % 100 == 0 ? String.valueOf(hundredths / 100)
+                : java.math.BigDecimal.valueOf(hundredths, 2).stripTrailingZeros().toPlainString();
+        return (v < 0 ? "−" : "") + s;
+    }
+
+    /**
+     * The original one-decimal format. It is kept wherever the text must not change: every
+     * report-profile template value (score, max score, percentage, section marks, scholarship
+     * and other variables, the marking note), which cover pages, certificates and result
+     * emails / WhatsApp print, and the class histogram's range labels.
+     */
+    static String oneDecimal(double v) {
         double r = Math.round(v * 10) / 10.0;
         String s = Math.abs(r - Math.rint(r)) < 0.001 ? String.valueOf((long) Math.rint(Math.abs(r)))
                 : String.format(Locale.ROOT, "%.1f", Math.abs(r));

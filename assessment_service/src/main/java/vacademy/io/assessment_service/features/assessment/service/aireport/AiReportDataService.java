@@ -285,8 +285,8 @@ public class AiReportDataService {
             if (Math.abs(q.max() - plus) > 1e-9 || Math.abs(q.negative() - minus) > 1e-9) return null;
         }
         if (plus <= 0) return null;
-        return "+" + AiReportCharts.num(plus) + " per correct answer"
-                + (minus > 0 ? ", " + AiReportCharts.num(-minus) + " per wrong answer" : ", no negative marking") + ".";
+        return "+" + AiReportCharts.oneDecimal(plus) + " per correct answer"
+                + (minus > 0 ? ", " + AiReportCharts.oneDecimal(-minus) + " per wrong answer" : ", no negative marking") + ".";
     }
 
     /** marking_json data.totalMark, which is stored as a number or a string ("2.5"). Missing = 0. */
