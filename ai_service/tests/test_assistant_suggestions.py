@@ -380,3 +380,26 @@ async def test_learner_search_and_report_run_off_the_event_loop(monkeypatch):
     # the MCP lane's own list is unchanged
     from app.mcp.constants import OFF_LOOP_TOOLS
     assert "learners" not in OFF_LOOP_TOOLS and "learner_report" not in OFF_LOOP_TOOLS
+
+
+@pytest.mark.parametrize("opening", ["``` suggestions", "```\tsuggestions", "```  SUGGESTIONS"])
+def test_a_spaced_opening_fence_is_also_cut_out(opening):
+    text = f'Done.\n\n{opening}\n["Show overdue fees"]\n```'
+    answer, raw = sg.split_suggestions(text)
+    assert answer == "Done."
+    assert raw == ["Show overdue fees"]
+
+
+def test_a_spaced_opening_split_across_chunks_is_held_back():
+    stream = sg.SuggestionStreamFilter()
+    shown = stream.feed("Done.\n``` ") + stream.feed("sugg") + stream.feed('estions\n["A?"]\n```')
+    tail, bodies = stream.finish()
+    assert (shown + tail).strip() == "Done."
+    assert bodies and "A?" in bodies[0]
+
+
+def test_an_ordinary_code_fence_with_a_space_is_shown():
+    text = "Run this:\n``` sql\nselect 1;\n```"
+    answer, raw = sg.split_suggestions(text)
+    assert answer == text
+    assert raw is None

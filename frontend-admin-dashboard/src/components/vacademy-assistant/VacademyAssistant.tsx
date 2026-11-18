@@ -429,9 +429,13 @@ export function VacademyAssistant() {
     };
 
     const handleSend = () => {
-        if (!input.trim() || isBusy) return;
-        sendMessage(input.trim());
+        const text = input.trim();
+        if (!text || isBusy) return;
         setInput('');
+        // A send that could not start (the past chat did not reopen) gives the text back.
+        void Promise.resolve(sendMessage(text)).then((sent) => {
+            if (sent === false) setInput((current) => current || text);
+        });
     };
 
     const startNewChat = () => {

@@ -22,7 +22,10 @@ from typing import Any, Iterable, List, Optional, Sequence, Set, Tuple
 #: The opening fence the model is asked to write (matched case-insensitively).
 OPEN_FENCE = "```suggestions"
 CLOSE_FENCE = "```"
-_OPEN_RE = re.compile(re.escape(OPEN_FENCE), re.I)
+#: Also accepts spaces or tabs between the backticks and the label ("``` suggestions").
+_OPEN_RE = re.compile(r"```[ \t]*suggestions", re.I)
+_LABEL = "suggestions"
+_MAX_GAP = 8
 
 MAX_SUGGESTIONS = 3
 MAX_SUGGESTION_CHARS = 80
@@ -53,10 +56,20 @@ PROMPT_RULES = (
 
 def _partial_open_len(text: str) -> int:
     """Length of the longest suffix of ``text`` that could be the start of the opening fence."""
-    for size in range(min(len(text), len(OPEN_FENCE) - 1), 0, -1):
-        if OPEN_FENCE.startswith(text[-size:].lower()):
+    for size in range(min(len(text), 3 + _MAX_GAP + len(_LABEL) - 1), 0, -1):
+        if _could_open(text[-size:].lower()):
             return size
     return 0
+
+
+def _could_open(tail: str) -> bool:
+    if len(tail) <= 3:
+        return "```".startswith(tail)
+    if not tail.startswith("```"):
+        return False
+    rest = tail[3:]
+    label = rest.lstrip(" \t")
+    return len(rest) - len(label) <= _MAX_GAP and _LABEL.startswith(label) and label != _LABEL
 
 
 class SuggestionStreamFilter:

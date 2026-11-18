@@ -36,6 +36,7 @@ describe('confirmation card lines', () => {
         expect(actionStatusFrom('executing')).toBe('applying');
         expect(actionStatusFrom('executed')).toBe('executed');
         expect(actionStatusFrom('pending')).toBe('pending');
+        expect(actionStatusFrom('expired')).toBe('expired');
         expect(actionStatusFrom('cancelled')).toBe('cancelled');
         expect(actionStatusFrom('failed')).toBe('failed');
         expect(actionStatusFrom('denied')).toBe('failed');

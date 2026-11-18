@@ -114,6 +114,8 @@ export function actionStatusFrom(status: string): AssistantActionStatus {
             return 'pending';
         case 'executing':
             return 'applying';
+        case 'expired':
+            return 'expired';
         default:
             return 'failed';
     }
@@ -216,6 +218,7 @@ export function useVacademyAssistant() {
     const sessionIdRef = useRef<string | null>(null);
     const pastChatRef = useRef<AssistantPastChat | null>(null);
     const abortRef = useRef<AbortController | null>(null);
+    const sendingRef = useRef(false);
 
     const setSessionId = useCallback((id: string | null) => {
         sessionIdRef.current = id;
@@ -413,14 +416,12 @@ export function useVacademyAssistant() {
         return true;
     }, [setPastChat, setSessionId, t]);
 
-    const sendMessage = useCallback(
-        async (text: string) => {
-            const trimmed = text.trim();
-            if (!trimmed || status === 'streaming' || status === 'connecting') return;
-
+    /** Posts one question and streams the answer; false when a past chat could not be reopened. */
+    const sendNow = useCallback(
+        async (trimmed: string): Promise<boolean> => {
             setError(null);
             // Sending from a past chat continues it first.
-            if (pastChatRef.current && !(await continueChat())) return;
+            if (pastChatRef.current && !(await continueChat())) return false;
             setMessages((prev) => [
                 ...prev.map((m) => (m.suggestions ? { ...m, suggestions: undefined } : m)),
                 { id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: nowIso() },
@@ -451,8 +452,26 @@ export function useVacademyAssistant() {
                 setError(httpStatus === 402 ? CREDITS_EXHAUSTED_MSG : GENERIC_ERROR_MSG);
                 setStatus('error');
             }
+            return true;
         },
-        [continueChat, runStream, setSessionId, status]
+        [continueChat, runStream, setSessionId]
+    );
+
+    /** False when nothing was sent (empty, busy, another send starting, or the past chat did not reopen). */
+    const sendMessage = useCallback(
+        async (text: string): Promise<boolean> => {
+            const trimmed = text.trim();
+            if (!trimmed || status === 'streaming' || status === 'connecting') return false;
+            // One send at a time: reopening a past chat is awaited before the status changes.
+            if (sendingRef.current) return false;
+            sendingRef.current = true;
+            try {
+                return await sendNow(trimmed);
+            } finally {
+                sendingRef.current = false;
+            }
+        },
+        [sendNow, status]
     );
 
     const setActionStatus = useCallback((actionId: string, status: AssistantActionStatus) => {

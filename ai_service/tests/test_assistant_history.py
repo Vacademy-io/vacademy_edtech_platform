@@ -332,3 +332,24 @@ def test_card_view_status_treats_an_unreadable_expiry_as_expired():
     assert asv.card_view_status({"status": "EXECUTING"}) == "applying"
     assert asv.card_view_status({"status": "DENIED"}) == "failed"
     assert asv.card_view_status({}) == "failed"
+
+
+@pytest.mark.parametrize("status", ["DELETED", "deleted"])
+def test_the_chat_agent_routes_treat_a_deleted_chat_as_missing(monkeypatch, status):
+    from fastapi import HTTPException
+    from app.routers import chat_agent
+
+    monkeypatch.setattr(chat_agent, "check_owns_session", lambda caller, user_id: None)
+    service = SimpleNamespace(get_session_identity=lambda sid: {"user_id": "u1", "institute_id": "i1", "status": status})
+    with pytest.raises(HTTPException) as err:
+        chat_agent._owned_session(service, "s1", SimpleNamespace(user_id="u1"))
+    assert err.value.status_code == 404
+
+
+def test_the_chat_agent_routes_still_serve_an_open_or_closed_chat(monkeypatch):
+    from app.routers import chat_agent
+
+    monkeypatch.setattr(chat_agent, "check_owns_session", lambda caller, user_id: None)
+    for status in ("ACTIVE", "CLOSED", None):
+        service = SimpleNamespace(get_session_identity=lambda sid, s=status: {"user_id": "u1", "status": s})
+        assert chat_agent._owned_session(service, "s1", SimpleNamespace(user_id="u1"))["user_id"] == "u1"

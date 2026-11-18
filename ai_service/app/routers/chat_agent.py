@@ -48,6 +48,8 @@ def _owned_session(service: AiChatAgentService, session_id: str, caller: ChatCal
     if identity is None:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
     check_owns_session(caller, identity["user_id"])
+    if str(identity.get("status") or "").upper() == "DELETED":
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found")
     return identity
 
 
