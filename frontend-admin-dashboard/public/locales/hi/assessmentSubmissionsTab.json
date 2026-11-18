@@ -78,6 +78,7 @@
     },
     "buttons": {
         "offlineEntry": "ऑफ़लाइन एंट्री",
+        "scanStation": "स्कैन स्टेशन",
         "revaluate": "पुनर्मूल्यांकन करें",
         "aiEvaluations": "AI मूल्यांकन",
         "bulkAiCheck": "बल्क AI जाँच",

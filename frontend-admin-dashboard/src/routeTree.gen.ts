@@ -285,6 +285,7 @@ import { Route as HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute
 import { Route as AudienceManagerListCampaignUsersAddIndexRouteImport } from "./routes/audience-manager/list/campaign-users/add/index"
 import { Route as AssessmentEvaluationAiAttemptIdProcessIdIndexRouteImport } from "./routes/assessment/evaluation-ai/$attemptId/$processId/index"
 import { Route as AssessmentCreateAssessmentAssessmentIdExamtypeIndexRouteImport } from "./routes/assessment/create-assessment/$assessmentId/$examtype/index"
+import { Route as AssessmentAssessmentListScanStationAssessmentIdIndexRouteImport } from "./routes/assessment/assessment-list/scan-station/$assessmentId/index"
 import { Route as AssessmentAssessmentListOfflineEntryAssessmentIdIndexRouteImport } from "./routes/assessment/assessment-list/offline-entry/$assessmentId/index"
 import { Route as StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRouteImport } from "./routes/study-library/ai-copilot/shared/components/YouTubePlayerSimple"
 import { Route as StudyLibraryCoursesCourseDetailsSubjectsModulesIndexRouteImport } from "./routes/study-library/courses/course-details/subjects/modules/index"
@@ -2407,6 +2408,16 @@ const AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute =
       "./routes/assessment/create-assessment/$assessmentId/$examtype/index.lazy"
     ).then((d) => d.Route),
   )
+const AssessmentAssessmentListScanStationAssessmentIdIndexRoute =
+  AssessmentAssessmentListScanStationAssessmentIdIndexRouteImport.update({
+    id: "/assessment/assessment-list/scan-station/$assessmentId/",
+    path: "/assessment/assessment-list/scan-station/$assessmentId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import(
+      "./routes/assessment/assessment-list/scan-station/$assessmentId/index.lazy"
+    ).then((d) => d.Route),
+  )
 const AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute =
   AssessmentAssessmentListOfflineEntryAssessmentIdIndexRouteImport.update({
     id: "/assessment/assessment-list/offline-entry/$assessmentId/",
@@ -2793,6 +2804,7 @@ export interface FileRoutesByFullPath {
   "/workflow/$workflowId/edit/": typeof WorkflowWorkflowIdEditIndexRoute
   "/study-library/ai-copilot/shared/components/YouTubePlayerSimple": typeof StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute
   "/assessment/assessment-list/offline-entry/$assessmentId/": typeof AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute
+  "/assessment/assessment-list/scan-station/$assessmentId/": typeof AssessmentAssessmentListScanStationAssessmentIdIndexRoute
   "/assessment/create-assessment/$assessmentId/$examtype/": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId/": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add/": typeof AudienceManagerListCampaignUsersAddIndexRoute
@@ -3082,6 +3094,7 @@ export interface FileRoutesByTo {
   "/workflow/$workflowId/edit": typeof WorkflowWorkflowIdEditIndexRoute
   "/study-library/ai-copilot/shared/components/YouTubePlayerSimple": typeof StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute
   "/assessment/assessment-list/offline-entry/$assessmentId": typeof AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute
+  "/assessment/assessment-list/scan-station/$assessmentId": typeof AssessmentAssessmentListScanStationAssessmentIdIndexRoute
   "/assessment/create-assessment/$assessmentId/$examtype": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add": typeof AudienceManagerListCampaignUsersAddIndexRoute
@@ -3374,6 +3387,7 @@ export interface FileRoutesById {
   "/workflow/$workflowId/edit/": typeof WorkflowWorkflowIdEditIndexRoute
   "/study-library/ai-copilot/shared/components/YouTubePlayerSimple": typeof StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute
   "/assessment/assessment-list/offline-entry/$assessmentId/": typeof AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute
+  "/assessment/assessment-list/scan-station/$assessmentId/": typeof AssessmentAssessmentListScanStationAssessmentIdIndexRoute
   "/assessment/create-assessment/$assessmentId/$examtype/": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId/": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add/": typeof AudienceManagerListCampaignUsersAddIndexRoute
@@ -3667,6 +3681,7 @@ export interface FileRouteTypes {
     | "/workflow/$workflowId/edit/"
     | "/study-library/ai-copilot/shared/components/YouTubePlayerSimple"
     | "/assessment/assessment-list/offline-entry/$assessmentId/"
+    | "/assessment/assessment-list/scan-station/$assessmentId/"
     | "/assessment/create-assessment/$assessmentId/$examtype/"
     | "/assessment/evaluation-ai/$attemptId/$processId/"
     | "/audience-manager/list/campaign-users/add/"
@@ -3956,6 +3971,7 @@ export interface FileRouteTypes {
     | "/workflow/$workflowId/edit"
     | "/study-library/ai-copilot/shared/components/YouTubePlayerSimple"
     | "/assessment/assessment-list/offline-entry/$assessmentId"
+    | "/assessment/assessment-list/scan-station/$assessmentId"
     | "/assessment/create-assessment/$assessmentId/$examtype"
     | "/assessment/evaluation-ai/$attemptId/$processId"
     | "/audience-manager/list/campaign-users/add"
@@ -4247,6 +4263,7 @@ export interface FileRouteTypes {
     | "/workflow/$workflowId/edit/"
     | "/study-library/ai-copilot/shared/components/YouTubePlayerSimple"
     | "/assessment/assessment-list/offline-entry/$assessmentId/"
+    | "/assessment/assessment-list/scan-station/$assessmentId/"
     | "/assessment/create-assessment/$assessmentId/$examtype/"
     | "/assessment/evaluation-ai/$attemptId/$processId/"
     | "/audience-manager/list/campaign-users/add/"
@@ -4530,6 +4547,7 @@ export interface RootRouteChildren {
   WorkflowWorkflowIdEditIndexRoute: typeof WorkflowWorkflowIdEditIndexRoute
   StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute: typeof StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute
   AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute: typeof AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute
+  AssessmentAssessmentListScanStationAssessmentIdIndexRoute: typeof AssessmentAssessmentListScanStationAssessmentIdIndexRoute
   AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute: typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   AssessmentEvaluationAiAttemptIdProcessIdIndexRoute: typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   AudienceManagerListCampaignUsersAddIndexRoute: typeof AudienceManagerListCampaignUsersAddIndexRoute
@@ -6499,6 +6517,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/assessment/assessment-list/scan-station/$assessmentId/": {
+      id: "/assessment/assessment-list/scan-station/$assessmentId/"
+      path: "/assessment/assessment-list/scan-station/$assessmentId"
+      fullPath: "/assessment/assessment-list/scan-station/$assessmentId/"
+      preLoaderRoute: typeof AssessmentAssessmentListScanStationAssessmentIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/assessment/assessment-list/offline-entry/$assessmentId/": {
       id: "/assessment/assessment-list/offline-entry/$assessmentId/"
       path: "/assessment/assessment-list/offline-entry/$assessmentId"
@@ -6916,6 +6941,8 @@ const rootRouteChildren: RootRouteChildren = {
     StudyLibraryAiCopilotSharedComponentsYouTubePlayerSimpleRoute,
   AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute:
     AssessmentAssessmentListOfflineEntryAssessmentIdIndexRoute,
+  AssessmentAssessmentListScanStationAssessmentIdIndexRoute:
+    AssessmentAssessmentListScanStationAssessmentIdIndexRoute,
   AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute:
     AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute,
   AssessmentEvaluationAiAttemptIdProcessIdIndexRoute:

@@ -626,6 +626,8 @@ export const STEP2_QUESTIONS_URL = `${BASE_URL}/assessment-service/assessment/ad
 export const STEP2_QUESTIONS_FULL_URL = `${BASE_URL}/assessment-service/assessment/add-questions/create/v1/questions-of-sections/full`;
 export const STEP2_EDIT_QUESTIONS_URL = `${BASE_URL}/assessment-service/assessment/add-questions/create/v1/edit-questions`;
 export const COPY_INTAKE_BASE_URL = `${BASE_URL}/assessment-service/assessment/copy-intake/v1`;
+// Scan station: a scanned pile (two passes per load) turned into one copy per student.
+export const SCAN_STATION_BASE_URL = `${COPY_INTAKE_BASE_URL}/scan`;
 // OMR sheets: paper sets, the printable bubble sheet per set, and the scan + review of filled sheets.
 export const OMR_BASE_URL = `${BASE_URL}/assessment-service/assessment/omr/v1`;
 export const STEP3_ASSESSMENT_URL = `${BASE_URL}/assessment-service/assessment/add-participants/create/v1/submit`;

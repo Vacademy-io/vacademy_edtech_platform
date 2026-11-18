@@ -78,6 +78,7 @@
     },
     "buttons": {
         "offlineEntry": "إدخال دون اتصال",
+        "scanStation": "محطة المسح الضوئي",
         "revaluate": "إعادة التقييم",
         "aiEvaluations": "تقييمات الذكاء الاصطناعي",
         "bulkAiCheck": "فحص AI جماعي",

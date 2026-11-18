@@ -81,6 +81,7 @@
     },
     "buttons": {
         "offlineEntry": "Offline Entry",
+        "scanStation": "Scan station",
         "revaluate": "Reevaluate",
         "aiEvaluations": "AI Evaluations",
         "refresh": "Refresh",

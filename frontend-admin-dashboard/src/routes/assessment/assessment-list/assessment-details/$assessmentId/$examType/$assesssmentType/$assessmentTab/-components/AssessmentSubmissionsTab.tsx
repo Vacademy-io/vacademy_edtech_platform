@@ -47,6 +47,7 @@ import {
     Clock,
     Play,
     NotePencil,
+    Scan,
     User,
     UsersThree,
 } from '@phosphor-icons/react';
@@ -71,6 +72,10 @@ import { BulkAiCheckDialog } from './copy-intake/BulkAiCheckDialog';
 import { CheckSubmittedCopiesDialog } from './copy-intake/CheckSubmittedCopiesDialog';
 import { EnableAiChecking } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-components/enable-ai-checking';
 import { CopyIntakeBatchPanel } from './copy-intake/CopyIntakeBatchPanel';
+import {
+    getScanConfig,
+    SCAN_CONFIG_KEY,
+} from '@/routes/assessment/assessment-list/scan-station/$assessmentId/-services/scan-station-services';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import AssessmentGlobalLevelRevaluateAssessment from './assessment-global-level-revaluate/assessment-global-level-revaluate-assessment';
 import { AssessmentGlobalLevelRevaluateQuestionWise } from './assessment-global-level-revaluate/assessment-global-level-revaluate-question-wise';
@@ -221,6 +226,16 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
         staleTime: 5 * 60 * 1000,
     });
     const isOfflineEntryEnabled = assessmentSettings.offlineEntry.enabled;
+    // Scan station is switched on by the server only (property + institute allow-list);
+    // /scan/config always answers 200, with enabled:false while it is off.
+    const { data: scanConfig } = useQuery({
+        queryKey: [SCAN_CONFIG_KEY, instituteId],
+        queryFn: () => getScanConfig(instituteId ?? ''),
+        staleTime: 10 * 60 * 1000,
+        enabled: !!instituteId,
+        retry: false,
+    });
+    const isScanStationEnabled = scanConfig?.enabled === true && examType !== 'SURVEY';
     const queryClient = useQueryClient();
     // MANUAL evaluation assessments get an extra "Submission" column showing
     // whether each attempt has a submitted answer-sheet file. Same cached query
@@ -1609,6 +1624,28 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                         >
                             <NotePencil size={16} />
                             {t('buttons.offlineEntry')}
+                        </MyButton>
+                    )}
+                    {isScanStationEnabled && (
+                        <MyButton
+                            type="button"
+                            scale="small"
+                            buttonType="secondary"
+                            className="!h-9 gap-1.5 px-3 font-medium"
+                            onClick={() =>
+                                navigate({
+                                    to: '/assessment/assessment-list/scan-station/$assessmentId',
+                                    params: { assessmentId },
+                                    search: {
+                                        examType,
+                                        assessmentType: assesssmentType,
+                                        tab: assessmentTab,
+                                    },
+                                })
+                            }
+                        >
+                            <Scan size={16} />
+                            {t('buttons.scanStation')}
                         </MyButton>
                     )}
                     <div className="ml-auto flex items-center gap-2">
