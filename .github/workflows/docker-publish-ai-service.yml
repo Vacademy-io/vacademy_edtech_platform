@@ -105,6 +105,7 @@ jobs:
               FAL_API_KEY=${{ secrets.FAL_API_KEY }} \
               LLM_DEFAULT_MODEL=z-ai/glm-5.3-flash \
               LLM_FALLBACK_MODEL=google/gemini-2.5-flash \
+              COPY_CHECK_SCAN_STATION=1 \
               DB_USERNAME=${{ secrets.DB_USERNAME }} \
               DB_PASSWORD=${{ secrets.DB_PASSWORD }} \
               ADMIN_CORE_SERVICE_DB_URL=jdbc:postgresql://pgbouncer:6432/admin_core_service \

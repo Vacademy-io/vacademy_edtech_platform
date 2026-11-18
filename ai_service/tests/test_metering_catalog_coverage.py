@@ -100,6 +100,7 @@ EXPLICIT_USE_CASE_TOOL_KEYS: Dict[str, str] = {
 NOT_BILLED: Dict[str, str] = {
     "platform_default": "base model tier; the caller's own request_type / use case is what bills",
     "knowledge_base_figure": "reserved, not read by code yet",
+    "copy_check_scan_header": "Scan Station header reads are logged in usage, not billed (v1 is off by default)",
 }
 
 FEATURE_GROUPS = {

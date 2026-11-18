@@ -231,6 +231,12 @@ USE_CASES: Tuple[UseCase, ...] = (
         seeded_in_release_2=True,
     ),
     UseCase(
+        "copy_check_scan_header", "Scan Station name-field read", GROUP_ASSESSMENT, "ai_service", KIND_VISION,
+        "Reads the printed Name field at the top of scanned answer-sheet pages to find where each copy starts "
+        "(Scan Station, off by default). Falls back to the copy-check default model.",
+        (_AI + "services/copy_check/scan/header_read.py:99",),
+    ),
+    UseCase(
         "question_metadata", "Question metadata tagging", GROUP_ASSESSMENT, "ai_service", KIND_CHAT,
         "Tags questions with topic, difficulty and other metadata.",
         (_AI + "services/question_metadata_service.py:26",),
