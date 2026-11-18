@@ -548,6 +548,44 @@ public class WhiteLabelService {
         return out;
     }
 
+    // ── Removing a domain ─────────────────────────────────────────────────────
+
+    /**
+     * Deletes one of the institute's routing rows, so an old or mistyped domain no
+     * longer needs a database edit to go away.
+     *
+     * <p>Refused for the host the institute's outbound links use right now:
+     * deleting it would leave every emailed link pointing at a host that no longer
+     * resolves to the institute. Another domain has to become the portal URL first.
+     * The Cloudflare Pages custom domain is left attached; without a routing row
+     * it serves the app but brands nothing.
+     */
+    @Transactional
+    public void deleteDomain(CustomUserDetails user, String instituteId, String routingId) {
+        // Stricter than setup: deleting a portal's row is not undone by saving
+        // again, so only the institute's admins (or root) may do it.
+        boolean admin = user != null && (user.isRootUser()
+                || instituteRoleUserClient.findRolesOfUser(instituteId, user.getUserId())
+                        .map(roles -> roles.contains(ROLE_NAME_ADMIN)).orElse(false));
+        if (!admin) {
+            throw new VacademyException("Only an admin of this institute can remove a domain");
+        }
+        InstituteDomainRouting row = routingRepository.findById(routingId)
+                .filter(r -> r.getInstituteId() != null && instituteId.equals(r.getInstituteId().trim()))
+                .orElseThrow(() -> new VacademyException("Domain not found for this institute"));
+        Institute institute = instituteRepository.findById(instituteId)
+                .orElseThrow(() -> new VacademyException("Institute not found: " + instituteId));
+
+        String host = PortalUrlReconciler.hostOf(row);
+        if (isCurrentPortalUrl(institute, row)) {
+            throw new VacademyException(host + " is the portal URL your emails link to. "
+                    + "Mark another domain as primary and let it go live before removing this one.");
+        }
+        routingRepository.delete(row);
+        log.info("[WhiteLabel] Deleted routing row id={} ({}, {}) for institute {}",
+                row.getId(), host, row.getRole(), instituteId);
+    }
+
     // ── Private helpers ───────────────────────────────────────────────────────
 
     private void assertInstituteAccess(CustomUserDetails user, String instituteId) {

@@ -57,8 +57,18 @@ import {
     type PhoneCountryGeoMode,
 } from '@/services/domain-routing';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
-import { WHITE_LABEL_SETUP, WHITE_LABEL_STATUS } from '@/constants/urls';
+import { BASE_URL, WHITE_LABEL_SETUP, WHITE_LABEL_STATUS } from '@/constants/urls';
 import { getCatalogueTags } from '@/routes/manage-pages/-services/catalogue-service';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { getInstituteId } from '@/constants/helper';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { Badge } from '@/components/ui/badge';
@@ -336,6 +346,9 @@ const toPayloadRole = (
     if (entry.portalImplied && entry.role === 'ADMIN' && extra.length > 0) return extra.join(',');
     return [entry.role, ...extra].join(',');
 };
+
+/** Removes one routing row (DELETE ?instituteId=&routingId=). */
+const WHITE_LABEL_DOMAIN = `${BASE_URL}/admin-core-service/institute/white-label/v1/domain`;
 
 /** Select value standing for "no website on the home page" (a Select item can't be ''). */
 const NO_ROOT_CATALOGUE = '__none__';
@@ -1380,6 +1393,34 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
             });
     }, [instituteId, learnerSettingsOpen, t]);
 
+    // ── Removing a saved domain ───────────────────────────────────────────────
+    const [deleteTarget, setDeleteTarget] = useState<RoutingEntry | null>(null);
+    const [deletingDomain, setDeletingDomain] = useState(false);
+
+    const confirmDeleteDomain = async () => {
+        if (!instituteId || !deleteTarget) return;
+        const removed = deleteTarget;
+        setDeletingDomain(true);
+        try {
+            await authenticatedAxiosInstance.delete(WHITE_LABEL_DOMAIN, {
+                params: { instituteId, routingId: removed.id },
+            });
+            toast.success(t('deleteDomain.success', { domain: fqdn(removed) }));
+            setDeleteTarget(null);
+            // Drop it from the setup form too, or the next Update would create it again.
+            setFormEntries((prev) => {
+                const rest = prev.filter((e) => e.routingId !== removed.id);
+                return rest.length > 0 ? rest : defaultFormEntries();
+            });
+            await fetchStatusRef.current();
+        } catch (err: any) {
+            const msg = err?.response?.data?.message || err?.response?.data;
+            toast.error(typeof msg === 'string' ? msg : t('deleteDomain.failed'));
+        } finally {
+            setDeletingDomain(false);
+        }
+    };
+
     const subOrgSearchPlaceholder = t('subOrg.searchPlaceholder');
     const subOrgSearchEmpty = t('subOrg.searchEmpty');
 
@@ -1752,6 +1793,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                                                 key={entry.id}
                                                 entry={entry}
                                                 subOrgs={subOrgs}
+                                                onDelete={() => setDeleteTarget(entry)}
                                             />
                                         ))}
                                     </div>
@@ -1761,6 +1803,41 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                     </CardContent>
                 </Card>
             )}
+
+            {/* ── Remove a saved domain ── */}
+            <AlertDialog
+                open={deleteTarget !== null}
+                onOpenChange={(open) => {
+                    if (!open && !deletingDomain) setDeleteTarget(null);
+                }}
+            >
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>{t('deleteDomain.title')}</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            {t('deleteDomain.description', {
+                                domain: deleteTarget ? fqdn(deleteTarget) : '',
+                            })}
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deletingDomain}>
+                            {t('deleteDomain.cancel')}
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                            disabled={deletingDomain}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                void confirmDeleteDomain();
+                            }}
+                            className="bg-danger-600 hover:bg-danger-700"
+                        >
+                            {deletingDomain && <Loader2 className="me-2 size-4 animate-spin" />}
+                            {t('deleteDomain.confirm')}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
 
             {/* ── Short link DNS record (to forward to the customer) ── */}
             <ShortLinkDnsCard domains={shortLinkDomains} />
@@ -2048,7 +2125,15 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
 
 // ─── Routing Entry Card (current config display) ──────────────────────────────
 
-function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: SubOrgOption[] }) {
+function RoutingEntryCard({
+    entry,
+    subOrgs,
+    onDelete,
+}: {
+    entry: RoutingEntry;
+    subOrgs: SubOrgOption[];
+    onDelete: () => void;
+}) {
     const { t } = useTranslation('settingsWhiteLabel');
     const subOrgName = entry.sub_org_id
         ? subOrgs.find((o) => o.id === entry.sub_org_id)?.name ?? entry.sub_org_id
@@ -2173,6 +2258,22 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
                             {expanded ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}
                         </button>
                     )}
+                    {/* The domain outbound links use can't be removed (the server
+                        refuses too); the button says why instead of failing. */}
+                    <button
+                        type="button"
+                        onClick={onDelete}
+                        disabled={!!entry.is_portal_url}
+                        className="rounded p-1 text-neutral-400 transition-colors hover:bg-danger-50 hover:text-danger-600 disabled:cursor-not-allowed disabled:opacity-40"
+                        title={
+                            entry.is_portal_url
+                                ? t('deleteDomain.portalUrlTooltip')
+                                : t('deleteDomain.tooltip')
+                        }
+                        aria-label={t('deleteDomain.tooltip')}
+                    >
+                        <Trash2 className="size-4" />
+                    </button>
                 </div>
             </div>
 

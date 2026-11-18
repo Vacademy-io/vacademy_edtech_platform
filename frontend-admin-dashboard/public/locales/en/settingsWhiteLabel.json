@@ -12,6 +12,16 @@
         "hintTeacher": "Teachers and admins can always sign in. Anyone without one of the ticked roles is refused on this domain.",
         "summary": "+ {{roles}}"
     },
+    "deleteDomain": {
+        "tooltip": "Remove this domain",
+        "portalUrlTooltip": "This domain is the portal URL your emails link to. Make another domain primary first.",
+        "title": "Remove domain?",
+        "description": "{{domain}} will stop opening your portal, and its branding and login settings are deleted. This can't be undone.",
+        "cancel": "Cancel",
+        "confirm": "Remove",
+        "success": "{{domain}} removed",
+        "failed": "Could not remove the domain"
+    },
     "status": {
         "configured": "Configured",
         "notConfigured": "Not Configured"

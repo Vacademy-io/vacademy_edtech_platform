@@ -12,6 +12,16 @@
         "hintTeacher": "Les enseignants et les administrateurs peuvent toujours se connecter. Toute personne sans l'un des rôles cochés est refusée sur ce domaine.",
         "summary": "+ {{roles}}"
     },
+    "deleteDomain": {
+        "tooltip": "Supprimer ce domaine",
+        "portalUrlTooltip": "Ce domaine est l'URL du portail utilisée dans vos e-mails. Définissez d'abord un autre domaine comme principal.",
+        "title": "Supprimer le domaine ?",
+        "description": "{{domain}} n'ouvrira plus votre portail, et ses réglages de marque et de connexion seront supprimés. Action irréversible.",
+        "cancel": "Annuler",
+        "confirm": "Supprimer",
+        "success": "{{domain}} supprimé",
+        "failed": "Impossible de supprimer le domaine"
+    },
     "status": {
         "configured": "Configuré",
         "notConfigured": "Non configuré"

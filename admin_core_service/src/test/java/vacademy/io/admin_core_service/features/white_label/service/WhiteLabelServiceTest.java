@@ -534,6 +534,19 @@ class WhiteLabelServiceTest {
         }
 
         @Test
+        @DisplayName("A staff member who is not an admin cannot remove a domain")
+        void nonAdminStaffCannotDelete() {
+            givenStoredRow("old.myschool.com", "LEARNER", false);
+            when(routingRepository.findById("row-0")).thenReturn(Optional.of(storedRows.get(0)));
+            when(instituteRoleUserClient.findRolesOfUser(INSTITUTE_ID, USER_ID))
+                    .thenReturn(Optional.of(Set.of("TEACHER")));
+
+            assertThrows(VacademyException.class,
+                    () -> service.deleteDomain(admin(), INSTITUTE_ID, "row-0"));
+            verify(routingRepository, never()).delete(any());
+        }
+
+        @Test
         @DisplayName("A row id from another institute is ignored, not written through")
         void foreignRoutingIdIsIgnored() {
             InstituteDomainRouting foreign = new InstituteDomainRouting();
@@ -552,6 +565,53 @@ class WhiteLabelServiceTest {
             verify(domainRoutingAdminService).create(any());
         }
 
+        @Test
+        @DisplayName("An unused domain can be removed")
+        void deletesAnUnusedDomain() {
+            givenStoredRow("old.myschool.com", "LEARNER", false);
+            InstituteDomainRouting row = storedRows.get(0);
+            when(routingRepository.findById("row-0")).thenReturn(Optional.of(row));
+
+            service.deleteDomain(admin(), INSTITUTE_ID, "row-0");
+
+            verify(routingRepository).delete(row);
+        }
+
+        @Test
+        @DisplayName("The domain outbound links use cannot be removed")
+        void refusesToDeleteThePortalUrl() {
+            givenStoredRow("learn.myschool.com", "LEARNER", true);
+            institute.setLearnerPortalBaseUrl("https://learn.myschool.com");
+            when(routingRepository.findById("row-0")).thenReturn(Optional.of(storedRows.get(0)));
+
+            assertThrows(VacademyException.class,
+                    () -> service.deleteDomain(admin(), INSTITUTE_ID, "row-0"));
+            verify(routingRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("Another institute's domain cannot be removed")
+        void refusesAnotherInstitutesDomain() {
+            InstituteDomainRouting foreign = new InstituteDomainRouting();
+            foreign.setId("row-x");
+            foreign.setInstituteId("someone-else");
+            foreign.setDomain("other.com");
+            foreign.setSubdomain("learn");
+            foreign.setRole("LEARNER");
+            when(routingRepository.findById("row-x")).thenReturn(Optional.of(foreign));
+
+            assertThrows(VacademyException.class,
+                    () -> service.deleteDomain(admin(), INSTITUTE_ID, "row-x"));
+            verify(routingRepository, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("A non-member cannot remove anything")
+        void refusesAnOutsider() {
+            assertThrows(VacademyException.class,
+                    () -> service.deleteDomain(outsider(), INSTITUTE_ID, "row-0"));
+            verify(routingRepository, never()).delete(any());
+        }
     }
 
     // ── getStatus() ──────────────────────────────────────────────────────────
