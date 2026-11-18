@@ -43,7 +43,12 @@ vi.mock('@/routes/commerce/-components/ManagerPinDialog', () => ({
             <button
                 type="button"
                 data-testid="pin-approve"
-                onClick={() => void onApprove({ approver_user_id: 'm-1', pin: '123456' }).then(() => onOpenChange(false))}
+                onClick={() =>
+                    void onApprove({ approver_user_id: 'm-1', pin: '123456' }).then(
+                        () => onOpenChange(false),
+                        () => undefined
+                    )
+                }
             >
                 approve
             </button>

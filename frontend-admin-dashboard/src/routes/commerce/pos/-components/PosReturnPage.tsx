@@ -17,6 +17,7 @@ import {
     POS_RETURN_REASONS,
     POS_RETURN_SETTLE,
     type PosReturnAnswer,
+    type PosReturnBody,
     type PosReturnLineRequest,
     type PosReturnSettle,
     type SaleDetail,
@@ -71,6 +72,17 @@ export function toReturnLines(lines: SaleDetailLine[], picks: Record<string, Pic
         if (pick.damaged > 0) out.push({ order_line_id: line.order_line_id, quantity: pick.damaged, condition: 'DAMAGED' });
     });
     return out;
+}
+
+/**
+ * The return's settle as the server takes it: EXCHANGE alone; a REFUND with its method and, for UPI and bank
+ * transfer only, the reference (the server refuses a reference on CASH).
+ */
+export const PREVIEW_REFERENCE = 'PREVIEW';
+
+export function settleBody(settle: PosReturnSettle, reference: string | null): PosReturnBody['settle'] {
+    if (settle === 'EXCHANGE') return { kind: 'EXCHANGE' };
+    return { kind: 'REFUND', method: settle, ...(settle !== 'CASH' && reference ? { reference } : {}) };
 }
 
 function PosReturnBody({
@@ -129,6 +141,7 @@ function PosReturnBody({
                         {t('pos.returns.creditNote', { number: answer.credit_note_number, amount: rupees(answer.credit) })}
                     </p>
                 )}
+                {answer.replayed && <p className="text-caption text-muted-foreground">{t('pos.done.replayed')}</p>}
                 {answer.refund && (
                     <p data-testid="pos-refund" className="text-h2 font-medium text-foreground">
                         {answer.refund.method === 'CASH'
@@ -284,14 +297,19 @@ function ReturnForm({
     const previewBody = useMemo(() => {
         const sums = new Map<string, number>();
         lines.forEach((l) => sums.set(l.order_line_id, (sums.get(l.order_line_id) ?? 0) + l.quantity));
+        // The reason (when picked) and the settle go along: the server's warnings and PIN list depend on them.
         return lines.length > 0
             ? {
                   session_id: session.id,
                   order_id: sale.order_id,
                   lines: [...sums.entries()].map(([order_line_id, quantity]) => ({ order_line_id, quantity })),
+                  ...(reason ? { reason } : {}),
+                  // The preview drops a settle it finds invalid and then assumes cash; a UPI or bank refund has
+                  // no reference typed yet, so a fixed one stands in (the preview stores nothing).
+                  settle: settleBody(settle, PREVIEW_REFERENCE),
               }
             : null;
-    }, [lines, session.id, sale.order_id]);
+    }, [lines, session.id, sale.order_id, reason, settle]);
     const debounced = useDebounced(previewBody, 300);
     const preview = useReturnPreview(debounced);
     const warnings = preview.data?.warnings ?? [];
@@ -319,10 +337,7 @@ function ReturnForm({
             reason,
             reason_note: note.trim() || null,
             override_reason: warnings.length > 0 ? override.trim() : null,
-            settle:
-                settle === 'EXCHANGE'
-                    ? { kind: 'EXCHANGE' as const }
-                    : { kind: 'REFUND' as const, method: settle, reference: needsRef ? reference.trim() : null },
+            settle: settleBody(settle, needsRef ? reference.trim() : null),
         };
         try {
             await pin.run(body, (full) => write.mutateAsync([full]), (answer) => onDone(answer, settle));

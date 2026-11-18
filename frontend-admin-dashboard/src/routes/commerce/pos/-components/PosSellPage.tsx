@@ -261,7 +261,10 @@ export function PosBillingWorkspace({
     useEffect(() => {
         if (!quote.data || quote.isPlaceholderData) return;
         quote.data.changes.forEach((change) => {
-            if (change.unit_price !== null) apply({ type: 'SET_PRICE', lineRef: change.line_ref, unitPrice: change.unit_price });
+            // Only a price change moves the echoed price; UNAVAILABLE entries come in `unavailable` too.
+            if ((change.type === null || change.type === 'PRICE_CHANGED') && change.unit_price !== null) {
+                apply({ type: 'SET_PRICE', lineRef: change.line_ref, unitPrice: change.unit_price });
+            }
         });
         const refused = new Map(quote.data.unavailable.map((u) => [u.line_ref, u.reason]));
         cartRef.current.lines.forEach((line) => {

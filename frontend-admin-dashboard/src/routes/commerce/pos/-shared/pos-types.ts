@@ -47,7 +47,7 @@ export const POS_RETURN_SETTLE = ['CASH', 'UPI', 'BANK_TRANSFER', 'EXCHANGE'] as
 export type PosReturnSettle = (typeof POS_RETURN_SETTLE)[number];
 
 /** Remainder of an exchange credit larger than the new bill goes back as cash or UPI. */
-export const EXCHANGE_REMAINDER_METHODS = ['CASH', 'UPI'] as const;
+export const EXCHANGE_REMAINDER_METHODS = ['CASH', 'UPI', 'BANK_TRANSFER'] as const;
 
 export type LocalText = { hi?: string | null; en?: string | null };
 
@@ -240,7 +240,7 @@ export interface SessionRow {
     register_code: string;
     location_name: string;
     cashier_user_id: string | null;
-    /** Not in the §3.8 row; read when the server sends it (else the staff list names the cashier). */
+    /** Not sent by the server's SessionRow; the staff list names the cashier (kept for a later server field). */
     cashier_name: string | null;
     opened_at: string | null;
     closed_at: string | null;
@@ -367,7 +367,11 @@ export interface QuoteTotals {
 export interface Quote {
     lines: QuoteLine[];
     unavailable: { line_ref: string; reason: string }[];
-    changes: { line_ref: string; unit_price: number | null }[];
+    /**
+     * Server: `{line_ref, variant_id, type, reason, old_unit_price, new_unit_price}`; `type` PRICE_CHANGED
+     * carries the price the sale will charge (`unit_price` here = `new_unit_price`).
+     */
+    changes: { line_ref: string; type: string | null; unit_price: number | null }[];
     totals: QuoteTotals;
     tax_rows: TaxRow[];
     discount_percent: number | null;
@@ -439,7 +443,7 @@ export interface SaleRow {
     phone_last4: string | null;
     /** Not in the §4.3 row; read when the server sends it (bills list "time" column). */
     created_at: string | null;
-    /** Not in the §4.3 row; read when the server sends it (bills list "modes" column). */
+    /** Server `tender_modes` (B1 addition to the §4.3 row): the bills list "paid by" column. */
     modes: string[];
 }
 
@@ -522,6 +526,15 @@ export interface PosReturnLineRequest {
     piece_ids?: string[];
 }
 
+/** `POST /pos/returns/preview`: reason and settle are optional (B2: without a reason the policy's reason check is skipped). */
+export interface PosReturnPreviewRequest {
+    session_id: string;
+    order_id: string;
+    lines: Pick<PosReturnLineRequest, 'order_line_id' | 'quantity'>[];
+    reason?: string;
+    settle?: PosReturnBody['settle'];
+}
+
 export interface PosReturnPreview {
     returnable: { order_line_id: string; returnable: number }[];
     warnings: string[];
@@ -549,6 +562,8 @@ export interface PosReturnAnswer {
     credit: number;
     refund: { id: string; method: string; amount: number; status: string } | null;
     exchange_credit: number | null;
+    /** The same request was already answered (a retry): nothing happened twice. */
+    replayed: boolean;
 }
 
 // ─── Settings (§3.4) and bill books (existing /document-series) ──────────────

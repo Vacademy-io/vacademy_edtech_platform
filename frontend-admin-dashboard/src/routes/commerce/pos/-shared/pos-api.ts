@@ -42,8 +42,8 @@ import type {
     PosCatalogue,
     PosReturnAnswer,
     PosReturnBody,
-    PosReturnLineRequest,
     PosReturnPreview,
+    PosReturnPreviewRequest,
     PosScanAnswer,
     PosSettings,
     Quote,
@@ -285,7 +285,7 @@ export const normalizeSaleRow = (r: Rec): SaleRow => ({
     customer_name: str(r.customer_name),
     phone_last4: str(r.phone_last4),
     created_at: str(r.created_at),
-    modes: strings(r.modes),
+    modes: strings(r.tender_modes ?? r.modes),
 });
 
 const normalizeTotals = (value: unknown): QuoteTotals => {
@@ -320,7 +320,9 @@ export function normalizeQuote(data: unknown): Quote {
         })),
         changes: records(r.changes).map((c) => ({
             line_ref: text(c.line_ref),
-            unit_price: num(c.unit_price),
+            type: str(c.type),
+            // Server: new_unit_price (old_unit_price is the echoed one); unit_price kept as a fallback.
+            unit_price: num(c.new_unit_price) ?? num(c.unit_price),
         })),
         totals: normalizeTotals(r.totals),
         tax_rows: normalizeTaxRows(r.tax_rows),
@@ -726,11 +728,7 @@ export async function changeTender(orderId: string, tenderId: string, body: Tend
 
 // ─── Counter returns ─────────────────────────────────────────────────────────
 
-export async function previewPosReturn(body: {
-    session_id: string;
-    order_id: string;
-    lines: Pick<PosReturnLineRequest, 'order_line_id' | 'quantity'>[];
-}): Promise<PosReturnPreview> {
+export async function previewPosReturn(body: PosReturnPreviewRequest): Promise<PosReturnPreview> {
     const res = await authenticatedAxiosInstance.post<unknown>(COMMERCE_POS_RETURN_PREVIEW, body, {
         params: params(),
     });
@@ -765,6 +763,7 @@ export async function createPosReturn(body: PosReturnBody): Promise<PosReturnAns
               }
             : null,
         exchange_credit: num(r.exchange_credit),
+        replayed: bool(r.replayed),
     };
 }
 

@@ -41,7 +41,11 @@ vi.mock('@/routes/commerce/-components/ManagerPinDialog', () => ({
                 type="button"
                 data-testid="pin-approve"
                 onClick={() =>
-                    void onApprove({ approver_user_id: 'm-1', pin: '123456' }).then(() => onOpenChange(false))
+                    void onApprove({ approver_user_id: 'm-1', pin: '123456' }).then(
+                        () => onOpenChange(false),
+                        // A refused approval keeps the real dialog open; the stub stays too.
+                        () => undefined
+                    )
                 }
             >
                 approve
@@ -144,6 +148,23 @@ describe('PosPayDialog', () => {
         const { client_request_id: _a, approval: _b, ...restSecond } = second ?? ({} as SaleRequest);
         const { client_request_id: _c, ...restFirst } = first ?? ({} as SaleRequest);
         expect(restSecond).toEqual(restFirst);
+        expect(await screen.findByTestId('pos-new-bill')).toBeTruthy();
+    });
+
+    it('a second APPROVAL_REQUIRED on the resend keeps the PIN step open; the same id goes a third time', async () => {
+        const submit = vi
+            .fn<[SaleRequest], Promise<SaleAnswer>>()
+            .mockRejectedValueOnce(serverError(409, 'APPROVAL_REQUIRED: POS_DISCOUNT discount above the limit'))
+            .mockRejectedValueOnce(serverError(409, 'APPROVAL_REQUIRED: POS_DISCOUNT discount above the limit'))
+            .mockResolvedValueOnce(saleAnswer());
+        renderPay(submit);
+        fireEvent.click(confirm());
+        fireEvent.click(await screen.findByTestId('pin-approve'));
+        await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+        fireEvent.click(await screen.findByTestId('pin-approve'));
+        await waitFor(() => expect(submit).toHaveBeenCalledTimes(3));
+        const ids = submit.mock.calls.map((call) => call[0]?.client_request_id);
+        expect(new Set(ids).size).toBe(1);
         expect(await screen.findByTestId('pos-new-bill')).toBeTruthy();
     });
 

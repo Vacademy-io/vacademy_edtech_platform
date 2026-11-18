@@ -77,9 +77,18 @@ export function usePinWrite(registerId: string | null, prefix: string) {
             } catch (raw) {
                 const read = readPosError(raw);
                 if (read.code === 'APPROVAL_REQUIRED') {
-                    ask(read.action, async (approval) => {
-                        onDone(await send({ ...body, client_request_id: id, approval }));
-                    });
+                    // A resend may be asked for one more approval (a counter return whose credit came out above
+                    // the cash limit): the dialog stays open with that action and the same body goes again.
+                    const resend = async (approval: ManagerApproval): Promise<void> => {
+                        try {
+                            onDone(await send({ ...body, client_request_id: id, approval }));
+                        } catch (again) {
+                            const next = readPosError(again);
+                            if (next.code === 'APPROVAL_REQUIRED') ask(next.action, resend);
+                            throw again;
+                        }
+                    };
+                    ask(read.action, resend);
                     return;
                 }
                 if (read.code === 'IDEMPOTENCY_MISMATCH') reset();

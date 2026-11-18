@@ -177,6 +177,13 @@ export function PosPayDialog({
             const read = readPosError(raw);
             // A wrong or locked PIN, or a dropped line, keeps the PIN dialog open with the sentence.
             if (fromPin && (read.code === 'PIN_INVALID' || read.code === 'PIN_LOCKED' || read.network)) throw raw;
+            // The server asks for another approval on the resend: the dialog stays open for it.
+            if (fromPin && read.code === 'APPROVAL_REQUIRED') {
+                pin.ask(read.action, async (next: ManagerApproval) => {
+                    await attempt(body, next, true);
+                });
+                throw raw;
+            }
             fail(raw, body);
         }
     };
@@ -360,7 +367,7 @@ export function PosPayDialog({
                                 <p className="text-body text-foreground">
                                     {t('pos.pay.giveBackCredit', { amount: rupees(giveBack) })}
                                 </p>
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-3 gap-2">
                                     {EXCHANGE_REMAINDER_METHODS.map((method) => (
                                         <button
                                             key={method}
@@ -378,7 +385,7 @@ export function PosPayDialog({
                                         </button>
                                     ))}
                                 </div>
-                                {remainderMethod === 'UPI' && (
+                                {remainderMethod !== 'CASH' && (
                                     <PosField label={t('pos.tender.reference')} htmlFor="pos-remainder-ref" required>
                                         <input
                                             id="pos-remainder-ref"
