@@ -57,7 +57,7 @@ vi.mock('../-services/template-api', () => ({
 }));
 
 import { TemplateBuilder } from './template-builder';
-import { looksLikeSignedUrl } from '../-utils/template-validation';
+import { looksLikeSignedUrl, safeSampleFileName } from '../-utils/template-validation';
 
 const PUBLIC_URL = 'https://cdn.example.com/WHATSAPP_TEMPLATE_MEDIA/inst-1/2f1c9c7e-banner.png';
 
@@ -125,6 +125,22 @@ describe('TemplateBuilder — header sample upload', () => {
         expect(toast.success).toHaveBeenCalledWith(
             expect.stringContaining('Sample image uploaded')
         );
+    });
+
+    it('uploads under a URL-safe name so the public link carries no %-escapes', async () => {
+        uploadFile.mockResolvedValue('file-456');
+        getPublicUrl.mockResolvedValue(PUBLIC_URL);
+        const { urlInput, fileInput } = renderWithHeader('IMAGE');
+
+        fireEvent.change(fileInput, {
+            target: { files: [fakeFile('Image (19).PNG', 'image/png', 2048)] },
+        });
+
+        await waitFor(() => expect(urlInput.value).toBe(PUBLIC_URL));
+        const sent = uploadFile.mock.calls[0]![0].file as File;
+        expect(sent.name).toBe('image_19.png');
+        expect(sent.type).toBe('image/png');
+        expect(sent.size).toBe(2048);
     });
 
     it('refuses a file Meta would reject before uploading anything', () => {
@@ -221,5 +237,18 @@ describe('looksLikeSignedUrl', () => {
         expect(
             looksLikeSignedUrl('https://res.cloudinary.com/x/image/upload/f_auto,q_auto/img')
         ).toBe(false);
+    });
+});
+
+describe('safeSampleFileName', () => {
+    it('keeps only URL-safe characters and the lower-cased extension', () => {
+        expect(safeSampleFileName('image (19).png')).toBe('image_19.png');
+        expect(safeSampleFileName('Offer & Deal, Nov+Dec.JPG')).toBe('offer_deal_nov_dec.jpg');
+        expect(safeSampleFileName('my_movie-1.mp4')).toBe('my_movie-1.mp4');
+    });
+
+    it('falls back to "sample" when nothing safe is left of the name', () => {
+        expect(safeSampleFileName('फोटो.jpg')).toBe('sample.jpg');
+        expect(safeSampleFileName('(1).pdf')).toBe('1.pdf');
     });
 });
