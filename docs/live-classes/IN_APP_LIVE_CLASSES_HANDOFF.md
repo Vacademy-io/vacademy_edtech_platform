@@ -34,7 +34,7 @@ Learner taps "Join"
 
 **Why a class works inside a frame.**
 - **Login cookie:** normally BBB needs its login cookie, which browsers drop inside a frame on another site. In-app meetings are created with `allowRequestsWithoutSession=true`, so the per-user session token is enough.
-- **Framing allowlist:** `/etc/bigbluebutton/nginx/iframe-allow.nginx` on the BBB server lists the sites and apps allowed to frame the class (`frame-ancestors`).
+- **Framing rules:** `/etc/nginx/conf.d/vacademy-frame-ancestors.conf` on the BBB server decides which sites may frame which page (`frame-ancestors`), and `/etc/bigbluebutton/nginx/iframe-allow.nginx` sends the header. Class pages: any https site plus the apps. Recordings and the learning dashboard: our own sites only.
 
 **Leaving / class end.**
 - When a learner leaves or the class ends, BBB sends the frame to its logoutURL, the learner feedback page.
@@ -56,7 +56,7 @@ Learner taps "Join"
 | Area | Files |
 |---|---|
 | Backend: decision + meeting creation | `admin_core_service/.../live_session/provider/manager/BbbMeetingManager.java`: `isInAppEnabled`, `resolveOpenMode`, `isMeetingInAppCapable`; create params `allowRequestsWithoutSession`, `meta_vacademy-inapp`, `vxBbbExit` on logoutURL; picks `vacademy-pip` instead of the stock PiP plugin<br>`.../controller/LiveSessionProviderController.java`: `/meeting/join` takes `client`, returns `openMode` |
-| BBB server config | `bigbluebutton-server/configure-bbb.sh` step 7: `frame-ancestors` list and the `getJoinUrl` block (the same is applied live on the server) |
+| BBB server config | `bigbluebutton-server/configure-bbb.sh` step 7: `frame-ancestors` rules per path and the `getJoinUrl` block (the same is applied live on the server) |
 | PiP plugin | source `bigbluebutton-server/plugins-src/vacademy-pip/` (`src/pip.ts`, `src/index.tsx`); built output `bigbluebutton-server/plugins/vacademy-pip/` |
 | Learner app: join | `frontend-learner-dashboard-app/src/lib/live-class/bbb-join.ts` (`openBbbJoinForLearner` returns `IN_APP` / `EXTERNAL` / `FAILED`) |
 | Learner app: class view | `src/routes/study-library/live-class/classroom/index.tsx` |
@@ -82,7 +82,7 @@ All on `admin-core-service` in the CloudPe cluster (`kubectl -n default`). They 
 - **Adding an institute:** `kubectl -n default set env deployment/admin-core-service BBB_INAPP_INSTITUTEIDS=<id1>,<id2>`. This restarts admin_core one pod at a time, with no downtime.
 - **Only new classes are affected:** classes created **after** the change are in-app; classes already running stay as they were.
 - **Turning it off:** remove the institute from the list. New classes then open outside the app again. Nothing else needs to change.
-- **White-label learner domains:** each institute's learner site must be in `frame-ancestors` (`/etc/bigbluebutton/nginx/iframe-allow.nginx`, kept in sync with `configure-bbb.sh`). Today the list covers `*.vacademy.io`, Shiksha Nation, ithinkers, Enark Uplift, Edzumo, STEMx, Elevate Education, the Android/iOS apps (`https://localhost`, `capacitor://localhost`) and Electron. Add new domains there before switching such an institute on, then run `nginx -t && systemctl reload nginx`.
+- **White-label learner domains:** nothing to do. Since 18 Nov 2026, class pages may be framed by any https site, so every institute's own learner domain (current and future) works without server changes. A framing site still needs the learner's own signed join link. Recordings (`/playback`, `/presentation`) and the learning dashboard stay limited to `*.vacademy.io` and the apps.
 
 ---
 
@@ -207,9 +207,9 @@ Already live: Cloudflare Pages deploys on every push to `main`.
 4. **Electron screen share** uses our own picker, because Electron 26 has no system picker. Upgrading Electron (33+) would allow the macOS system picker.
 5. **Desktop learners lose BBB's stock Document PiP** (the bigger, interactive PiP window) in in-app institutes; they get our video PiP instead. Accepted for now.
 6. **Wider rollout.** After device tests pass:
-   - add institutes to `BBB_INAPP_INSTITUTEIDS` a few at a time;
-   - add their learner domains to `frame-ancestors` first;
+   - add institutes to `BBB_INAPP_INSTITUTEIDS` a few at a time, then set it to `*` (all institutes, including new ones, with no per-institute step);
    - watch the first classes.
+   - No domain step is needed (see section 3).
 
 ---
 
@@ -219,7 +219,7 @@ Already live: Cloudflare Pages deploys on every push to `main`.
   - **Backend response:** call `/meeting/join` with `client=…` and look at `openMode`. It is `EXTERNAL` if the institute isn't listed, the client isn't allowed, or the meeting was created before the institute was switched on (end the class and start a new one).
   - **App side:** `canHostClassInApp()` is false if the native piece is missing (old app), the page isn't a secure context, or the learner portal is itself inside a frame.
 - **Is a meeting in-app capable?** On the BBB server, `getMeetingInfo` for the meeting shows `<vacademy-inapp>1</vacademy-inapp>` in its metadata.
-- **"Refused to connect" inside the class view:** the learner site isn't in `frame-ancestors` (section 3).
+- **"Refused to connect" inside the class view:** check the `Content-Security-Policy` header on `/html5client/`. It should be `frame-ancestors 'self' https: capacitor://localhost …`. A BBB package update may have overwritten `iframe-allow.nginx`; re-run step 7 of `configure-bbb.sh`. An `http://` (non-https) learner site can't frame the class.
 - **PiP button missing:**
   - The class may be using the stock plugin: the meeting was created before the institute was switched on, or the institute isn't in-app.
   - Or the browser has no PiP API (Firefox).

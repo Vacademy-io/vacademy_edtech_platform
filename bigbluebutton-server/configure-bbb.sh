@@ -190,17 +190,28 @@ docker stop greenlight-v3 2>/dev/null && docker update --restart=no greenlight-v
 # ── 7. Allow iframe embedding ─────────────────────────────────
 echo "[7/8] Configuring nginx for iframe embedding..."
 
+# Who may frame which BBB page. A map must live at http level (conf.d); the
+# server-level include below only reads its result.
+# - Live class pages: any https site. Every white-label learner domain (and any
+#   new institute's) works with no per-domain setup. A framing page still needs
+#   the learner's own signed join link, so this exposes nothing by itself.
+# - Recordings + learning dashboard: our own sites only.
+# - Capacitor apps (Android https://localhost, iOS capacitor://localhost), the
+#   Electron app and local dev everywhere.
+cat > /etc/nginx/conf.d/vacademy-frame-ancestors.conf <<'NGINX'
+map $uri $vacademy_frame_ancestors {
+    default "'self' https: capacitor://localhost capacitor-electron: http://localhost:*";
+    ~^/(playback|presentation|podcast|notes|screenshare|video|learning-analytics-dashboard)(/|$) "'self' https://*.vacademy.io https://localhost capacitor://localhost capacitor-electron: http://localhost:*";
+}
+NGINX
+
 cat > /etc/bigbluebutton/nginx/iframe-allow.nginx <<'NGINX'
-# Allow embedding BBB in iframes: our learner sites, white-label learner domains
-# (add new ones here when an institute's in-app class is switched on), the
-# Capacitor apps (Android https://localhost, iOS capacitor://localhost), the
-# Electron app (it rewrites CSP itself; listed for completeness) and local dev.
-# Kept as an explicit list, not "https:", so recordings under /playback can't be
-# embedded by any site.
+# Allow embedding BBB in frames; allowed parents per path come from
+# /etc/nginx/conf.d/vacademy-frame-ancestors.conf.
 proxy_hide_header X-Frame-Options;
 proxy_hide_header Content-Security-Policy;
 
-add_header Content-Security-Policy "frame-ancestors 'self' https://*.vacademy.io https://learner.shikshanation.com https://practice.ithinkersolympiad.com https://training.enarkuplift.in https://workout.edzumo.com https://learn.stemxindia.com https://student.elevateeducation.in https://localhost capacitor://localhost capacitor-electron: http://localhost:*;" always;
+add_header Content-Security-Policy "frame-ancestors $vacademy_frame_ancestors;" always;
 NGINX
 
 # getJoinUrl turns any valid sessionToken into fresh signed join links (same
