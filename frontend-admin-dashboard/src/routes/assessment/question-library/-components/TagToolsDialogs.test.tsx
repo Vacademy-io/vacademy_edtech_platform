@@ -28,7 +28,9 @@ const node = {
 };
 
 describe('AutoTagDialog', () => {
-    beforeEach(() => vi.clearAllMocks());
+    beforeEach(() => {
+        vi.clearAllMocks();
+    });
 
     it('counts first, then tags batch after batch, sending back every id tried', async () => {
         api.autoTagLibrary
