@@ -19,7 +19,8 @@
         "folderActions": "Actions for {{name}}",
         "edit": "Edit",
         "copyLink": "Copy link",
-        "delete": "Delete folder"
+        "delete": "Delete folder",
+        "testOrder": "Test order"
     },
     "form": {
         "name": "Folder name",
@@ -85,5 +86,23 @@
         "unfiledHint": "Drag a test onto a folder above to move it, or use ⋮ → Move to folder.",
         "unfiledHintReadOnly": "Tests that are not in any folder.",
         "allFolders": "All folders"
+    },
+    "order": {
+        "title": "Test order",
+        "hint": "Choose the order students see the tests of “{{name}}” in.",
+        "byName": "By name (A → Z)",
+        "byNameHint": "Numbers are read as numbers, so Test 2 comes before Test 10. New tests take their place automatically.",
+        "custom": "Custom order",
+        "customHint": "Drag the tests or use the arrows. New tests are added at the end.",
+        "listLabel": "Tests in this folder",
+        "drag": "Drag to move {{name}}",
+        "moveUp": "Move {{name}} up",
+        "moveDown": "Move {{name}} down",
+        "draft": "Draft",
+        "draftNote": "Students see published tests only. A draft keeps its place for when you publish it.",
+        "empty": "No tests in this folder yet.",
+        "loadError": "Could not load the tests of this folder.",
+        "retry": "Try again",
+        "saved": "Test order saved"
     }
 }

@@ -20,6 +20,10 @@ public class AssessmentFolderService {
 
     public static final String STATUS_ACTIVE = "ACTIVE";
     public static final String STATUS_HIDDEN = "HIDDEN";
+    /** Folder test order: by name, A to Z. Every mapping of the folder has display_order 0. */
+    public static final String ORDER_NAME = "NAME";
+    /** Folder test order: arranged by an admin. Mappings have display_order 1..N. */
+    public static final String ORDER_CUSTOM = "CUSTOM";
     private static final int MAX_NAME_LENGTH = 255;
     /** Bound for IN lists so an empty audience still binds a valid query. */
     private static final String NO_MATCH = "__none__";
@@ -116,6 +120,50 @@ public class AssessmentFolderService {
         return moved + " moved to " + folder.getName();
     }
 
+    /** The folder's test order (NAME or CUSTOM) and its draft + published tests in that order. */
+    public FolderTestOrderDto getTestOrder(String instituteId, String folderId) {
+        AssessmentFolder folder = getFolder(instituteId, folderId);
+        return testOrderOf(folder.getId());
+    }
+
+    /**
+     * NAME puts every test back at 0, so students see the folder A to Z. CUSTOM numbers the
+     * tests 1..N in the order given; tests left out of the list follow in their current order.
+     */
+    @Transactional
+    public FolderTestOrderDto saveTestOrder(String instituteId, FolderTestOrderRequest request) {
+        if (request == null) throw new VacademyException("Folder id is required");
+        AssessmentFolder folder = getFolder(instituteId, request.getFolderId());
+        String mode = request.getMode() == null ? "" : request.getMode().trim().toUpperCase(Locale.ROOT);
+        if (ORDER_NAME.equals(mode)) {
+            mappingRepository.resetDisplayOrder(folder.getId());
+            return testOrderOf(folder.getId());
+        }
+        if (!ORDER_CUSTOM.equals(mode)) throw new VacademyException("Invalid test order");
+
+        List<String> currentOrder = mappingRepository.findFolderTestsInOrder(folder.getId()).stream()
+                .map(row -> (String) row[0]).toList();
+        Map<String, AssessmentFolderMapping> byAssessment = mappingRepository.findByFolderId(folder.getId()).stream()
+                .collect(Collectors.toMap(AssessmentFolderMapping::getAssessmentId, m -> m, (a, b) -> a));
+        LinkedHashSet<String> order = new LinkedHashSet<>();
+        if (request.getAssessmentIds() != null) {
+            request.getAssessmentIds().stream().filter(byAssessment::containsKey).forEach(order::add);
+        }
+        order.addAll(currentOrder);
+        // Deleted tests still mapped here: numbered last so the folder stays fully CUSTOM.
+        order.addAll(byAssessment.keySet());
+        int position = 1;
+        List<AssessmentFolderMapping> changed = new ArrayList<>();
+        for (String assessmentId : order) {
+            AssessmentFolderMapping mapping = byAssessment.get(assessmentId);
+            mapping.setDisplayOrder(position++);
+            changed.add(mapping);
+        }
+        mappingRepository.saveAll(changed);
+        mappingRepository.flush();
+        return testOrderOf(folder.getId());
+    }
+
     public List<AssessmentFolderLinkDto> foldersForAssessments(String instituteId, List<String> assessmentIds) {
         requireInstitute(instituteId);
         if (assessmentIds == null || assessmentIds.isEmpty()) return List.of();
@@ -145,7 +193,10 @@ public class AssessmentFolderService {
         mappingRepository.deleteByAssessmentIds(own);
         mappingRepository.flush();
         Integer maxOrder = mappingRepository.findMaxDisplayOrder(folderId);
-        int order = (maxOrder == null ? -1 : maxOrder) + 1;
+        // A folder in name order (every test at 0) keeps new tests at 0, so they take their
+        // place by name. A folder an admin arranged (1..N) gets them at the end.
+        boolean custom = maxOrder != null && maxOrder > 0;
+        int order = custom ? maxOrder + 1 : 0;
         Map<String, Integer> position = new HashMap<>();
         for (int i = 0; i < assessmentIds.size(); i++) position.putIfAbsent(assessmentIds.get(i), i);
         List<String> ordered = new ArrayList<>(own);
@@ -156,11 +207,24 @@ public class AssessmentFolderService {
                     .folderId(folderId)
                     .assessmentId(id)
                     .instituteId(instituteId)
-                    .displayOrder(order++)
+                    .displayOrder(custom ? order++ : 0)
                     .build());
         }
         mappingRepository.saveAll(rows);
         return rows.size();
+    }
+
+    private FolderTestOrderDto testOrderOf(String folderId) {
+        List<Object[]> rows = mappingRepository.findFolderTestsInOrder(folderId);
+        boolean custom = rows.stream().anyMatch(row -> row[3] != null && ((Number) row[3]).intValue() > 0);
+        List<FolderTestOrderDto.Item> items = rows.stream()
+                .map(row -> new FolderTestOrderDto.Item((String) row[0], (String) row[1], (String) row[2]))
+                .toList();
+        return FolderTestOrderDto.builder()
+                .folderId(folderId)
+                .mode(custom ? ORDER_CUSTOM : ORDER_NAME)
+                .assessments(new ArrayList<>(items))
+                .build();
     }
 
     private AssessmentFolder getFolder(String instituteId, String folderId) {
