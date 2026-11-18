@@ -247,4 +247,12 @@ class QuestionMarksOverrideServiceTest {
         assertThat(QuestionMarksOverrideService.statusFor(0, 4.0, null)).isEqualTo("PENDING");
         assertThat(QuestionMarksOverrideService.statusFor(0, 4.0, "CORRECT")).isEqualTo("INCORRECT");
     }
+
+    @Test
+    void teacher_marks_survive_recalculation() {
+        QuestionWiseMarks teacher = QuestionWiseMarks.builder().marksSource("TEACHER").build();
+        QuestionWiseMarks auto = QuestionWiseMarks.builder().build();
+        assertThat(StudentAttemptService.isEvaluatorMarked(teacher)).isTrue();
+        assertThat(StudentAttemptService.isEvaluatorMarked(auto)).isFalse();
+    }
 }
