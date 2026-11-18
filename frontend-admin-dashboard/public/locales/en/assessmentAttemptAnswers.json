@@ -1,0 +1,75 @@
+{
+    "title": "Submission: {{name}}",
+    "loading": "Loading answers…",
+    "loadError": "Could not load this submission. Please try again.",
+    "retry": "Try again",
+    "empty": "No questions in this section.",
+    "sectionFallback": "Section {{number}}",
+    "menu": {
+        "answerSheet": "View Answer Sheet"
+    },
+    "summary": {
+        "marks": "Marks",
+        "correct": "Correct",
+        "partial": "Partly correct",
+        "wrong": "Wrong",
+        "skipped": "Not answered",
+        "note": "A changed mark updates the total straight away. If the result is already released, the learner sees the new marks."
+    },
+    "question": {
+        "label": "Q{{number}}",
+        "time_one": "{{count}} sec",
+        "time_other": "{{count}} sec",
+        "studentAnswer": "Student's answer",
+        "correctAnswer": "Correct answer",
+        "modelAnswer": "Model answer",
+        "notAnswered": "Not answered",
+        "picked": "Student's choice",
+        "remark": "Remark",
+        "noMarksRow": "Not part of this attempt, so marks cannot be changed.",
+        "aiMarking": "AI marking",
+        "aiFeedback": "AI feedback",
+        "outOf": "{{marks}} / {{max}}"
+    },
+    "type": {
+        "MCQS": "Single choice",
+        "MCQM": "Multiple choice",
+        "CMCQS": "Passage · single choice",
+        "CMCQM": "Passage · multiple choice",
+        "NUMERIC": "Numeric",
+        "CNUMERIC": "Passage · numeric",
+        "TRUE_FALSE": "True / False",
+        "ONE_WORD": "One word",
+        "LONG_ANSWER": "Long answer",
+        "CODING": "Coding",
+        "CBE_RESPONSE": "Spreadsheet & written"
+    },
+    "status": {
+        "CORRECT": "Correct",
+        "INCORRECT": "Wrong",
+        "PARTIAL_CORRECT": "Partly correct",
+        "PENDING": "Not answered"
+    },
+    "source": {
+        "auto": "Auto-marked",
+        "ai": "Marked by AI",
+        "aiReviewed": "AI, reviewed by teacher",
+        "teacher": "Changed by teacher",
+        "manual": "Marked by teacher"
+    },
+    "edit": {
+        "button": "Edit marks",
+        "marksLabel": "Marks (0 to {{max}})",
+        "marksLabelNoMax": "Marks",
+        "remarkLabel": "Remark for the learner (optional)",
+        "remarkPlaceholder": "e.g. Bonus marks: the question had a wrong answer key",
+        "save": "Save",
+        "saving": "Saving…",
+        "cancel": "Cancel",
+        "invalid": "Enter marks from 0 to {{max}}.",
+        "invalidNoMax": "Enter marks of 0 or more.",
+        "saved": "Marks updated. New total: {{total}}",
+        "savedNoTotal": "Marks updated.",
+        "error": "Could not update the marks. Please try again."
+    }
+}

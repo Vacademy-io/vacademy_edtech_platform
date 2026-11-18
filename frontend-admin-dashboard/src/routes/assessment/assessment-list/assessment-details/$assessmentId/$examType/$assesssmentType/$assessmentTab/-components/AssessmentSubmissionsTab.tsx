@@ -82,6 +82,7 @@ import AssessmentGlobalLevelRevaluateAssessment from './assessment-global-level-
 import { AssessmentGlobalLevelRevaluateQuestionWise } from './assessment-global-level-revaluate/assessment-global-level-revaluate-question-wise';
 import { AssessmentGlobalLevelReleaseResultAssessment } from './assessment-global-level-revaluate/assessment-global-level-release-result-assessment';
 import { useRef } from 'react';
+import { SUBMISSIONS_REFRESH_EVENT } from '../-utils/submissions-refresh';
 import { useUsersCredentials } from '@/routes/manage-students/students-list/-services/usersCredentials';
 import { OpenStudentSidebar } from '@/routes/manage-students/students-list/-components/students-list/student-side-view/open-student-side-view';
 import { useNavigate } from '@tanstack/react-router';
@@ -974,6 +975,17 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
             });
         }
     };
+
+    // A mark changed in a row's submission view: reload the table and the summary so
+    // the new total shows without pressing Refresh. The ref keeps the listener on the
+    // current filters/page.
+    const refreshLeaderboardRef = useRef(handleRefreshLeaderboard);
+    refreshLeaderboardRef.current = handleRefreshLeaderboard;
+    useEffect(() => {
+        const onRefresh = () => refreshLeaderboardRef.current();
+        window.addEventListener(SUBMISSIONS_REFRESH_EVENT, onRefresh);
+        return () => window.removeEventListener(SUBMISSIONS_REFRESH_EVENT, onRefresh);
+    }, []);
 
     const clearSearch = () => {
         setSearchText('');

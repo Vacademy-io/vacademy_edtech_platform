@@ -34,6 +34,7 @@ import {
     REPORT_ZIP_EXPORT_RECENT_URL,
     REPORT_ZIP_EXPORT_STATUS_URL,
     STUDENT_REPORT_DETAIL_URL,
+    OVERRIDE_QUESTION_MARKS_URL,
     STUDENT_REPORT_URL,
     UPDATE_ATTEMPT,
 } from '@/constants/urls';
@@ -793,6 +794,39 @@ export const viewStudentReport = async (
             attemptId,
             instituteId,
         },
+    });
+    return response?.data;
+};
+
+export interface QuestionMarksOverrideBody {
+    section_id: string;
+    question_id: string;
+    marks: number;
+    /** Remark shown to the learner; omit to keep the saved one, '' to clear it. */
+    feedback?: string;
+}
+
+export interface QuestionMarksOverrideResult {
+    question_id: string;
+    section_id: string;
+    marks: number;
+    max_marks: number | null;
+    marks_source: 'TEACHER' | 'AI_REVIEWED';
+    attempt_total_marks: number | null;
+}
+
+/** Staff sets one question's marks on one attempt; the attempt total is recomputed. */
+export const overrideQuestionMarks = async (
+    assessmentId: string,
+    instituteId: string | undefined,
+    attemptId: string,
+    body: QuestionMarksOverrideBody
+): Promise<QuestionMarksOverrideResult> => {
+    const response = await authenticatedAxiosInstance({
+        method: 'PUT',
+        url: OVERRIDE_QUESTION_MARKS_URL,
+        params: { assessmentId, instituteId, attemptId },
+        data: body,
     });
     return response?.data;
 };

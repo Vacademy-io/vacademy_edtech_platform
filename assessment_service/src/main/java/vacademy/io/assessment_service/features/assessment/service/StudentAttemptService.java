@@ -578,8 +578,13 @@ public class StudentAttemptService {
         return marksObtained;
     }
 
+    /**
+     * A mark the AI, or a person, set: a recalculation from the key keeps it. TEACHER
+     * is a mark staff changed from the submission view (QuestionMarksOverrideService).
+     */
     static boolean isEvaluatorMarked(QuestionWiseMarks marksRow) {
-        return "AI".equals(marksRow.getMarksSource()) || "AI_REVIEWED".equals(marksRow.getMarksSource());
+        return "AI".equals(marksRow.getMarksSource()) || "AI_REVIEWED".equals(marksRow.getMarksSource())
+                || QuestionMarksOverrideService.TEACHER.equals(marksRow.getMarksSource());
     }
 
     public LearnerAssessmentAttemptDataDto validateAndCreateJsonObject(String jsonContent) {
@@ -755,6 +760,16 @@ public class StudentAttemptService {
         String answerStatus = questionWiseBasicDetailDto.getAnswerStatus();
 
         Section section = questionAssessmentSectionMapping.get().getSection();
+
+        // Question-wise re-evaluation keeps marks a teacher set from the submission
+        // view (TEACHER). AI rows are re-scored here exactly as before. A list
+        // lookup, so old duplicate rows add no new failure path.
+        for (QuestionWiseMarks row : questionWiseMarksService.getAllQuestionWiseMarksForQuestionIdsAndAttemptId(
+                studentAttempt.getId(), List.of(questionId), section.getId())) {
+            if (QuestionMarksOverrideService.TEACHER.equals(row.getMarksSource())) {
+                return row.getMarks();
+            }
+        }
 
         questionWiseMarksService.updateQuestionWiseMarksForEveryQuestion(
                 assessment, studentAttempt, questionAsked, questionWiseResponseData, null, answerStatus, section, marksObtained
