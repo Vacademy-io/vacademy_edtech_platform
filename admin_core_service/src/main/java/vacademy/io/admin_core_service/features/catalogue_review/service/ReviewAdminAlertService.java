@@ -216,7 +216,7 @@ public class ReviewAdminAlertService {
     /** https://admin host of the institute + the Reviews deep link; "#" when it cannot be resolved. */
     private String reviewsUrl(String instituteId) {
         try {
-            Optional<InstituteDomainRouting> admin = domainRoutingRepository.findByInstituteIdAndRole(instituteId, "ADMIN");
+            Optional<InstituteDomainRouting> admin = domainRoutingRepository.findAdminPortalRow(instituteId);
             if (admin.isPresent()) return url(admin.get().getSubdomain(), admin.get().getDomain());
             Optional<InstituteDomainRouting> learner = domainRoutingRepository.findByInstituteIdAndRole(instituteId, "LEARNER");
             if (learner.isPresent()) return url(FALLBACK_ADMIN_SUBDOMAIN, learner.get().getDomain());

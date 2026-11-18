@@ -77,6 +77,27 @@ public interface InstituteDomainRoutingRepository extends CrudRepository<Institu
   Optional<InstituteDomainRouting> findByInstituteIdAndRole(@Param("instituteId") String instituteId,
       @Param("role") String role);
 
+  /**
+   * The institute's admin-portal row, for links that open the admin app. Its role
+   * list may admit other roles too ("ADMIN,COUNSELLOR"), so ADMIN is matched as
+   * one entry. A row that is exactly ADMIN wins, as it did when only those
+   * matched; then the starred one; then the oldest.
+   */
+  @Query(value = """
+      SELECT *
+      FROM institute_domain_routing
+      WHERE institute_id = :instituteId
+        AND EXISTS (SELECT 1 FROM unnest(string_to_array(role, ',')) AS t(token)
+                    WHERE UPPER(BTRIM(t.token)) = 'ADMIN')
+        AND NOT EXISTS (SELECT 1 FROM unnest(string_to_array(role, ',')) AS t(token)
+                        WHERE UPPER(BTRIM(t.token)) = 'LEARNER')
+      ORDER BY CASE WHEN UPPER(role) = 'ADMIN' THEN 0 ELSE 1 END,
+               CASE WHEN is_primary THEN 0 ELSE 1 END,
+               created_at, id
+      LIMIT 1
+      """, nativeQuery = true)
+  Optional<InstituteDomainRouting> findAdminPortalRow(@Param("instituteId") String instituteId);
+
   /** Every row on one domain, any subdomain, oldest first. */
   @Query(value = """
       SELECT *

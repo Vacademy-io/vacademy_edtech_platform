@@ -66,7 +66,7 @@ class ReviewAdminAlertServiceTest {
         InstituteDomainRouting admin = new InstituteDomainRouting();
         admin.setSubdomain("admin");
         admin.setDomain("parchamclasses.in");
-        when(routing.findByInstituteIdAndRole(INST, "ADMIN")).thenReturn(Optional.of(admin));
+        when(routing.findAdminPortalRow(INST)).thenReturn(Optional.of(admin));
     }
 
     private static UserDTO admin(String id, String email) {
