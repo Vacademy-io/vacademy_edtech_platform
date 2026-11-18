@@ -1,5 +1,11 @@
 import { BackendQuestion, TransformedQuestion } from '../types';
 import { readNumericTolerance } from '@/routes/assessment/question-papers/-utils/numeric-tolerance';
+import {
+    cbeConfigFromEvaluationJson,
+    cbeQuestionMark,
+    isCbeQuestionType,
+} from '@/routes/assessment/question-papers/-utils/cbe-question';
+import { cbeTotalMarks } from '@/components/cbe/types';
 
 // Helper function to parse auto_evaluation_json
 // Returns an array that may contain numeric indices OR string option IDs (UUIDs).
@@ -244,8 +250,39 @@ export const transformQuestion = (question: BackendQuestion | any): TransformedQ
         );
     }
 
+    // Spreadsheet & Written Response: no options or answer key, a config instead.
+    if (isCbeQuestionType(questionType)) {
+        return handleCbeQuestion(transformed, question);
+    }
+
     // Handle options for all question types
     handleQuestionOptions(transformed, question, questionType, validAnswers);
 
     return transformed;
+};
+
+/**
+ * A CBE question in the editor form: `cbeConfig` (parts, templates; the solution half only
+ * once the editor has loaded it), the scenario in `parentRichTextContent`, and total marks
+ * from the parts. A question already in form shape keeps its config and secret status; one
+ * read from the slide holds the redacted config, so its secret is not in the form yet
+ * (`cbeSecretStatus` undefined) and a save keeps the stored one.
+ */
+const handleCbeQuestion = (
+    transformed: TransformedQuestion,
+    question: BackendQuestion | any
+): TransformedQuestion => {
+    const config =
+        cbeConfigFromEvaluationJson(question.cbeConfig) ??
+        cbeConfigFromEvaluationJson(question.auto_evaluation_json);
+    return {
+        ...transformed,
+        validAnswers: undefined,
+        parentRichTextContent:
+            question.parentRichTextContent ?? question.parent_rich_text?.content ?? '',
+        questionMark: config ? cbeQuestionMark(config) : transformed.questionMark,
+        marks: config ? cbeTotalMarks(config) : transformed.marks,
+        cbeConfig: config ?? null,
+        cbeSecretStatus: question.cbeConfig ? question.cbeSecretStatus : undefined,
+    };
 };

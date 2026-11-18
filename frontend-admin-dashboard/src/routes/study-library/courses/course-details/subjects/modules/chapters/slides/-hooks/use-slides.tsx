@@ -314,6 +314,11 @@ export interface QuizSlideQuestion {
     questionType?: string; // Fix: Add questionType field for backend compatibility
     access_level: string;
     auto_evaluation_json: string;
+    /**
+     * Spreadsheet & Written Response only: the solution half of the config, sent only when
+     * the editor holds it (the server keeps the stored one otherwise).
+     */
+    evaluation_secret_json?: string;
     evaluation_type: string;
     question_time_in_millis: number; // Added for backend compatibility
     question_order: number;

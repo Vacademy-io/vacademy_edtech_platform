@@ -12,10 +12,11 @@ Works in three places:
 |---|---|---|---|
 | Assessment (+ question bank / question papers) | `assessment_service.question` | Async copy-check pipeline (TYPED lane) on submit | Teacher reviews, then Release Result |
 | LMS question slide | `admin_core_service.question_slide` | Synchronous AI check on submit | Learner, instantly (marks + line feedback + model solution) |
-| Quiz slide | not supported (type is hidden in the quiz picker) | | |
+| Quiz slide | `admin_core_service.quiz_slide_question` | AI check right after the quiz submit (§5.4) | Learner, in the quiz review (marks + line feedback; model solution when the quiz review shows answers) |
 
 Owner decisions (2026-11-10): instant AI feedback in slides; teacher review before release in
-assessments; several parts per question; all three surfaces in one release.
+assessments; several parts per question; all three surfaces in one release. Quiz slides added
+2026-11-18.
 
 ---
 
@@ -110,6 +111,7 @@ Rules:
 | Surface | Learner-safe config | Secret |
 |---|---|---|
 | Assessment | `question.auto_evaluation_json` (full) | same JSON — **redacted** in every learner-facing response (attempt start/preview, learner report until the attempt's report is RELEASED) |
+| Quiz slide | `quiz_slide_question.auto_evaluation_json` = redacted config (split on the server in the `QuizSlideQuestion` constructor and `QuizSlideService.applyCbeSecretOnUpdate`) | new column `quiz_slide_question.evaluation_secret_json` (V722), same shape; admin reads every CBE question's secret of a quiz via `GET /admin-core-service/slide/quiz-slide/v1/{slideId}/evaluation-secrets` → `{evaluation_secrets: {questionId: json}}` |
 | Question slide | `question_slide.auto_evaluation_json` = **already redacted** config (the learner answer-key stripper `AnswerKeyStripper` keeps it on CBE nodes, redacted again) | new column `question_slide.evaluation_secret_json` (= `{ parts: [{id, solution, markingScheme, solutionFileId}], gradingNotes }`), never included in the 13 native slide JSON queries; admin reads it via a dedicated admin endpoint |
 
 ## 4. Learner answer (`responseData`)
@@ -218,11 +220,44 @@ accept equivalent presentation (sign conventions, brackets for negatives, `$000`
 rounding ±1 in the last unit shown); a figure with no visible working earns the line only if
 it matches; written parts are marked on the points in the scheme, not on length.
 
+### 5.4 Quiz slides (after the quiz submit)
+
+- The quiz submit (`.../quiz-slide/add-or-update-quiz-slide-activity-log`, also offline replays)
+  stores each CBE answer in `quiz_slide_question_tracked.response_json` as
+  `{questionName, questionType, type: "CBE_RESPONSE", answer, evaluation: null, marks: 0, maxMarks,
+  isCorrect: false, isPartial: false, gradedBy: "server", cbeState: "PENDING"}` with
+  `response_status = SUBMITTED` (`SKIPPED` + `cbeState: "SKIPPED"` when nothing beyond the template
+  was written). Whatever marks the client sent are dropped (`QuizCbeRows`,
+  `QuizSlideActivityLogService.normaliseCbeAnswers`). No AI call happens in the submit: an offline
+  replay records it inside its own transaction.
+- The learner app then calls `POST /admin-core-service/learner-tracking/activity-log/quiz-slide/cbe/grade`
+  `{slide_id, attempt_id, chapter_id?, package_session_id?}` (`QuizCbeGradingService`). Each
+  PENDING / FAILED / stale EVALUATING answer of that attempt is reserved (`cbeState: "EVALUATING"`
+  under a per-learner advisory lock), sent to `grade-cbe-sync` (same body and pricing key as §5.2,
+  `source_id` = slide id), and finished as EVALUATED (`marks` scaled to the question's marks,
+  `response_status` CORRECT at full marks else WRONG + `isPartial`), FAILED (`error`: NO_CREDITS |
+  EVALUATION_FAILED, retried by the next call), or UNATTEMPTED (`response_status` SKIPPED). Calls
+  run side by side, outside any transaction; a graded answer is never graded again.
+- AI checks per question per learner: the quiz `re_attempt_count` when set, else 3; past that the
+  answer is left at `cbeState: "NO_CHECKS_LEFT"` with 0 marks.
+- `GET .../quiz-slide/cbe/results?slide_id=&attempt_id=` reads the same view back (with the
+  learner's own answer) and grades nothing. Both replies carry `show_solutions` and, when true,
+  each question's `solution` (`{parts:[{id, solution, markingScheme}]}`), decided by the quiz review
+  policy (`QuizReviewPolicy.mayShowAnswers`). Marks, verdict, feedback and the line breakdown are
+  always shown.
+- The learner app calls `grade` right after an online submit and again on opening the review when
+  an answer is PENDING or FAILED (offline submit, closed tab, no credits then); while one is
+  EVALUATING elsewhere it polls `results`. The review score reads the marks from the attempt logs,
+  so it updates once they are recorded; a fail is not shown while a CBE answer awaits marks.
+- In the quiz the CBE question is worth the sum of its parts' marks (`quiz_slide_question.marks`,
+  set by the editor). Study mode has no check for it; the Fun skin is not used for a quiz with one.
+
 ## 6. UI
 
 ### Admin (shared editor: assessments, question papers/bank, question slides)
-- Picker entry in `QuestionTypeSelection` (assessments/papers) and the slide
-  `add-question-dialog`; **not** in the quiz `QuestionTypeSelector`.
+- Picker entry in `QuestionTypeSelection` (assessments/papers), the slide
+  `add-question-dialog` and the quiz `QuestionTypeSelector` (in-quiz "Add Question"; the
+  new-quiz `Add-Quiz-Dialog` does not offer it). The quiz editor loads a question's secret on Edit.
 - `CbeResponse/` MainView: scenario (existing passage editor), question text, parts list
   (add Spreadsheet / Document part; label; marks; prompt; starting template — build in the grid
   or import .xlsx; solution — build in the grid or import .xlsx (multi-sheet kept); marking

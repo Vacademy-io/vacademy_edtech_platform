@@ -4,6 +4,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { QuestionTypeProps } from '../types';
 import { MCQS, MCQM, Numerical, TrueFalse, LongAnswer, SingleWord, CMCQS, CMCQM } from '@/svgs';
+import { Table } from '@phosphor-icons/react';
 import { QuestionType as QuestionTypeList } from '@/constants/dummy-data';
 
 interface QuestionTypeSelectorProps {
@@ -80,6 +81,22 @@ const QuestionTypeSelector: React.FC<QuestionTypeSelectorProps> = ({
                             icon={<SingleWord />}
                             text={t('singleWord')}
                             type={QuestionTypeList.ONE_WORD}
+                            handleAddQuestion={onSelectQuestionType}
+                        />
+                    </div>
+
+                    <Separator className="my-6" />
+
+                    <div className="flex flex-col gap-4">
+                        <div className="text-subtitle font-semibold">{t('cbeSection')}</div>
+                        <QuestionType
+                            icon={
+                                <div className="flex size-10 items-center justify-center rounded-md bg-success-50">
+                                    <Table size={22} className="text-success-600" weight="bold" />
+                                </div>
+                            }
+                            text={t('cbeResponse')}
+                            type={QuestionTypeList.CBE_RESPONSE}
                             handleAddQuestion={onSelectQuestionType}
                         />
                     </div>

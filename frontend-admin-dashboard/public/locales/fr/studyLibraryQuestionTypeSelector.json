@@ -11,5 +11,7 @@
     "readingSkills": "Compétences de lecture",
     "comprehensionMcqSingleCorrect": "QCM de compréhension (une réponse correcte)",
     "comprehensionMcqMultipleCorrect": "QCM de compréhension (plusieurs réponses correctes)",
-    "comprehensionNumeric": "Numérique de compréhension"
+    "comprehensionNumeric": "Numérique de compréhension",
+    "cbeSection": "Examen sur ordinateur (CBE)",
+    "cbeResponse": "Tableur et réponse rédigée"
 }

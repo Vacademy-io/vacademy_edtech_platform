@@ -278,6 +278,9 @@ export const FEEDBACK_URL = `${BASE_URL}/admin-core-service/rating`;
 export const SUBMIT_QUIZ_SLIDE_ACTIVITY_LOG = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/add-or-update-quiz-slide-activity-log`;
 // One quiz answer checked without recording anything (study-mode quizzes return the key and explanation).
 export const QUIZ_CHECK_ANSWER = `${BASE_URL}/admin-core-service/learner-tracking/quiz-attempt/v1/check-answer`;
+// Spreadsheet & Written Response questions in a quiz: AI check of a submitted attempt, and its read-back.
+export const QUIZ_CBE_GRADE = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/cbe/grade`;
+export const QUIZ_CBE_RESULTS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/cbe/results`;
 export const GET_QUIZ_SLIDE_ACTIVITY_LOGS = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/quiz-slide/quiz-slide-activity-logs`;
 export const SUBMIT_ASSESSMENT_SLIDE_ACTIVITY_LOG = `${BASE_URL}/admin-core-service/learner-tracking/activity-log/assessment-slide/add-or-update-assessment-slide-activity-log`;
 export const CODING_SUBMISSIONS = `${BASE_URL}/admin-core-service/coding/submissions`;

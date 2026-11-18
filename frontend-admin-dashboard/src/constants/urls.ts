@@ -815,6 +815,10 @@ export const getQuestionSlideEvaluationSecretUrl = (slideId: string) =>
     `${BASE_URL}/admin-core-service/slide/question-slide/v1/${encodeURIComponent(slideId)}/evaluation-secret`;
 export const UPDATE_ASSIGNMENT_ORDER = `${BASE_URL}/admin-core-service/slide/assignment-slide/add-or-update`;
 export const ADD_UPDATE_QUIZ_SLIDE = `${BASE_URL}/admin-core-service/slide/quiz-slide/add-or-update`;
+// Spreadsheet & Written Response (CBE) questions inside a quiz slide: their solutions,
+// marking schemes and grading notes keyed by question id, for the editor (staff only).
+export const getQuizSlideEvaluationSecretsUrl = (slideId: string) =>
+    `${BASE_URL}/admin-core-service/slide/quiz-slide/v1/${encodeURIComponent(slideId)}/evaluation-secrets`;
 export const ADD_UPDATE_ASSIGNMENT_SLIDE = `${BASE_URL}/admin-core-service/slide/assignment-slide/add-or-update`;
 export const ADD_UPDATE_ASSESSMENT_SLIDE = `${BASE_URL}/admin-core-service/slide/assessment-slide/add-or-update`;
 // GET lists the course slides that launch an assessment; DELETE removes them all.

@@ -320,6 +320,20 @@
       "notStartedHint": "It will begin on its own when the class starts."
     }
   },
+  "quizCbe": {
+    "checking": "Checking your answer with AI…",
+    "checkingHint": "This can take up to two minutes. Your marks appear here when it finishes.",
+    "pending": "Waiting for its AI check.",
+    "failedNoCredits": "Your answer is saved, but it could not be checked because the institute has run out of AI credits.",
+    "failed": "Your answer is saved, but the AI check did not finish.",
+    "retry": "Check again",
+    "unattempted": "Your answer is the same as the starting template, so it was not marked.",
+    "noChecksLeft": "You have used all {{max}} AI checks for this question, so this answer was not marked.",
+    "skipped": "Not answered.",
+    "yourAnswer": "Your answer",
+    "savedOffline": "Your answer is saved on this device. It will be checked once you are back online and open this quiz again.",
+    "marksPending": "– / {{max}}"
+  },
   "cbeSlide": {
     "typeLabel": "Spreadsheet & written response",
     "totalMarks_one": "{{count}} mark",
