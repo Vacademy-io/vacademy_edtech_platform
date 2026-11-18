@@ -142,4 +142,31 @@ describe('QuickMarksPanel (W2b)', () => {
         const tick = await screen.findByRole('checkbox', { name: /updated result/ });
         expect(tick).not.toBeChecked();
     });
+    it('labels a locked objective row with who set its mark, not always "Answer key" (live follow-up B4)', () => {
+        const o = outline({
+            attempt_id: 'att-1',
+            kind: 'ONLINE',
+            sections: [
+                {
+                    section_id: 's1',
+                    name: 'Section A',
+                    order: 0,
+                    total: 3.5,
+                    max: 4,
+                    questions: [
+                        qrow({ key: 's1:q1', question_number: 1, question_type: 'MCQS', marks: 2, max_marks: 2,
+                            state: 'MARKED', marks_source: null, marked_by_kind: 'ANSWER_KEY' }),
+                        qrow({ key: 's1:q2', question_number: 2, question_type: 'MCQS', marks: 1.5, max_marks: 2,
+                            state: 'MARKED', marks_source: 'MANUAL', marked_by_kind: 'TEACHER',
+                            marked_by: { user_id: 't-1', name: 'Riya Jain' } }),
+                    ],
+                },
+            ],
+        });
+        renderPanel(vi.fn(), o);
+        const labels = screen.getAllByTestId('quick-locked-source').map((e) => e.textContent);
+        expect(labels).toEqual(['Answer key', 'Marked by: Riya Jain']);
+        // Objective rows stay out of Quick marks (Edit marks changes them, contract 9.8).
+        expect(screen.queryByLabelText('Marks for Q2')).not.toBeInTheDocument();
+    });
 });

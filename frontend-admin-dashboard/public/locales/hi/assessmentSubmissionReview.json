@@ -249,7 +249,7 @@
     "quick": {
         "title": "त्वरित अंक · {{name}}",
         "total": "कुल {{score}}",
-        "locked": "उत्तर कुंजी",
+        "lockedHint": "वस्तुनिष्ठ उत्तरों के अंक \"अंक बदलें\" से बदलें",
         "marksFor": "प्र{{number}} के अंक",
         "feedbackFor": "प्र{{number}} पर प्रतिक्रिया",
         "feedbackPlaceholder": "प्रतिक्रिया (वैकल्पिक)",

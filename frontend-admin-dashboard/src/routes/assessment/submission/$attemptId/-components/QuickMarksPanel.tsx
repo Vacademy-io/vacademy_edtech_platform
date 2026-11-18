@@ -10,6 +10,7 @@ import { MyButton } from '@/components/design-system/button';
 import { cn } from '@/lib/utils';
 import { getMarkingSummary, parseApiError, saveQuickMarks } from '@/services/submission-review/api';
 import { invalidateAttempt } from '@/services/submission-review/query-keys';
+import { markedByLabel } from '@/services/submission-review/labels';
 import {
     allRows,
     buildQuickMarksItems,
@@ -63,7 +64,8 @@ export const findNextNeedsMarking = async (outline: SubmissionOutline): Promise<
 };
 
 /**
- * W2b Quick marks: one box per question in paper order, objective answers locked, a running
+ * W2b Quick marks: one box per question in paper order, objective answers locked (labelled with
+ * who set the mark; Edit marks changes them), a running
  * total, "Mark the rest as not answered", and one batch save (A3b). After release, Save
  * asks once for a reason and whether to send the learner the update.
  */
@@ -181,6 +183,16 @@ export const QuickMarksPanel = ({
     const setDraft = (key: string, patch: Partial<QuickDrafts[string]>) =>
         setDrafts((d) => ({ ...d, [key]: { ...d[key]!, ...patch } }));
 
+    // An objective row is not typed here (Edit marks changes it), but it says who set its
+    // mark: the answer key, or the teacher who changed it (MANUAL), never "Answer key" for both.
+    const lockedSourceLabel = (row: QuestionRow): string | null => {
+        const by = markedByLabel(row.marked_by_kind, row.marked_by?.name, t('common.aTeacher'));
+        if (!by) return null;
+        return by.key === 'markedBy.answerKey'
+            ? t(by.key, by.params)
+            : t('markedBy.prefix', { who: t(by.key, by.params) });
+    };
+
     const focusNext = (key: string) => {
         const i = editableKeys.indexOf(key);
         const nextKey = editableKeys[i + 1];
@@ -209,10 +221,17 @@ export const QuickMarksPanel = ({
                                 {typeLabel(row.question_type)}
                             </span>
                             {!d ? (
-                                <span className="flex items-center gap-2 text-body text-neutral-600">
-                                    <Lock size={14} className="text-neutral-400" />
+                                <span
+                                    className="flex items-center gap-2 text-body text-neutral-600"
+                                    title={t('quick.lockedHint')}
+                                >
+                                    <Lock size={14} className="text-neutral-400" aria-label={t('quick.lockedHint')} />
                                     <span className="tabular-nums">{formatMarkOutOf(row.marks, row.max_marks)}</span>
-                                    <span className="text-caption text-neutral-500">{t('quick.locked')}</span>
+                                    {lockedSourceLabel(row) && (
+                                        <span className="text-caption text-neutral-500" data-testid="quick-locked-source">
+                                            {lockedSourceLabel(row)}
+                                        </span>
+                                    )}
                                 </span>
                             ) : d.notAnswered ? (
                                 <span className="flex items-center gap-2">

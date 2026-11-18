@@ -249,7 +249,7 @@
     "quick": {
         "title": "Quick marks · {{name}}",
         "total": "Total {{score}}",
-        "locked": "Answer key",
+        "lockedHint": "Objective answers change through Edit marks",
         "marksFor": "Marks for Q{{number}}",
         "feedbackFor": "Feedback for Q{{number}}",
         "feedbackPlaceholder": "Feedback (optional)",

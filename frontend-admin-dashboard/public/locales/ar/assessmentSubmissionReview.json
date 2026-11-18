@@ -273,7 +273,7 @@
     "quick": {
         "title": "درجات سريعة · {{name}}",
         "total": "المجموع {{score}}",
-        "locked": "مفتاح الإجابة",
+        "lockedHint": "تُعدَّل درجات الأسئلة الموضوعية من «تعديل الدرجة»",
         "marksFor": "درجة س{{number}}",
         "feedbackFor": "ملاحظات س{{number}}",
         "feedbackPlaceholder": "ملاحظات (اختياري)",

@@ -255,7 +255,7 @@
     "quick": {
         "title": "Notes rapides · {{name}}",
         "total": "Total {{score}}",
-        "locked": "Corrigé",
+        "lockedHint": "Les réponses objectives se modifient avec « Modifier la note »",
         "marksFor": "Note de Q{{number}}",
         "feedbackFor": "Commentaire de Q{{number}}",
         "feedbackPlaceholder": "Commentaire (facultatif)",
