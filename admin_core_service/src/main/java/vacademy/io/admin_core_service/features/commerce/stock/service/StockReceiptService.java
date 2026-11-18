@@ -15,6 +15,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import vacademy.io.admin_core_service.features.capabilities.service.CapabilityResolver;
 import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditService;
+import vacademy.io.admin_core_service.features.commerce.label.service.LabelQueueService;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.ProductStatus;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockMode;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockPolicy;
@@ -119,6 +120,14 @@ public class StockReceiptService {
     /** Flags open orders a receipt reversal left short; absent in tests built by hand. */
     @Autowired(required = false)
     private CommerceStockShortFlagger stockShortFlagger;
+
+    /** The label print queue (WP-40); absent in tests built by hand. */
+    private ObjectProvider<LabelQueueService> labelQueue;
+
+    @Autowired(required = false)
+    public void setLabelQueue(ObjectProvider<LabelQueueService> labelQueue) {
+        this.labelQueue = labelQueue;
+    }
 
     public StockReceiptService(StockReceiptRepository receiptRepository,
                                StockReceiptLineRepository lineRepository,
@@ -305,12 +314,15 @@ public class StockReceiptService {
                     ledger.post(posting.pieceId(piece.getId()).quantityDelta(1)
                             .idempotencyKey(StockLedgerService.receiptKey(line.getId(), piece.getId())).build());
                 }
+                queueLabels(instituteId, draft.locationId, receipt.getId(), line, facts,
+                        created.stream().map(CommercePiece::getId).toList(), actorUserId);
             } else {
                 StockPostResult result = ledger.post(posting.quantityDelta(draftLine.quantity)
                         .idempotencyKey(StockLedgerService.receiptKey(line.getId(), null)).build());
                 if (knownCost == null && result.movement() != null) {
                     ledger.stampReceiptLineCost(instituteId, line.getId(), result.movement().getUnitCost());
                 }
+                queueLabels(instituteId, draft.locationId, receipt.getId(), line, facts, List.of(), actorUserId);
             }
             if (facts.getLabelCode() == null) {
                 variantRepository.setLabelCodeIfMissing(instituteId, draftLine.packageSessionId,
@@ -325,6 +337,15 @@ public class StockReceiptService {
         auditService.record(instituteId, actorUserId, draft.locationId, AUDIT_RECEIPT_POST, REFERENCE_RECEIPT,
                 receipt.getId(), null, json(audit), null);
         return receipt;
+    }
+
+    /** The labels of a receipt line, in the receipt's transaction (WP-40). */
+    private void queueLabels(String instituteId, String locationId, String receiptId, StockReceiptLine line,
+                             VariantFacts facts, List<String> pieceIds, String actorUserId) {
+        LabelQueueService queue = labelQueue == null ? null : labelQueue.getIfAvailable();
+        if (queue != null) {
+            queue.queueReceiptLine(instituteId, locationId, receiptId, line, facts, pieceIds, actorUserId);
+        }
     }
 
     private void requireSource(String instituteId, Draft draft) {
@@ -420,6 +441,11 @@ public class StockReceiptService {
             }
             if (receiptRepository.markReversed(instituteId, receiptId, actorUserId) != 1) {
                 throw new ConflictException("RECEIPT_REVERSED: this receipt was reversed a moment ago");
+            }
+            LabelQueueService queue = labelQueue == null ? null : labelQueue.getIfAvailable();
+            if (queue != null) {
+                // Labels of goods that are no longer here are not printed.
+                queue.cancelPendingOfSource(instituteId, LabelQueueService.SOURCE_RECEIPT, receiptId, actorUserId);
             }
             auditService.record(instituteId, actorUserId, receipt.getLocationId(), AUDIT_RECEIPT_REVERSE,
                     REFERENCE_RECEIPT, receiptId, null, null, reasonText.trim());
