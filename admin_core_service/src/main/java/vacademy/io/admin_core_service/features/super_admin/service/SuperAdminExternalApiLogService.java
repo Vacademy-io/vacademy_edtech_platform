@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vacademy.io.admin_core_service.core.external.IntegratedVendors;
 import vacademy.io.admin_core_service.features.super_admin.dto.ExternalApiLogDTOs.LogDetail;
 import vacademy.io.admin_core_service.features.super_admin.dto.ExternalApiLogDTOs.LogRow;
 import vacademy.io.admin_core_service.features.super_admin.dto.SuperAdminPageResponse;
@@ -80,6 +81,13 @@ public class SuperAdminExternalApiLogService {
             int size) {
         Source source = source(sourceKey);
         StringBuilder where = new StringBuilder(" WHERE ").append(source.time()).append(" >= :from");
+        if ("calls".equals(sourceKey)) {
+            // Integrated vendors only. The AI service's automatic recording used to log every host an
+            // HTTP client reached (institutes' websites fetched for lead research); those rows are not
+            // third-party APIs. Rows from the voice bot and admin_core are vetted where they are written.
+            where.append(" AND (COALESCE(e.source_service, 'ai') <> 'ai' OR ")
+                    .append(IntegratedVendors.sqlCondition("e.vendor")).append(")");
+        }
         Map<String, Object> params = new HashMap<>();
         params.put("from", Timestamp.from(Instant.now().minusSeconds(hours * 3600L)));
         if (vendor != null && !vendor.isBlank()) {
