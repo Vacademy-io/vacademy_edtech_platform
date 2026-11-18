@@ -12,10 +12,9 @@
  */
 import type { AccessCatalog, AssistantGroupEntry } from '../-constants/ai-access';
 import type { AssistantToolsSettingData } from '../-constants/assistant-tools';
-import type { McpServerSettingData } from '../-constants/mcp-server';
+import { MCP_LEARNER_ROLE_NAMES, type McpServerSettingData } from '../-constants/mcp-server';
 import {
     groupToolsByArea,
-    withViewsForEdits,
     type McpAccessLevel,
     type McpToolArea,
 } from '../-components/McpToolAccessList';
@@ -103,6 +102,11 @@ export function buildAccessAreas(
 const switchable = (groups: AssistantGroupEntry[]) =>
     groups.filter((g) => !g.always_on).map((g) => g.key);
 
+/** The edits the Edit level turns on: all but the opt-in ones, which are turned on one by one. */
+export function assistantAutoEditKeys(area: AssistantDoorArea): string[] {
+    return area.edits.filter((g) => !g.always_on && !g.opt_in).map((g) => g.key);
+}
+
 /** The levels the assistant side of a row offers: Off, plus View and Edit when it has them. */
 export function assistantLevels(area: AssistantDoorArea): McpAccessLevel[] {
     const levels: McpAccessLevel[] = ['off'];
@@ -119,8 +123,10 @@ export function assistantAreaLevel(area: AssistantDoorArea, enabled: string[]): 
 
 /**
  * Off removes every group of the area; View turns its reads on and its changes
- * off; Edit turns everything on (each change still needs the user's Confirm in
- * the assistant). Moving to Edit keeps the changes as they are when one is on.
+ * off; Edit turns its reads and its changes on (each change still needs the
+ * user's Confirm in the assistant), except the opt-in ones, which are only ever
+ * turned on by their own switch. Moving to Edit keeps the changes as they are
+ * when one is on.
  */
 export function withAssistantAreaLevel(
     area: AssistantDoorArea,
@@ -135,9 +141,81 @@ export function withAssistantAreaLevel(
     } else {
         views.forEach((k) => next.add(k));
         if (level === 'view') edits.forEach((k) => next.delete(k));
-        else if (!edits.some((k) => enabled.includes(k))) edits.forEach((k) => next.add(k));
+        else if (!edits.some((k) => enabled.includes(k)))
+            assistantAutoEditKeys(area).forEach((k) => next.add(k));
     }
     return Array.from(next);
+}
+
+// ─── One role's view ────────────────────────────────────────────────────────
+
+/**
+ * What a role really has on one side. Both backends give a role everyone's
+ * list plus the role's own list, so with a role picked the screen shows the
+ * two added up and marks what comes from everyone (`inherited`): that can only
+ * be switched off under Everyone.
+ */
+export function roleView(
+    everyone: readonly string[],
+    own: readonly string[] | undefined
+): { enabled: string[]; inherited: string[] } {
+    return {
+        enabled: Array.from(new Set([...everyone, ...(own ?? [])])),
+        inherited: [...everyone],
+    };
+}
+
+/**
+ * The role's own list after the admin changed what the role has to `next`.
+ * Only keys that are not on for everyone are the role's to change; entries of
+ * its own list that everyone also has stay as they are.
+ */
+export function roleOwnAfterChange(
+    everyone: readonly string[],
+    own: readonly string[] | undefined,
+    next: readonly string[]
+): string[] {
+    const inherited = new Set(everyone);
+    const kept = (own ?? []).filter((k) => inherited.has(k));
+    return Array.from(new Set([...kept, ...next.filter((k) => !inherited.has(k))]));
+}
+
+/**
+ * The groups a role preset adds to the role's own list: only groups the
+ * screen offers (rows hold only what the plan includes), never an opt-in one,
+ * and not what everyone already has.
+ */
+export function assistantPresetKeys(
+    areas: AccessArea[],
+    presetTools: readonly string[],
+    everyone: readonly string[]
+): string[] {
+    const offered = new Set(
+        areas.flatMap((a) =>
+            a.assistant
+                ? [...a.assistant.views, ...a.assistant.edits]
+                      .filter((g) => !g.always_on && !g.opt_in)
+                      .map((g) => g.key)
+                : []
+        )
+    );
+    return presetTools.filter((key) => offered.has(key) && !everyone.includes(key));
+}
+
+// ─── Saving in progress ─────────────────────────────────────────────────────
+
+/** The stored value the screen loaded (`base`) and the screen's edited copy (`current`). */
+export interface Draft<T> {
+    base: T;
+    current: T;
+}
+
+/**
+ * The screen's copy once `sent` is saved: `sent` is what is stored now, and
+ * any change made while the save was running stays unsaved.
+ */
+export function draftAfterSave<T>(prev: Draft<T> | null, sent: T): Draft<T> | null {
+    return prev && { base: sent, current: prev.current };
 }
 
 // ─── Loading ────────────────────────────────────────────────────────────────
@@ -159,12 +237,18 @@ function overridesFrom(value: unknown): Record<string, { enabled_tools: string[]
     return out;
 }
 
+/**
+ * A setting that has never been saved. A stored empty object counts as never
+ * saved too: the assistant's backend reads `{}` exactly like no setting.
+ */
+const neverSaved = (raw: unknown): boolean => !isRecord(raw) || Object.keys(raw).length === 0;
+
 /** The stored assistant setting as the screen edits it; never saved = the registry's defaults. */
 export function normalizeAssistantSetting(
     raw: unknown,
     defaults: AssistantToolsSettingData
 ): AssistantToolsSettingData {
-    if (!isRecord(raw)) {
+    if (!isRecord(raw) || neverSaved(raw)) {
         return {
             enabled_tools: [...defaults.enabled_tools],
             role_overrides: overridesFrom(defaults.role_overrides),
@@ -242,7 +326,7 @@ function mergeOverrides(
     latest: unknown,
     base: Overrides,
     mine: Overrides,
-    finish: (list: unknown[]) => unknown[] = (list) => list
+    finish: (list: unknown[], before: string[], after: string[]) => unknown[] = (list) => list
 ): Raw {
     const out: Raw = isRecord(latest) ? { ...latest } : {};
     const roles = new Set([...Object.keys(base), ...Object.keys(mine)]);
@@ -256,15 +340,15 @@ function mergeOverrides(
         if (!after || (before && sameKeys(before, after))) continue;
         const node: Raw = isRecord(out[role]) ? { ...(out[role] as Raw) } : {};
         const stored = Array.isArray(node.enabled_tools) ? node.enabled_tools : before ?? [];
-        node.enabled_tools = finish(mergeKeyList(stored, before ?? [], after));
+        node.enabled_tools = finish(mergeKeyList(stored, before ?? [], after), before ?? [], after);
         out[role] = node;
     }
     return out;
 }
 
-/** A setting never saved starts from what the screen showed for it. */
+/** A setting never saved (or saved as `{}`) starts from what the screen showed for it. */
 const startFrom = (latest: unknown, base: object): Raw =>
-    isRecord(latest) ? { ...latest } : JSON.parse(JSON.stringify(base));
+    isRecord(latest) && !neverSaved(latest) ? { ...latest } : JSON.parse(JSON.stringify(base));
 
 /**
  * The assistant setting to save: the latest stored value with only this
@@ -290,24 +374,69 @@ export function mergeAssistantSettingForSave(
 }
 
 /**
- * The MCP setting to save, the same way. Every list this save writes also gets
- * the view of each edit it holds (edit includes view; `areas` = the catalogue's).
+ * Edit includes view: a list this save writes gets the view of an edit that is
+ * on and in the plan, or that the admin switched on in this save. A view the
+ * admin switched off in this save stays off, whatever edit is still listed
+ * (an edit outside the plan is kept as it is, but cannot bring its view back).
+ * `areas` = every area of the catalogue, in the plan or not.
  */
+export function withViewsForSavedEdits(
+    areas: McpToolArea[],
+    list: unknown[],
+    before: readonly string[],
+    after: readonly string[]
+): unknown[] {
+    const out = [...list];
+    const has = (key: string) => out.includes(key);
+    for (const area of areas) {
+        const view = area.view?.key;
+        if (!view || has(view)) continue;
+        // The admin switched this view off (e.g. set the area Off): it stays off.
+        if (before.includes(view) && !after.includes(view)) continue;
+        const needsView = area.edits.some(
+            (tool) =>
+                has(tool.key) &&
+                (tool.entitled !== false ||
+                    (after.includes(tool.key) && !before.includes(tool.key)))
+        );
+        if (needsView) out.push(view);
+    }
+    return out;
+}
+
+/** Roles a stored "who can connect" list allows: an empty list (or learners only) means ADMIN. */
+const storedAllowedRolesOrBase = (stored: unknown, base: string[]): unknown => {
+    if (!Array.isArray(stored)) return stored;
+    const staff = stored.filter(
+        (r) => typeof r === 'string' && !MCP_LEARNER_ROLE_NAMES.has(r.trim().toUpperCase())
+    );
+    return staff.length ? stored : base;
+};
+
+/** The MCP setting to save, the same way (see withViewsForSavedEdits for views). */
 export function mergeMcpSettingForSave(
     latest: unknown,
     base: McpServerSettingData,
     mine: McpServerSettingData,
     areas: McpToolArea[]
 ): Raw {
-    const withViews = (list: unknown[]) => withViewsForEdits(areas, list as string[]);
     const out = startFrom(latest, base);
     if (base.enabled !== mine.enabled) out.enabled = mine.enabled;
     if (!sameKeys(base.allowed_roles, mine.allowed_roles)) {
-        out.allowed_roles = mergeKeyList(out.allowed_roles, base.allowed_roles, mine.allowed_roles);
+        // A stored empty list is applied as ADMIN, and the screen showed it so:
+        // a change starts from what the screen showed.
+        out.allowed_roles = mergeKeyList(
+            storedAllowedRolesOrBase(out.allowed_roles, base.allowed_roles),
+            base.allowed_roles,
+            mine.allowed_roles
+        );
     }
     if (!sameKeys(base.enabled_tools, mine.enabled_tools)) {
-        out.enabled_tools = withViews(
-            mergeKeyList(out.enabled_tools, base.enabled_tools, mine.enabled_tools)
+        out.enabled_tools = withViewsForSavedEdits(
+            areas,
+            mergeKeyList(out.enabled_tools, base.enabled_tools, mine.enabled_tools),
+            base.enabled_tools,
+            mine.enabled_tools
         );
     }
     if (!sameOverrides(base.role_overrides, mine.role_overrides)) {
@@ -315,7 +444,7 @@ export function mergeMcpSettingForSave(
             out.role_overrides,
             base.role_overrides,
             mine.role_overrides,
-            withViews
+            (list, before, after) => withViewsForSavedEdits(areas, list, before, after)
         );
     }
     return out;

@@ -136,19 +136,42 @@ export function defaultMcpServerSetting(): McpServerSettingData {
     };
 }
 
-/** Coerce whatever is stored (or nothing at all) into a complete setting. */
+/** Per-role lists as the backend reads them: a role whose entry is not an object has no list. */
+function roleOverridesFrom(raw: unknown): McpServerSettingData['role_overrides'] {
+    const out: McpServerSettingData['role_overrides'] = {};
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+    for (const [role, node] of Object.entries(raw as Record<string, unknown>)) {
+        if (!node || typeof node !== 'object' || Array.isArray(node)) continue;
+        const tools = (node as { enabled_tools?: unknown }).enabled_tools;
+        out[role] = {
+            enabled_tools: Array.isArray(tools)
+                ? tools.filter((t): t is string => typeof t === 'string')
+                : [],
+        };
+    }
+    return out;
+}
+
+/**
+ * Coerce whatever is stored (or nothing at all) into a complete setting, the
+ * way the backend applies it: a "who can connect" list that is empty (or names
+ * learners only) means ADMIN, and a role entry that is not an object (e.g.
+ * `null`) is no list at all.
+ */
 export function mergeMcpSettingWithDefaults(
     raw: Partial<McpServerSettingData> | null | undefined
 ): McpServerSettingData {
     const base = defaultMcpServerSetting();
     if (!raw) return base;
+    const staffRoles = Array.isArray(raw.allowed_roles)
+        ? raw.allowed_roles.filter(
+              (r) => typeof r === 'string' && !MCP_LEARNER_ROLE_NAMES.has(r.trim().toUpperCase())
+          )
+        : [];
     return {
         enabled: typeof raw.enabled === 'boolean' ? raw.enabled : base.enabled,
-        allowed_roles: Array.isArray(raw.allowed_roles)
-            ? raw.allowed_roles.filter((r) => !MCP_LEARNER_ROLE_NAMES.has(String(r).toUpperCase()))
-            : base.allowed_roles,
+        allowed_roles: staffRoles.length ? staffRoles : base.allowed_roles,
         enabled_tools: Array.isArray(raw.enabled_tools) ? raw.enabled_tools : base.enabled_tools,
-        role_overrides:
-            raw.role_overrides && typeof raw.role_overrides === 'object' ? raw.role_overrides : {},
+        role_overrides: roleOverridesFrom(raw.role_overrides),
     };
 }

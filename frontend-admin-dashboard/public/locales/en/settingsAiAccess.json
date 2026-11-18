@@ -16,6 +16,7 @@
     "door": {
         "none": "Not offered",
         "outsidePlan": "Not in your plan",
+        "everyoneOn": "On for everyone",
         "outsidePlanHint": "Your plan doesn’t include this. Anything saved for it is kept as it is.",
         "assistantEdits": "The assistant only proposes these changes. Nothing is applied until the person presses Confirm."
     },
@@ -24,7 +25,7 @@
         "everyone": "Everyone",
         "customized": "{{role}} (customized)",
         "everyoneHint": "Applies to every staff role. Pick a role to give it extra capabilities on top.",
-        "roleHint": "Extra capabilities for {{role}}, added on top of what everyone has. They never take anything away.",
+        "roleHint": "Everything {{role}} has: what everyone has plus its own extras. What’s on for everyone is marked and can only be turned off under Everyone.",
         "customizeAssistant": "Customize the assistant for this role",
         "customizeMcp": "Customize AI apps for this role",
         "notAllowedMcp": "This role can’t connect AI apps. Add it under Who can connect first.",

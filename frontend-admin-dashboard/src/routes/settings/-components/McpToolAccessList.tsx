@@ -158,9 +158,27 @@ interface LevelControlProps {
     levels: McpAccessLevel[];
     onChange: (level: McpAccessLevel) => void;
     disabled?: boolean;
+    /** Levels shown but not selectable (e.g. below what everyone has, with a role picked). */
+    disabledLevels?: McpAccessLevel[];
 }
 
-export function LevelControl({ label, value, levels, onChange, disabled }: LevelControlProps) {
+const LEVEL_RANK: Record<McpAccessLevel, number> = { off: 0, view: 1, edit: 2 };
+
+/** The levels below `floor`: with a role picked, it can't go below what everyone has. */
+export function levelsBelow(floor: McpAccessLevel): McpAccessLevel[] {
+    return (['off', 'view', 'edit'] as McpAccessLevel[]).filter(
+        (level) => LEVEL_RANK[level] < LEVEL_RANK[floor]
+    );
+}
+
+export function LevelControl({
+    label,
+    value,
+    levels,
+    onChange,
+    disabled,
+    disabledLevels,
+}: LevelControlProps) {
     const { t } = useTranslation('settingsMcpServer');
     return (
         // A segmented control is a radio choice: Radix gives it arrow-key navigation.
@@ -176,6 +194,7 @@ export function LevelControl({ label, value, levels, onChange, disabled }: Level
                 <RadioGroupPrimitive.Item
                     key={level}
                     value={level}
+                    disabled={disabledLevels?.includes(level)}
                     className={cn(
                         'min-h-8 flex-1 whitespace-nowrap rounded-md px-3 py-1 text-caption font-medium text-neutral-500 transition-colors hover:text-neutral-700 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60 sm:flex-none',
                         'data-[state=checked]:bg-white data-[state=checked]:shadow-sm',

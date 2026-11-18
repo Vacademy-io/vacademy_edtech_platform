@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Tuple
 
@@ -2744,6 +2745,17 @@ def load_assistant_tools_setting(db: Session, institute_id: str) -> Optional[Dic
     return load_institute_setting_data(db, institute_id, ASSISTANT_TOOLS_SETTING_KEY)
 
 
+def role_match_key(role: Any) -> str:
+    """
+    How saved role names are matched to a person's roles: ignoring case, spaces,
+    underscores and hyphens, so "Counsellor", "COUNSELLOR" and "Content_Creator"
+    match "COUNSELLOR" and "CONTENT CREATOR". Not a string = matches nothing.
+    """
+    if not isinstance(role, str):
+        return ""
+    return re.sub(r"[\s_\-]+", "", role).upper()
+
+
 def _effective_enabled_tools(setting: Optional[Dict[str, Any]], roles: Optional[List[str]]) -> set:
     """
     The set of tool keys enabled for the caller, given the institute setting and
@@ -2758,25 +2770,28 @@ def _effective_enabled_tools(setting: Optional[Dict[str, Any]], roles: Optional[
       A saved setting is the complete list: a group added to the registry later
       stays off there until an admin switches it on.
 
-    ``default_roles`` match role names ignoring case and surrounding spaces
-    (institutes save "COUNSELLOR" and "Counsellor" alike).
+    ``default_roles`` and the roles named in ``role_overrides`` match the
+    caller's roles the same way (``role_match_key``: ignoring case, spaces and
+    underscores), as institutes save "COUNSELLOR" and "Counsellor" alike.
     """
+    caller_roles = {k for k in (role_match_key(r) for r in roles or []) if k}
     if not setting:
-        caller_roles = {str(r).strip().upper() for r in roles or [] if r}
         return {
             spec.key()
             for spec in ASSISTANT_TOOLS.values()
             if spec.default_enabled
-            or (spec.default_roles and caller_roles.intersection(r.upper() for r in spec.default_roles))
+            or (spec.default_roles and caller_roles.intersection(role_match_key(r) for r in spec.default_roles))
         }
 
     enabled = set(setting.get("enabled_tools") or [])
     overrides = setting.get("role_overrides") or {}
     if isinstance(overrides, dict):
-        for role in roles or []:
-            ro = overrides.get(role)
-            if isinstance(ro, dict) and ro.get("enabled_tools") is not None:
-                enabled |= set(ro.get("enabled_tools") or [])
+        for role, ro in overrides.items():
+            if role_match_key(role) not in caller_roles or not isinstance(ro, dict):
+                continue
+            tools = ro.get("enabled_tools")
+            if isinstance(tools, list):
+                enabled |= {t for t in tools if isinstance(t, str)}
     return enabled
 
 

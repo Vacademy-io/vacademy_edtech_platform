@@ -37,6 +37,11 @@ export interface AssistantGroupEntry {
     area_order?: number;
     /** "view" reads; "edit" proposes changes the user confirms in the assistant. */
     level: 'view' | 'edit';
+    /**
+     * Turned on one by one (changes to live data, enrolments, sending): never
+     * switched on by the area's Edit level or a preset. Follows the MCP opt-in groups.
+     */
+    opt_in?: boolean;
     /** False when the institute's plan leaves the group out. */
     entitled?: boolean;
 }

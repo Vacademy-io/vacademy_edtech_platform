@@ -9,6 +9,7 @@ import type { AssistantGroupEntry } from '../../-constants/ai-access';
 import type { McpToolCatalogEntry } from '../../-constants/mcp-server';
 import {
     assistantAreaLevel,
+    assistantAutoEditKeys,
     assistantLevels,
     withAssistantAreaLevel,
     type AccessArea,
@@ -18,6 +19,7 @@ import {
     areaLevel,
     autoEditKeys,
     isNeverAutoOn,
+    levelsBelow,
     riskStatus,
     withAreaLevel,
     type McpAccessLevel,
@@ -31,9 +33,14 @@ import {
 
 /** One side's list as the current role picker shows it. */
 export interface DoorState {
-    /** The setting keys switched on in the list being shown. */
+    /** The setting keys switched on for the scope shown (with a role picked: everyone's plus its own). */
     enabled: string[];
-    /** False while the picker shows a role that has no list of its own on this side. */
+    /**
+     * With a role picked: the keys on for everyone. They show as "On for
+     * everyone" and can't be switched off here, only under Everyone.
+     */
+    inherited?: string[];
+    /** False while the picker shows a role that has no list of its own on this side, or while saving. */
     editable: boolean;
     onChange: (next: string[]) => void;
 }
@@ -105,6 +112,17 @@ function AreaRow({ area, assistant, mcp, idPrefix }: AreaRowProps) {
     // ── In-product assistant ──
     const asst = area.assistant;
     const asstLevel = asst ? assistantAreaLevel(asst, assistant.enabled) : 'off';
+    // With a role picked: the level everyone has here, which the role can't go below.
+    const asstInheritedLevel = asst ? assistantAreaLevel(asst, assistant.inherited ?? []) : 'off';
+    const asstInherited = (key: string) => Boolean(assistant.inherited?.includes(key));
+    const changeAssistantLevel = (next: McpAccessLevel) => {
+        if (!asst) return;
+        // Edit turns nothing on in an area whose changes are all turned on one by
+        // one: open the row so the admin sees the switches.
+        if (next === 'edit' && !assistantAutoEditKeys(asst).length && asstLevel !== 'edit')
+            setOpen(true);
+        assistant.onChange(withAssistantAreaLevel(asst, next, assistant.enabled));
+    };
     const groupLabel = (group: AssistantGroupEntry) =>
         tAssistant(`tools.${group.key}.label`, { defaultValue: group.label });
     const groupDescription = (group: AssistantGroupEntry) =>
@@ -123,6 +141,9 @@ function AreaRow({ area, assistant, mcp, idPrefix }: AreaRowProps) {
             ? 'view'
             : areaLevel(tools, mcp.enabled)
         : 'off';
+    const mcpInheritedLevel: McpAccessLevel =
+        tools && !tools.alwaysOn ? areaLevel(tools, mcp.inherited ?? []) : 'off';
+    const mcpInherited = (key: string) => Boolean(mcp.inherited?.includes(key));
     const mcpLevels: McpAccessLevel[] = tools?.edits.length
         ? ['off', 'view', 'edit']
         : ['off', 'view'];
@@ -176,20 +197,30 @@ function AreaRow({ area, assistant, mcp, idPrefix }: AreaRowProps) {
         />
     );
     const notOffered = <span className="text-caption text-neutral-400">{t('door.none')}</span>;
+    const everyoneChip = (
+        <StatusChip
+            status="INFO"
+            textSize="text-caption"
+            showIcon={false}
+            text={t('door.everyoneOn')}
+        />
+    );
 
     const assistantCell = asst ? (
         asst.alwaysOn ? (
             alwaysOnChip
         ) : (
-            <LevelControl
-                label={t('doors.levelAria', { area: label, door: t('doors.assistant') })}
-                value={asstLevel}
-                levels={assistantLevels(asst)}
-                disabled={!assistant.editable}
-                onChange={(next) =>
-                    assistant.onChange(withAssistantAreaLevel(asst, next, assistant.enabled))
-                }
-            />
+            <>
+                <LevelControl
+                    label={t('doors.levelAria', { area: label, door: t('doors.assistant') })}
+                    value={asstLevel}
+                    levels={assistantLevels(asst)}
+                    disabled={!assistant.editable}
+                    disabledLevels={levelsBelow(asstInheritedLevel)}
+                    onChange={changeAssistantLevel}
+                />
+                {asstInheritedLevel !== 'off' && everyoneChip}
+            </>
         )
     ) : area.assistantOutsidePlan ? (
         outsidePlanChip
@@ -207,8 +238,10 @@ function AreaRow({ area, assistant, mcp, idPrefix }: AreaRowProps) {
                     value={mcpLevel}
                     levels={mcpLevels}
                     disabled={!mcp.editable}
+                    disabledLevels={levelsBelow(mcpInheritedLevel)}
                     onChange={changeMcpLevel}
                 />
+                {mcpInheritedLevel !== 'off' && everyoneChip}
                 {liveEditOn && (
                     <StatusChip
                         status="WARNING"
@@ -287,7 +320,10 @@ function AreaRow({ area, assistant, mcp, idPrefix }: AreaRowProps) {
                                                       checked={assistant.enabled.includes(
                                                           group.key
                                                       )}
-                                                      disabled={!assistant.editable}
+                                                      disabled={
+                                                          !assistant.editable ||
+                                                          asstInherited(group.key)
+                                                      }
                                                       onCheckedChange={(v) =>
                                                           toggleGroup(group.key, v)
                                                       }
@@ -308,6 +344,17 @@ function AreaRow({ area, assistant, mcp, idPrefix }: AreaRowProps) {
                                                           </label>
                                                       )}
                                                       {group.always_on && alwaysOnChip}
+                                                      {!group.always_on &&
+                                                          asstInherited(group.key) &&
+                                                          everyoneChip}
+                                                      {group.opt_in && (
+                                                          <StatusChip
+                                                              status="INFO"
+                                                              textSize="text-caption"
+                                                              showIcon={false}
+                                                              text={tMcp('tools.optIn')}
+                                                          />
+                                                      )}
                                                   </div>
                                                   {description && (
                                                       <p className="text-caption text-neutral-600">
@@ -318,6 +365,13 @@ function AreaRow({ area, assistant, mcp, idPrefix }: AreaRowProps) {
                                           </div>
                                       );
                                   })}
+                            {asst &&
+                                asst.edits.some((g) => !g.always_on) &&
+                                !assistantAutoEditKeys(asst).length && (
+                                    <p className="text-caption text-neutral-500">
+                                        {tMcp('tools.eachOnItsOwn')}
+                                    </p>
+                                )}
                             {asst && asst.edits.length > 0 && (
                                 <p className="text-caption text-neutral-500">
                                     {t('door.assistantEdits')}
@@ -357,7 +411,9 @@ function AreaRow({ area, assistant, mcp, idPrefix }: AreaRowProps) {
                                                     <Switch
                                                         id={switchId}
                                                         checked={on}
-                                                        disabled={!mcp.editable}
+                                                        disabled={
+                                                            !mcp.editable || mcpInherited(tool.key)
+                                                        }
                                                         onCheckedChange={(v) =>
                                                             toggleTool(tool.key, v)
                                                         }
@@ -387,6 +443,9 @@ function AreaRow({ area, assistant, mcp, idPrefix }: AreaRowProps) {
                                                                 )}
                                                             />
                                                         )}
+                                                        {ownSwitch(tool) &&
+                                                            mcpInherited(tool.key) &&
+                                                            everyoneChip}
                                                         {isNeverAutoOn(tool) && (
                                                             <StatusChip
                                                                 status="INFO"

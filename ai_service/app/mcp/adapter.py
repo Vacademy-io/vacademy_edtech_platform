@@ -149,6 +149,18 @@ def _ordered_roles(specs: List[ToolSpec]) -> List[str]:
     return roles
 
 
+def assistant_group_opt_in(key: str, specs: List[ToolSpec]) -> bool:
+    """
+    True when the assistant's group is turned on one by one, never by an area's
+    Edit level or a preset: the group is an MCP opt-in group itself, or one of
+    its changes is one over MCP (e.g. ``learner_edits`` changes enrolments,
+    which MCP keeps as ``learner_enrolment_changes``).
+    """
+    if key in MCP_OPT_IN_GROUPS:
+        return True
+    return any(s.mode == "WRITE" and s.key(via_mcp=True) in MCP_OPT_IN_GROUPS for s in specs)
+
+
 def assistant_catalog(entitlements: Optional[Any] = None) -> List[Dict[str, Any]]:
     """
     The in-product assistant's settings groups, each placed in an area of the
@@ -156,8 +168,9 @@ def assistant_catalog(entitlements: Optional[Any] = None) -> List[Dict[str, Any]
 
     Served from the backend for the same reason as ``tool_catalog``: the
     dashboard renders it and keeps no list of its own. Each entry carries the
-    group's out-of-the-box defaults (``default_enabled``, ``default_roles``) and
-    the plan feature its tools need; with ``entitlements`` also ``entitled``.
+    group's out-of-the-box defaults (``default_enabled``, ``default_roles``),
+    the plan feature its tools need and ``opt_in`` (see
+    ``assistant_group_opt_in``); with ``entitlements`` also ``entitled``.
     """
     groups = _in_product_groups()
     catalog: List[Dict[str, Any]] = []
@@ -183,6 +196,7 @@ def assistant_catalog(entitlements: Optional[Any] = None) -> List[Dict[str, Any]
             "area_label": area["label"],
             "area_order": list(MCP_TOOL_AREAS).index(place["area"]) if place["area"] in MCP_TOOL_AREAS else 99,
             "level": place["level"],
+            "opt_in": assistant_group_opt_in(key, specs),
         }
         if entitlements is not None:
             # On when the plan includes at least one of the group's tools.
@@ -196,8 +210,9 @@ def assistant_default_setting() -> Dict[str, Any]:
     What the assistant allows while an institute has never saved its setting
     (``_effective_enabled_tools`` with no setting), written out as a setting:
     groups on for everyone in ``enabled_tools``, role defaults in
-    ``role_overrides``. A first save starts from this, so it keeps what each
-    role already had.
+    ``role_overrides``. The settings page starts from this until the setting
+    is first saved. Saved role lists are matched to a person's roles the same
+    way as these defaults: ignoring case, spaces and underscores.
     """
     enabled: List[str] = []
     overrides: Dict[str, Dict[str, List[str]]] = {}

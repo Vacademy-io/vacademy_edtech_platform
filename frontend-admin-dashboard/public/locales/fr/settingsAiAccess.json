@@ -16,6 +16,7 @@
     "door": {
         "none": "Non proposé",
         "outsidePlan": "Hors de votre offre",
+        "everyoneOn": "Activé pour tout le monde",
         "outsidePlanHint": "Votre offre ne comprend pas ceci. Ce qui a été enregistré pour ce domaine est conservé tel quel.",
         "assistantEdits": "L’assistant ne fait que proposer ces modifications. Rien n’est appliqué tant que la personne n’a pas appuyé sur Confirm."
     },
@@ -24,7 +25,7 @@
         "everyone": "Tout le monde",
         "customized": "{{role}} (personnalisé)",
         "everyoneHint": "S’applique à tous les rôles du personnel. Choisissez un rôle pour lui donner des fonctionnalités supplémentaires.",
-        "roleHint": "Fonctionnalités supplémentaires pour {{role}}, ajoutées à ce que tout le monde a. Elles ne retirent jamais rien.",
+        "roleHint": "Tout ce que {{role}} a : ce que tout le monde a, plus ses propres ajouts. Ce qui est activé pour tout le monde est signalé et ne peut être désactivé que dans Tout le monde.",
         "customizeAssistant": "Personnaliser l’assistant pour ce rôle",
         "customizeMcp": "Personnaliser les applications d’IA pour ce rôle",
         "notAllowedMcp": "Ce rôle ne peut pas connecter d’applications d’IA. Ajoutez-le d’abord dans Qui peut se connecter.",

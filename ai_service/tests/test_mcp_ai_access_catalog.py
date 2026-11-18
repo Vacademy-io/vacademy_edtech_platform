@@ -5,8 +5,10 @@ assistant's settings groups and the MCP tools side by side.
 The catalogue the page renders comes from the registry (app/mcp/adapter.py
 ``assistant_catalog`` / ``access_areas``), so the dashboard keeps no list of
 its own. These tests pin that every assistant group the page offers is a real
-in-product group placed in a known area, that the defaults match the registry,
-and that the endpoint answers staff only.
+in-product group placed in a known area, that every labelled group is placed,
+that the defaults match the registry, that edits turned on one by one are
+marked, that saved role lists match a role in any spelling, and that the
+endpoint answers staff only.
 """
 import json
 import sys
@@ -22,11 +24,18 @@ from app.mcp.constants import (  # noqa: E402
     AI_ACCESS_SETTINGS_PATH,
     ASSISTANT_GROUP_PLACEMENT,
     DENIAL_MESSAGES,
+    MCP_OPT_IN_GROUPS,
     MCP_SETTINGS_PATH,
     MCP_TOOL_AREAS,
 )
+from app.mcp.access import normalize_setting, setting_for_tool_gate  # noqa: E402
 from app.schemas.auth import PinnedPrincipal  # noqa: E402
-from app.services.assistant_tool_registry import ASSISTANT_TOOLS, _effective_enabled_tools  # noqa: E402
+from app.services.assistant_tool_registry import (  # noqa: E402
+    ASSISTANT_TOOLS,
+    GROUP_LABELS,
+    _effective_enabled_tools,
+    role_match_key,
+)
 
 #: The groups the assistant settings screen offered before the two screens became one.
 PREVIOUSLY_OFFERED = (
@@ -100,12 +109,82 @@ def test_assistant_entries_say_whether_the_plan_includes_them():
     assert with_crm["crm_leads"] is True and with_crm["crm_calls"] is False
 
 
-@pytest.mark.parametrize("roles", [["ADMIN"], ["COUNSELLOR"], ["TEACHER"], ["ADMIN", "TEACHER"]])
+@pytest.mark.parametrize("roles", [
+    ["ADMIN"], ["COUNSELLOR"], ["TEACHER"], ["ADMIN", "TEACHER"],
+    # Login tokens spell roles as the institute saved them.
+    ["Admin"], ["Counsellor"], ["counselor"], [" admin "], ["Content Creator"], ["CONTENT_CREATOR"],
+])
 def test_the_default_setting_grants_what_an_unsaved_institute_already_has(roles):
-    """A first save starts from this setting, so each role keeps exactly what it had."""
+    """
+    Saved, the default setting grants each role what the registry defaults grant
+    it while nothing is saved, whatever the spelling of the role in the token.
+    """
     default = adapter.assistant_default_setting()
     always = {spec.key() for spec in ASSISTANT_TOOLS.values() if spec.always_allowed}
     assert _effective_enabled_tools(default, roles) == _effective_enabled_tools(None, roles) - always
+
+
+def test_every_labelled_in_product_group_is_placed_on_the_page():
+    """A labelled group left unplaced would show as "Not offered" for something the assistant has."""
+    unplaced = sorted(k for k in _in_product_keys() if k in GROUP_LABELS and k not in ASSISTANT_GROUP_PLACEMENT)
+    assert unplaced == []
+
+
+def test_groups_sit_next_to_the_mcp_tools_of_the_same_key():
+    """An assistant group that shares its key with an MCP tool sits in that tool's area, at its level."""
+    mcp = {t["key"]: t for t in adapter.tool_catalog(include_opt_in=True)}
+    for entry in adapter.assistant_catalog():
+        tool = mcp.get(entry["key"])
+        if tool is not None and entry["key"] != "announcements":
+            assert (entry["area"], entry["level"]) == (tool["area"], tool["level"]), entry["key"]
+
+
+def test_opt_in_follows_the_mcp_opt_in_groups():
+    catalog = {entry["key"]: entry for entry in adapter.assistant_catalog()}
+    for key in ("course_structure_edits", "learner_enrollments", "learner_profile_edits",
+                "sub_org_edits", "sub_org_enrollments"):
+        assert key in MCP_OPT_IN_GROUPS and catalog[key]["opt_in"] is True, key
+    # A group one of whose changes is an MCP opt-in group is turned on one by one too.
+    assert catalog["learner_edits"]["opt_in"] is True
+    assert catalog["announcements"]["opt_in"] is True
+    for key in ("course_edits", "course_drip_edits", "blog_edits", "website_builder_edits", "learner_data"):
+        assert catalog[key]["opt_in"] is False, key
+    assert all(isinstance(entry["opt_in"], bool) for entry in catalog.values())
+
+
+@pytest.mark.parametrize("saved_role,token_role", [
+    ("COUNSELLOR", "Counsellor"), ("Counsellor", "COUNSELLOR"), ("CONTENT CREATOR", "Content_Creator"),
+    ("content_creator", "CONTENT CREATOR"), ("Teacher", " teacher "),
+])
+def test_saved_role_lists_match_the_role_in_any_spelling(saved_role, token_role):
+    setting = {"enabled_tools": ["search_help_knowledge"],
+               "role_overrides": {saved_role: {"enabled_tools": ["crm_leads"]}}}
+    assert _effective_enabled_tools(setting, [token_role]) == {"search_help_knowledge", "crm_leads"}
+    assert _effective_enabled_tools(setting, ["EVALUATOR"]) == {"search_help_knowledge"}
+
+
+def test_two_spellings_of_one_role_add_up_and_odd_values_are_ignored():
+    setting = {"enabled_tools": [],
+               "role_overrides": {"TEACHER": {"enabled_tools": ["schedule"]},
+                                  "Teacher": {"enabled_tools": ["assessments"]},
+                                  "teacher ": None,
+                                  "TEACHER_": {"enabled_tools": "blog"}}}
+    assert _effective_enabled_tools(setting, ["Teacher"]) == {"schedule", "assessments"}
+    assert role_match_key("Content Creator") == role_match_key("CONTENT_CREATOR") == "CONTENTCREATOR"
+    assert role_match_key(None) == ""
+
+
+def test_both_doors_match_saved_role_lists_alike():
+    """The MCP gate passes on the caller's role lists in any spelling, as the assistant reads them."""
+    setting = normalize_setting({"enabled": True, "allowed_roles": ["ADMIN", "COUNSELLOR"],
+                                 "enabled_tools": [],
+                                 "role_overrides": {"COUNSELLOR": {"enabled_tools": ["crm_leads"]},
+                                                    "Counsellor": {"enabled_tools": ["crm_calls"]}}})
+    assert setting["role_overrides"] == {"COUNSELLOR": {"enabled_tools": ["crm_leads", "crm_calls"]}}
+    gate = setting_for_tool_gate(setting, _principal(["Counsellor"]))
+    assert gate["role_overrides"] == {"Counsellor": {"enabled_tools": ["crm_leads", "crm_calls"]}}
+    assert {"crm_leads", "crm_calls"} <= _effective_enabled_tools(gate, ["Counsellor"])
+    assert setting_for_tool_gate(setting, _principal(["ADMIN"]))["role_overrides"] == {}
 
 
 def test_areas_are_the_mcp_areas_in_display_order():

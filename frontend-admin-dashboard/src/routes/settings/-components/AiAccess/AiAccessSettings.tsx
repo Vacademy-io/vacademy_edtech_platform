@@ -38,10 +38,15 @@ import {
 } from '../../-services/ai-access-service';
 import { fetchMcpConnectionInfo } from '../../-services/mcp-server-service';
 import {
+    assistantPresetKeys,
     buildAccessAreas,
+    draftAfterSave,
     normalizeAssistantSetting,
+    roleOwnAfterChange,
+    roleView,
     sameAssistantSetting,
     sameMcpSetting,
+    type Draft,
 } from '../../-utils/ai-access';
 import { McpAccessPresets, groupToolsByArea, isNeverAutoOn } from '../McpToolAccessList';
 import { AccessAreaList, type DoorState } from './AccessAreaList';
@@ -66,12 +71,6 @@ import {
 const EVERYONE = '__everyone__';
 
 type Overrides = Record<string, { enabled_tools: string[] }>;
-
-/** The stored value the screen loaded (`base`) and the screen's edited copy (`current`). */
-interface Draft<T> {
-    base: T;
-    current: T;
-}
 
 export const AI_ACCESS_QUERY_KEYS = {
     catalog: ['ai-access-catalog'],
@@ -169,13 +168,16 @@ export default function AiAccessSettings() {
     const { mutate: save, isPending: saving } = useMutation({
         mutationFn: async () => {
             if (assistantDraft && assistantDirty) {
-                await saveAssistantSettingMerged(assistantDraft.base, assistantDraft.current);
-                // Saved: the copy is now what is stored, so a refetch may replace it.
-                setAssistantDraft((prev) => prev && { base: prev.current, current: prev.current });
+                const sent = assistantDraft.current;
+                await saveAssistantSettingMerged(assistantDraft.base, sent);
+                // What was sent is now stored. Changes made while saving stay unsaved:
+                // they are measured from what was sent, and a refetch keeps them.
+                setAssistantDraft((prev) => draftAfterSave(prev, sent));
             }
             if (mcpDraft && mcpDirty) {
-                await saveMcpSettingMerged(mcpDraft.base, mcpDraft.current, allMcpAreas);
-                setMcpDraft((prev) => prev && { base: prev.current, current: prev.current });
+                const sent = mcpDraft.current;
+                await saveMcpSettingMerged(mcpDraft.base, sent, allMcpAreas);
+                setMcpDraft((prev) => draftAfterSave(prev, sent));
             }
         },
         onSuccess: () => toast.success(t('toasts.saved')),
@@ -210,65 +212,82 @@ export default function AiAccessSettings() {
     const mcpCustomized = Boolean(role && mcpRoleAllowed && mcp?.role_overrides[role]);
     const preset = role ? ASSISTANT_ROLE_PRESETS.find((p) => p.role === role) : undefined;
 
-    const assistantDoor: DoorState = {
-        enabled:
-            (role && assistant?.role_overrides[role]?.enabled_tools) ||
-            assistant?.enabled_tools ||
-            [],
-        editable: Boolean(assistant) && (!role || assistantCustomized),
-        onChange: (next) =>
-            updateAssistant((s) =>
-                role
-                    ? {
-                          ...s,
-                          role_overrides: { ...s.role_overrides, [role]: { enabled_tools: next } },
-                      }
-                    : { ...s, enabled_tools: next }
-            ),
+    // With a role picked, each side shows what the role really has: everyone's
+    // list plus the role's own (both backends add them up). What everyone has is
+    // marked and locked here; only the role's own extras change.
+    const doorFor = <T extends { enabled_tools: string[]; role_overrides: Overrides }>(
+        setting: T | null,
+        update: (fn: (s: T) => T) => void,
+        options: { customized: boolean; reachable: boolean }
+    ): DoorState => {
+        const everyone = setting?.enabled_tools ?? [];
+        const view = role
+            ? options.reachable
+                ? roleView(everyone, setting?.role_overrides[role]?.enabled_tools)
+                : { enabled: [], inherited: [] }
+            : { enabled: everyone, inherited: [] };
+        return {
+            enabled: view.enabled,
+            inherited: view.inherited,
+            editable: Boolean(setting) && !saving && (!role || options.customized),
+            onChange: (next) =>
+                update((s) =>
+                    role
+                        ? {
+                              ...s,
+                              role_overrides: {
+                                  ...s.role_overrides,
+                                  [role]: {
+                                      enabled_tools: roleOwnAfterChange(
+                                          s.enabled_tools,
+                                          s.role_overrides[role]?.enabled_tools,
+                                          next
+                                      ),
+                                  },
+                              },
+                          }
+                        : { ...s, enabled_tools: next }
+                ),
+        };
     };
-    const mcpDoor: DoorState = {
-        enabled:
-            (role && mcpCustomized && mcp?.role_overrides[role]?.enabled_tools) ||
-            mcp?.enabled_tools ||
-            [],
-        editable: Boolean(mcp) && (!role || mcpCustomized),
-        onChange: (next) =>
-            updateMcp((s) =>
-                role
-                    ? {
-                          ...s,
-                          role_overrides: { ...s.role_overrides, [role]: { enabled_tools: next } },
-                      }
-                    : { ...s, enabled_tools: next }
-            ),
-    };
+    const assistantDoor = doorFor(assistant, updateAssistant, {
+        customized: assistantCustomized,
+        reachable: true,
+    });
+    // A role that may not connect gets nothing over MCP, whatever its lists say.
+    const mcpDoor = doorFor(mcp, updateMcp, {
+        customized: mcpCustomized,
+        reachable: mcpRoleAllowed,
+    });
 
-    // A role's own list starts as a copy of what everyone has; switching it off removes it.
+    // A role's own list starts empty (it already has what everyone has); switching it off removes it.
     const withRoleList = <T extends { enabled_tools: string[]; role_overrides: Overrides }>(
         s: T,
         on: boolean
     ): T => {
         if (!role) return s;
         const next = { ...s.role_overrides };
-        if (on) next[role] = { enabled_tools: [...s.enabled_tools] };
+        if (on) next[role] = { enabled_tools: [] };
         else delete next[role];
         return { ...s, role_overrides: next };
     };
     const customizeAssistant = (on: boolean) => updateAssistant((s) => withRoleList(s, on));
     const customizeMcp = (on: boolean) => updateMcp((s) => withRoleList(s, on));
 
-    /** One-click preset: grant the suggested groups to the role (additive). */
+    /**
+     * One-click preset: grant the suggested groups to the role (additive). Only
+     * groups the screen offers (in the plan) and never an opt-in one.
+     */
     const applyPreset = () => {
         if (!role || !preset) return;
-        const offered = new Set((catalog?.assistant_groups ?? []).map((g) => g.key));
-        const listed = preset.tools.filter((key) => offered.has(key));
         updateAssistant((s) => {
             const current = s.role_overrides[role]?.enabled_tools ?? [];
+            const added = assistantPresetKeys(areas, preset.tools, s.enabled_tools);
             return {
                 ...s,
                 role_overrides: {
                     ...s.role_overrides,
-                    [role]: { enabled_tools: Array.from(new Set([...current, ...listed])) },
+                    [role]: { enabled_tools: Array.from(new Set([...current, ...added])) },
                 },
             };
         });
@@ -357,7 +376,7 @@ export default function AiAccessSettings() {
                                 >
                                     {t('scope.label')}
                                 </label>
-                                <Select value={scope} onValueChange={setScope}>
+                                <Select value={scope} onValueChange={setScope} disabled={saving}>
                                     <SelectTrigger
                                         id="ai-access-scope"
                                         className="h-10 w-full bg-white sm:max-w-xs"
@@ -386,6 +405,7 @@ export default function AiAccessSettings() {
                                     <label className="flex items-center gap-2">
                                         <Switch
                                             checked={assistantCustomized}
+                                            disabled={saving}
                                             onCheckedChange={customizeAssistant}
                                         />
                                         <span className="text-caption text-neutral-700">
@@ -396,6 +416,7 @@ export default function AiAccessSettings() {
                                         <label className="flex items-center gap-2">
                                             <Switch
                                                 checked={mcpCustomized}
+                                                disabled={saving}
                                                 onCheckedChange={customizeMcp}
                                             />
                                             <span className="text-caption text-neutral-700">
@@ -412,6 +433,7 @@ export default function AiAccessSettings() {
                                             buttonType="secondary"
                                             scale="small"
                                             onClick={applyPreset}
+                                            disable={saving}
                                         >
                                             {t('scope.applyPreset')}
                                         </MyButton>
@@ -457,11 +479,16 @@ export default function AiAccessSettings() {
                             {t('section.mcpDescription')}
                         </p>
                     </div>
-                    <McpEnableCard enabled={mcp.enabled} onToggle={toggleMcpEnabled} />
+                    <McpEnableCard
+                        enabled={mcp.enabled}
+                        onToggle={toggleMcpEnabled}
+                        disabled={saving}
+                    />
                     <McpRolesCard
                         roleNames={roleNames}
                         allowedRoles={mcp.allowed_roles}
                         onToggleRole={toggleMcpRole}
+                        disabled={saving}
                     />
                     {mcp.enabled && (
                         <McpConnectCard

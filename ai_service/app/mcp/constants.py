@@ -723,8 +723,12 @@ MCP_OPT_IN_GROUPS = frozenset({"website_data_edits", "website_publish",
 #: so Settings → AI access shows one row per area with the assistant and AI apps
 #: side by side. Keys are ASSISTANT_TOOLS_SETTING groups (``ToolSpec.key()``);
 #: the order here is the order within an area. Only these groups are offered as
-#: assistant switches; any other saved group is left as it is.
+#: assistant switches; any other saved group is left as it is. Every in-product
+#: group with a label in the registry's GROUP_LABELS must be placed here.
 #:   level: "view" reads; "edit" proposes changes the user confirms in the assistant
+#: Which edits are turned on one by one (never by an area's Edit level or a
+#: preset) is decided by the catalogue, from MCP_OPT_IN_GROUPS (adapter.py
+#: ``assistant_group_opt_in``).
 ASSISTANT_GROUP_PLACEMENT: Dict[str, Dict[str, str]] = {
     "identity": {"area": "identity", "level": "view"},
     "search_help_knowledge": {"area": "help", "level": "view"},
@@ -735,13 +739,27 @@ ASSISTANT_GROUP_PLACEMENT: Dict[str, Dict[str, str]] = {
     "audience_forms_edits": {"area": "lead_forms", "level": "edit"},
     "workflows": {"area": "automations", "level": "view"},
     "workflows_edits": {"area": "automations", "level": "edit"},
+    "blog": {"area": "blog", "level": "view"},
+    "blog_edits": {"area": "blog", "level": "edit"},
+    "courses": {"area": "courses", "level": "view"},
+    "course_edits": {"area": "courses", "level": "edit"},
+    "course_drip_edits": {"area": "courses", "level": "edit"},
+    "course_invite_edits": {"area": "courses", "level": "edit"},
+    "course_structure_edits": {"area": "courses", "level": "edit"},
+    "learners": {"area": "learners", "level": "view"},
     "learner_data": {"area": "learners", "level": "view"},
     "learner_edits": {"area": "learners", "level": "edit"},
+    "learner_enrollments": {"area": "learners", "level": "edit"},
+    "learner_profile_edits": {"area": "learners", "level": "edit"},
+    "learner_reports": {"area": "learner_reports", "level": "view"},
     "batch_data": {"area": "batches", "level": "view"},
     "assessments": {"area": "assessments", "level": "view"},
     "schedule": {"area": "live_classes", "level": "view"},
     "payments": {"area": "fees", "level": "view"},
     "announcements": {"area": "announcements", "level": "edit"},
+    "sub_orgs": {"area": "sub_orgs", "level": "view"},
+    "sub_org_edits": {"area": "sub_orgs", "level": "edit"},
+    "sub_org_enrollments": {"area": "sub_orgs", "level": "edit"},
     "crm_leads": {"area": "crm_leads", "level": "view"},
     "crm_calls": {"area": "crm_calls", "level": "view"},
     "crm_meetings": {"area": "crm_meetings", "level": "view"},
