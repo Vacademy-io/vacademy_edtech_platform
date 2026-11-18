@@ -185,5 +185,11 @@ public class WhiteLabelStatusResponse {
 
         @JsonProperty("stack_name_below_logo")
         private Boolean stackNameBelowLogo;
+
+        @JsonProperty("apply_naming_setting")
+        private boolean applyNamingSetting;
+
+        @JsonProperty("root_catalogue_tag")
+        private String rootCatalogueTag;
     }
 }

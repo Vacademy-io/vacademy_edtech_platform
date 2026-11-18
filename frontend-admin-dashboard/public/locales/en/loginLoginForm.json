@@ -18,7 +18,7 @@
     "errors": {
         "accessDeniedTitle": "Access Denied",
         "studentAccessDenied": "Students are not allowed to access the admin portal. Please contact your administrator.",
-        "adminRoleRequired": "This portal requires ADMIN privileges. Please contact your administrator.",
+        "adminRoleRequired": "Your role can't sign in to this portal. Please contact your administrator.",
         "notAllowedPortal": "You are not allowed to access this portal. Please contact your administrator.",
         "loginFailedRetry": "Login failed. Please try again.",
         "loginErrorTitle": "Login Error",

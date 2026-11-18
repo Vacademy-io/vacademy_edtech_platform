@@ -471,7 +471,7 @@ public class DoubtNotificationService {
         try {
             if (audience == Audience.ADMIN) {
                 Optional<InstituteDomainRouting> adminRouting =
-                        domainRoutingRepository.findByInstituteIdAndRole(ctx.instituteId, "ADMIN");
+                        domainRoutingRepository.findAdminPortalRow(ctx.instituteId);
                 if (adminRouting.isPresent()) {
                     return formatDoubtUrl(adminRouting.get().getSubdomain(),
                             adminRouting.get().getDomain(), ADMIN_DOUBT_PATH, doubt.getId());

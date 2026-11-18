@@ -18,7 +18,7 @@
     "errors": {
         "accessDeniedTitle": "Accès refusé",
         "studentAccessDenied": "Les étudiants ne sont pas autorisés à accéder au portail administrateur. Veuillez contacter votre administrateur.",
-        "adminRoleRequired": "Ce portail nécessite des privilèges ADMIN. Veuillez contacter votre administrateur.",
+        "adminRoleRequired": "Votre rôle ne permet pas de vous connecter à ce portail. Veuillez contacter votre administrateur.",
         "notAllowedPortal": "Vous n'êtes pas autorisé à accéder à ce portail. Veuillez contacter votre administrateur.",
         "loginFailedRetry": "Échec de la connexion. Veuillez réessayer.",
         "loginErrorTitle": "Erreur de connexion",

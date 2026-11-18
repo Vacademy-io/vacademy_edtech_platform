@@ -39,6 +39,7 @@ vi.mock('@/lib/auth/axiosInstance', () => ({ default: { get: vi.fn(), post: vi.f
 
 vi.mock('@/routes/manage-custom-teams/-services/custom-team-services', () => ({
     getSubOrgs: vi.fn(),
+    getAllRoles: vi.fn().mockResolvedValue([]),
 }));
 
 vi.mock('@/lib/clipboard', () => ({ copyTextToClipboard: vi.fn() }));

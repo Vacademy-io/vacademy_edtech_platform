@@ -7,7 +7,7 @@
  *      have wiped before a fresh login; handleLoginFlow clears the faculty pair
  *      the same way before selecting),
  *   2. `handleInstituteSelection(id)` — the login picker's own handler: portal
- *      ADMIN check, selectedInstituteId, faculty/sub-org access, course settings
+ *      allowed-roles check, selectedInstituteId, faculty/sub-org access, course settings
  *      refresh, display-settings role key + fetch, post-login redirect,
  *   3. sub-org picker when the user has several (login: SubOrgSelection),
  *   4. clear React Query + sessionStorage and `window.location.assign(redirect)`
@@ -29,6 +29,8 @@ import {
     resolveEffectivePostLoginRoute,
 } from '@/services/display-settings';
 import { getCachedInstituteBranding } from '@/services/domain-routing';
+import { getLoginGateRoles } from '@/lib/auth/portal-roles';
+import { isBrandedByFixedFlavor } from '@/lib/auth/flavor-branding';
 import { getCourseSettings } from '@/services/course-settings';
 import { trackEvent } from '@/lib/amplitude';
 import { isNative } from '@/native/platform';
@@ -43,12 +45,13 @@ import {
     type SwitchableInstitute,
 } from '@/lib/auth/instituteSwitch';
 
-/** Institutes the signed-in user can switch to (token + portal ADMIN rule). */
+/** Institutes the signed-in user can switch to (token + the portal's allowed roles). */
 export const getSwitchableInstitutes = (): SwitchableInstitute[] => {
     const token = getTokenFromCookie(TokenKey.accessToken);
     const data = token ? getTokenDecodedData(token) : null;
     return getEligibleInstitutes(data?.authorities, {
-        requiresAdmin: (id) => getCachedInstituteBranding(id)?.role === 'ADMIN',
+        portalAllowedRoles: (id) =>
+            getLoginGateRoles(getCachedInstituteBranding(id)?.role, isBrandedByFixedFlavor()),
     });
 };
 

@@ -41,6 +41,7 @@ import {
     resolveInstituteForDomain,
     type DomainResolveResponse,
 } from '@/services/domain-routing';
+import { getPortalType } from '@/lib/auth/portal-roles';
 import { getFlavor, isNative } from '@/native';
 import useInstituteLogoStore from '@/components/common/layout-container/sidebar/institutelogo-global-zustand';
 import {
@@ -94,7 +95,7 @@ export function LoginForm() {
         ReturnType<typeof getCachedInstituteBranding>
     >(() => getCachedInstituteBranding());
     const instituteName = cachedBranding?.instituteName;
-    const portalRoleLabel = cachedBranding?.role === 'TEACHER' ? 'Teacher' : 'Admin';
+    const portalRoleLabel = getPortalType(cachedBranding?.role) === 'TEACHER' ? 'Teacher' : 'Admin';
     const portalInstitute = instituteName || 'Vacademy';
     const [authMethod, setAuthMethod] = useState<'EMAIL' | 'USERNAME' | 'PHONE'>('USERNAME');
     // Seed from cached branding so the first paint already reflects the institute's

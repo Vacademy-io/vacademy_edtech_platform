@@ -56,11 +56,16 @@ public class WhiteLabelService {
     private static final String ROLE_ADMIN = "ADMIN";
     private static final String ROLE_TEACHER = "TEACHER";
 
-    // Role names are simple uppercase tokens (system roles like
-    // LEARNER/ADMIN/TEACHER
-    // and institute custom roles like MANAGE_LEAD). Used to sanity-check request
-    // tokens.
-    private static final java.util.regex.Pattern ROLE_TOKEN_PATTERN = java.util.regex.Pattern.compile("[A-Z0-9_]+");
+    // A role name is whatever the roles table holds: system roles, seeded roles
+    // with a space ("COURSE CREATOR") and institute custom roles, which are free
+    // text ("Sales-Team", "HOD's", Devanagari). The comma is the only character
+    // the stored list cannot carry, and it never reaches a token; control
+    // characters are refused.
+    private static final java.util.regex.Pattern ROLE_TOKEN_PATTERN =
+            java.util.regex.Pattern.compile("[^,\\p{Cntrl}]+");
+
+    /** institute_domain_routing.role is varchar(100). */
+    private static final int ROLE_COLUMN_LENGTH = 100;
 
     @Value("${cloudflare.learner.target:learner.vacademy.io}")
     private String learnerCnameTarget;
@@ -121,17 +126,63 @@ public class WhiteLabelService {
                     .replaceFirst("/.*$", ""));
         }
 
-        // Validate: at most one primary per *individual* role token. If a user marks
-        // one entry primary with roles "ADMIN,MANAGE_LEAD" and another entry primary
-        // with "ADMIN", they collide on ADMIN.
-        Map<String, Long> primaryTokenCounts = entries.stream()
+        // Two entries writing one routing row would have the second silently
+        // overwrite the first. Keyed by the row each entry writes, so
+        // "myschool.com" and "*.myschool.com" (both the apex row) count as one
+        // host, while two saved rows that merely display the same host stay
+        // apart. Identity map, not equals(): DomainEntry is a Lombok @Data value.
+        Map<WhiteLabelSetupRequest.DomainEntry, RowTarget> targets = new IdentityHashMap<>();
+        for (WhiteLabelSetupRequest.DomainEntry e : entries) {
+            targets.put(e, resolveRowTarget(instituteId, e));
+        }
+        Map<String, List<String>> hostsByRow = entries.stream()
+                .collect(Collectors.groupingBy(e -> targets.get(e).key(),
+                        LinkedHashMap::new,
+                        Collectors.mapping(WhiteLabelSetupRequest.DomainEntry::getDomain, Collectors.toList())));
+        for (List<String> hosts : hostsByRow.values()) {
+            if (hosts.size() > 1) {
+                throw new VacademyException("Domain '" + hosts.get(0) + "' is listed " + hosts.size()
+                        + " times (" + String.join(", ", hosts) + "). Add it once and tick every role"
+                        + " that may log in there.");
+            }
+        }
+
+        // A "*" row answers for every host on its domain that has no row of its own
+        // AND for those that do (resolve prefers the "*" row). So a new one — an
+        // apex domain added here, or a broken apex row being moved into that shape
+        // — would take over the domain's other portals. Refused, not guessed at.
+        for (RowTarget target : targets.values()) {
+            if (!"*".equals(target.subdomain())
+                    || target.existing().map(r -> "*".equals(r.getSubdomain())).orElse(false)) {
+                continue;
+            }
+            String existingId = target.existing().map(InstituteDomainRouting::getId).orElse(null);
+            List<String> others = routingRepository.findByDomain(target.domain()).stream()
+                    .filter(r -> !r.getId().equals(existingId))
+                    .map(PortalUrlReconciler::hostOf)
+                    .distinct()
+                    .toList();
+            if (!others.isEmpty()) {
+                throw new VacademyException(target.domain() + " can only be added as the address for the whole "
+                        + "domain, which would override " + String.join(", ", others)
+                        + ". Contact support to set it up.");
+            }
+        }
+
+        // Validate: at most one primary per portal. The portal is the entry's
+        // LEARNER / ADMIN / TEACHER token; its other tokens are roles allowed to log
+        // in. Counting every token made an admin portal that lets teachers in
+        // ("ADMIN,TEACHER") collide with the institute's own teacher portal.
+        Map<String, Long> primaryPortalCounts = entries.stream()
                 .filter(WhiteLabelSetupRequest.DomainEntry::isPrimary)
-                .flatMap(e -> splitRoleTokens(e.getRole()).stream())
+                .map(e -> PortalUrlReconciler.portalTypeOf(e.getRole()))
+                .filter(Objects::nonNull)
                 .collect(Collectors.groupingBy(r -> r, Collectors.counting()));
-        for (Map.Entry<String, Long> pc : primaryTokenCounts.entrySet()) {
+        for (Map.Entry<String, Long> pc : primaryPortalCounts.entrySet()) {
             if (pc.getValue() > 1) {
-                throw new VacademyException("At most one primary domain per role allowed. " +
-                        "Role '" + pc.getKey() + "' has " + pc.getValue() + " primary entries.");
+                throw new VacademyException("At most one primary domain per portal allowed. " +
+                        "The " + pc.getKey().toLowerCase(Locale.ROOT) + " portal has "
+                        + pc.getValue() + " primary entries.");
             }
         }
 
@@ -201,10 +252,11 @@ public class WhiteLabelService {
             // primary flag is recorded here rather than applied to the institute
             // row — it is an intent that outlives this request, and it is honoured
             // only when the host actually serves.
-            upsertRoutingRow(instituteId, host, entry.getRole(), entry.isPrimary(), entry.getRoutingConfig());
+            upsertRoutingRow(instituteId, targets.get(entry), entry.getRole(), entry.isPrimary(),
+                    entry.getRoutingConfig());
         }
 
-        // 4) Keep "at most one primary row per role token" true across ALL of the
+        // 4) Keep "at most one primary row per portal" true across ALL of the
         // institute's rows, not just the ones in this request.
         List<InstituteDomainRouting> routings = routingRepository.findByInstituteId(instituteId);
         warnings.addAll(demoteSupersededPrimaries(routings, entries));
@@ -237,12 +289,14 @@ public class WhiteLabelService {
 
     /**
      * Clears {@code is_primary} on rows this request supersedes, so exactly one
-     * row stays primary per role token.
+     * row stays primary per portal (LEARNER / ADMIN / TEACHER).
      *
-     * <p>The flag is per-row while roles are per-token, so a row serving
-     * {@code "ADMIN,TEACHER"} that is superseded for ADMIN loses its TEACHER
-     * primacy too — there is no third state to demote it into. That is reported
-     * back rather than hidden; the fix is to give each role its own row.
+     * <p>A row is superseded only for its own portal: an admin portal that lets
+     * teachers in ({@code "ADMIN,TEACHER"}) keeps its star when a teacher portal
+     * is starred. It can still have been the teacher-URL fallback for an
+     * institute without a teacher portal, and the flag is per-row, so a row
+     * demoted for its own portal loses that fallback too. That is reported back
+     * rather than hidden; the fix is to give the other portal its own row.
      *
      * @return warnings to surface in the setup response
      */
@@ -253,8 +307,9 @@ public class WhiteLabelService {
         for (WhiteLabelSetupRequest.DomainEntry e : entries) {
             if (!e.isPrimary())
                 continue;
-            for (String token : splitRoleTokens(e.getRole())) {
-                requestedPrimaryHost.put(token, e.getDomain());
+            String portal = PortalUrlReconciler.portalTypeOf(e.getRole());
+            if (portal != null) {
+                requestedPrimaryHost.put(portal, e.getDomain());
             }
         }
         if (requestedPrimaryHost.isEmpty()) {
@@ -268,8 +323,10 @@ public class WhiteLabelService {
             }
             String host = PortalUrlReconciler.hostOf(routing);
             List<String> tokens = splitRoleTokens(routing.getRole());
-            boolean superseded = tokens.stream().anyMatch(
-                    t -> requestedPrimaryHost.containsKey(t) && !requestedPrimaryHost.get(t).equals(host));
+            String portal = PortalUrlReconciler.portalTypeOf(routing.getRole());
+            boolean superseded = portal != null
+                    && requestedPrimaryHost.containsKey(portal)
+                    && !requestedPrimaryHost.get(portal).equals(host);
             if (!superseded) {
                 continue;
             }
@@ -286,7 +343,7 @@ public class WhiteLabelService {
             if (!collateral.isEmpty()) {
                 warnings.add(host + " was also the primary domain for " + String.join(", ", collateral)
                         + ". It served several roles from one entry, so replacing it for "
-                        + String.join(", ", requestedPrimaryHost.keySet())
+                        + portal
                         + " cleared it for those too — add a separate entry if "
                         + String.join(", ", collateral) + " should keep this domain.");
             }
@@ -415,6 +472,10 @@ public class WhiteLabelService {
                         .logoWidthPx(r.getLogoWidthPx())
                         .logoHeightPx(r.getLogoHeightPx())
                         .stackNameBelowLogo(r.getStackNameBelowLogo())
+                        // Set from the database only until now, so the wizard has to
+                        // read them back or a save would look like it cleared them.
+                        .applyNamingSetting(r.isApplyNamingSetting())
+                        .rootCatalogueTag(r.getRootCatalogueTag())
                         .build())
                 .collect(Collectors.toList());
 
@@ -485,6 +546,44 @@ public class WhiteLabelService {
         out.put("instituteId", instituteId);
         out.put("liveSessionBaseUrl", normalized);
         return out;
+    }
+
+    // ── Removing a domain ─────────────────────────────────────────────────────
+
+    /**
+     * Deletes one of the institute's routing rows, so an old or mistyped domain no
+     * longer needs a database edit to go away.
+     *
+     * <p>Refused for the host the institute's outbound links use right now:
+     * deleting it would leave every emailed link pointing at a host that no longer
+     * resolves to the institute. Another domain has to become the portal URL first.
+     * The Cloudflare Pages custom domain is left attached; without a routing row
+     * it serves the app but brands nothing.
+     */
+    @Transactional
+    public void deleteDomain(CustomUserDetails user, String instituteId, String routingId) {
+        // Stricter than setup: deleting a portal's row is not undone by saving
+        // again, so only the institute's admins (or root) may do it.
+        boolean admin = user != null && (user.isRootUser()
+                || instituteRoleUserClient.findRolesOfUser(instituteId, user.getUserId())
+                        .map(roles -> roles.contains(ROLE_NAME_ADMIN)).orElse(false));
+        if (!admin) {
+            throw new VacademyException("Only an admin of this institute can remove a domain");
+        }
+        InstituteDomainRouting row = routingRepository.findById(routingId)
+                .filter(r -> r.getInstituteId() != null && instituteId.equals(r.getInstituteId().trim()))
+                .orElseThrow(() -> new VacademyException("Domain not found for this institute"));
+        Institute institute = instituteRepository.findById(instituteId)
+                .orElseThrow(() -> new VacademyException("Institute not found: " + instituteId));
+
+        String host = PortalUrlReconciler.hostOf(row);
+        if (isCurrentPortalUrl(institute, row)) {
+            throw new VacademyException(host + " is the portal URL your emails link to. "
+                    + "Mark another domain as primary and let it go live before removing this one.");
+        }
+        routingRepository.delete(row);
+        log.info("[WhiteLabel] Deleted routing row id={} ({}, {}) for institute {}",
+                row.getId(), host, row.getRole(), instituteId);
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
@@ -610,23 +709,62 @@ public class WhiteLabelService {
         return false;
     }
 
+    /** The routing row an entry writes: its stored domain/subdomain, and the row if it exists. */
+    private record RowTarget(String domain, String subdomain, Optional<InstituteDomainRouting> existing) {
+        String key() {
+            return existing.map(r -> "id:" + r.getId()).orElse("host:" + domain + "|" + subdomain);
+        }
+    }
+
     /**
-     * Upsert a domain routing row. Looks up by institute+domain+subdomain+role
-     * (exact match on the full role string, so "ADMIN" and "ADMIN,MANAGE_LEAD"
-     * are separate rows). Updates if found, creates otherwise.
+     * Which row an entry edits. The row the form loaded it from wins, as long as
+     * the domain was not changed: two rows can display the same host (a "*" row
+     * and an exact one on a host like school.co.in), and only the id tells them apart.
+     * Otherwise the host decides, not the role string — that is what the admin
+     * edits (which roles may log in), and matching on it made every change of
+     * roles create a second row for the same host. A legacy host that already
+     * has several rows takes the one with this exact role string, else the oldest.
      */
-    private void upsertRoutingRow(String instituteId, String fullDomain,
+    private RowTarget resolveRowTarget(String instituteId, WhiteLabelSetupRequest.DomainEntry entry) {
+        if (StringUtils.hasText(entry.getRoutingId())) {
+            Optional<InstituteDomainRouting> own = routingRepository.findById(entry.getRoutingId())
+                    .filter(r -> r.getInstituteId() != null && instituteId.equals(r.getInstituteId().trim()))
+                    .filter(r -> entry.getDomain().equalsIgnoreCase(PortalUrlReconciler.hostOf(r)));
+            if (own.isPresent()) {
+                InstituteDomainRouting row = own.get();
+                // A row whose domain is a bare TLD ("com") came from the old apex
+                // split and is never looked up; saving it moves it to the shape the
+                // portals ask for. Any other stored shape is kept as it is.
+                boolean tldOnly = row.getDomain() != null && !row.getDomain().contains(".")
+                        && !"localhost".equalsIgnoreCase(row.getDomain());
+                if (!tldOnly) {
+                    return new RowTarget(row.getDomain(), row.getSubdomain(), own);
+                }
+                String[] healed = splitDomain(entry.getDomain());
+                return new RowTarget(healed[0], healed[1], own);
+            }
+        }
+        String[] parts = splitDomain(entry.getDomain());
+        List<InstituteDomainRouting> hostRows = routingRepository.findByInstituteIdAndDomainAndSubdomain(
+                instituteId, parts[0], parts[1]);
+        Optional<InstituteDomainRouting> existing = hostRows.stream()
+                .filter(r -> entry.getRole().equals(r.getRole()))
+                .findFirst()
+                .or(() -> hostRows.stream().findFirst());
+        return new RowTarget(parts[0], parts[1], existing);
+    }
+
+    /** Writes one entry's routing row: updates the target row, or creates it. */
+    private void upsertRoutingRow(String instituteId, RowTarget target,
             String role, boolean isPrimary, PortalRoutingConfig config) {
 
-        String[] parts = splitDomain(fullDomain);
-        String domain = parts[0];
-        String subdomain = parts[1];
+        String domain = target.domain();
+        String subdomain = target.subdomain();
 
         DomainRoutingUpsertRequest req = buildUpsertRequest(instituteId, domain, subdomain, role, config);
         req.setPrimary(isPrimary);
 
-        Optional<InstituteDomainRouting> existing = routingRepository.findByInstituteIdAndDomainAndSubdomainAndRole(
-                instituteId, domain, subdomain, role);
+        Optional<InstituteDomainRouting> existing = target.existing();
 
         if (existing.isPresent()) {
             domainRoutingAdminService.update(existing.get().getId(), req);
@@ -642,9 +780,9 @@ public class WhiteLabelService {
 
     /**
      * Validates a comma-separated role string and returns its canonical form:
-     * tokens trimmed, uppercased, deduped, sorted alphabetically and rejoined
-     * with a single comma. Sorting makes "ADMIN,MANAGE_LEAD" and
-     * "MANAGE_LEAD,ADMIN" collapse to one canonical value so upserts match.
+     * tokens trimmed, inner whitespace collapsed to one space, uppercased,
+     * deduped, sorted alphabetically and rejoined with a single comma. Sorting
+     * makes "ADMIN,MANAGE_LEAD" and "MANAGE_LEAD,ADMIN" one stored value.
      *
      * Role names are NOT validated against the `roles` table: that table lives
      * in the auth service's database and is not reachable from
@@ -663,19 +801,23 @@ public class WhiteLabelService {
         }
         Set<String> tokens = new TreeSet<>();
         for (String raw : roleStr.split(",")) {
-            String token = raw == null ? "" : raw.trim().toUpperCase();
+            String token = raw == null ? "" : raw.trim().replaceAll("\\s+", " ").toUpperCase(Locale.ROOT);
             if (token.isEmpty())
                 continue;
             if (!ROLE_TOKEN_PATTERN.matcher(token).matches()) {
-                throw new VacademyException("Invalid role '" + token + "'. "
-                        + "Role names may contain only letters, digits and underscores.");
+                throw new VacademyException("Invalid role '" + token + "'.");
             }
             tokens.add(token);
         }
         if (tokens.isEmpty()) {
             throw new VacademyException("Role is required for each entry");
         }
-        return String.join(",", tokens);
+        String joined = String.join(",", tokens);
+        if (joined.length() > ROLE_COLUMN_LENGTH) {
+            throw new VacademyException("Too many roles on one domain (" + joined.length() + " of "
+                    + ROLE_COLUMN_LENGTH + " characters). Untick a few.");
+        }
+        return joined;
     }
 
     /**
@@ -696,13 +838,22 @@ public class WhiteLabelService {
     }
 
     /**
-     * Splits "learn.myschool.com" → ["myschool.com", "learn"]
+     * Splits a host the way the portals split it when they resolve themselves:
+     * "learn.myschool.com" → ["myschool.com", "learn"], and a bare two-label
+     * domain "myschool.com" → ["myschool.com", "*"]. The apex case used to come
+     * out as ["com", "myschool"], a row no portal ever asks for, so an apex
+     * domain could only be set up by editing the database. "x.localhost" keeps
+     * the first-label split, as the apps do for local hosts.
      */
-    private String[] splitDomain(String fullDomain) {
+    static String[] splitDomain(String fullDomain) {
         String d = fullDomain.trim().toLowerCase()
                 .replaceFirst("^https?://", "")
                 .replaceFirst("/.*$", "");
 
+        String[] labels = d.split("\\.");
+        if (labels.length == 2 && !"localhost".equals(labels[1])) {
+            return new String[] { d, "*" };
+        }
         String[] parts = d.split("\\.", 2);
         if (parts.length == 2) {
             return new String[] { parts[1], parts[0] };
@@ -752,6 +903,8 @@ public class WhiteLabelService {
             r.setLogoWidthPx(cfg.getLogoWidthPx());
             r.setLogoHeightPx(cfg.getLogoHeightPx());
             r.setStackNameBelowLogo(cfg.getStackNameBelowLogo());
+            r.setApplyNamingSetting(cfg.getApplyNamingSetting());
+            r.setRootCatalogueTag(cfg.getRootCatalogueTag());
         } else {
             r.setAllowUsernamePasswordAuth(true);
             r.setConvertUsernamePasswordToLowercase(false);

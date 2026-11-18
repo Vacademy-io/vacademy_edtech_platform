@@ -40,6 +40,7 @@ vi.mock('@/lib/auth/axiosInstance', () => ({ default: { get: vi.fn(), post: vi.f
 
 vi.mock('@/routes/manage-custom-teams/-services/custom-team-services', () => ({
     getSubOrgs: vi.fn(),
+    getAllRoles: vi.fn().mockResolvedValue([]),
 }));
 
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
