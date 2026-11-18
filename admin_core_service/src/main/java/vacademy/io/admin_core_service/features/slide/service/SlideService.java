@@ -1260,6 +1260,8 @@ public class SlideService {
                     newQ.setQuestionType(oldQ.getQuestionType());
                     newQ.setAccessLevel(oldQ.getAccessLevel());
                     newQ.setAutoEvaluationJson(oldQ.getAutoEvaluationJson());
+                    // CBE_RESPONSE: the solution and marking scheme live apart from auto_evaluation_json.
+                    newQ.setEvaluationSecretJson(oldQ.getEvaluationSecretJson());
                     newQ.setEvaluationType(oldQ.getEvaluationType());
                     newQ.setQuestionOrder(oldQ.getQuestionOrder());
                     newQ.setCanSkip(oldQ.getCanSkip());
