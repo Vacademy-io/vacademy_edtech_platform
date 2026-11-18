@@ -48,7 +48,7 @@ import { AssignmentAiEvaluator } from './assignment-ai-evaluator';
 import type { AssignmentAiEvaluation } from '@/services/study-library/slide-operations/assignment-ai-evaluation';
 import { getInstituteId } from '@/constants/helper';
 import { CbeSlideAttempts, type CbeSlideAttemptRow } from '@/components/common/cbe-review/cbe-slide-attempts';
-import { parseCbeConfig } from '@/components/cbe/types';
+import { htmlToPlainText, parseCbeConfig } from '@/components/cbe/types';
 import { parseCbeSlideResponse } from '@/routes/assessment/question-papers/-utils/cbe-question';
 
 interface AssignmentFileInfo {
@@ -573,6 +573,41 @@ const lookupOptionName = (q: QuizSlideQuestion | undefined, id: string): string 
     // answers) flow through unchanged.
     if (UUID_RE.test(id)) return '';
     return id;
+};
+
+/**
+ * A Spreadsheet & Written Response answer inside a quiz attempt, as one line:
+ * "Spreadsheet: 14 cells · Document: IAS 38 prohibits…", then the AI feedback once marked.
+ */
+const cbeQuizAnswerSummary = (
+    row: NonNullable<ReturnType<typeof parseCbeSlideResponse>>,
+    cbeState: unknown
+): string => {
+    if (!row.answer) return '';
+    const parts = Object.values(row.answer.parts ?? {}).map((part) => {
+        if (part.kind === 'SPREADSHEET' && 'sheet' in part) {
+            const cells = (part.sheet?.sheets ?? []).reduce(
+                (sum, tab) => sum + Object.keys(tab.cells ?? {}).length,
+                0
+            );
+            return `Spreadsheet: ${cells} cells`;
+        }
+        const text = 'html' in part ? htmlToPlainText(part.html) : '';
+        return `Document: ${text.length > 120 ? `${text.slice(0, 120)}…` : text}`;
+    });
+    const status =
+        cbeState === 'EVALUATED'
+            ? row.evaluation?.feedback
+                ? `AI feedback: ${row.evaluation.feedback}`
+                : ''
+            : cbeState === 'FAILED'
+              ? 'AI check failed (learner can retry)'
+              : cbeState === 'NO_CHECKS_LEFT'
+                ? 'Not marked: AI checks used up'
+                : cbeState === 'UNATTEMPTED'
+                  ? 'Not marked: same as the starting template'
+                  : 'Waiting for AI check';
+    return [parts.join(' · '), status].filter(Boolean).join(' — ');
 };
 
 interface QuizQuestionRow {
@@ -1197,7 +1232,13 @@ export const ActivityLogDialog = ({
                         // from the slide config.
                         let selectedAnswer = '';
                         let answerIds: string[] = [];
-                        if (
+                        // Spreadsheet & Written Response: a per-part summary of the answer and,
+                        // once the AI has marked it, its feedback. Never an option list.
+                        const cbeRow = parseCbeSlideResponse(qs.response_json);
+                        if (cbeRow) {
+                            selectedAnswer = cbeQuizAnswerSummary(cbeRow, parsed?.cbeState);
+                            answerIds = cbeRow.answer ? ['cbe-answer'] : [];
+                        } else if (
                             Array.isArray(parsed?.selectedOptions) &&
                             parsed.selectedOptions.length > 0
                         ) {
