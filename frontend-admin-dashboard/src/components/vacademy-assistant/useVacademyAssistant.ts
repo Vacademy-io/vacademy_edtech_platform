@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
@@ -10,14 +11,18 @@ import {
     ASSISTANT_SESSION_CLOSE,
     ASSISTANT_ACTION_CONFIRM,
     ASSISTANT_ACTION_CANCEL,
+    ASSISTANT_SESSION_VIEW,
+    ASSISTANT_SESSION_CONTINUE,
 } from '@/constants/urls';
 import { useSelectedStudentMirrorStore } from '@/stores/assistant/selected-student-mirror';
 import type {
     AssistantActionRequestData,
     AssistantActionStatus,
+    AssistantChatView,
     AssistantErrorData,
     AssistantMessage,
     AssistantMessageData,
+    AssistantPastChat,
     AssistantStatus,
 } from './types';
 
@@ -136,18 +141,90 @@ function getPageContext(): Record<string, unknown> {
     };
 }
 
+/** Most follow-up chips shown under an answer, and the longest one kept. */
+const MAX_FOLLOW_UPS = 3;
+const MAX_FOLLOW_UP_CHARS = 120;
+
+/**
+ * Follow-up questions from a message event or a history message: strings only, trimmed, at most
+ * three. Nothing when the answer came without any (they are never made up here).
+ */
+export function followUps(value: unknown): string[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+    const out = value
+        .filter((v): v is string => typeof v === 'string')
+        .map((v) => v.trim())
+        .filter((v) => v !== '' && v.length <= MAX_FOLLOW_UP_CHARS)
+        .slice(0, MAX_FOLLOW_UPS);
+    return out.length ? out : undefined;
+}
+
+/**
+ * A history chat as panel messages. Its cards are read-only: one still open in its own chat is
+ * shown as expired, since continuing the chat retires it.
+ */
+export function messagesFromHistory(view: AssistantChatView): AssistantMessage[] {
+    return (view.messages ?? []).map((m) => {
+        const base = { id: `history-${m.id}`, createdAt: m.created_at ?? undefined };
+        if (m.role === 'action' && m.action) {
+            const status: AssistantActionStatus =
+                m.action.status === 'pending' ? 'expired' : m.action.status;
+            return {
+                ...base,
+                role: 'action',
+                content: m.action.summary || m.content,
+                action: {
+                    actionId: '',
+                    summary: m.action.summary || m.content,
+                    status,
+                    details: cardLines(m.action.details),
+                    warnings: cardLines(m.action.warnings),
+                },
+            };
+        }
+        return {
+            ...base,
+            role: m.role === 'user' ? 'user' : 'assistant',
+            content: m.content ?? '',
+            suggestions: m.role === 'assistant' ? followUps(m.suggestions) : undefined,
+        };
+    });
+}
+
+const nowIso = () => new Date().toISOString();
+
 /**
  * Drives one Vacademy Assistant conversation: creates/reuses a session, posts
  * the user message through the authenticated axios instance (so it inherits the
  * `Authorization` + `clientId` headers and the `/ai-service` 401 exemption),
  * then reads the SSE answer via fetch (EventSource can't send the auth header).
+ *
+ * A chat picked from the history opens read-only (`pastChat`); continuing it
+ * (explicitly, or by sending a message) reopens it on the server so new
+ * questions go into the same conversation.
  */
 export function useVacademyAssistant() {
+    const { t } = useTranslation('dashboardIndex');
     const [messages, setMessages] = useState<AssistantMessage[]>([]);
     const [status, setStatus] = useState<AssistantStatus>('idle');
     const [error, setError] = useState<string | null>(null);
+    /** What the assistant is doing right now (a tool's progress line), while it works. */
+    const [activity, setActivity] = useState<string | null>(null);
+    const [sessionId, setSessionIdState] = useState<string | null>(null);
+    const [pastChat, setPastChatState] = useState<AssistantPastChat | null>(null);
+    const [loadingChat, setLoadingChat] = useState(false);
     const sessionIdRef = useRef<string | null>(null);
+    const pastChatRef = useRef<AssistantPastChat | null>(null);
     const abortRef = useRef<AbortController | null>(null);
+
+    const setSessionId = useCallback((id: string | null) => {
+        sessionIdRef.current = id;
+        setSessionIdState(id);
+    }, []);
+    const setPastChat = useCallback((chat: AssistantPastChat | null) => {
+        pastChatRef.current = chat;
+        setPastChatState(chat);
+    }, []);
 
     const appendToStreamingAssistant = useCallback((delta: string) => {
         setMessages((prev) => {
@@ -161,13 +238,14 @@ export function useVacademyAssistant() {
                     role: 'assistant',
                     content: delta,
                     streaming: true,
+                    createdAt: nowIso(),
                 });
             }
             return next;
         });
     }, []);
 
-    const finalizeAssistant = useCallback((content: string) => {
+    const finalizeAssistant = useCallback((content: string, suggestions?: string[]) => {
         setMessages((prev) => {
             const next = [...prev];
             const last = next[next.length - 1];
@@ -176,6 +254,7 @@ export function useVacademyAssistant() {
                     ...last,
                     content: content || last.content,
                     streaming: false,
+                    suggestions,
                 };
             } else if (content) {
                 next.push({
@@ -183,6 +262,8 @@ export function useVacademyAssistant() {
                     role: 'assistant',
                     content,
                     streaming: false,
+                    createdAt: nowIso(),
+                    suggestions,
                 });
             }
             return next;
@@ -231,40 +312,46 @@ export function useVacademyAssistant() {
                     for (const frame of frames) {
                         if (frame.event === 'token') {
                             const data = frame.data as { content?: string };
-                            if (data?.content) appendToStreamingAssistant(data.content);
+                            if (data?.content) {
+                                setActivity(null);
+                                appendToStreamingAssistant(data.content);
+                            }
                         } else if (frame.event === 'message') {
                             const data = frame.data as AssistantMessageData;
                             if (data?.type === 'assistant') {
-                                finalizeAssistant(data.content || '');
+                                setActivity(null);
+                                finalizeAssistant(
+                                    data.content || '',
+                                    followUps(
+                                        data.suggestions ??
+                                            (data.metadata as { suggestions?: unknown } | null)
+                                                ?.suggestions
+                                    )
+                                );
                             } else if (data?.type === 'tool_call') {
-                                // Surface tool activity as a small status line so the
-                                // user sees what the assistant is doing while it works.
+                                // One progress line in a fixed slot (it replaces the previous
+                                // one), so the conversation does not jump while tools run.
                                 const toolName = String(
                                     (data.metadata as { tool_name?: string } | null)?.tool_name ??
                                         ''
                                 );
-                                const label = TOOL_ACTIVITY_LABELS[toolName];
-                                if (label) {
-                                    setMessages((prev) => [
-                                        ...prev,
-                                        {
-                                            id: `status-${data.id ?? crypto.randomUUID()}`,
-                                            role: 'status',
-                                            content: label,
-                                        },
-                                    ]);
-                                }
+                                setActivity(
+                                    TOOL_ACTIVITY_LABELS[toolName] ??
+                                        t('assistant.panel.activity.working')
+                                );
                             }
                             // tool_result stays hidden — the answer summarizes it.
                         } else if (frame.event === 'action_request') {
                             const data = frame.data as AssistantActionRequestData;
                             if (data?.action_id) {
+                                setActivity(null);
                                 setMessages((prev) => [
                                     ...prev,
                                     {
                                         id: `action-${data.action_id}`,
                                         role: 'action',
                                         content: data.summary || 'Confirm this change?',
+                                        createdAt: nowIso(),
                                         action: {
                                             actionId: data.action_id,
                                             summary: data.summary || '',
@@ -291,14 +378,40 @@ export function useVacademyAssistant() {
                 setError('The assistant connection was interrupted. Please try again.');
                 setStatus('error');
             } finally {
+                setActivity(null);
                 // Any bubble still flagged streaming is now complete.
                 setMessages((prev) =>
                     prev.map((m) => (m.streaming ? { ...m, streaming: false } : m))
                 );
             }
         },
-        [appendToStreamingAssistant, finalizeAssistant]
+        [appendToStreamingAssistant, finalizeAssistant, t]
     );
+
+    /**
+     * Reopen the past chat on screen so new messages go into it. Its open cards were retired by
+     * the server, so they are shown as expired. False when it could not be reopened.
+     */
+    const continueChat = useCallback(async (): Promise<boolean> => {
+        const chat = pastChatRef.current;
+        if (!chat) return true;
+        try {
+            await authenticatedAxiosInstance.post(ASSISTANT_SESSION_CONTINUE(chat.id));
+        } catch {
+            setError(t('assistant.panel.errors.continue'));
+            return false;
+        }
+        setSessionId(chat.id);
+        setPastChat(null);
+        setMessages((prev) =>
+            prev.map((m) =>
+                m.action && (m.action.status === 'pending' || m.action.status === 'working')
+                    ? { ...m, action: { ...m.action, status: 'expired' } }
+                    : m
+            )
+        );
+        return true;
+    }, [setPastChat, setSessionId, t]);
 
     const sendMessage = useCallback(
         async (text: string) => {
@@ -306,9 +419,11 @@ export function useVacademyAssistant() {
             if (!trimmed || status === 'streaming' || status === 'connecting') return;
 
             setError(null);
+            // Sending from a past chat continues it first.
+            if (pastChatRef.current && !(await continueChat())) return;
             setMessages((prev) => [
-                ...prev,
-                { id: crypto.randomUUID(), role: 'user', content: trimmed },
+                ...prev.map((m) => (m.suggestions ? { ...m, suggestions: undefined } : m)),
+                { id: crypto.randomUUID(), role: 'user', content: trimmed, createdAt: nowIso() },
             ]);
             setStatus('connecting');
 
@@ -321,7 +436,7 @@ export function useVacademyAssistant() {
                         context_meta: contextMeta,
                     });
                     sessionId = resp.data?.session_id ?? null;
-                    sessionIdRef.current = sessionId;
+                    setSessionId(sessionId);
                 } else {
                     await authenticatedAxiosInstance.post(ASSISTANT_SESSION_MESSAGE(sessionId), {
                         message: trimmed,
@@ -337,7 +452,7 @@ export function useVacademyAssistant() {
                 setStatus('error');
             }
         },
-        [runStream, status]
+        [continueChat, runStream, setSessionId, status]
     );
 
     const setActionStatus = useCallback((actionId: string, status: AssistantActionStatus) => {
@@ -352,7 +467,7 @@ export function useVacademyAssistant() {
     const resolveAction = useCallback(
         async (actionId: string, decision: 'confirm' | 'cancel') => {
             const sessionId = sessionIdRef.current;
-            if (!sessionId) return;
+            if (!sessionId || !actionId) return;
             setActionStatus(actionId, 'working');
             try {
                 const url =
@@ -370,6 +485,7 @@ export function useVacademyAssistant() {
                             id: crypto.randomUUID(),
                             role: 'assistant',
                             content: String(resp.data.message),
+                            createdAt: nowIso(),
                         },
                     ]);
                 }
@@ -381,12 +497,15 @@ export function useVacademyAssistant() {
         [setActionStatus]
     );
 
+    /** Leave the live chat for an empty one; the live chat is closed (it stays in the history). */
     const reset = useCallback(async () => {
         abortRef.current?.abort();
         const sid = sessionIdRef.current;
-        sessionIdRef.current = null;
+        setSessionId(null);
+        setPastChat(null);
         setMessages([]);
         setError(null);
+        setActivity(null);
         setStatus('idle');
         if (sid) {
             try {
@@ -395,7 +514,64 @@ export function useVacademyAssistant() {
                 // Best-effort close; the session expires on its own otherwise.
             }
         }
-    }, []);
+    }, [setPastChat, setSessionId]);
 
-    return { messages, status, error, sendMessage, reset, resolveAction };
+    /**
+     * Show a chat from the history, read-only until it is continued. Picking the live chat just
+     * returns to it. False when the chat could not be loaded (the live chat stays on screen).
+     */
+    const openChat = useCallback(
+        async (id: string): Promise<boolean> => {
+            if (!id) return false;
+            if (id === sessionIdRef.current || id === pastChatRef.current?.id) return true;
+            setLoadingChat(true);
+            setError(null);
+            let view: AssistantChatView | null = null;
+            try {
+                view = (await authenticatedAxiosInstance.get(ASSISTANT_SESSION_VIEW(id)))
+                    .data as AssistantChatView;
+            } catch {
+                setError(t('assistant.panel.errors.loadChat'));
+            }
+            setLoadingChat(false);
+            if (!view || !Array.isArray(view.messages)) return false;
+            await reset();
+            setMessages(messagesFromHistory(view));
+            setPastChat({ id: view.id || id, title: view.title || '' });
+            return true;
+        },
+        [reset, setPastChat, t]
+    );
+
+    /** Forget a chat the panel shows once it was deleted from the history. */
+    const forgetChat = useCallback(
+        (id: string) => {
+            if (id === sessionIdRef.current || id === pastChatRef.current?.id) {
+                abortRef.current?.abort();
+                setSessionId(null);
+                setPastChat(null);
+                setMessages([]);
+                setError(null);
+                setActivity(null);
+                setStatus('idle');
+            }
+        },
+        [setPastChat, setSessionId]
+    );
+
+    return {
+        messages,
+        status,
+        error,
+        activity,
+        sessionId,
+        pastChat,
+        loadingChat,
+        sendMessage,
+        reset,
+        resolveAction,
+        openChat,
+        continueChat,
+        forgetChat,
+    };
 }

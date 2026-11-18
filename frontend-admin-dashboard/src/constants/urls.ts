@@ -40,6 +40,13 @@ export const ASSISTANT_ACTION_CONFIRM = (sessionId: string, actionId: string) =>
 export const ASSISTANT_ACTION_CANCEL = (sessionId: string, actionId: string) =>
     `${AI_SERVICE_BASE_URL}/assistant/session/${sessionId}/action/${actionId}/cancel`;
 export const ASSISTANT_CAPABILITIES = `${AI_SERVICE_BASE_URL}/assistant/capabilities`;
+// Chat history: the caller's own chats. GET list (?page&page_size&q); GET / DELETE one;
+// POST continue reopens a chat so new messages go into it.
+export const ASSISTANT_SESSIONS = `${AI_SERVICE_BASE_URL}/assistant/sessions`;
+export const ASSISTANT_SESSION_VIEW = (sessionId: string) =>
+    `${AI_SERVICE_BASE_URL}/assistant/sessions/${sessionId}`;
+export const ASSISTANT_SESSION_CONTINUE = (sessionId: string) =>
+    `${AI_SERVICE_BASE_URL}/assistant/sessions/${sessionId}/continue`;
 // Multipart upload (file + optional language) -> { transcript, language }; nothing is sent.
 export const ASSISTANT_SPEECH_TO_TEXT = `${AI_SERVICE_BASE_URL}/assistant/speech-to-text`;
 

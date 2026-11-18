@@ -179,6 +179,110 @@
                 "rateLimited": "Trop d’enregistrements en peu de temps. Patientez un instant, puis réessayez.",
                 "server": "La saisie vocale n’est pas disponible pour le moment. Veuillez taper votre question."
             }
+        },
+        "capabilityCopy": {
+            "search_help_knowledge": "Guides pratiques",
+            "learner_data": "Recherche d’apprenants — présence, notes, activité, connexions",
+            "payments": "Frais et paiements",
+            "batch_data": "Listes des groupes",
+            "schedule": "Emplois du temps des cours",
+            "institute_overview": "Statistiques de l’établissement",
+            "learner_edits": "Faire des modifications (avec votre confirmation)",
+            "assessments": "Résultats d’évaluations et corrections en attente",
+            "announcements": "Envoyer des annonces (avec votre confirmation)",
+            "examples": {
+                "createCourse": "Comment créer un cours ?",
+                "inviteMember": "Comment inviter un membre de l’équipe ?",
+                "addToBatch": "Où ajouter un apprenant à un groupe ?",
+                "findLearner": "Trouver un apprenant par son nom",
+                "studentAttendance": "Quelle est la présence de cet élève ce mois-ci ?",
+                "overdueFees": "Cet apprenant a-t-il des frais en retard ?",
+                "liveNow": "Quels cours sont en direct en ce moment ?",
+                "pendingFees": "Combien de frais restent impayés dans l’établissement ?",
+                "extendAccess": "Prolonger l’accès d’un apprenant",
+                "pendingEvaluation": "Quelles copies attendent encore une correction ?",
+                "sendAnnouncement": "Envoyer une annonce à un groupe"
+            }
+        },
+        "panel": {
+            "label": "Discussion avec {{chatbotName}}",
+            "status": {
+                "ready": "À votre service",
+                "thinking": "Réflexion…",
+                "pastChat": "Discussion passée"
+            },
+            "greeting": "Bonjour {{name}}, comment puis-je vous aider ?",
+            "greetingNoName": "Bonjour ! Comment puis-je vous aider ?",
+            "greetingHint": "Posez une question sur votre établissement, ou commencez par l’une de celles-ci.",
+            "canHelpWith": "Ce que je peux faire pour vous",
+            "showAllCapabilities": "Tout afficher ({{count}})",
+            "showFewerCapabilities": "Afficher moins",
+            "tryAsking": "Essayez de demander",
+            "recentChats": "Discussions récentes",
+            "viewAll": "Tout voir",
+            "actions": {
+                "history": "Discussions récentes",
+                "newChat": "Nouvelle discussion",
+                "expand": "Agrandir le panneau",
+                "shrink": "Réduire le panneau",
+                "close": "Fermer l’assistant",
+                "back": "Revenir à la discussion",
+                "send": "Envoyer le message",
+                "copy": "Copier la réponse",
+                "copied": "Copié",
+                "continue": "Reprendre cette discussion",
+                "clearStudent": "Ne plus poser de questions sur cet élève"
+            },
+            "history": {
+                "search": "Rechercher dans les discussions",
+                "today": "Aujourd’hui",
+                "earlier": "Plus tôt",
+                "empty": "Aucune discussion pour l’instant. Vos conversations apparaîtront ici.",
+                "noMatches": "Aucune discussion ne correspond à « {{query}} ».",
+                "error": "Impossible de charger vos discussions.",
+                "retry": "Réessayer",
+                "loading": "Chargement de vos discussions",
+                "loadMore": "Afficher plus",
+                "current": "En cours",
+                "untitled": "Discussion sans titre",
+                "open": "Ouvrir la discussion : {{title}}",
+                "delete": "Supprimer la discussion : {{title}}",
+                "deletePrompt": "Supprimer cette discussion ?",
+                "confirmDelete": "Supprimer",
+                "keep": "Conserver"
+            },
+            "pastChat": {
+                "notice": "Vous consultez une discussion passée. Envoyer un message la reprend.",
+                "loading": "Ouverture de la discussion…"
+            },
+            "followUps": "Questions suggérées",
+            "activity": {
+                "thinking": "Réflexion…",
+                "working": "Traitement en cours…"
+            },
+            "composer": {
+                "label": "Message à {{chatbotName}}",
+                "placeholder": "Posez votre question à l’assistant…"
+            },
+            "askingAbout": "Question sur :",
+            "tableLabel": "Tableau",
+            "card": {
+                "title": "Confirmer cette modification",
+                "beforeConfirm": "Avant de confirmer",
+                "confirm": "Confirmer",
+                "cancel": "Annuler",
+                "working": "En cours…",
+                "executed": "Confirmé et appliqué",
+                "cancelled": "Annulé",
+                "applying": "Déjà en cours d’application",
+                "failed": "Non appliqué",
+                "expired": "Expiré. Redemandez pour faire cette modification."
+            },
+            "errors": {
+                "loadChat": "Impossible d’ouvrir cette discussion. Veuillez réessayer.",
+                "continue": "Impossible de reprendre cette discussion. Veuillez réessayer.",
+                "delete": "Impossible de supprimer cette discussion. Veuillez réessayer."
+            }
         }
     },
     "quickActions": {

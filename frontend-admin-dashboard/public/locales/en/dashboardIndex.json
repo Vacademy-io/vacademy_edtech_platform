@@ -179,6 +179,110 @@
                 "rateLimited": "Too many recordings in a short time. Wait a moment, then try again.",
                 "server": "Voice input isn’t available right now. Please type your question."
             }
+        },
+        "capabilityCopy": {
+            "search_help_knowledge": "How-to guidance",
+            "learner_data": "Learner lookups — attendance, scores, activity, logins",
+            "payments": "Fees & payments",
+            "batch_data": "Batch rosters",
+            "schedule": "Class schedules",
+            "institute_overview": "Institute stats",
+            "learner_edits": "Make changes (with your confirmation)",
+            "assessments": "Assessment results & pending evaluations",
+            "announcements": "Send announcements (with your confirmation)",
+            "examples": {
+                "createCourse": "How do I create a course?",
+                "inviteMember": "How do I invite a team member?",
+                "addToBatch": "Where do I add a learner to a batch?",
+                "findLearner": "Find a learner by name",
+                "studentAttendance": "What’s this student’s attendance this month?",
+                "overdueFees": "Does this learner have overdue fees?",
+                "liveNow": "What classes are live right now?",
+                "pendingFees": "How much fees is pending across the institute?",
+                "extendAccess": "Extend a learner’s access expiry",
+                "pendingEvaluation": "Which submissions are still pending evaluation?",
+                "sendAnnouncement": "Send an announcement to a batch"
+            }
+        },
+        "panel": {
+            "label": "{{chatbotName}} chat",
+            "status": {
+                "ready": "Here to help",
+                "thinking": "Thinking…",
+                "pastChat": "Past chat"
+            },
+            "greeting": "Hi {{name}}, how can I help?",
+            "greetingNoName": "Hi! How can I help?",
+            "greetingHint": "Ask about your institute, or start with one of these.",
+            "canHelpWith": "What I can help with",
+            "showAllCapabilities": "Show all ({{count}})",
+            "showFewerCapabilities": "Show fewer",
+            "tryAsking": "Try asking",
+            "recentChats": "Recent chats",
+            "viewAll": "View all",
+            "actions": {
+                "history": "Recent chats",
+                "newChat": "New chat",
+                "expand": "Expand panel",
+                "shrink": "Shrink panel",
+                "close": "Close assistant",
+                "back": "Back to the chat",
+                "send": "Send message",
+                "copy": "Copy answer",
+                "copied": "Copied",
+                "continue": "Continue this chat",
+                "clearStudent": "Stop asking about this student"
+            },
+            "history": {
+                "search": "Search chats",
+                "today": "Today",
+                "earlier": "Earlier",
+                "empty": "No chats yet. Your conversations will appear here.",
+                "noMatches": "No chats match “{{query}}”.",
+                "error": "Your chats couldn’t be loaded.",
+                "retry": "Try again",
+                "loading": "Loading your chats",
+                "loadMore": "Show more",
+                "current": "Current",
+                "untitled": "Untitled chat",
+                "open": "Open chat: {{title}}",
+                "delete": "Delete chat: {{title}}",
+                "deletePrompt": "Delete this chat?",
+                "confirmDelete": "Delete",
+                "keep": "Keep"
+            },
+            "pastChat": {
+                "notice": "You’re viewing a past chat. Sending a message continues it.",
+                "loading": "Opening the chat…"
+            },
+            "followUps": "Suggested follow-ups",
+            "activity": {
+                "thinking": "Thinking…",
+                "working": "Working on it…"
+            },
+            "composer": {
+                "label": "Message {{chatbotName}}",
+                "placeholder": "Ask the assistant…"
+            },
+            "askingAbout": "Asking about:",
+            "tableLabel": "Table",
+            "card": {
+                "title": "Confirm this change",
+                "beforeConfirm": "Before you confirm",
+                "confirm": "Confirm",
+                "cancel": "Cancel",
+                "working": "Working…",
+                "executed": "Confirmed and applied",
+                "cancelled": "Cancelled",
+                "applying": "Already being applied",
+                "failed": "Not applied",
+                "expired": "Expired. Ask again to make this change."
+            },
+            "errors": {
+                "loadChat": "That chat couldn’t be opened. Please try again.",
+                "continue": "That chat couldn’t be reopened. Please try again.",
+                "delete": "That chat couldn’t be deleted. Please try again."
+            }
         }
     },
     "quickActions": {

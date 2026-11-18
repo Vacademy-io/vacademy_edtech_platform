@@ -17,7 +17,7 @@ import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Query, UploadFile
 from fastapi.responses import StreamingResponse
 
 from ..core.chat_auth import check_rate_limit
@@ -30,6 +30,10 @@ from ..schemas.assistant import (
     AssistantMessageResponse,
     AssistantCloseResponse,
     AssistantSpeechToTextResponse,
+    AssistantChatList,
+    AssistantChatView,
+    AssistantChatContinueResponse,
+    AssistantChatDeleteResponse,
 )
 from ..services.ai_billing import UC
 from ..services.assistant_service import AssistantAgentService
@@ -217,6 +221,111 @@ async def close_session(
     except Exception as e:
         logger.error("Error closing Assistant session: %s", e)
         raise HTTPException(status_code=500, detail="Could not close the session.")
+
+
+# ── chat history ─────────────────────────────────────────────────────────────
+# The caller's own Assistant chats in the pinned institute. Staff only; any other
+# chat, and a deleted one, answers 404 so its existence is never confirmed.
+
+def _require_staff(principal: PinnedPrincipal) -> None:
+    if not is_staff(principal.roles):
+        raise HTTPException(status_code=403, detail="Chat history is available to institute staff only.")
+
+
+_CHAT_NOT_FOUND = "Chat not found."
+
+
+@router.get(
+    "/sessions",
+    response_model=AssistantChatList,
+    summary="List the caller's recent Assistant chats",
+    description=(
+        "Newest activity first. Each chat has its title (the first question, cut to about 60 characters), "
+        "last activity time, number of questions and answers, and whether it is still open. `q` filters by "
+        "title. Paginated with `page` (from 0) and `page_size` (at most 50)."
+    ),
+)
+async def list_chats(
+    page: int = Query(0, ge=0, le=10000),
+    page_size: int = Query(20, ge=1, le=50),
+    q: Optional[str] = Query(None, max_length=100),
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+    service: AssistantAgentService = Depends(get_assistant_service),
+) -> AssistantChatList:
+    _require_staff(principal)
+    try:
+        return AssistantChatList(**await service.list_sessions(principal, page=page, page_size=page_size, query=q))
+    except Exception as e:
+        logger.error("Error listing Assistant chats: %s", e)
+        raise HTTPException(status_code=500, detail="Could not load your chats.")
+
+
+@router.get(
+    "/sessions/{session_id}",
+    response_model=AssistantChatView,
+    summary="One of the caller's Assistant chats, as the panel shows it",
+    description=(
+        "Questions, answers (with their follow-up suggestions) and confirmation cards in their final "
+        "state. Tool calls and their results are not included."
+    ),
+)
+async def get_chat(
+    session_id: str,
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+    service: AssistantAgentService = Depends(get_assistant_service),
+) -> AssistantChatView:
+    _require_staff(principal)
+    try:
+        return AssistantChatView(**await service.get_session_view(session_id, principal))
+    except (ValueError, PermissionError):
+        raise HTTPException(status_code=404, detail=_CHAT_NOT_FOUND)
+    except Exception as e:
+        logger.error("Error loading Assistant chat: %s", e)
+        raise HTTPException(status_code=500, detail="Could not load this chat.")
+
+
+@router.post(
+    "/sessions/{session_id}/continue",
+    response_model=AssistantChatContinueResponse,
+    summary="Reopen one of the caller's chats to ask more in it",
+    description=(
+        "The chat becomes open again and new messages go into it with its earlier messages as context. "
+        "Confirmation cards still open in it are retired (shown as expired): ask again for a new card."
+    ),
+)
+async def continue_chat(
+    session_id: str,
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+    service: AssistantAgentService = Depends(get_assistant_service),
+) -> AssistantChatContinueResponse:
+    _require_staff(principal)
+    try:
+        return AssistantChatContinueResponse(**await service.continue_session(session_id, principal))
+    except (ValueError, PermissionError):
+        raise HTTPException(status_code=404, detail=_CHAT_NOT_FOUND)
+    except Exception as e:
+        logger.error("Error continuing Assistant chat: %s", e)
+        raise HTTPException(status_code=500, detail="Could not reopen this chat.")
+
+
+@router.delete(
+    "/sessions/{session_id}",
+    response_model=AssistantChatDeleteResponse,
+    summary="Remove one of the caller's chats from their history",
+)
+async def delete_chat(
+    session_id: str,
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+    service: AssistantAgentService = Depends(get_assistant_service),
+) -> AssistantChatDeleteResponse:
+    _require_staff(principal)
+    try:
+        return AssistantChatDeleteResponse(**await service.delete_session(session_id, principal))
+    except (ValueError, PermissionError):
+        raise HTTPException(status_code=404, detail=_CHAT_NOT_FOUND)
+    except Exception as e:
+        logger.error("Error deleting Assistant chat: %s", e)
+        raise HTTPException(status_code=500, detail="Could not delete this chat.")
 
 
 # ── speech to text ───────────────────────────────────────────────────────────

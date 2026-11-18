@@ -14,6 +14,8 @@ vi.mock('@/lib/auth/axiosInstance', () => ({ default: { get: vi.fn(), post: vi.f
 vi.mock('@/constants/urls', () => ({
     ASSISTANT_CAPABILITIES: '/assistant/capabilities',
     ASSISTANT_SPEECH_TO_TEXT: '/assistant/speech-to-text',
+    ASSISTANT_SESSIONS: '/assistant/sessions',
+    ASSISTANT_SESSION_VIEW: (id: string) => `/assistant/sessions/${id}`,
 }));
 vi.mock('@tanstack/react-router', () => ({
     useNavigate: () => vi.fn(),
@@ -23,15 +25,23 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('@/lib/auth/sessionUtility', () => ({
     getTokenFromCookie: () => 'token',
     isTokenExpired: () => session.expired,
+    getTokenDecodedData: () => ({ fullname: 'Asha Rao' }),
 }));
 vi.mock('../../useVacademyAssistant', () => ({
     useVacademyAssistant: () => ({
         messages: [],
         status: 'idle',
         error: null,
+        activity: null,
+        sessionId: null,
+        pastChat: null,
+        loadingChat: false,
         sendMessage: vi.fn(),
         reset: vi.fn(),
         resolveAction: vi.fn(),
+        openChat: vi.fn(),
+        continueChat: vi.fn(),
+        forgetChat: vi.fn(),
     }),
 }));
 vi.mock('../../useInstituteChatbotName', () => ({ useInstituteChatbotName: () => 'Assistant' }));
