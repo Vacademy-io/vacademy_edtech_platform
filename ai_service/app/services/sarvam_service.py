@@ -11,7 +11,7 @@ import base64
 import json
 import logging
 import os
-from typing import Optional
+from typing import NamedTuple, Optional
 
 import httpx
 
@@ -159,6 +159,14 @@ class SarvamSTTError(RuntimeError):
         self.status = status
 
 
+class SarvamTranscript(NamedTuple):
+    """What one transcription produced: the text, and the BCP-47 language
+    Sarvam reports for it (None when it does not say)."""
+
+    text: str
+    language_code: Optional[str]
+
+
 class SarvamService:
     """Wraps Sarvam AI TTS and STT APIs (REST + WebSocket)."""
 
@@ -265,8 +273,8 @@ class SarvamService:
     ) -> str:
         """Transcribe audio bytes to text using Sarvam Saaras v3.
 
-        Note: Sarvam limits each request to ~30 seconds of audio. For
-        longer audio, callers should split beforehand and concatenate.
+        Note: Sarvam limits each request to ~30 seconds of audio. A PCM WAV
+        longer than that is split here and the pieces' transcripts joined.
 
         Args:
             audio_bytes: Raw audio data.
@@ -276,10 +284,21 @@ class SarvamService:
                 leaves transcription at the mercy of server-side sniffing.
 
         Returns:
-            Transcript string, or empty string on failure.
+            Transcript string ("" for empty input). Raises SarvamSTTError when
+            the provider call fails.
         """
+        return (await self.transcribe(audio_bytes, language=language, mime_type=mime_type)).text
+
+    async def transcribe(
+        self,
+        audio_bytes: bytes,
+        language: str = "auto",
+        mime_type: str = "audio/wav",
+    ) -> "SarvamTranscript":
+        """``speech_to_text`` plus the language Sarvam reports for the audio
+        (the detected one when ``language`` is ``"auto"``)."""
         if not audio_bytes:
-            return ""
+            return SarvamTranscript("", None)
 
         upload_type = (mime_type or "audio/wav").split(";")[0].strip() or "audio/wav"
 
@@ -293,11 +312,13 @@ class SarvamService:
                 pieces = split_wav(audio_bytes, STT_CHUNK_SECONDS)
                 logger.info("STT: %.1fs clip split into %d pieces", duration, len(pieces))
                 texts = []
+                detected: Optional[str] = None
                 for piece in pieces:
-                    text = await self.speech_to_text(piece, language=language, mime_type="audio/wav")
-                    if text.strip():
-                        texts.append(text.strip())
-                return " ".join(texts)
+                    part = await self.transcribe(piece, language=language, mime_type="audio/wav")
+                    if part.text.strip():
+                        texts.append(part.text.strip())
+                        detected = detected or part.language_code
+                return SarvamTranscript(" ".join(texts), detected)
 
         headers = {
             "api-subscription-key": self.api_key,
@@ -320,7 +341,8 @@ class SarvamService:
                 )
                 response.raise_for_status()
                 data = response.json()
-                return data.get("transcript", "") or ""
+                detected = data.get("language_code") if isinstance(data, dict) else None
+                return SarvamTranscript(data.get("transcript", "") or "", detected or None)
         except httpx.HTTPStatusError as exc:
             body = exc.response.text[:500]
             logger.error(

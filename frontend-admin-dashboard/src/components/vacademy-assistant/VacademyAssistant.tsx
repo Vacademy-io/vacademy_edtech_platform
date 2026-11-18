@@ -25,6 +25,8 @@ import { ASSISTANT_CAPABILITIES } from '@/constants/urls';
 import { useSelectedStudentMirrorStore } from '@/stores/assistant/selected-student-mirror';
 import { useVacademyAssistant } from './useVacademyAssistant';
 import { useInstituteChatbotName } from './useInstituteChatbotName';
+import { VoiceInputControls, VoiceInputStatusMessage } from './VoiceInput';
+import { useVoiceInput } from '@/hooks/use-voice-input';
 import { useAssistDock } from '@/components/assist-dock/store';
 import type { AssistantAction, AssistantCapabilities, AssistantMessage } from './types';
 import ReactMarkdown from 'react-markdown';
@@ -186,6 +188,19 @@ export function VacademyAssistant() {
     const clearPendingPrompt = useAssistDock((s) => s.clearPendingPrompt);
     const open = panel === 'assistant';
     const { messages, status, error, sendMessage, reset, resolveAction } = useVacademyAssistant();
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    // Spoken questions land in the input for the user to check and send.
+    const voice = useVoiceInput({
+        onTranscript: (text) => {
+            setInput((current) => (current.trim() ? `${current.trimEnd()} ${text}` : text));
+            requestAnimationFrame(() => inputRef.current?.focus());
+        },
+    });
+    const cancelVoice = voice.cancel;
+    useEffect(() => {
+        if (!open) cancelVoice();
+    }, [open, cancelVoice]);
 
     // A question handed over from the dashboard launch bar: send it as soon as
     // the panel opens (sendMessage cold-starts the session itself).
@@ -428,16 +443,22 @@ export function VacademyAssistant() {
             )}
 
             {/* Input */}
+            <VoiceInputStatusMessage voice={voice} className="mx-3 mt-2 shrink-0" />
             <form
                 onSubmit={handleSend}
                 className="flex shrink-0 items-center gap-2 border-t border-neutral-200 p-3"
             >
                 <Input
+                    ref={inputRef}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                        setInput(e.target.value);
+                        if (voice.error) voice.clearError();
+                    }}
                     placeholder="Ask the assistant…"
-                    className="flex-1"
+                    className="min-w-0 flex-1"
                 />
+                <VoiceInputControls voice={voice} />
                 <MyButton
                     type="submit"
                     buttonType="primary"

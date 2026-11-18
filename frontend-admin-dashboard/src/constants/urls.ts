@@ -40,6 +40,8 @@ export const ASSISTANT_ACTION_CONFIRM = (sessionId: string, actionId: string) =>
 export const ASSISTANT_ACTION_CANCEL = (sessionId: string, actionId: string) =>
     `${AI_SERVICE_BASE_URL}/assistant/session/${sessionId}/action/${actionId}/cancel`;
 export const ASSISTANT_CAPABILITIES = `${AI_SERVICE_BASE_URL}/assistant/capabilities`;
+// Multipart upload (file + optional language) -> { transcript, language }; nothing is sent.
+export const ASSISTANT_SPEECH_TO_TEXT = `${AI_SERVICE_BASE_URL}/assistant/speech-to-text`;
 
 // Vacademy MCP server (Model Context Protocol). These back Settings → AI access
 // and the OAuth consent page; all require Authorization + clientId headers

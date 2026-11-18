@@ -12,6 +12,8 @@ import type { AssistantCapabilities } from './types';
 import { useInstituteChatbotName } from './useInstituteChatbotName';
 import { useEntitlement } from '@/lib/capabilities/use-entitlement';
 import { pickStarters, starterPromptKey } from './launch-bar-starters';
+import { VoiceInputControls, VoiceInputStatusMessage } from './VoiceInput';
+import { useVoiceInput } from '@/hooks/use-voice-input';
 
 /** Dashboard composer. Sends through the same dock and session as the global assistant. */
 export function AssistantLaunchBar() {
@@ -23,6 +25,13 @@ export function AssistantLaunchBar() {
     const id = useId();
     const askAssistant = useAssistDock((s) => s.askAssistant);
     const setPanel = useAssistDock((s) => s.setPanel);
+    // Spoken questions land in the box for the user to check and send.
+    const voice = useVoiceInput({
+        onTranscript: (text) => {
+            setQuestion((current) => (current.trim() ? `${current.trimEnd()} ${text}` : text));
+            requestAnimationFrame(() => inputRef.current?.focus());
+        },
+    });
 
     const {
         data: capabilities,
@@ -134,7 +143,10 @@ export function AssistantLaunchBar() {
                     ref={inputRef}
                     id={`${id}-question`}
                     value={question}
-                    onChange={(event) => setQuestion(event.target.value)}
+                    onChange={(event) => {
+                        setQuestion(event.target.value);
+                        if (voice.error) voice.clearError();
+                    }}
                     onKeyDown={(event) => {
                         if (
                             event.key === 'Enter' &&
@@ -159,18 +171,22 @@ export function AssistantLaunchBar() {
                     <span id={`${id}-hint`} className="hidden text-2xs text-neutral-500 sm:inline">
                         {t('assistant.inputHint')}
                     </span>
-                    <MyButton
-                        type="submit"
-                        buttonType="primary"
-                        scale="medium"
-                        disable={!question.trim()}
-                        className="shrink-0 rounded-lg bg-neutral-900 !text-white hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2 active:bg-neutral-800 disabled:bg-neutral-100 disabled:!text-neutral-500"
-                    >
-                        {t('assistant.submit')}
-                        <ArrowUp size={16} weight="bold" aria-hidden="true" />
-                    </MyButton>
+                    <div className="flex shrink-0 items-center gap-2">
+                        <VoiceInputControls voice={voice} />
+                        <MyButton
+                            type="submit"
+                            buttonType="primary"
+                            scale="medium"
+                            disable={!question.trim()}
+                            className="shrink-0 rounded-lg bg-neutral-900 !text-white hover:bg-neutral-800 focus-visible:ring-2 focus-visible:ring-neutral-500 focus-visible:ring-offset-2 active:bg-neutral-800 disabled:bg-neutral-100 disabled:!text-neutral-500"
+                        >
+                            {t('assistant.submit')}
+                            <ArrowUp size={16} weight="bold" aria-hidden="true" />
+                        </MyButton>
+                    </div>
                 </div>
             </form>
+            <VoiceInputStatusMessage voice={voice} className="mt-2" />
 
             {suggestions.length > 0 && (
                 <div

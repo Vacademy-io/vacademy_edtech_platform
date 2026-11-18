@@ -593,18 +593,17 @@ async def send_audio_message(
             raise HTTPException(status_code=400, detail="Empty audio file")
 
         # 2. Normalise to WAV (browser sends webm/opus), then transcribe. Long
-        #    voice notes are transcribed in <=29 s pieces inside speech_to_text.
-        from ..services.audio_utils import transcode_to_wav
+        #    voice notes are transcribed in <=29 s pieces (services/speech_to_text).
         from ..services.sarvam_service import SarvamSTTError
+        from ..services.speech_to_text import transcribe_audio
 
-        wav_bytes, wav_mime, _note = await transcode_to_wav(audio_bytes, file.content_type)
-        sarvam_service = SarvamService()
         try:
-            transcript = await sarvam_service.speech_to_text(
-                audio_bytes=wav_bytes,
+            transcript = (await transcribe_audio(
+                audio_bytes,
+                file.content_type,
                 language=language,
-                mime_type=wav_mime,
-            )
+                stt=SarvamService(),
+            )).transcript
         except SarvamSTTError as exc:
             # Surfaced as a client-visible failure, not a 500: the learner app
             # shows detail text for 4xx/5xx-with-detail responses.

@@ -39,3 +39,16 @@ class AssistantCloseResponse(BaseModel):
     session_id: str
     status: str = "CLOSED"
     message_count: int
+
+
+class AssistantSpeechToTextResponse(BaseModel):
+    """A recording turned into text. Nothing is sent to the Assistant: the
+    caller shows the transcript for the user to edit and send."""
+
+    transcript: str
+    language: Optional[str] = Field(
+        None, description="BCP-47 code of the speech (detected when the hint was 'auto')."
+    )
+    duration_seconds: Optional[float] = Field(
+        None, description="Length of the recording, when it could be measured."
+    )

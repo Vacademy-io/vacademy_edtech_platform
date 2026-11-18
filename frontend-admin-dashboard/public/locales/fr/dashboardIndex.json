@@ -155,6 +155,30 @@
                 "mergeLeads": "Fusionnez les deux prospects d’Asha Verma",
                 "meetingOutcome": "Marquez le rendez-vous d’aujourd’hui avec Asha comme terminé et notez qu’elle veut le groupe du week-end"
             }
+        },
+        "voice": {
+            "start": "Poser votre question à voix haute",
+            "starting": "Démarrage du micro…",
+            "stop": "Arrêter et transcrire",
+            "cancel": "Annuler l’enregistrement",
+            "recording": "Enregistrement",
+            "elapsed": "{{elapsed}} sur {{limit}}",
+            "transcribing": "Transcription de votre message…",
+            "dismiss": "Fermer",
+            "announce": {
+                "started": "Enregistrement en cours. Appuyez sur Arrêter quand vous avez terminé.",
+                "done": "Votre texte est dans la zone de message. Vérifiez-le, puis envoyez-le.",
+                "cancelled": "Enregistrement annulé.",
+                "limit": "Enregistrement arrêté à la limite de {{minutes}} minutes."
+            },
+            "errors": {
+                "permission": "L’accès au micro est bloqué. Autorisez-le dans les paramètres du site de votre navigateur, puis réessayez.",
+                "noMic": "Aucun micro détecté, ou il est utilisé par une autre application.",
+                "noSpeech": "Nous n’avons rien entendu. Réessayez un peu plus près du micro.",
+                "tooLong": "Cet enregistrement est trop long. Limitez vos questions à {{minutes}} minutes.",
+                "rateLimited": "Trop d’enregistrements en peu de temps. Patientez un instant, puis réessayez.",
+                "server": "La saisie vocale n’est pas disponible pour le moment. Veuillez taper votre question."
+            }
         }
     },
     "quickActions": {

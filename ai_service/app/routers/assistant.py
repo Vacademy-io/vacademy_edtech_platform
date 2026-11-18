@@ -12,13 +12,15 @@ so the browser must consume it with a fetch + ReadableStream client (the native
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Depends, Header, HTTPException
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
 from fastapi.responses import StreamingResponse
 
+from ..core.chat_auth import check_rate_limit
 from ..core.security import get_pinned_principal
 from ..schemas.auth import PinnedPrincipal
 from ..schemas.assistant import (
@@ -27,8 +29,14 @@ from ..schemas.assistant import (
     AssistantMessageRequest,
     AssistantMessageResponse,
     AssistantCloseResponse,
+    AssistantSpeechToTextResponse,
 )
+from ..services.ai_billing import UC
 from ..services.assistant_service import AssistantAgentService
+from ..services.audio_utils import base_mime
+from ..services.sarvam_service import SarvamService, SarvamSTTError
+from ..services import speech_to_text as stt
+from ..services.tutor.roles import is_staff
 from ..dependencies import get_assistant_service
 
 logger = logging.getLogger(__name__)
@@ -209,6 +217,112 @@ async def close_session(
     except Exception as e:
         logger.error("Error closing Assistant session: %s", e)
         raise HTTPException(status_code=500, detail="Could not close the session.")
+
+
+# ── speech to text ───────────────────────────────────────────────────────────
+# A spoken question for the Assistant (or any staff screen that wants one):
+# the recording becomes text the user reviews before sending.
+
+#: Longest recording accepted, in seconds. The admin app stops recording here.
+STT_MAX_SECONDS = 120
+#: Largest upload accepted. Two minutes of browser audio (opus or AAC) is well
+#: under this; the cap bounds clips whose length cannot be measured.
+STT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
+
+
+@router.post(
+    "/speech-to-text",
+    response_model=AssistantSpeechToTextResponse,
+    summary="Turn a short recording into text (not sent to the Assistant)",
+    description=(
+        "Multipart upload: `file` (webm/opus, ogg, mp4/aac, mp3 or wav; up to "
+        f"{STT_MAX_SECONDS} s and {STT_MAX_UPLOAD_BYTES // (1024 * 1024)} MB) and an optional "
+        "`language` hint (`auto`, or a code such as `en-IN` / `hi-IN`). Institute staff only. "
+        "Returns the transcript for the user to review; nothing is sent. 422 when no speech is "
+        "heard, 413 when the recording is too long, 415 for other content types, 502 when the "
+        "speech service fails, 429 when called too often."
+    ),
+)
+async def speech_to_text(
+    file: UploadFile = File(...),
+    language: str = Form("auto"),
+    principal: PinnedPrincipal = Depends(get_pinned_principal),
+) -> AssistantSpeechToTextResponse:
+    if not is_staff(principal.roles):
+        raise HTTPException(status_code=403, detail="Voice input is available to institute staff only.")
+    check_rate_limit(f"assistant-stt:{principal.institute_id}:{principal.user_id}")
+
+    try:
+        language_hint = stt.normalize_language(language)
+    except stt.UnsupportedLanguageError:
+        raise HTTPException(status_code=422, detail="This language is not supported for voice input.")
+
+    content_type = base_mime(file.content_type)
+    if not stt.is_accepted_audio_type(content_type):
+        raise HTTPException(
+            status_code=415,
+            detail="Unsupported recording format. Record with the microphone button or upload webm, ogg, mp4, mp3 or wav audio.",
+        )
+
+    audio = await file.read(STT_MAX_UPLOAD_BYTES + 1)
+    if not audio:
+        raise HTTPException(status_code=400, detail="The recording is empty.")
+    if len(audio) > STT_MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="The recording is too large. Keep it under 2 minutes.")
+
+    try:
+        result = await stt.transcribe_audio(
+            audio,
+            content_type,
+            language=language_hint,
+            max_seconds=STT_MAX_SECONDS,
+            min_speech_wav_bytes=stt.MIN_SPEECH_WAV_BYTES,
+            stt=SarvamService(),
+        )
+    except stt.SpeechTooLongError as exc:
+        logger.info("assistant stt refused: %.1fs over the %ss limit (%dB %s)",
+                    exc.duration_seconds, STT_MAX_SECONDS, len(audio), content_type)
+        raise HTTPException(status_code=413, detail="The recording is too long. Keep it under 2 minutes.")
+    except SarvamSTTError as exc:
+        logger.warning("assistant stt provider error: status=%s %dB %s", exc.status, len(audio), content_type)
+        raise HTTPException(
+            status_code=502, detail="Voice input isn't available right now. Please try again or type your question."
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.error("assistant stt failed: %s (%dB %s)", type(exc).__name__, len(audio), content_type)
+        raise HTTPException(status_code=500, detail="Could not process the recording.")
+
+    # Sizes and timings only: never the audio or the transcript text.
+    logger.info(
+        "assistant stt: %dB %s, %s s, %s, provider=%s, %d chars, lang=%s",
+        result.input_bytes, content_type,
+        f"{result.duration_seconds:.1f}" if result.duration_seconds is not None else "?",
+        result.transcode_note, result.provider_called, len(result.transcript), result.language or language_hint,
+    )
+
+    if result.provider_called:
+        await asyncio.to_thread(
+            stt.record_stt_usage,
+            institute_id=principal.institute_id,
+            user_id=principal.user_id,
+            seconds=result.duration_seconds,
+            characters=len(result.transcript),
+            language=result.language or language_hint,
+            surface="assistant",
+            use_case=UC.VACADEMY_ASSISTANT,
+            actor_roles=principal.roles,
+            actor_display_name=principal.full_name,
+        )
+
+    transcript = result.transcript.strip()
+    if not transcript:
+        raise HTTPException(status_code=422, detail="No speech was detected. Please try again.")
+
+    return AssistantSpeechToTextResponse(
+        transcript=transcript,
+        language=result.language or (None if language_hint == "auto" else language_hint),
+        duration_seconds=round(result.duration_seconds, 1) if result.duration_seconds is not None else None,
+    )
 
 
 __all__ = ["router"]

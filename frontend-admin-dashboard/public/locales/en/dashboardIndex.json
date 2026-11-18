@@ -155,6 +155,30 @@
                 "mergeLeads": "Merge the two leads for Asha Verma",
                 "meetingOutcome": "Mark today’s meeting with Asha as done and note she wants the weekend batch"
             }
+        },
+        "voice": {
+            "start": "Speak your question",
+            "starting": "Starting the microphone…",
+            "stop": "Stop and transcribe",
+            "cancel": "Cancel recording",
+            "recording": "Recording",
+            "elapsed": "{{elapsed}} of {{limit}}",
+            "transcribing": "Turning your speech into text…",
+            "dismiss": "Dismiss",
+            "announce": {
+                "started": "Recording. Press Stop when you’re done.",
+                "done": "Your words are in the message box. Check them, then send.",
+                "cancelled": "Recording cancelled.",
+                "limit": "Recording stopped at the {{minutes}} minute limit."
+            },
+            "errors": {
+                "permission": "Microphone access is blocked. Allow it in your browser’s site settings, then try again.",
+                "noMic": "No microphone found, or it’s in use by another app.",
+                "noSpeech": "We didn’t hear anything. Try again a little closer to the microphone.",
+                "tooLong": "That recording is too long. Keep questions under {{minutes}} minutes.",
+                "rateLimited": "Too many recordings in a short time. Wait a moment, then try again.",
+                "server": "Voice input isn’t available right now. Please type your question."
+            }
         }
     },
     "quickActions": {
