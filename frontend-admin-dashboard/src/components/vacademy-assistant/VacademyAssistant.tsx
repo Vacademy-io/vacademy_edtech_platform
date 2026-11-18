@@ -232,9 +232,13 @@ export function VacademyAssistant() {
     };
 
     return (
+        // z-50, not z-40: page toolbars such as the slide editor's sticky Save Draft /
+        // Publish bar sit at z-50 and covered this header, hiding the close button.
+        // Mounted after <Outlet /> in __root, so at equal z it paints on top, while
+        // dialogs and popovers (portalled to the end of <body>) still stack above it.
         <div
             className={cn(
-                'fixed inset-x-4 bottom-6 top-20 z-40 flex flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl sm:inset-x-auto sm:right-20 sm:top-24',
+                'fixed inset-x-4 bottom-6 top-20 z-50 flex flex-col overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-xl sm:inset-x-auto sm:right-20 sm:top-24',
                 expanded ? 'sm:left-1/3' : 'sm:w-96'
             )}
         >
