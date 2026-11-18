@@ -101,25 +101,118 @@ describe('the early order-link script in index.html', () => {
     });
 });
 
-describe('the page structure: the token is gone before tracking, Sentry or any module runs', () => {
-    it('the early script is the first script of the page, straight after the charset', () => {
-        const { html, block } = page();
-        const first = html.indexOf('<script');
-        expect(html.indexOf(block)).toBe(first);
-        expect(html.slice(0, first).trim()).toMatch(/<meta charset="UTF-8"\s*\/?>$/);
-        expect(block).toContain(HELD_ORDER_LINK);
-    });
+/** Every <script> of the page in order, with its tag, its inline body and where it starts. */
+const scriptsOf = (html: string) =>
+    [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)].map((m) => ({ attrs: m[1] ?? '', body: m[2] ?? '', at: m.index ?? 0 }));
 
-    it('every other script (the entry module that starts Sentry and the router included) comes after it', () => {
+/** The inline scripts that run before the early order-link script. */
+const scriptsBefore = () => {
+    const { html, block } = page();
+    const at = html.indexOf(block);
+    return scriptsOf(html).filter((s) => s.at < at);
+};
+
+const TRACKING = /gtag|googletagmanager|\bgtm\b|GTM-|dataLayer|\bfbq\b|fbevents|connect\.facebook|Sentry|sentry|amplitude|clarity|hotjar|posthog|mixpanel|segment\.(io|com)/;
+// Reading the whole address, or any channel that can carry data off the page.
+const WHOLE_ADDRESS = /location\.href|document\.URL|documentURI|document\.location|location\.toString|String\(\s*(window\.)?location\s*\)|(window\.)?location\s*\+/;
+const SENDS = /fetch\s*\(|sendBeacon|XMLHttpRequest|new\s+Image|WebSocket|EventSource|document\.write|\.src\s*=|import\s*\(|importScripts|localStorage|sessionStorage|document\.cookie/;
+
+/**
+ * A page sandbox with a live address: history.replaceState moves it, as in a browser.
+ * `framed` runs it as the in-app class frame (self !== top).
+ */
+const pageSandbox = (address: string, framed = false) => {
+    const url = new URL(address, 'https://shop.example.com');
+    const location = { search: url.search, pathname: url.pathname, hash: url.hash };
+    const posted: unknown[] = [];
+    const writes: unknown[][] = [];
+    const stored = new Map<string, string>();
+    const storage = { setItem: (k: string, v: string) => void stored.set(k, v), getItem: (k: string) => stored.get(k) ?? null };
+    let stopped = false;
+    const ctx: Record<string, unknown> = {
+        Date,
+        JSON,
+        Object,
+        URLSearchParams,
+        location,
+        sessionStorage: storage,
+        localStorage: storage,
+        document: { documentElement: { innerHTML: '<head></head>' } },
+        history: {
+            state: { __TSR_index: 1 },
+            replaceState: (...args: unknown[]) => {
+                writes.push(args);
+                const next = new URL(String(args[2]), url);
+                Object.assign(location, { search: next.search, pathname: next.pathname, hash: next.hash });
+            },
+        },
+        stop: () => {
+            stopped = true;
+        },
+    };
+    ctx.window = ctx;
+    ctx.self = ctx;
+    ctx.top = framed ? {} : ctx;
+    ctx.parent = framed ? { postMessage: (message: unknown) => posted.push(message) } : ctx;
+    ctx.postMessage = (message: unknown) => posted.push(message);
+    const run = (code: string) => runInNewContext(code, ctx);
+    return { ctx, location, posted, writes, stored, run, stopped: () => stopped };
+};
+
+describe('the page structure: the token is gone before tracking, Sentry or any module runs', () => {
+    it('the early script comes before every external script and every module (the entry that starts Sentry and the router included)', () => {
         const { html, block } = page();
+        expect(block).toContain(HELD_ORDER_LINK);
         const end = html.indexOf(block) + block.length;
-        const scripts = [...html.matchAll(/<script\b[^>]*>/g)].map((m) => ({ tag: m[0], at: m.index ?? 0 }));
-        expect(scripts.length).toBeGreaterThan(1);
-        for (const s of scripts.slice(1)) expect(s.at).toBeGreaterThanOrEqual(end);
-        const entry = scripts.find((s) => s.tag.includes('/src/main.tsx'));
-        expect(entry?.tag).toContain('type="module"');
+        const scripts = scriptsOf(html);
+        const loaded = scripts.filter((s) => /\bsrc\s*=/.test(s.attrs) || /type\s*=\s*["']?module/.test(s.attrs));
+        expect(loaded.length).toBeGreaterThan(0);
+        for (const s of loaded) expect(s.at).toBeGreaterThanOrEqual(end);
+        const entry = scripts.find((s) => s.attrs.includes('/src/main.tsx'));
+        expect(entry?.attrs).toContain('type="module"');
+        expect(entry!.at).toBeGreaterThan(end);
+        // Nothing but the charset and inline scripts ahead of it: no preloads, no other tags that fetch.
+        const head = html.slice(0, html.indexOf(block)).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, '');
+        expect(head.slice(head.indexOf('<head>') + '<head>'.length).trim()).toMatch(/^<meta charset="UTF-8"\s*\/?>$/);
         // No analytics loaded by the page itself: tracking is injected by the app, after the entry.
         expect(html).not.toMatch(/googletagmanager|fbevents|connect\.facebook|gtag\/js/);
+    });
+
+    it('inline scripts allowed before it carry no tracking, never read the whole address and send nothing off the page', () => {
+        for (const s of scriptsBefore()) {
+            expect(s.attrs.trim()).toBe(''); // inline, classic
+            const code = s.body.replace(/\/\/.*$/gm, '');
+            expect(code).not.toMatch(TRACKING);
+            expect(code).not.toMatch(WHOLE_ADDRESS);
+            expect(code).not.toMatch(SENDS);
+            // The fragment may only be handed back to the address it came from.
+            const withoutReplace = code.replace(/history\.replaceState\([^;]*\);/g, '');
+            expect(withoutReplace).not.toMatch(/\.hash\b/);
+        }
+    });
+
+    it.each([
+        ['an order link', `/shop/order?lang=en#l=${TOKEN}`],
+        ['an order link that also carries the live-class exit marker', `/shop/order?vxBbbExit=1&lang=en#l=${TOKEN}`],
+    ])('run in order on %s, the earlier scripts never send the token and leave it for the order-link script', (_label, address) => {
+        for (const framed of [false, true]) {
+            const sandbox = pageSandbox(address, framed);
+            for (const s of scriptsBefore()) sandbox.run(s.body);
+            // Nothing that left the page (a frame message) holds the fragment or the token.
+            for (const message of sandbox.posted) expect(JSON.stringify(message)).not.toContain(TOKEN);
+            expect(sandbox.stored.size).toBe(0);
+            if (sandbox.stopped()) {
+                // The class frame stops the page here; the token stays in that frame's own address.
+                expect(framed).toBe(true);
+                continue;
+            }
+            // The fragment is still in the address, so the order-link script still takes it.
+            expect(sandbox.location.hash).toBe(`#l=${TOKEN}`);
+            sandbox.run(page().script);
+            expect(sandbox.ctx[HELD_ORDER_LINK]).toBe(TOKEN);
+            expect(sandbox.location.hash).toBe('');
+            expect(`${sandbox.location.pathname}${sandbox.location.search}`).toBe('/shop/order?lang=en');
+        }
     });
 });
 
