@@ -51,6 +51,7 @@
         "wrongLabel": "Incorrectes : {{count}}",
         "partialLabel": "Partiel : {{count}}",
         "partiallyCorrect": "Partiellement correct · {{percent}} % des points",
+        "checkingLabel": "En cours de correction : {{count}}",
         "skippedLabel": "Ignorées : {{count}}",
         "attemptPassed": "Tentative réussie",
         "youPassed": "Vous avez réussi !",
