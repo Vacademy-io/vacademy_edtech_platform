@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.slide.entity;
 import jakarta.persistence.*;
 import lombok.*;
 import vacademy.io.admin_core_service.features.common.entity.RichTextData;
+import vacademy.io.admin_core_service.features.slide.cbe.CbeConfigSecrets;
 import vacademy.io.admin_core_service.features.slide.dto.QuizSlideQuestionDTO;
 
 import java.time.LocalDateTime;
@@ -76,6 +77,14 @@ public class QuizSlideQuestion {
     @OneToMany(mappedBy = "quizSlideQuestion", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<QuizSlideQuestionOption> quizSlideQuestionOptions;
 
+    /**
+     * CBE_RESPONSE only: the model solution, marking scheme and grading notes, kept out of
+     * {@code auto_evaluation_json} (which learners receive with the quiz). Never part of a
+     * learner read; admins load it through the quiz slide evaluation-secrets endpoint.
+     */
+    @Column(name = "evaluation_secret_json", columnDefinition = "text")
+    private String evaluationSecretJson;
+
     public QuizSlideQuestion(QuizSlideQuestionDTO dto, QuizSlide quizSlide) {
         this.id = dto.getId();
 
@@ -96,7 +105,17 @@ public class QuizSlideQuestion {
         this.questionResponseType = dto.getQuestionResponseType();
         this.questionType = dto.getQuestionType();
         this.accessLevel = dto.getAccessLevel();
-        this.autoEvaluationJson = dto.getAutoEvaluationJson();
+        // CBE_RESPONSE: whatever the client sent, the solution half never stays in
+        // auto_evaluation_json. Done here so every path that creates a quiz question from a
+        // DTO (new slide, new question on an existing slide) splits it the same way.
+        if (CbeConfigSecrets.isCbe(dto.getQuestionType(), dto.getAutoEvaluationJson())) {
+            CbeConfigSecrets.Split split = CbeConfigSecrets.split(dto.getAutoEvaluationJson(),
+                    dto.getEvaluationSecretJson());
+            this.autoEvaluationJson = split.redactedConfig();
+            this.evaluationSecretJson = split.resolve(null);
+        } else {
+            this.autoEvaluationJson = dto.getAutoEvaluationJson();
+        }
         this.evaluationType = dto.getEvaluationType();
         this.questionOrder = dto.getQuestionOrder();
         this.canSkip = dto.getCanSkip();
