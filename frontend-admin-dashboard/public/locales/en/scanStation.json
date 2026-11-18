@@ -19,7 +19,7 @@
         },
         "two": {
             "title": "Turn the pile over",
-            "body": "Turn the whole pile over, like turning a book page, and scan it again into a second folder."
+            "body": "Turn the whole pile over, so the page that was on top is now at the bottom facing down, and scan it again into a second folder."
         },
         "three": {
             "title": "Add both scans here",
@@ -86,7 +86,9 @@
         },
         "loadSide": "Load {{load}} · {{side}}",
         "stepA": "Put up to {{max}} sheets in the feeder, writing facing up, top edge first.",
-        "stepB": "Take the pile from the tray, turn it over like a book page, put it back.",
+        "stepB1": "Pick up the whole pile and look at the page on top.",
+        "stepB2": "Turn the whole pile over, side to side, so that page ends up at the bottom, facing down. Keep the sheets in the same order.",
+        "stepB3": "Put the pile back in the feeder, the same edge going in first, and click Start scanning.",
         "start": "Start scanning",
         "cancel": "Cancel",
         "cancelled": "Scan cancelled. Those pages were thrown away.",

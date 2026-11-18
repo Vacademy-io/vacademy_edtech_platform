@@ -19,7 +19,7 @@
         },
         "two": {
             "title": "Retournez la pile",
-            "body": "Retournez toute la pile, comme on tourne la page d'un livre, et numérisez-la à nouveau dans un second dossier."
+            "body": "Retournez toute la pile, pour que la page du dessus se retrouve en dessous, face vers le bas, et numérisez-la à nouveau dans un second dossier."
         },
         "three": {
             "title": "Ajoutez les deux numérisations ici",
@@ -86,7 +86,9 @@
         },
         "loadSide": "Lot {{load}} · {{side}}",
         "stepA": "Placez jusqu'à {{max}} feuilles dans le chargeur, écriture vers le haut, bord supérieur en premier.",
-        "stepB": "Prenez la pile dans le bac, retournez-la comme une page de livre et remettez-la.",
+        "stepB1": "Prenez toute la pile et regardez la page du dessus.",
+        "stepB2": "Retournez toute la pile de gauche à droite, pour que cette page se retrouve en dessous, face vers le bas. Gardez les feuilles dans le même ordre.",
+        "stepB3": "Remettez la pile dans le chargeur, le même bord en premier, puis cliquez sur Démarrer la numérisation.",
         "start": "Démarrer la numérisation",
         "cancel": "Annuler",
         "cancelled": "Numérisation annulée. Ces pages ont été supprimées.",

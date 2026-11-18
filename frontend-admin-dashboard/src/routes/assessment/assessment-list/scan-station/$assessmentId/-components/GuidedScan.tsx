@@ -494,7 +494,11 @@ export const GuidedScan = ({
                         <Step
                             picture={<TurnOverIllustration />}
                             label={side('second')}
-                            instruction={t('guided.stepB')}
+                            instruction={[
+                                t('guided.stepB1'),
+                                t('guided.stepB2'),
+                                t('guided.stepB3'),
+                            ]}
                         >
                             {startButton('B', phase.passA)}
                             {restartButton([phase.passA])}
@@ -637,7 +641,8 @@ const Step = ({
 }: {
     picture: ReactNode;
     label: string;
-    instruction: string;
+    /** One sentence, or numbered steps when a single sentence would be too much. */
+    instruction: string | string[];
     extra?: ReactNode;
     children: ReactNode;
 }) => (
@@ -645,7 +650,15 @@ const Step = ({
         {picture}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
             <p className="text-caption font-medium text-primary-600">{label}</p>
-            <p className="text-body text-neutral-800">{instruction}</p>
+            {Array.isArray(instruction) ? (
+                <ol className="flex list-decimal flex-col gap-1 ps-5 text-body text-neutral-800">
+                    {instruction.map((line) => (
+                        <li key={line}>{line}</li>
+                    ))}
+                </ol>
+            ) : (
+                <p className="text-body text-neutral-800">{instruction}</p>
+            )}
             {extra}
             <div className="flex flex-wrap items-center gap-2">{children}</div>
         </div>

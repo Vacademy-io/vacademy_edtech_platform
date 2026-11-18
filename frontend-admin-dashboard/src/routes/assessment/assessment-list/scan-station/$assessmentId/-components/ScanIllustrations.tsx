@@ -98,7 +98,7 @@ export const TurnOverIllustration = ({ className }: { className?: string }) => (
                 strokeWidth="2"
             />
         ))}
-        {/* turning over to the right, like a book page */}
+        {/* the whole pile turned over, side to side */}
         <path d="M30 24 C40 4 80 4 90 24" className="stroke-primary-500" strokeWidth="2.5" />
         <path d="M83 20 L90 25 L93 17" className="stroke-primary-500" strokeWidth="2.5" />
         {/* back, now facing up */}

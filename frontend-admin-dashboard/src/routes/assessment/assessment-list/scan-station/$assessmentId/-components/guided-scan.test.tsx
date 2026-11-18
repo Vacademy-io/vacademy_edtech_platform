@@ -227,7 +227,7 @@ describe('guided scan — one-sided feeder', () => {
         fireEvent.click(await startButton());
 
         // Side A done: three thumbnails, and the turn-over step.
-        await screen.findByText(/guided.stepB/);
+        await screen.findByText(/guided.stepB1/);
         expect(screen.getByText('guided.sideDone {"count":3}')).toBeTruthy();
         // Previews are fetched through the client (the helper needs an Origin), in scan order.
         await waitFor(() => expect(container.querySelectorAll('img')).toHaveLength(3));
@@ -247,7 +247,7 @@ describe('guided scan — one-sided feeder', () => {
         fireEvent.click(screen.getByRole('button', { name: 'guided.rescanSide' }));
         await waitFor(() => expect(helper.remove).toHaveBeenCalledWith('jobB'));
         expect(helper.remove).not.toHaveBeenCalledWith('jobA');
-        await screen.findByText(/guided.stepB/);
+        await screen.findByText(/guided.stepB1/);
         expect(helper.startScan).toHaveBeenCalledTimes(2);
 
         fireEvent.click(await startButton());
@@ -265,7 +265,7 @@ describe('guided scan — one-sided feeder', () => {
         scriptJob('jobB', doneJob('jobB', 4));
         renderGuided();
         fireEvent.click(await startButton());
-        await screen.findByText(/guided.stepB/);
+        await screen.findByText(/guided.stepB1/);
         fireEvent.click(await startButton());
         await screen.findByText('guided.mismatch {"a":3,"b":4}');
         fireEvent.click(screen.getByRole('button', { name: 'guided.restartLoad' }));
@@ -281,7 +281,7 @@ describe('guided scan — one-sided feeder', () => {
         scriptJob('jobB', doneJob('jobB', 3));
         renderGuided();
         fireEvent.click(await startButton());
-        await screen.findByText(/guided.stepB/);
+        await screen.findByText(/guided.stepB1/);
         fireEvent.click(await startButton());
 
         await screen.findByText('guided.sent {"load":1}');
@@ -351,7 +351,7 @@ describe('guided scan — one-sided feeder', () => {
         uploadScanFiles.mockRejectedValueOnce(new Error('network'));
         renderGuided();
         fireEvent.click(await startButton());
-        await screen.findByText(/guided.stepB/);
+        await screen.findByText(/guided.stepB1/);
         fireEvent.click(await startButton());
         await screen.findByRole('button', { name: 'guided.retry' });
         expect(addScanLoad).not.toHaveBeenCalled();
