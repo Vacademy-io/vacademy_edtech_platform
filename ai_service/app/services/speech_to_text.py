@@ -75,6 +75,10 @@ class UnsupportedLanguageError(ValueError):
     """The language hint is not one the provider accepts."""
 
 
+class UndecodableAudioError(ValueError):
+    """The recording could not be decoded, so its length cannot be checked."""
+
+
 @dataclass(frozen=True)
 class SpeechToTextResult:
     transcript: str
@@ -114,19 +118,27 @@ async def transcribe_audio(
     language: str = "auto",
     max_seconds: Optional[float] = None,
     min_speech_wav_bytes: int = 0,
+    require_decoded: bool = False,
     stt: Optional[SarvamService] = None,
 ) -> SpeechToTextResult:
     """Transcode ``audio`` to WAV and transcribe it.
 
     ``stt`` is the provider (default SarvamService): its ``transcribe()`` also
     reports the language; one with only ``speech_to_text()`` works too.
-    ``max_seconds`` refuses longer clips with SpeechTooLongError (checked on
-    the normalised WAV; a clip ffmpeg could not decode has no measured length
-    and is bounded by the caller's upload size). ``min_speech_wav_bytes``
-    returns an empty transcript for shorter WAVs without calling the provider.
-    Raises SarvamSTTError when the provider fails.
+    ``max_seconds`` refuses longer clips with SpeechTooLongError. Decoding
+    stops just past the limit, so a long clip never decodes in full: the WAV
+    is at most (max_seconds + grace + 1 s) long, and reaching that length
+    means the input was too long. ``require_decoded`` refuses a non-WAV clip
+    ffmpeg could not decode (UndecodableAudioError) instead of sending it to
+    the provider unmeasured. ``min_speech_wav_bytes`` returns an empty
+    transcript for shorter WAVs without calling the provider.
+    Raises SarvamSTTError when the provider fails; its ``completed_seconds``
+    says how much audio was transcribed before the failure.
     """
-    wav, wav_mime, note = await audio_utils.transcode_to_wav(audio, mime)
+    decode_cap = {"max_seconds": max_seconds + DURATION_GRACE_SECONDS + 1.0} if max_seconds else {}
+    wav, wav_mime, note = await audio_utils.transcode_to_wav(audio, mime, **decode_cap)
+    if require_decoded and not is_wav(wav_mime):
+        raise UndecodableAudioError(note or "not decoded")
     duration = wav_duration_seconds(wav) if is_wav(wav_mime) else None
 
     if max_seconds is not None and duration is not None and duration > max_seconds + DURATION_GRACE_SECONDS:
@@ -224,6 +236,7 @@ __all__ = [
     "SUPPORTED_LANGUAGES",
     "SpeechToTextResult",
     "SpeechTooLongError",
+    "UndecodableAudioError",
     "UnsupportedLanguageError",
     "is_accepted_audio_type",
     "normalize_language",

@@ -1,4 +1,4 @@
-import { useId, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { ArrowUp, ChatCircleDots, Sparkle } from '@phosphor-icons/react';
@@ -45,6 +45,13 @@ export function AssistantLaunchBar() {
         staleTime: 5 * 60 * 1000,
     });
 
+    // The composer (and its mic) shows only with capabilities; never record without it.
+    const composerVisible = !!capabilities?.groups?.length;
+    const cancelVoice = voice.cancel;
+    useEffect(() => {
+        if (!composerVisible) cancelVoice();
+    }, [composerVisible, cancelVoice]);
+
     if (isPending) {
         return (
             <div
@@ -82,7 +89,7 @@ export function AssistantLaunchBar() {
         );
     }
 
-    if (!capabilities?.groups?.length) return null;
+    if (!composerVisible) return null;
 
     // Plan filter (MANAGED only: group + the chip's own features) before the
     // four-slot cut, so the slots are backfilled with chips the institute can use.

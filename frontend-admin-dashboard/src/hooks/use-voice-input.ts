@@ -156,6 +156,10 @@ export function useVoiceInput({
     const discardRef = useRef(false);
     const abortRef = useRef<AbortController | null>(null);
     const mountedRef = useRef(true);
+    // Bumped by every start() and by cancel(): a microphone permission that is
+    // granted after a cancel (or a newer start) belongs to no one and is released.
+    const startTokenRef = useRef(0);
+    const awaitingMicRef = useRef(false);
     const onTranscriptRef = useRef(onTranscript);
     onTranscriptRef.current = onTranscript;
     const transcribeRef = useRef(transcribe);
@@ -220,22 +224,28 @@ export function useVoiceInput({
         setStoppedAtLimit(false);
         setElapsedSeconds(0);
         setStatus('requesting');
+        const token = ++startTokenRef.current;
+        const stillWanted = () => mountedRef.current && token === startTokenRef.current;
         let stream: MediaStream;
+        awaitingMicRef.current = true;
         try {
             stream = await navigator.mediaDevices.getUserMedia({
                 audio: { echoCancellation: true, noiseSuppression: true },
             });
         } catch (err) {
-            if (mountedRef.current) {
+            if (stillWanted()) {
+                awaitingMicRef.current = false;
                 setError(errorFromGetUserMedia(err));
                 setStatus('idle');
             }
             return;
         }
-        if (!mountedRef.current) {
+        if (!stillWanted()) {
+            // Cancelled (or unmounted) while the permission prompt was open.
             stream.getTracks().forEach((track) => track.stop());
             return;
         }
+        awaitingMicRef.current = false;
         streamRef.current = stream;
 
         let recorder: MediaRecorder;
@@ -308,7 +318,11 @@ export function useVoiceInput({
     const stop = useCallback(() => stopRecorder(false), [stopRecorder]);
 
     const cancel = useCallback(() => {
-        if (recorderRef.current || abortRef.current) setOutcome('cancelled');
+        startTokenRef.current += 1;
+        if (recorderRef.current || abortRef.current || awaitingMicRef.current) {
+            setOutcome('cancelled');
+        }
+        awaitingMicRef.current = false;
         if (abortRef.current) {
             abortRef.current.abort();
             abortRef.current = null;
@@ -324,6 +338,7 @@ export function useVoiceInput({
         mountedRef.current = true;
         return () => {
             mountedRef.current = false;
+            startTokenRef.current += 1;
             discardRef.current = true;
             abortRef.current?.abort();
             const recorder = recorderRef.current;

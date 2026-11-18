@@ -355,6 +355,73 @@ describe('errors', () => {
 
 // ── the default upload ───────────────────────────────────────────────────────
 
+describe('cancel while the permission prompt is open', () => {
+    it('releases a microphone granted after the cancel and never records', async () => {
+        let grant: (stream: unknown) => void = () => {};
+        const track = { stop: vi.fn(), addEventListener: vi.fn() };
+        getUserMedia.mockImplementationOnce(() => new Promise((resolve) => (grant = resolve)));
+        const onTranscript = vi.fn();
+        const { result } = renderHook(() => useVoiceInput({ onTranscript }));
+
+        let started: Promise<void> = Promise.resolve();
+        act(() => {
+            started = result.current.start();
+        });
+        expect(result.current.status).toBe('requesting');
+        act(() => result.current.cancel());
+        expect(result.current.status).toBe('idle');
+
+        await act(async () => {
+            grant({ getTracks: () => [track] });
+            await started;
+        });
+        expect(track.stop).toHaveBeenCalled();
+        expect(FakeMediaRecorder.instances).toHaveLength(0);
+        expect(result.current.status).toBe('idle');
+        expect(result.current.outcome).toBe('cancelled');
+
+        // Nothing happens later either (no auto-stop, no upload).
+        await advance(130_000);
+        expect(onTranscript).not.toHaveBeenCalled();
+        expect(authenticatedAxiosInstance.post).not.toHaveBeenCalled();
+    });
+
+    it('ignores a refusal that arrives after the cancel', async () => {
+        let refuse: (err: unknown) => void = () => {};
+        getUserMedia.mockImplementationOnce(() => new Promise((_r, reject) => (refuse = reject)));
+        const { result } = renderHook(() => useVoiceInput({ onTranscript: vi.fn() }));
+        let started: Promise<void> = Promise.resolve();
+        act(() => {
+            started = result.current.start();
+        });
+        act(() => result.current.cancel());
+        await act(async () => {
+            refuse(domError('NotAllowedError'));
+            await started;
+        });
+        expect(result.current.error).toBeNull();
+        expect(result.current.status).toBe('idle');
+    });
+
+    it('releases a microphone granted after unmount', async () => {
+        let grant: (stream: unknown) => void = () => {};
+        const track = { stop: vi.fn(), addEventListener: vi.fn() };
+        getUserMedia.mockImplementationOnce(() => new Promise((resolve) => (grant = resolve)));
+        const { result, unmount } = renderHook(() => useVoiceInput({ onTranscript: vi.fn() }));
+        let started: Promise<void> = Promise.resolve();
+        act(() => {
+            started = result.current.start();
+        });
+        unmount();
+        await act(async () => {
+            grant({ getTracks: () => [track] });
+            await started;
+        });
+        expect(track.stop).toHaveBeenCalled();
+        expect(FakeMediaRecorder.instances).toHaveLength(0);
+    });
+});
+
 describe('upload', () => {
     it('posts the recording as multipart with an auto language hint', async () => {
         vi.mocked(authenticatedAxiosInstance.post).mockResolvedValue({

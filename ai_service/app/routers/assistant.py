@@ -230,6 +230,22 @@ STT_MAX_SECONDS = 120
 STT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
 
 
+async def _record_usage(principal: PinnedPrincipal, seconds: Optional[float], characters: int,
+                        language: Optional[str]) -> None:
+    await asyncio.to_thread(
+        stt.record_stt_usage,
+        institute_id=principal.institute_id,
+        user_id=principal.user_id,
+        seconds=seconds,
+        characters=characters,
+        language=language,
+        surface="assistant",
+        use_case=UC.VACADEMY_ASSISTANT,
+        actor_roles=principal.roles,
+        actor_display_name=principal.full_name,
+    )
+
+
 @router.post(
     "/speech-to-text",
     response_model=AssistantSpeechToTextResponse,
@@ -239,7 +255,8 @@ STT_MAX_UPLOAD_BYTES = 5 * 1024 * 1024
         f"{STT_MAX_SECONDS} s and {STT_MAX_UPLOAD_BYTES // (1024 * 1024)} MB) and an optional "
         "`language` hint (`auto`, or a code such as `en-IN` / `hi-IN`). Institute staff only. "
         "Returns the transcript for the user to review; nothing is sent. 422 when no speech is "
-        "heard, 413 when the recording is too long, 415 for other content types, 502 when the "
+        "heard, 413 when the recording is too long, 415 for other content types or audio that "
+        "cannot be decoded, 502 when the "
         "speech service fails, 429 when called too often."
     ),
 )
@@ -277,14 +294,25 @@ async def speech_to_text(
             language=language_hint,
             max_seconds=STT_MAX_SECONDS,
             min_speech_wav_bytes=stt.MIN_SPEECH_WAV_BYTES,
+            require_decoded=True,
             stt=SarvamService(),
+        )
+    except stt.UndecodableAudioError as exc:
+        logger.info("assistant stt refused: not decodable (%s, %dB %s)", exc, len(audio), content_type)
+        raise HTTPException(
+            status_code=415,
+            detail="The recording could not be read. Please record again with the microphone button.",
         )
     except stt.SpeechTooLongError as exc:
         logger.info("assistant stt refused: %.1fs over the %ss limit (%dB %s)",
                     exc.duration_seconds, STT_MAX_SECONDS, len(audio), content_type)
         raise HTTPException(status_code=413, detail="The recording is too long. Keep it under 2 minutes.")
     except SarvamSTTError as exc:
-        logger.warning("assistant stt provider error: status=%s %dB %s", exc.status, len(audio), content_type)
+        logger.warning("assistant stt provider error: status=%s %dB %s, %.1fs done before it",
+                       exc.status, len(audio), content_type, exc.completed_seconds)
+        if exc.completed_seconds > 0:
+            # Earlier pieces of a long clip were transcribed (and paid for).
+            await _record_usage(principal, exc.completed_seconds, 0, language_hint)
         raise HTTPException(
             status_code=502, detail="Voice input isn't available right now. Please try again or type your question."
         )
@@ -301,18 +329,9 @@ async def speech_to_text(
     )
 
     if result.provider_called:
-        await asyncio.to_thread(
-            stt.record_stt_usage,
-            institute_id=principal.institute_id,
-            user_id=principal.user_id,
-            seconds=result.duration_seconds,
-            characters=len(result.transcript),
-            language=result.language or language_hint,
-            surface="assistant",
-            use_case=UC.VACADEMY_ASSISTANT,
-            actor_roles=principal.roles,
-            actor_display_name=principal.full_name,
-        )
+        # The clip was decoded (require_decoded), so its length is known.
+        await _record_usage(principal, result.duration_seconds, len(result.transcript),
+                            result.language or language_hint)
 
     transcript = result.transcript.strip()
     if not transcript:

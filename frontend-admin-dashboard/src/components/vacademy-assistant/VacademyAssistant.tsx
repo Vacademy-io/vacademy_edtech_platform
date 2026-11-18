@@ -197,10 +197,16 @@ export function VacademyAssistant() {
             requestAnimationFrame(() => inputRef.current?.focus());
         },
     });
+    // Whether the panel renders at all (see the early return below). The mic
+    // must never keep listening, or start listening, behind a hidden panel.
+    const token = getTokenFromCookie(TokenKey.accessToken);
+    const isAuthed = !!token && !isTokenExpired(token);
+    const onPublicRoute = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+    const panelVisible = isAuthed && !onPublicRoute && open;
     const cancelVoice = voice.cancel;
     useEffect(() => {
-        if (!open) cancelVoice();
-    }, [open, cancelVoice]);
+        if (!panelVisible) cancelVoice();
+    }, [panelVisible, cancelVoice]);
 
     // A question handed over from the dashboard launch bar: send it as soon as
     // the panel opens (sendMessage cold-starts the session itself).
@@ -250,11 +256,8 @@ export function VacademyAssistant() {
         scrollEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, status]);
 
-    const token = getTokenFromCookie(TokenKey.accessToken);
-    const isAuthed = !!token && !isTokenExpired(token);
-    const onPublicRoute = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
     // The rail (AssistDock) owns the trigger now; render only when it asks us to.
-    if (!isAuthed || onPublicRoute || !open) return null;
+    if (!panelVisible) return null;
 
     const isBusy = status === 'connecting' || status === 'streaming';
     const lastMessage = messages[messages.length - 1];

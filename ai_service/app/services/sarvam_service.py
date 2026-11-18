@@ -157,6 +157,9 @@ class SarvamSTTError(RuntimeError):
     def __init__(self, message: str, status: Optional[int] = None):
         super().__init__(message)
         self.status = status
+        #: Seconds of audio transcribed (and billed by the provider) before the
+        #: failure, when a long clip was sent in pieces.
+        self.completed_seconds: float = 0.0
 
 
 class SarvamTranscript(NamedTuple):
@@ -313,8 +316,14 @@ class SarvamService:
                 logger.info("STT: %.1fs clip split into %d pieces", duration, len(pieces))
                 texts = []
                 detected: Optional[str] = None
+                done_seconds = 0.0
                 for piece in pieces:
-                    part = await self.transcribe(piece, language=language, mime_type="audio/wav")
+                    try:
+                        part = await self.transcribe(piece, language=language, mime_type="audio/wav")
+                    except SarvamSTTError as exc:
+                        exc.completed_seconds = done_seconds
+                        raise
+                    done_seconds += wav_duration_seconds(piece) or 0.0
                     if part.text.strip():
                         texts.append(part.text.strip())
                         detected = detected or part.language_code

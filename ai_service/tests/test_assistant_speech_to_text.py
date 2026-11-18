@@ -8,9 +8,13 @@ exercised through the same shared service to show its contract is unchanged.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
+import shutil
 import struct
+import subprocess
+import tempfile
 import sys
 import types
 from types import SimpleNamespace
@@ -82,6 +86,8 @@ def env(monkeypatch):
         usage=[],
         sent=[],
         transcoded=[],
+        caps=[],
+        undecodable=False,
     )
 
     async def fake_verify(auth_header, client_id, settings, **_kw):
@@ -102,11 +108,14 @@ def env(monkeypatch):
 
     real_transcode = audio_utils.transcode_to_wav
 
-    async def fake_transcode(audio, mime):
+    async def fake_transcode(audio, mime, max_seconds=None):
         # WAV goes through the real step; any browser container is "decoded" to 3 s of WAV.
         state.transcoded.append(stt.base_mime(mime))
+        state.caps.append(max_seconds)
         if stt.is_wav(mime):
-            return await real_transcode(audio, mime)
+            return await real_transcode(audio, mime, max_seconds)
+        if state.undecodable:
+            return audio, mime, "transcode_failed:rc1"
         return wav_bytes(3.0), "audio/wav", f"transcoded_file:{stt.base_mime(mime)}"
 
     monkeypatch.setattr(audio_utils, "transcode_to_wav", fake_transcode)
@@ -368,6 +377,7 @@ def fake_http(monkeypatch):
     return _FakeHttpClient
 
 
+@pytest.mark.asyncio
 async def test_provider_transcribe_reports_the_detected_language(fake_http):
     fake_http.payloads = [{"transcript": "hello", "language_code": "en-IN"}]
     result = await SarvamService().transcribe(wav_bytes(2.0))
@@ -375,12 +385,14 @@ async def test_provider_transcribe_reports_the_detected_language(fake_http):
     assert "language_code" not in fake_http.requests[0]["data"]
 
 
+@pytest.mark.asyncio
 async def test_provider_speech_to_text_still_returns_text(fake_http):
     fake_http.payloads = [{"transcript": "namaste", "language_code": "hi-IN"}]
     assert await SarvamService().speech_to_text(wav_bytes(2.0), language="hi-IN") == "namaste"
     assert fake_http.requests[0]["data"]["language_code"] == "hi-IN"
 
 
+@pytest.mark.asyncio
 async def test_provider_splits_long_audio_and_keeps_the_first_language(fake_http):
     fake_http.payloads = [
         {"transcript": "first part", "language_code": "hi-IN"},
@@ -392,6 +404,7 @@ async def test_provider_splits_long_audio_and_keeps_the_first_language(fake_http
     assert result == SarvamTranscript("first part second part", "hi-IN")
 
 
+@pytest.mark.asyncio
 async def test_transcribe_audio_passes_wav_through(monkeypatch):
     seen = {}
 
@@ -408,10 +421,11 @@ async def test_transcribe_audio_passes_wav_through(monkeypatch):
     assert seen == {"bytes": len(audio), "language": "en-IN", "mime": "audio/wav"}
 
 
+@pytest.mark.asyncio
 async def test_transcribe_audio_without_ffmpeg_still_tries_the_provider(monkeypatch):
     """Where ffmpeg is missing the original bytes go to the provider unchanged."""
 
-    async def no_ffmpeg(audio, mime):
+    async def no_ffmpeg(audio, mime, max_seconds=None):
         return audio, mime, "transcode_failed:no_ffmpeg"
 
     monkeypatch.setattr(audio_utils, "transcode_to_wav", no_ffmpeg)
@@ -426,6 +440,13 @@ async def test_transcribe_audio_without_ffmpeg_still_tries_the_provider(monkeypa
                                         min_speech_wav_bytes=stt.MIN_SPEECH_WAV_BYTES, stt=Provider())
     assert result.transcript == "ok" and result.duration_seconds is None
     assert seen == {"mime": "audio/webm"}
+
+    # A caller that needs the length checked refuses it instead.
+    seen.clear()
+    with pytest.raises(stt.UndecodableAudioError):
+        await stt.transcribe_audio(b"\x1aE\xdf\xa3" * 100, "audio/webm", max_seconds=120,
+                                   require_decoded=True, stt=Provider())
+    assert seen == {}
 
 
 def test_usage_row_is_record_only_and_bundled(monkeypatch):
@@ -480,6 +501,158 @@ def test_usage_recording_never_raises(monkeypatch):
                          surface="assistant", use_case="vacademy_assistant")
 
 
+# ── bounded decoding ─────────────────────────────────────────────────────────
+
+def test_decoding_is_capped_just_past_the_limit(env):
+    _post(env, b"\x1aE\xdf\xa3" + b"\x00" * 2000, mime="audio/webm")
+    assert env.caps == [assistant_router.STT_MAX_SECONDS + stt.DURATION_GRACE_SECONDS + 1.0]
+
+
+def test_a_clip_decoded_up_to_the_cap_is_refused_as_too_long(env, monkeypatch):
+    cap = assistant_router.STT_MAX_SECONDS + stt.DURATION_GRACE_SECONDS + 1.0
+
+    async def capped(audio, mime, max_seconds=None):
+        return wav_bytes(max_seconds), "audio/wav", "transcoded_file:audio/webm"
+
+    monkeypatch.setattr(audio_utils, "transcode_to_wav", capped)
+    r = _post(env, b"\x1aE\xdf\xa3" + b"\x00" * 2000, mime="audio/webm")
+    assert r.status_code == 413
+    assert FakeProvider.calls == [] and env.usage == []
+    assert cap * 32000 + 44 < 5 * 1024 * 1024  # the decoded WAV stays small
+
+
+def test_an_undecodable_recording_is_refused(env):
+    env.undecodable = True
+    r = _post(env, b"\x1aE\xdf\xa3" + b"\x00" * 2000, mime="audio/webm")
+    assert r.status_code == 415
+    assert "could not be read" in r.json()["detail"]
+    assert FakeProvider.calls == [] and env.usage == []
+
+
+def test_a_failure_after_earlier_pieces_still_records_what_was_transcribed(env):
+    err = SarvamSTTError("Sarvam STT HTTP 500: x", status=500)
+    err.completed_seconds = 58.0
+    FakeProvider.error = err
+    r = _post(env, wav_bytes(70.0))
+    assert r.status_code == 502
+    assert len(env.usage) == 1
+    assert env.usage[0]["seconds"] == 58.0 and env.usage[0]["characters"] == 0
+
+
+class _FakeProc:
+    """asyncio subprocess stand-in for ffmpeg."""
+
+    def __init__(self, args, hang=False):
+        self.args = args
+        self.hang = hang
+        self.returncode = None
+        self.killed = False
+
+    async def communicate(self):
+        if self.hang:
+            await asyncio.sleep(3600)
+        out_path = self.args[-1]
+        cap = float(self.args[self.args.index("-t") + 1]) if "-t" in self.args else 5.0
+        with open(out_path, "wb") as f:
+            f.write(wav_bytes(min(cap, 5.0)))
+        self.returncode = 0
+        return b"", b""
+
+    def kill(self):
+        self.killed = True
+        self.returncode = -9
+
+    async def wait(self):
+        return self.returncode
+
+
+@pytest.fixture()
+def fake_ffmpeg(monkeypatch):
+    procs = []
+
+    async def spawn(*args, **kw):
+        proc = _FakeProc(list(args), hang=getattr(spawn, "hang", False))
+        procs.append(proc)
+        return proc
+
+    monkeypatch.setattr(audio_utils.asyncio, "create_subprocess_exec", spawn)
+    return SimpleNamespace(procs=procs, spawn=spawn)
+
+
+@pytest.mark.asyncio
+async def test_transcode_passes_the_cap_to_ffmpeg(fake_ffmpeg):
+    wav, mime, note = await audio_utils.transcode_to_wav(b"\x1aE\xdf\xa3" * 10, "audio/webm", max_seconds=124)
+    args = fake_ffmpeg.procs[0].args
+    assert args[args.index("-t") + 1] == "124.000"
+    assert args.index("-t") > args.index("-i")  # an output option: stops writing there
+    assert mime == "audio/wav" and note == "transcoded_file:audio/webm"
+
+
+@pytest.mark.asyncio
+async def test_transcode_without_a_cap_is_unchanged(fake_ffmpeg):
+    await audio_utils.transcode_to_wav(b"\x1aE\xdf\xa3" * 10, "audio/webm")
+    assert "-t" not in fake_ffmpeg.procs[0].args
+
+
+@pytest.mark.asyncio
+async def test_transcode_kills_ffmpeg_on_timeout(fake_ffmpeg, monkeypatch):
+    fake_ffmpeg.spawn.hang = True
+    monkeypatch.setattr(audio_utils, "TRANSCODE_TIMEOUT_SECONDS", 0.05)
+    audio = b"\x1aE\xdf\xa3" * 10
+    out, mime, note = await audio_utils.transcode_to_wav(audio, "audio/webm", max_seconds=124)
+    assert fake_ffmpeg.procs[0].killed
+    assert (out, mime, note) == (audio, "audio/webm", "transcode_failed:TimeoutError")
+
+
+@pytest.mark.asyncio
+async def test_transcode_kills_ffmpeg_when_the_request_is_cancelled(fake_ffmpeg):
+    fake_ffmpeg.spawn.hang = True
+    task = asyncio.ensure_future(audio_utils.transcode_to_wav(b"\x1aE\xdf\xa3" * 10, "audio/webm"))
+    await asyncio.sleep(0.05)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert fake_ffmpeg.procs[0].killed
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(shutil.which("ffmpeg") is None, reason="ffmpeg is not installed here")
+async def test_a_long_low_bitrate_recording_decodes_only_up_to_the_cap():
+    """A small file holding hours of audio decodes no further than the cap."""
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "long.webm")
+        subprocess.run(
+            ["ffmpeg", "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i", "anullsrc=r=16000:cl=mono",
+             "-t", "3600", "-c:a", "libopus", "-b:a", "6k", path],
+            check=True, timeout=300,
+        )
+        audio = open(path, "rb").read()
+    assert len(audio) < 5 * 1024 * 1024
+    cap = 120 + stt.DURATION_GRACE_SECONDS + 1.0
+    wav, mime, _note = await audio_utils.transcode_to_wav(audio, "audio/webm", max_seconds=cap)
+    assert mime == "audio/wav"
+    assert audio_utils.wav_duration_seconds(wav) <= cap + 0.1
+    assert len(wav) <= (cap + 0.1) * 32000 + 44
+    with pytest.raises(stt.SpeechTooLongError):
+        await stt.transcribe_audio(audio, "audio/webm", max_seconds=120, require_decoded=True,
+                                   stt=FakeProvider())
+
+
+@pytest.mark.asyncio
+async def test_provider_failure_mid_clip_reports_the_seconds_already_transcribed(fake_http):
+    class Boom(_FakeHttpClient):
+        async def post(self, url, headers=None, files=None, data=None):
+            if _FakeHttpClient.requests:
+                raise RuntimeError("connection reset")
+            return await super().post(url, headers=headers, files=files, data=data)
+
+    sarvam_service.httpx.AsyncClient = Boom
+    fake_http.payloads = [{"transcript": "first part", "language_code": "hi-IN"}]
+    with pytest.raises(SarvamSTTError) as info:
+        await SarvamService().transcribe(wav_bytes(65.0))
+    assert info.value.completed_seconds == pytest.approx(29.0)
+
+
 # ── the learner voice-note endpoint keeps its contract ───────────────────────
 
 @pytest.fixture()
@@ -502,6 +675,14 @@ def learner_env(monkeypatch):
     FakeProvider.reply = SarvamTranscript(SPOKEN, "hi-IN")
     FakeProvider.error = None
     monkeypatch.setattr(chat_agent, "SarvamService", FakeProvider)
+    state.transcode_kwargs = []
+    real_transcode = audio_utils.transcode_to_wav
+
+    async def spy_transcode(audio, mime, **kw):
+        state.transcode_kwargs.append(kw)
+        return await real_transcode(audio, mime, **kw)
+
+    monkeypatch.setattr(audio_utils, "transcode_to_wav", spy_transcode)
 
     app = FastAPI()
     app.include_router(chat_agent.router)
@@ -528,6 +709,8 @@ def test_learner_voice_note_returns_the_transcript_without_sending(learner_env):
     assert r.json() == {"transcript": SPOKEN, "message_id": None, "status": "idle"}
     assert learner_env.sent == []
     assert FakeProvider.calls[0]["language"] == "auto"
+    # No duration cap and no decode requirement on the learner path.
+    assert learner_env.transcode_kwargs == [{}]
 
 
 def test_learner_voice_note_auto_send_still_sends(learner_env):

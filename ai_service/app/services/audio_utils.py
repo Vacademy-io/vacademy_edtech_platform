@@ -167,12 +167,22 @@ def trim_to_container_start(audio: bytes, mime: Optional[str]) -> Tuple[bytes, i
     return audio[start:], start
 
 
-async def transcode_to_wav(audio: bytes, mime: Optional[str]) -> Tuple[bytes, str, str]:
+TRANSCODE_TIMEOUT_SECONDS = 30
+
+
+async def transcode_to_wav(
+    audio: bytes, mime: Optional[str], max_seconds: Optional[float] = None
+) -> Tuple[bytes, str, str]:
     """
     Normalise to 16 kHz mono 16-bit WAV. Returns (bytes, mime, note) where
     `note` records what happened (wav_passthrough, transcoded_file:<mime>,
     transcode_failed:<why>). On failure the original bytes go through unchanged
     so the caller can still try — and report — rather than drop the audio.
+
+    `max_seconds` stops decoding after that much audio, so the WAV (and the
+    work) never exceeds it however long the input is; a result exactly that
+    long means the input was at least that long. A WAV input is passed through
+    as it is. ffmpeg is killed if it runs past the timeout.
     """
     base = base_mime(mime)
     if not audio:
@@ -187,13 +197,28 @@ async def transcode_to_wav(audio: bytes, mime: Optional[str]) -> Tuple[bytes, st
             f.write(audio)
             src_path = f.name
         out_path = src_path + ".wav"
+        limit = ["-t", f"{float(max_seconds):.3f}"] if max_seconds and max_seconds > 0 else []
         proc = await asyncio.create_subprocess_exec(
             "ffmpeg", "-hide_banner", "-loglevel", "error", "-nostdin", "-y",
-            "-i", src_path, "-vn", "-ac", "1", "-ar", "16000", "-acodec", "pcm_s16le", "-f", "wav", out_path,
+            "-i", src_path, "-vn", "-ac", "1", "-ar", "16000", "-acodec", "pcm_s16le", *limit,
+            "-f", "wav", out_path,
             stdout=asyncio.subprocess.DEVNULL,
             stderr=asyncio.subprocess.PIPE,
         )
-        _, err = await asyncio.wait_for(proc.communicate(), timeout=30)
+        try:
+            _, err = await asyncio.wait_for(proc.communicate(), timeout=TRANSCODE_TIMEOUT_SECONDS)
+        except BaseException:
+            # Timed out or the request was cancelled: never leave ffmpeg running.
+            if proc.returncode is None:
+                try:
+                    proc.kill()
+                except ProcessLookupError:
+                    pass
+                try:
+                    await asyncio.wait_for(proc.wait(), timeout=5)
+                except BaseException:  # noqa: BLE001
+                    pass
+            raise
         out = b""
         if proc.returncode == 0 and os.path.exists(out_path):
             with open(out_path, "rb") as f:
