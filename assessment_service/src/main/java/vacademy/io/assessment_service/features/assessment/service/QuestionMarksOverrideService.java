@@ -1,115 +1,69 @@
 package vacademy.io.assessment_service.features.assessment.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-import vacademy.io.assessment_service.features.assessment.entity.AiEvaluationProcess;
-import vacademy.io.assessment_service.features.assessment.entity.AiQuestionEvaluation;
+import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.request.QuestionMarksOverrideRequest;
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
-import vacademy.io.assessment_service.features.assessment.entity.EvaluationLogs;
-import vacademy.io.assessment_service.features.assessment.entity.QuestionAssessmentSectionMapping;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
-import vacademy.io.assessment_service.features.assessment.enums.AiEvaluationStatusEnum;
-import vacademy.io.assessment_service.features.assessment.enums.EvaluationLogSourceEnum;
-import vacademy.io.assessment_service.features.assessment.enums.EvaluationLogsTypeEnum;
-import vacademy.io.assessment_service.features.assessment.enums.QuestionResponseEnum;
-import vacademy.io.assessment_service.features.assessment.repository.AiEvaluationProcessRepository;
-import vacademy.io.assessment_service.features.assessment.repository.AiQuestionEvaluationRepository;
-import vacademy.io.assessment_service.features.assessment.repository.EvaluationLogsRepository;
-import vacademy.io.assessment_service.features.assessment.repository.QuestionAssessmentSectionMappingRepository;
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
-import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.AiEvaluationReviewService;
-import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.AiQuestionEvaluationService;
-import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.CopyCheckReportDataSender;
-import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.TypedAnswerEvaluation;
-import vacademy.io.assessment_service.features.learner_assessment.entity.QuestionWiseMarks;
-import vacademy.io.assessment_service.features.learner_assessment.enums.AssessmentAttemptEnum;
-import vacademy.io.assessment_service.features.learner_assessment.repository.QuestionWiseMarksRepository;
-import vacademy.io.assessment_service.features.open_evaluation.policy.ResultLockGuard;
-import vacademy.io.assessment_service.features.open_evaluation.submission.ApiSubmissionFeed;
+import vacademy.io.assessment_service.features.submission_review.model.MarksSource;
+import vacademy.io.assessment_service.features.submission_review.model.SubmissionReviewException;
+import vacademy.io.assessment_service.features.submission_review.service.MarkWriter;
+import vacademy.io.assessment_service.features.submission_review.service.SubmissionReviewAccess;
+import vacademy.io.assessment_service.features.submission_review.service.SubmissionReviewStore;
+import vacademy.io.assessment_service.features.submission_review.service.SubmissionSnapshots;
+import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.VacademyException;
-import vacademy.io.common.core.utils.DateUtil;
 
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
 /**
- * Staff changes the marks of one question of one attempt from the submission
- * view — any question type (MCQ, numeric, long answer, spreadsheet & written,
- * ...), e.g. to give marks for a wrongly keyed question or as a bonus.
+ * PUT /assessment-service/admin/participants/question-marks (PR #3814): staff set the marks
+ * of one question of one submitted attempt. Kept for its callers; since the Phase 1a merge
+ * it is a thin adapter over the one mark write path ({@link MarkWriter}, writer
+ * {@code QUESTION_MARKS_PUT}), so a change made here gets the attempt and row locks, the
+ * mark_event history, the marks_revision bump ("Released, changed" / the learner's Revised
+ * tag / "Send updated result") and the AI verdict mirror, exactly as the Submission page.
  *
- * <p>Two paths, so every screen keeps showing one number:
+ * <p>Request and response keep their shape. What the old endpoint decided itself now
+ * follows MarkWriter (contract deviations "reconcile with PR #3814"):
  * <ul>
- *   <li>The question was marked by the attempt's latest AI run: the change goes
- *       through {@link AiEvaluationReviewService#overrideQuestion}, exactly as the
- *       AI review page does it (AI_REVIEWED, AI totals).</li>
- *   <li>Otherwise the question's marks row(s) of that section are set with
- *       marks_source {@value #TEACHER} (AI_REVIEWED when an older AI run marked
- *       the row, so the AI lineage stays) and the attempt total is recomputed.
- *       Re-evaluation keeps a TEACHER mark ({@link StudentAttemptService#isEvaluatorMarked});
- *       an AI_REVIEWED mark follows the AI rules exactly as before (the whole-attempt
- *       recalculation keeps it, question-wise re-evaluation re-scores it).</li>
+ *   <li>the mark is stored as MANUAL (the old TEACHER value is still read as MANUAL);</li>
+ *   <li>marks are clamped into the question's range (min = minus the negative marks of an
+ *   objective question, else 0; max = marking JSON total, else the section's marks per
+ *   question);</li>
+ *   <li>an answer an AI run is still checking is refused (409); one a person already
+ *   marked is not, because the AI never overwrites it;</li>
+ *   <li>after release: an evaluator-only user is refused (as on the Submission page); for
+ *   everyone else the change is recorded with the request's {@code reason}, or a default
+ *   one when the caller sends none, and the learner is not emailed unless
+ *   {@code notify_learner} is true;</li>
+ *   <li>no evaluation_logs MARKS_OVERRIDE row any more: mark_event is the history.</li>
  * </ul>
- * While an AI run on the attempt is still queued or working, a written / CBT question
- * is refused: the run would write its own mark over the teacher's when it finishes.
- * A question with no marks row in this attempt (not in the learner's paper, or
- * the submit's marking has not run yet) is refused rather than given a new row:
- * re-evaluation totals only the learner's own questions, so such marks would not
- * stay in the total.
- * Marks are kept within 0 and the question's full marks. Release status is not
- * touched: a held result stays held, a released one shows the new marks.
  */
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class QuestionMarksOverrideService {
 
-    /** question_wise_marks.marks_source of a mark a staff member set by hand. */
-    public static final String TEACHER = "TEACHER";
-
-    private static final ObjectMapper JSON = new ObjectMapper();
+    /** Reason recorded for a change after release when the caller gives none. */
+    static final String DEFAULT_REASON_AFTER_RELEASE = "Changed with the question marks endpoint (no reason given)";
 
     private final StudentAttemptRepository studentAttemptRepository;
-    private final QuestionWiseMarksRepository questionWiseMarksRepository;
-    private final QuestionAssessmentSectionMappingRepository mappingRepository;
-    private final AiEvaluationProcessRepository processRepository;
-    private final AiQuestionEvaluationRepository questionEvaluationRepository;
-    private final AiEvaluationReviewService aiReviewService;
-    private final TypedAnswerEvaluation typedAnswerEvaluation;
-    private final StudentAttemptService studentAttemptService;
-    private final EvaluationLogsRepository evaluationLogsRepository;
-    private final ResultLockGuard resultLockGuard;
+    private final MarkWriter markWriter;
+    private final SubmissionReviewAccess access;
+    private final SubmissionReviewStore store;
 
-    /** AI runs that are over; any other status means the run may still write marks. */
-    static final List<String> FINISHED_RUN_STATUSES = List.of(AiEvaluationStatusEnum.COMPLETED.name(),
-            AiEvaluationStatusEnum.FAILED.name(), AiEvaluationStatusEnum.CANCELLED.name());
-
-    /** Partner API feed; optional (null in unit tests), as in AiEvaluationReviewService. */
-    @Autowired(required = false)
-    private ApiSubmissionFeed submissionFeed;
-
-    /** Bulk-checked copies' AI report data; optional, lazy as in AiEvaluationReviewService. */
-    @Autowired(required = false)
-    @Lazy
-    private CopyCheckReportDataSender reportDataSender;
-
-    @Transactional
-    public Map<String, Object> override(String assessmentId, String attemptId, String sectionId, String questionId,
-            Double marks, String feedback, String editorUserId) {
-        if (isBlank(sectionId) || isBlank(questionId)) {
+    public Map<String, Object> override(CustomUserDetails user, String assessmentId, String attemptId,
+                                        QuestionMarksOverrideRequest request) {
+        if (request == null || isBlank(request.getSectionId()) || isBlank(request.getQuestionId())) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Question and section are required");
         }
+        Double marks = request.getMarks();
         if (marks == null || marks.isNaN() || marks.isInfinite()) {
             throw new VacademyException(HttpStatus.BAD_REQUEST, "Enter the marks for this question");
         }
@@ -120,178 +74,48 @@ public class QuestionMarksOverrideService {
         if (assessment == null || !Objects.equals(assessment.getId(), assessmentId)) {
             throw new VacademyException(HttpStatus.NOT_FOUND, "Attempt not found in this assessment");
         }
-        if (AssessmentAttemptEnum.LIVE.name().equals(attempt.getStatus())) {
-            throw new VacademyException(HttpStatus.CONFLICT,
-                    "The learner is still writing this test. Marks can be changed after they submit.");
+        SubmissionReviewStore.AttemptState state = store.attempt(attemptId);
+        boolean released = state != null && state.released();
+        try {
+            access.requireEdit(user, attempt, released);
+        } catch (SubmissionReviewException e) {
+            throw new VacademyException(e.getStatus(), e.getMessage());
         }
-        resultLockGuard.requireNotFinalizedForApiExam(attempt);
 
-        QuestionAssessmentSectionMapping mapping = mappingRepository.findByQuestionIdAndSectionId(questionId, sectionId)
-                .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "Question not found in this section"));
-        Double maxMarks = fullMarks(mapping);
-        double newMarks = clamp(marks, maxMarks);
+        String reason = isBlank(request.getReason()) ? (released ? DEFAULT_REASON_AFTER_RELEASE : null)
+                : request.getReason().trim();
+        // Old contract: null keeps the remark, blank clears it. MarkWriter: "" clears.
+        String feedback = request.getFeedback() == null ? null
+                : request.getFeedback().isBlank() ? "" : request.getFeedback();
+        MarkWriter.MarkChange change = new MarkWriter.MarkChange(attemptId, request.getSectionId(),
+                request.getQuestionId(), MarkWriter.Writer.QUESTION_MARKS_PUT, marks, null, feedback, false, reason,
+                user.getUserId(), request.getExpectedRevision(), request.getExpectedRelease(),
+                Boolean.TRUE.equals(request.getNotifyLearner()), null, null, null);
 
-        List<QuestionWiseMarks> sectionRows = rowsOf(attemptId, questionId, sectionId);
-        if (sectionRows.isEmpty()) {
-            throw new VacademyException(HttpStatus.CONFLICT,
-                    "This question has no marks in this attempt yet, so its marks cannot be changed.");
+        MarkWriter.MarkResult result;
+        try {
+            result = markWriter.apply(change);
+        } catch (SubmissionReviewException e) {
+            // This controller has no {code, message} error body; keep the old one.
+            throw new VacademyException(e.getStatus(), e.getMessage());
         }
-        Double previousMarks = sectionRows.get(0).getMarks();
 
-        AiEvaluationProcess latestRun = latestRun(attemptId);
-        // List.of(...).contains(null) throws, so a run without a status counts as not running.
-        boolean runStillWorking = latestRun != null && latestRun.getStatus() != null
-                && !FINISHED_RUN_STATUSES.contains(latestRun.getStatus());
-        if (runStillWorking && TypedAnswerEvaluation.isAiGraded(mapping.getQuestion())) {
-            throw new VacademyException(HttpStatus.CONFLICT,
-                    "AI is still checking this attempt. Change this question's marks after it finishes.");
-        }
-        boolean aiMarked = latestRun != null && !questionEvaluationRepository
-                .findAllByEvaluationProcessIdAndQuestionIdOrderByCreatedAtDesc(latestRun.getId(), questionId).isEmpty();
+        MarkWriter.RowResult row = result.rows().isEmpty() ? null : result.rows().get(0);
+        SubmissionSnapshots.KeyState key = result.after() == null ? null
+                : result.after().find(request.getSectionId(), request.getQuestionId());
+        Double stored = result.attemptBefore() == null ? null : result.attemptBefore().totalMarks();
+        log.info("[marks-override] attempt {} question {} section {}: {} -> {} by {} (changed {})", attemptId,
+                request.getQuestionId(), request.getSectionId(), row == null ? null : row.oldMarks(),
+                row == null ? null : row.newMarks(), user.getUserId(), result.changed());
 
-        String marksSource;
-        if (aiMarked) {
-            aiReviewService.overrideQuestion(latestRun.getId(), questionId, newMarks, feedback, editorUserId);
-            marksSource = "AI_REVIEWED";
-        } else {
-            marksSource = setTeacherMarks(sectionRows, newMarks, maxMarks, feedback);
-            recomputeTotal(attempt, assessment, latestRun);
-            // Same after-commit notices the AI review override sends: a partner-API exam's
-            // feed shows the change; a bulk-checked copy's AI report data is refreshed
-            // (a no-op for every other attempt).
-            if (submissionFeed != null) submissionFeed.touch(attemptId);
-            if (reportDataSender != null) reportDataSender.sendAfterCommit(attemptId);
-        }
-        // What was stored: the AI path may clamp further to the AI row's max marks.
-        double storedMarks = sectionRows.get(0).getMarks();
-
-        logChange(attempt, editorUserId, questionId, sectionId, previousMarks, storedMarks, feedback, marksSource);
-        log.info("[marks-override] attempt {} question {} section {}: {} -> {} ({}) by {}",
-                attemptId, questionId, sectionId, previousMarks, storedMarks, marksSource, editorUserId);
-
-        StudentAttempt saved = studentAttemptRepository.findById(attemptId).orElse(attempt);
         Map<String, Object> out = new LinkedHashMap<>();
-        out.put("question_id", questionId);
-        out.put("section_id", sectionId);
-        out.put("marks", storedMarks);
-        out.put("max_marks", maxMarks);
-        out.put("marks_source", marksSource);
-        out.put("attempt_total_marks", saved.getTotalMarks());
+        out.put("question_id", request.getQuestionId());
+        out.put("section_id", request.getSectionId());
+        out.put("marks", row == null ? null : row.newMarks());
+        out.put("max_marks", key == null ? null : key.max());
+        out.put("marks_source", row == null ? null : MarksSource.canonical(row.newSource()));
+        out.put("attempt_total_marks", result.changed() > 0 ? result.totalAfter() : stored);
         return out;
-    }
-
-    /** Sets the rows; returns the marks_source written (TEACHER, or AI_REVIEWED on an AI-marked row). */
-    private String setTeacherMarks(List<QuestionWiseMarks> rows, double newMarks, Double maxMarks, String feedback) {
-        String written = TEACHER;
-        for (QuestionWiseMarks row : rows) {
-            boolean aiMarked = "AI".equals(row.getMarksSource()) || "AI_REVIEWED".equals(row.getMarksSource());
-            String source = aiMarked ? "AI_REVIEWED" : TEACHER;
-            row.setMarks(newMarks);
-            row.setStatus(statusFor(newMarks, maxMarks, row.getStatus()));
-            row.setMarksSource(source);
-            if (feedback != null) {
-                row.setEvaluatorFeedback(feedback.isBlank() ? null : feedback);
-            }
-            questionWiseMarksRepository.save(row);
-            written = source;
-        }
-        return written;
-    }
-
-    /**
-     * Same total every other screen computes: after an AI run on an online attempt,
-     * the run's verdicts plus the stored marks of the questions it did not mark;
-     * otherwise every marks row (internal-choice extras left out).
-     */
-    private void recomputeTotal(StudentAttempt attempt, Assessment assessment, AiEvaluationProcess latestRun) {
-        if (latestRun != null && typedAnswerEvaluation.isTypedAttempt(attempt, assessment)) {
-            List<AiQuestionEvaluation> runRows = AiQuestionEvaluationService.newestPerQuestion(
-                    questionEvaluationRepository.findByEvaluationProcessIdOrderByQuestionNumberAsc(latestRun.getId()));
-            double total = typedAnswerEvaluation.attemptTotal(attempt, runRows);
-            attempt.setTotalMarks(total);
-            attempt.setResultMarks(total);
-            studentAttemptRepository.save(attempt);
-            return;
-        }
-        studentAttemptService.updateMarksAfterRevaluation(attempt, assessment.getId());
-    }
-
-    private List<QuestionWiseMarks> rowsOf(String attemptId, String questionId, String sectionId) {
-        List<QuestionWiseMarks> rows = new ArrayList<>();
-        for (QuestionWiseMarks row : questionWiseMarksRepository.findAllByAttemptIdAndQuestionId(attemptId, questionId)) {
-            String rowSection = row.getSectionId() != null ? row.getSectionId()
-                    : row.getSection() != null ? row.getSection().getId() : null;
-            if (sectionId.equals(rowSection)) rows.add(row);
-        }
-        return rows;
-    }
-
-    private AiEvaluationProcess latestRun(String attemptId) {
-        List<AiEvaluationProcess> runs = processRepository.findByStudentAttempt_IdIn(List.of(attemptId));
-        if (runs == null || runs.isEmpty()) return null;
-        return runs.stream()
-                .max(Comparator.comparing(AiEvaluationProcess::getCreatedAt,
-                        Comparator.nullsFirst(Comparator.naturalOrder())))
-                .orElse(null);
-    }
-
-    private void logChange(StudentAttempt attempt, String editorUserId, String questionId, String sectionId,
-            Double previousMarks, double newMarks, String feedback, String marksSource) {
-        ObjectNode data = JSON.createObjectNode();
-        data.put("question_id", questionId);
-        data.put("section_id", sectionId);
-        if (previousMarks == null) data.putNull("previous_marks"); else data.put("previous_marks", previousMarks);
-        data.put("marks", newMarks);
-        data.put("marks_source", marksSource);
-        if (feedback != null) data.put("feedback", feedback);
-        evaluationLogsRepository.save(EvaluationLogs.builder()
-                .source(EvaluationLogSourceEnum.STUDENT_ATTEMPT.name())
-                .sourceId(attempt.getId())
-                .learnerId(attempt.getRegistration() != null ? attempt.getRegistration().getUserId() : null)
-                .authorId(editorUserId)
-                .dataJson(data.toString())
-                .dateAndTime(DateUtil.getCurrentUtcTime())
-                .type(EvaluationLogsTypeEnum.MARKS_OVERRIDE.name())
-                .build());
-    }
-
-    /** data.totalMark of the question's marking JSON (number or numeric text); null when absent. */
-    static Double fullMarks(QuestionAssessmentSectionMapping mapping) {
-        String markingJson = mapping.getMarkingJson();
-        if (markingJson != null && !markingJson.isBlank()) {
-            try {
-                JsonNode value = JSON.readTree(markingJson).path("data").path("totalMark");
-                if (value.isNumber()) return value.asDouble();
-                if (value.isTextual() && !value.asText().isBlank()) return Double.parseDouble(value.asText().trim());
-            } catch (Exception ignored) {
-                // fall through to the section default
-            }
-        }
-        if (mapping.getSection() != null && mapping.getSection().getMarksPerQuestion() != null
-                && mapping.getSection().getMarksPerQuestion() > 0) {
-            return mapping.getSection().getMarksPerQuestion();
-        }
-        return null;
-    }
-
-    static double clamp(double marks, Double maxMarks) {
-        double value = Math.max(0.0, marks);
-        if (maxMarks != null && maxMarks > 0) value = Math.min(value, maxMarks);
-        return value;
-    }
-
-    /**
-     * Status follows the marks so the correct/partial/wrong counts agree with them.
-     * Zero on a question the learner skipped stays skipped.
-     */
-    static String statusFor(double marks, Double maxMarks, String currentStatus) {
-        if (marks <= 0) {
-            return QuestionResponseEnum.PENDING.name().equals(currentStatus) || currentStatus == null
-                    ? QuestionResponseEnum.PENDING.name()
-                    : QuestionResponseEnum.INCORRECT.name();
-        }
-        if (maxMarks == null || maxMarks <= 0 || marks >= maxMarks) return QuestionResponseEnum.CORRECT.name();
-        return QuestionResponseEnum.PARTIAL_CORRECT.name();
     }
 
     private static boolean isBlank(String s) {

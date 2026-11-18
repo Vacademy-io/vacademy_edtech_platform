@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -56,6 +57,18 @@ public class CopyCheckCallbackService {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     @org.springframework.context.annotation.Lazy
     private CopyCheckReportDataSender reportDataSender;
+
+    /** Submission review (phase 1a): release-when-marked after an AI run completes. Optional. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private org.springframework.context.ApplicationEventPublisher eventPublisher;
+
+    /** Submission review (phase 1a): the R6 total when a teacher's mark sits beside AI marks. Optional. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService submissionReleaseService;
+
+    @Autowired(required = false)
+    private vacademy.io.assessment_service.features.submission_review.service.SubmissionReviewStore submissionReviewStore;
 
     @Transactional
     public void onProgress(CopyCheckCallbackDto.Progress payload) {
@@ -142,6 +155,13 @@ public class CopyCheckCallbackService {
                 ? payload.getStatus().toUpperCase()
                 : "COMPLETED";
         boolean failed = "FAILED".equals(qStatus);
+        // Global lock order of every marks writer (submission review): the attempt row first,
+        // then its marks rows, then AI rows. A teacher's edit of the same answer waits here
+        // (or this waits for it) instead of the two crossing.
+        String lockedAttemptId = process.getStudentAttempt() != null ? process.getStudentAttempt().getId() : null;
+        if (lockedAttemptId != null) {
+            studentAttemptRepository.lockById(lockedAttemptId);
+        }
 
         // Duplicated tracking rows (a double dispatch) used to turn this lookup
         // into "2 results were returned" and lose the whole verdict; take the
@@ -203,11 +223,31 @@ public class CopyCheckCallbackService {
                 // Non-fatal — feedback is also on ai_question_evaluation row.
             }
             Date now = new Date();
-            for (QuestionWiseMarks marks : questionWiseMarksRepository
+            // Submission review guard (contract 7.3): the verdict above is always kept, but
+            // it never replaces a mark a person set (MANUAL, AI_REVIEWED, OMR, OFFLINE) and
+            // never changes the marks of a released result.
+            boolean released = attemptId != null && studentAttemptRepository.findById(attemptId)
+                    .map(a -> ReleaseResultStatusEnum.RELEASED.name().equals(a.getReportReleaseStatus()))
+                    .orElse(false);
+            if (released) {
+                log.info("[copy-check] attempt {} is released; AI verdict for question {} kept on the review page only",
+                        attemptId, payload.getQuestionId());
+            }
+            for (QuestionWiseMarks marks : released ? List.<QuestionWiseMarks>of() : questionWiseMarksRepository
                     .findAllByAttemptIdAndQuestionId(attemptId, payload.getQuestionId())) {
+                if (vacademy.io.assessment_service.features.submission_review.model.MarksSource
+                        .isProtected(marks.getMarksSource())) {
+                    log.info("[copy-check] question {} of attempt {} was marked by a person ({}); AI mark not applied",
+                            payload.getQuestionId(), attemptId, marks.getMarksSource());
+                    continue;
+                }
                 marks.setMarks(payload.getMarksAwarded());
                 marks.setAiEvaluatedAt(now);
                 marks.setMarksSource("AI");
+                // Legacy derivation shows it as "Checked by AI, needs your OK" (or Marked once released).
+                marks.setMarkState(null);
+                marks.setAiQuestionEvaluationId(evalRow.getId());
+                marks.setRevision(marks.getRevision() + 1);
                 if (detailsJson != null) {
                     marks.setAiEvaluationDetailsJson(detailsJson);
                 }
@@ -243,6 +283,13 @@ public class CopyCheckCallbackService {
                     payload.getJobId(), payload.getProcessId(), process.getAiServiceJobId());
             return;
         }
+        // Attempt row lock FIRST (submission review global lock order: attempt, then its
+        // marks and AI rows). Saving the run row below and locking the attempt after would
+        // invert the order of a late per-question callback (attempt lock, then the run's
+        // questions_completed) and Postgres would abort one of them as a deadlock.
+        if (process.getStudentAttempt() != null) {
+            studentAttemptRepository.lockById(process.getStudentAttempt().getId());
+        }
         process.setStatus(AiEvaluationStatusEnum.COMPLETED.name());
         process.setCompletedAt(new Date());
         try {
@@ -254,6 +301,7 @@ public class CopyCheckCallbackService {
         notifyIntake(payload.getProcessId(), true, null);
 
         if (process.getStudentAttempt() != null) {
+            // (The attempt row is already locked above.)
             StudentAttempt attempt = studentAttemptRepository
                     .findById(process.getStudentAttempt().getId())
                     .orElse(null);
@@ -279,6 +327,10 @@ public class CopyCheckCallbackService {
                 List<AiQuestionEvaluation> rows = AiQuestionEvaluationService.newestPerQuestion(questionEvaluationRepository
                         .findByEvaluationProcessIdOrderByQuestionNumberAsc(process.getId()));
                 double total = typedAnswerEvaluation.attemptTotal(attempt, rows);
+                Double r6 = r6TotalWhenTeacherMarked(attempt, rows);
+                if (r6 != null) {
+                    total = r6;
+                }
                 attempt.setTotalMarks(total);
                 attempt.setResultMarks(total);
 
@@ -323,12 +375,47 @@ public class CopyCheckCallbackService {
                     // The AI reports read these marks; sent after this commits.
                     reportDataSender.sendAfterCommit(attempt.getId());
                 }
+                // "Release the rest when marked" (submission review 6.4): this run may have
+                // finished the marking of an attempt the teacher asked to release once marked.
+                // The listener decides under the lock from what still blocks a release (AI
+                // drafts do not: the teacher's Release was their OK), not from result_status,
+                // which a CBE-only run on an AI-off test deliberately leaves EVALUATING.
+                if (eventPublisher != null && Boolean.TRUE.equals(attempt.getReleaseWhenMarked())) {
+                    eventPublisher.publishEvent(new vacademy.io.assessment_service.features.submission_review
+                            .service.ReviewEvents.AttemptReadyForRelease(attempt.getId(), null));
+                }
             }
         }
         cancellationService.clearFlag(payload.getProcessId());
         log.info("[copy-check] process {} complete: {}/{} ({} questions)",
                 payload.getProcessId(), payload.getTotalMarksAwarded(),
                 payload.getTotalMaxMarks(), payload.getQuestionsEvaluated());
+    }
+
+    /**
+     * Contract 7.3: when a person marked a question this run graded (their mark was kept,
+     * see onQuestionDone), the run's own total would count the AI's mark instead - use the
+     * submission review total (R6 over the stored marks). Null = keep the run's total.
+     */
+    private Double r6TotalWhenTeacherMarked(StudentAttempt attempt, List<AiQuestionEvaluation> rows) {
+        if (submissionReleaseService == null || submissionReviewStore == null) return null;
+        try {
+            java.util.Set<String> graded = new java.util.HashSet<>();
+            for (AiQuestionEvaluation r : rows) {
+                if (r.getQuestion() != null) graded.add(r.getQuestion().getId());
+            }
+            boolean protectedRow = questionWiseMarksRepository.findByStudentAttemptId(attempt.getId()).stream()
+                    .anyMatch(m -> m.getQuestion() != null && graded.contains(m.getQuestion().getId())
+                            && vacademy.io.assessment_service.features.submission_review.model.MarksSource
+                            .isProtected(m.getMarksSource()));
+            if (!protectedRow) return null;
+            var state = submissionReviewStore.attempt(attempt.getId());
+            return state == null ? null : submissionReleaseService.snapshot(attempt, state).total();
+        } catch (Exception e) {
+            log.warn("[copy-check] could not compute the review total of attempt {}: {}", attempt.getId(),
+                    e.getMessage());
+            return null;
+        }
     }
 
     @Transactional

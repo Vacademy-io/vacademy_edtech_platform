@@ -144,4 +144,17 @@ class ResultRulesTest {
         assertThat(r.view()).containsKey("annotations").containsKey("model_answer").doesNotContainKey("extracted_answer");
         assertThat((List<?>) r.view().get("annotations")).hasSize(1);
     }
+
+    @Test
+    void a_hand_mark_manual_or_legacy_teacher_is_reported_as_reviewed() {
+        for (String source : List.of("MANUAL", "TEACHER")) {
+            ResultRules.QuestionResult withVerdict = ResultRules.question(Q21,
+                    row("COMPLETED", "1", "{\"confidence\":0.9}", false, null),
+                    new ResultStore.MarksRow("q21", 1.0, source, "COMPLETED"), false, DEFAULT);
+            assertThat(withVerdict.view().get("source")).isEqualTo("ai_reviewed");
+            ResultRules.QuestionResult marksOnly = ResultRules.question(Q21, null,
+                    new ResultStore.MarksRow("q21", 2.0, source, "COMPLETED"), false, DEFAULT);
+            assertThat(marksOnly.view().get("source")).isEqualTo("ai_reviewed");
+        }
+    }
 }

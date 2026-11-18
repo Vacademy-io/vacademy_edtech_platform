@@ -75,12 +75,26 @@ public class AdminAssessmentGetController {
         return adminAssessmentGetManager.getStudentReport(userDetails, studentId, instituteId, filter, pageNo, pageSize);
     }
 
+    @org.springframework.beans.factory.annotation.Autowired
+    vacademy.io.assessment_service.features.assessment.service.evaluation_ai.EvaluationAccessValidator revaluateAccessValidator;
+
     @PostMapping("/revaluate")
     public ResponseEntity<String> revaluateAssessment(@RequestAttribute("user") CustomUserDetails userDetails,
+                                                      @RequestHeader(value = "clientId", required = false) String clientId,
                                                       @Param("assessmentId") String assessmentId,
                                                       @Param("instituteId") String instituteId,
                                                       @RequestBody RevaluateRequest request,
                                                       @Param("methodType") String methodType) {
+        // Re-marking rewrites results: staff of the assessment's own institute only (a learner
+        // token used to be able to trigger it).
+        revaluateAccessValidator.requireActiveInstitute(clientId, instituteId);
+        revaluateAccessValidator.requireStaffRole(userDetails);
+        revaluateAccessValidator.requireAssessmentInInstitute(userDetails, instituteId, assessmentId);
+        // The attempts named in the body must be this assessment's (else an owned assessment
+        // re-marks another institute's attempts).
+        if (!"ENTIRE_ASSESSMENT".equals(methodType) && request != null) {
+            revaluateAccessValidator.requireAttemptsOnAssessment(assessmentId, request.getAttemptIds());
+        }
         return adminAssessmentGetManager.revaluateAssessment(userDetails, assessmentId, methodType, request, instituteId);
     }
 

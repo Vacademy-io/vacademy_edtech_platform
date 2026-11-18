@@ -141,6 +141,18 @@ public class AssessmentParticipantsManager {
     @Autowired
     private vacademy.io.assessment_service.features.assessment.service.ReleaseStateWriter releaseStateWriter;
 
+    /**
+     * Submission review (phase 1a): the dashboard release write (lock + targeted UPDATE +
+     * history) and the opt-in release-result flags. Optional so unit tests that predate it
+     * keep the ReleaseStateWriter path.
+     */
+    @Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService submissionReleaseService;
+
+    @Autowired(required = false)
+    private vacademy.io.assessment_service.features.submission_review.service.SubmissionReviewStore submissionReviewStore;
+
     @Autowired
     private vacademy.io.assessment_service.features.assessment.service.ReportPdfRenderService reportPdfRenderService;
 
@@ -920,6 +932,7 @@ public class AssessmentParticipantsManager {
                 .evaluatedFileId(studentAttempt.get().getEvaluatedFileId())
                 .responseFileId(extractAttemptDataFileId(studentAttempt.get().getAttemptData(), "fileId"))
                 .reportFileId(extractAttemptDataFileId(studentAttempt.get().getAttemptData(), "reportFileId"))
+                .resultRevisedAt(revisedAtWhenReleased(studentAttempt.get()))
                 .build();
     }
 
@@ -951,7 +964,13 @@ public class AssessmentParticipantsManager {
                 .questionOverallDetailDto(questionOverallDetailDto)
                 .evaluatedFileId(studentAttempt.get().getEvaluatedFileId())
                 .responseFileId(extractAttemptDataFileId(studentAttempt.get().getAttemptData(), "fileId"))
+                .resultRevisedAt(revisedAtWhenReleased(studentAttempt.get()))
                 .build();
+    }
+
+    /** The "Revised" date the learner sees: only on a released result. */
+    private static java.util.Date revisedAtWhenReleased(StudentAttempt attempt) {
+        return "RELEASED".equals(attempt.getReportReleaseStatus()) ? attempt.getResultRevisedAt() : null;
     }
 
     private Map<String, List<StudentReportAnswerReviewDto>> generateStudentReportFromContext(
@@ -1152,7 +1171,8 @@ public class AssessmentParticipantsManager {
                     .evaluatorFeedback(questionWiseMarks.getEvaluatorFeedback())
                     .aiFeedback(aiFeedback)
                     .aiCriteriaBreakdown(aiCriteriaBreakdown)
-                    .evaluationSource(questionWiseMarks.getMarksSource())
+                    .evaluationSource(vacademy.io.assessment_service.features.submission_review.model.MarksSource
+                            .canonical(questionWiseMarks.getMarksSource()))
                     .build();
         } catch (Exception e) {
             // G: Return null instead of empty DTO — caller filters nulls.
@@ -1247,9 +1267,33 @@ public class AssessmentParticipantsManager {
         if (assessmentOptional.isEmpty())
             throw new VacademyException("No Assessment Found");
 
+        String actor = userDetails != null ? userDetails.getUserId() : null;
+        if (request != null && request.hasReleaseOptions() && submissionReleaseService != null
+                && submissionReviewStore != null) {
+            // Opt-in flags (submission review W9): decide in this request, under row locks,
+            // which attempts go out now; the render + email loop then runs over those only.
+            Assessment assessment = assessmentOptional.get();
+            List<String> targetIds = releaseTargetIds(assessment, request, type);
+            List<String> planned = submissionReleaseService.planBulkRelease(assessment, targetIds,
+                    request.getSkipUnready(),
+                    request.getSkipAlreadyReleased(), request.getAllowUnmarked(), request.getReleaseWhenMarked());
+            var source = Boolean.TRUE.equals(request.getAllowUnmarked())
+                    ? vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.Source.W9
+                    : vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.Source.BULK;
+            var ctx = new vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext(
+                    actor, source, Boolean.TRUE.equals(request.getAllowUnmarked()));
+            try {
+                releaseResultWrapperForIds(assessment, instituteId, planned, ctx);
+            } catch (Exception e) {
+                log.error("[FAILED TO RELEASE] " + e.getMessage());
+            }
+            return ResponseEntity.ok("Done");
+        }
+
         try {
             // Call the async method
-            releaseResultWrapper(assessmentOptional.get(), instituteId, request, type);
+            releaseResultWrapper(assessmentOptional.get(), instituteId, request, type,
+                    vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext.legacy(actor));
         } catch (Exception e) {
             log.error("[FAILED TO RELEASE] " + e.getMessage());
         }
@@ -1257,12 +1301,50 @@ public class AssessmentParticipantsManager {
         return ResponseEntity.ok("Done");
     }
 
+    /** The attempts a release-result call addresses, by its method type. */
+    private List<String> releaseTargetIds(Assessment assessment, ReleaseRequestDto request, String type) {
+        return switch (type) {
+            case "ASSESSMENT_ALL" -> studentAttemptRepository.findAllParticipantsFromAssessmentAndStatusNotIn(
+                    assessment.getId(), List.of("DELETED")).stream().map(StudentAttempt::getId).toList();
+            case "PARTICIPANTS", "ENTIRE_ASSESSMENT_PARTICIPANTS" -> request.getAttemptIds() == null ? List.of()
+                    : request.getAttemptIds();
+            case "ASSESSMENT_CUSTOM" -> studentAttemptRepository
+                    .findAllParticipantsFromAssessmentAndStatusNotInAndReportNotReleased(assessment.getId(),
+                            List.of("DELETED")).stream().map(StudentAttempt::getId).toList();
+            default -> throw new VacademyException("Invalid Type");
+        };
+    }
+
+    @Async
+    public CompletableFuture<Void> releaseResultWrapperForIds(Assessment assessment, String instituteId,
+            List<String> attemptIds,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
+        return CompletableFuture.runAsync(() -> {
+            try {
+                List<StudentAttempt> attempts = attemptIds.isEmpty() ? List.of()
+                        : StreamSupport.stream(studentAttemptRepository.findAllById(attemptIds).spliterator(), false)
+                                .toList();
+                createParticipantsReportAndSendEmail(attempts, assessment, instituteId, true, ctx);
+            } catch (Exception e) {
+                log.error("Error processing participants", e);
+            }
+        }).thenRun(() -> sendNotificationToAdmin(assessment, instituteId));
+    }
+
     @Async
     public CompletableFuture<Void> releaseResultWrapper(Assessment assessment, String instituteId,
             ReleaseRequestDto request, String type) {
+        return releaseResultWrapper(assessment, instituteId, request, type,
+                vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext.legacy(null));
+    }
+
+    @Async
+    public CompletableFuture<Void> releaseResultWrapper(Assessment assessment, String instituteId,
+            ReleaseRequestDto request, String type,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
         return CompletableFuture.runAsync(() -> {
             try {
-                processReleaseParticipants(assessment, instituteId, request, type);
+                processReleaseParticipants(assessment, instituteId, request, type, ctx);
             } catch (Exception e) {
                 log.error("Error processing participants", e);
             }
@@ -1274,12 +1356,13 @@ public class AssessmentParticipantsManager {
     }
 
     private void processReleaseParticipants(Assessment assessment, String instituteId, ReleaseRequestDto request,
-            String type) {
+            String type,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
         switch (type) {
-            case "ASSESSMENT_ALL" -> handleReleaseResultForAllAssessment(assessment, instituteId);
+            case "ASSESSMENT_ALL" -> handleReleaseResultForAllAssessment(assessment, instituteId, ctx);
             case "PARTICIPANTS", "ENTIRE_ASSESSMENT_PARTICIPANTS" ->
-                handleReleaseResultForParticipants(assessment, instituteId, request);
-            case "ASSESSMENT_CUSTOM" -> handleReleaseResultForCustomAssessmentSelection(assessment, instituteId);
+                handleReleaseResultForParticipants(assessment, instituteId, request, ctx);
+            case "ASSESSMENT_CUSTOM" -> handleReleaseResultForCustomAssessmentSelection(assessment, instituteId, ctx);
             default -> throw new VacademyException("Invalid Type");
         }
     }
@@ -1290,11 +1373,12 @@ public class AssessmentParticipantsManager {
      * @param assessment  The assessment for which results are being released.
      * @param instituteId The ID of the institute.
      */
-    private void handleReleaseResultForCustomAssessmentSelection(Assessment assessment, String instituteId) {
+    private void handleReleaseResultForCustomAssessmentSelection(Assessment assessment, String instituteId,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
         List<StudentAttempt> attemptList = studentAttemptRepository
                 .findAllParticipantsFromAssessmentAndStatusNotInAndReportNotReleased(
                         assessment.getId(), List.of("DELETED"));
-        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId);
+        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId, true, ctx);
     }
 
     /**
@@ -1322,11 +1406,33 @@ public class AssessmentParticipantsManager {
         if (attemptList == null || attemptList.isEmpty()) {
             return;
         }
-        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId, publishWorkflow);
+        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId, publishWorkflow,
+                new vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext(
+                        null, vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.Source.AUTO, false));
+    }
+
+    /**
+     * The same render + email for ONE caller-chosen context (submission review: release one
+     * row, send an updated result, release when marked).
+     */
+    public void releaseAutomatically(List<StudentAttempt> attemptList, Assessment assessment, String instituteId,
+            boolean publishWorkflow,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
+        if (attemptList == null || attemptList.isEmpty()) {
+            return;
+        }
+        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId, publishWorkflow, ctx);
     }
 
     private void createParticipantsReportAndSendEmail(List<StudentAttempt> attemptList, Assessment assessment,
             String instituteId, boolean publishWorkflow) {
+        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId, publishWorkflow,
+                vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext.legacy(null));
+    }
+
+    private void createParticipantsReportAndSendEmail(List<StudentAttempt> attemptList, Assessment assessment,
+            String instituteId, boolean publishWorkflow,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext releaseCtx) {
         if (ApiCandidatePolicy.isApiExam(assessment)) {
             // Exams created through the partner API (spec 12): Release Result is the
             // state change only. API candidates have no login and no email, so no report
@@ -1336,7 +1442,7 @@ public class AssessmentParticipantsManager {
             return;
         }
         if (assessment.getEvaluationType().equals("MANUAL")) {
-            handleParticipantsReportCreationForManualAssessment(attemptList, assessment, instituteId, publishWorkflow);
+            handleParticipantsReportCreationForManualAssessment(attemptList, assessment, instituteId, publishWorkflow, releaseCtx);
             return;
         }
 
@@ -1368,13 +1474,14 @@ public class AssessmentParticipantsManager {
         final vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService.Templates resultTemplates =
                 resultNotificationService.resolve(instituteId, assessment.getId());
         final Map<String, Map<String, String>> variablesByAttempt = new HashMap<>();
+        final List<String> failedReleases = new ArrayList<>();
         attemptList.forEach(attempt -> {
             try {
                 // Skip attempts that were never submitted (no meaningful report to generate)
                 String attemptStatus = attempt.getStatus();
                 if (attemptStatus == null || (!attemptStatus.equals("LIVE") && !attemptStatus.equals("ENDED"))) {
                     log.info("Skipping report for attempt {} with status '{}' (not submitted)", attempt.getId(), attemptStatus);
-                    updateAttemptDataReleaseData(attempt);
+                    releaseOrRecordFailure(attempt, releaseCtx, failedReleases);
                     return;
                 }
 
@@ -1411,8 +1518,11 @@ public class AssessmentParticipantsManager {
                     log.warn("Failed to upload PDF for attempt {}: {}", attempt.getId(), e.getMessage());
                 }
 
-                // Update attempt status
-                updateAttemptDataReleaseData(attempt);
+                // Update attempt status. False: a teacher hid this result after the release
+                // was asked for (submission review), or the release failed - no email for it.
+                if (!releaseOrRecordFailure(attempt, releaseCtx, failedReleases)) {
+                    return;
+                }
 
                 // Send notification to the student
                 reportMap.put(attempt, participantPdfReport);
@@ -1424,12 +1534,37 @@ public class AssessmentParticipantsManager {
             } catch (Exception e) {
                 log.error("Failed to generate report for attempt {}: {}", attempt.getId(), e.getMessage());
                 // Still release the attempt even if PDF generation fails
-                updateAttemptDataReleaseData(attempt);
+                releaseOrRecordFailure(attempt, releaseCtx, failedReleases);
             }
         });
         if (!reportMap.isEmpty()) {
             sendResultNotifications(reportMap, variablesByAttempt, assessment.getId(), instituteId, resultTemplates);
             if (publishWorkflow) publishResultReleasedFor(reportMap);
+        }
+        logFailedReleases(assessment, failedReleases);
+    }
+
+    /**
+     * Releases one attempt; a failure (lock wait, unexpected data) is logged with the attempt
+     * id and recorded, and the loop goes on, so the other learners are still released and
+     * the batched emails still go out (pre-ship review R7). False: not released.
+     */
+    private boolean releaseOrRecordFailure(StudentAttempt attempt,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx,
+            List<String> failed) {
+        try {
+            return updateAttemptDataReleaseData(attempt, ctx);
+        } catch (Exception e) {
+            log.error("[release] could not release attempt {}; continuing with the others", attempt.getId(), e);
+            if (!failed.contains(attempt.getId())) failed.add(attempt.getId());
+            return false;
+        }
+    }
+
+    private void logFailedReleases(Assessment assessment, List<String> failed) {
+        if (!failed.isEmpty()) {
+            log.error("[release] assessment {}: {} attempt(s) not released: {}", assessment.getId(), failed.size(),
+                    failed);
         }
     }
 
@@ -1457,8 +1592,10 @@ public class AssessmentParticipantsManager {
     }
 
     private void handleParticipantsReportCreationForManualAssessment(List<StudentAttempt> attemptList,
-            Assessment assessment, String instituteId, boolean publishWorkflow) {
+            Assessment assessment, String instituteId, boolean publishWorkflow,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
         Map<StudentAttempt, byte[]> reportMap = new HashMap<>();
+        List<String> failedReleases = new ArrayList<>();
         attemptList.forEach(attempt -> {
             // The checked copy is what a manual-result learner receives. An attempt
             // may have none — the AI check failed and the teacher entered marks
@@ -1476,16 +1613,18 @@ public class AssessmentParticipantsManager {
                 log.info("Attempt {} has no checked copy; releasing marks without an attachment", attempt.getId());
             }
 
-            // Update attempt status
-            updateAttemptDataReleaseData(attempt);
+            // Update attempt status (false: hidden by a teacher meanwhile, or the release
+            // failed - no email; the others still go out).
+            boolean released = releaseOrRecordFailure(attempt, ctx, failedReleases);
 
             // Email + workflow only for learners who actually have a copy to receive.
-            if (checkedCopy != null) {
+            if (released && checkedCopy != null) {
                 reportMap.put(attempt, checkedCopy);
             }
         });
         sendNotificationToStudent(reportMap, assessment.getId(), instituteId);
         if (publishWorkflow) publishResultReleasedFor(reportMap);
+        logFailedReleases(assessment, failedReleases);
     }
 
     /**
@@ -1493,10 +1632,19 @@ public class AssessmentParticipantsManager {
      *
      * @param attempt The student attempt to update.
      */
-    private void updateAttemptDataReleaseData(StudentAttempt attempt) {
+    private boolean updateAttemptDataReleaseData(StudentAttempt attempt,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
+        if (submissionReleaseService != null) {
+            // Submission review (contract 6.2): lock + targeted UPDATE + history. The render
+            // loop holds an attempt loaded seconds or minutes ago; saving it would overwrite a
+            // total a teacher changed in between. False when the result was hidden meanwhile.
+            return submissionReleaseService.markReleased(attempt.getId(), attempt.getReportPdfFileId(), ctx)
+                    .released();
+        }
         // Shared with the partner API's finalize (ReleaseStateWriter): status, release
         // date, save, then one comparisonData cache clear -- per attempt here, as before.
         releaseStateWriter.release(attempt);
+        return true;
     }
 
     /**
@@ -1551,7 +1699,8 @@ public class AssessmentParticipantsManager {
      * @param request     The request containing the participant attempt IDs.
      */
     private void handleReleaseResultForParticipants(Assessment assessment, String instituteId,
-            ReleaseRequestDto request) {
+            ReleaseRequestDto request,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
         if (Objects.isNull(request))
             throw new VacademyException("Invalid Request");
 
@@ -1571,7 +1720,7 @@ public class AssessmentParticipantsManager {
                 })
                 .toList();
 
-        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId);
+        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId, true, ctx);
     }
 
     /**
@@ -1580,10 +1729,11 @@ public class AssessmentParticipantsManager {
      * @param assessment  The assessment details.
      * @param instituteId The ID of the institute.
      */
-    private void handleReleaseResultForAllAssessment(Assessment assessment, String instituteId) {
+    private void handleReleaseResultForAllAssessment(Assessment assessment, String instituteId,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
         List<StudentAttempt> attemptList = studentAttemptRepository.findAllParticipantsFromAssessmentAndStatusNotIn(
                 assessment.getId(), List.of("DELETED"));
-        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId);
+        createParticipantsReportAndSendEmail(attemptList, assessment, instituteId, true, ctx);
     }
 
     /**

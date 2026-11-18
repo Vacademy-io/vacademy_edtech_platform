@@ -74,6 +74,23 @@ public class AdminManualEvaluationManager {
     @Autowired(required = false)
     vacademy.io.assessment_service.features.assessment.service.evaluation_ai.DashboardChoiceGroups choiceGroups;
 
+    /**
+     * Submission review (phase 1a): the one write path for marks. When present, a submit
+     * changes only the rows it sends (patch mode), the total is the R6 sum over every row,
+     * and the release goes through SubmissionReleaseService (state only, no email).
+     */
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.submission_review.service.MarkWriter markWriter;
+
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService submissionReleaseService;
+
+    @Autowired(required = false)
+    org.springframework.transaction.PlatformTransactionManager transactionManager;
+
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository studentAttemptRepository;
+
 
     public ResponseEntity<String> submitManualEvaluatedMarks(CustomUserDetails userDetails, String assessmentId, String instituteId, String attemptId, ManualSubmitMarksRequest request) {
         try {
@@ -92,7 +109,11 @@ public class AdminManualEvaluationManager {
             // until it is unfinalized (gate G8). Dashboard exams are unaffected.
             resultLockGuard.requireNotFinalizedForApiExam(attemptOptional.get());
 
-            updateMarksForAttempt(assessment, attemptOptional.get(), request);
+            if (markWriter != null && submissionReleaseService != null) {
+                submitInPatchMode(userDetails, attemptOptional.get(), request);
+            } else {
+                updateMarksForAttempt(assessment, attemptOptional.get(), request);
+            }
 
             createEvaluationLog(attemptOptional.get(), userDetails, request.getDataJson());
 
@@ -105,6 +126,53 @@ public class AdminManualEvaluationManager {
             throw e; // 409, not the generic 510 below
         } catch (Exception e) {
             throw new VacademyException("Failed To Update Marks: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Patch mode (contract 7.1): one MarkWriter change per SENT row (the PDF tool sends only
+     * the boxes the teacher filled), marks clamped to the question's range, feedback kept
+     * when not sent, total = R6 over all rows, result status from the marking state. Then
+     * the checked copy and the release state (no email: the tool's follow-up release-result
+     * call sends the one email), all in one transaction.
+     */
+    private void submitInPatchMode(CustomUserDetails userDetails, StudentAttempt attempt,
+                                   ManualSubmitMarksRequest request) {
+        String actor = userDetails != null ? userDetails.getUserId() : null;
+        List<vacademy.io.assessment_service.features.submission_review.service.MarkWriter.MarkChange> changes =
+                new ArrayList<>();
+        if (request.getRequest() != null) {
+            for (ManualSubmitMarksRequest.SubmitMarksDto dto : request.getRequest()) {
+                if (dto == null || dto.getSectionId() == null || dto.getQuestionId() == null) continue;
+                changes.add(new vacademy.io.assessment_service.features.submission_review.service.MarkWriter.MarkChange(
+                        attempt.getId(), dto.getSectionId(), dto.getQuestionId(),
+                        vacademy.io.assessment_service.features.submission_review.service.MarkWriter.Writer.LEGACY_MANUAL_SUBMIT,
+                        dto.getMarks() != null ? dto.getMarks() : 0.0, null, dto.getEvaluatorFeedback(), false, null,
+                        actor, null, null, false, null, dto.getStatus(), null));
+            }
+        }
+        Runnable work = () -> {
+            markWriter.applyAll(attempt.getId(), changes,
+                    new vacademy.io.assessment_service.features.submission_review.service.MarkWriter.BatchContext(
+                            null, null, false, actor,
+                            vacademy.io.assessment_service.features.submission_review.service.MarkWriter.Writer.LEGACY_MANUAL_SUBMIT));
+            // Only overwrite when this submit actually carries a checked copy: a blank id
+            // means "marks only" and must not wipe a copy attached earlier.
+            if (StringUtils.hasText(request.getFileId()) && studentAttemptRepository != null) {
+                studentAttemptRepository.setEvaluatedFileId(attempt.getId(), request.getFileId());
+            }
+            // Manual evaluation IS the release for these assessments (state only here).
+            submissionReleaseService.markReleased(attempt.getId(), null,
+                    new vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext(
+                            actor,
+                            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.Source.MANUAL_SUBMIT,
+                            false));
+        };
+        if (transactionManager != null) {
+            new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(
+                    status -> work.run());
+        } else {
+            work.run();
         }
     }
 
@@ -320,22 +388,9 @@ public class AdminManualEvaluationManager {
      * Uses section's marksPerQuestion to distinguish CORRECT from PARTIAL_CORRECT.
      */
     private String deriveStatusFromMarks(double marks, Double maxMarksPerQuestion) {
-        if (marks < 0) {
-            return QuestionResponseEnum.INCORRECT.name();
-        }
-        if (marks == 0) {
-            // Admin explicitly submitted 0 marks — treat as incorrect (not unanswered)
-            return QuestionResponseEnum.INCORRECT.name();
-        }
-        // marks > 0
-        if (maxMarksPerQuestion != null && maxMarksPerQuestion > 0 && marks >= maxMarksPerQuestion) {
-            return QuestionResponseEnum.CORRECT.name();
-        }
-        if (maxMarksPerQuestion != null && maxMarksPerQuestion > 0 && marks < maxMarksPerQuestion) {
-            return QuestionResponseEnum.PARTIAL_CORRECT.name();
-        }
-        // No max marks info — positive marks, assume correct
-        return QuestionResponseEnum.CORRECT.name();
+        // One rule for every writer (moved to submission_review AnswerStatus).
+        return vacademy.io.assessment_service.features.submission_review.model.AnswerStatus.fromMarks(marks,
+                maxMarksPerQuestion);
     }
 
     public ResponseEntity<String> updateAttemptSet(CustomUserDetails userDetails, String attemptId, String setId) {

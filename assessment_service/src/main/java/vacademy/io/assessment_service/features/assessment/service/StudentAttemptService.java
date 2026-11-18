@@ -1,5 +1,7 @@
 package vacademy.io.assessment_service.features.assessment.service;
 
+import vacademy.io.assessment_service.features.submission_review.model.QuestionKinds;
+
 import vacademy.io.assessment_service.features.assessment.copy_intake.service.CopyIntakeService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +40,7 @@ import vacademy.io.assessment_service.features.notification.service.AssessmentNo
 import vacademy.io.assessment_service.features.question_core.entity.Question;
 import vacademy.io.assessment_service.features.question_core.enums.EvaluationTypes;
 import vacademy.io.assessment_service.features.question_core.repository.QuestionRepository;
+import vacademy.io.assessment_service.features.submission_review.model.MarksSource;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.*;
@@ -78,6 +81,57 @@ public class StudentAttemptService {
 
     @Autowired
     TypedAnswerEvaluation typedAnswerEvaluation;
+
+    /** Submission review: SKIPPED_PROTECTED history of a re-mark. Optional in unit tests. */
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.submission_review.service.MarkHistory markHistory;
+
+    @Autowired(required = false)
+    vacademy.io.assessment_service.features.assessment.repository.EvaluationLogsRepository evaluationLogsRepository;
+
+    /**
+     * Submission review: a re-mark works on one attempt at a time under its row lock (the
+     * lock every marks writer takes first), on a copy read after the lock. Optional in unit
+     * tests (then the old unlocked path runs).
+     */
+    @Autowired(required = false)
+    org.springframework.transaction.PlatformTransactionManager transactionManager;
+
+    /** Submission review R6 total (newest row per paper key, choice groups). Optional in unit tests. */
+    @Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService submissionReleaseService;
+
+    @Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    vacademy.io.assessment_service.features.submission_review.service.SubmissionReviewStore submissionReviewStore;
+
+    /**
+     * Set only around a revaluate ("re-mark with the answer key") of one attempt, never on
+     * submit or autosave. While set, a legacy row with no marks_source counts as a teacher's
+     * mark when the test is marked by hand (contract 7.5), and every row the re-mark skipped
+     * is collected for the history.
+     */
+    static final class RevaluateScope {
+        final LegacyProtection protectLegacy;
+        final java.util.List<String> skippedKeys = new java.util.ArrayList<>();
+
+        RevaluateScope(LegacyProtection protectLegacy) {
+            this.protectLegacy = protectLegacy;
+        }
+    }
+
+    /**
+     * Which legacy (NULL marks_source) rows a re-mark keeps. NONE: re-score them all.
+     * PERSON_MARKED (the attempt has a MANUAL_EVALUATION log): only questions a person marks
+     * (not answer-key types - nothing ever wrote a source on key-scored rows, so those are
+     * the key's own marks; also a MANUAL test answered on screen). ALL: a hand-marked
+     * (evaluationType MANUAL) attempt on an uploaded sheet, where every legacy row is the
+     * teacher's (contract 4.4 rule 5).
+     */
+    enum LegacyProtection { NONE, PERSON_MARKED, ALL }
+
+    private static final ThreadLocal<RevaluateScope> REVALUATE = new ThreadLocal<>();
 
     public StudentAttempt updateStudentAttempt(StudentAttempt studentAttempt) {
         return studentAttemptRepository.save(studentAttempt);
@@ -335,6 +389,8 @@ public class StudentAttemptService {
 
             boolean alreadyReleased = ReleaseResultStatusEnum.RELEASED.name()
                     .equals(attempt.getReportReleaseStatus());
+            // A teacher pressed "Hide result again": no automatic release shows it again.
+            if (!alreadyReleased && attempt.getResultWithheldAt() != null) return false;
 
             if (ResultTypeEnum.AUTO_AFTER_SUBMISSION.name().equals(resultType)) {
                 attempt.setReportReleaseStatus(ReleaseResultStatusEnum.RELEASED.name());
@@ -434,6 +490,8 @@ public class StudentAttemptService {
         final Map<String, String> responseJsonByQuestionId = new HashMap<>();
         final List<QuestionWiseMarks> dirtyQuestionWiseMarks = new ArrayList<>();
         final Set<String> dirtyKeys = new HashSet<>();
+        /** "qid|sid" where any marks row (an old duplicate too) holds a person's or the AI's mark. */
+        final Set<String> protectedKeys = new HashSet<>();
     }
 
     private MarksCalculationContext buildMarksCalculationContext(Assessment assessment, StudentAttempt studentAttempt,
@@ -466,13 +524,19 @@ public class StudentAttemptService {
 
         sectionRepository.findAllById(sectionIds).forEach(section -> context.sectionById.put(section.getId(), section));
 
-        for (QuestionWiseMarks existing : questionWiseMarksService
-                .getAllQuestionWiseMarksForAttemptId(studentAttempt.getId(), assessment.getId())) {
+        // Newest row first, as every other reader (MarkWriter, R6, the per-key lookup): an old
+        // duplicate row must never be the one re-scored or counted.
+        List<QuestionWiseMarks> existingRows = new ArrayList<>(questionWiseMarksService
+                .getAllQuestionWiseMarksForAttemptId(studentAttempt.getId(), assessment.getId()));
+        existingRows.sort(Comparator.comparing(QuestionWiseMarks::getCreatedAt,
+                Comparator.nullsLast(Comparator.reverseOrder())));
+        for (QuestionWiseMarks existing : existingRows) {
             String questionId = existing.getQuestion() != null ? existing.getQuestion().getId() : null;
             String sectionId = existing.getSectionId() != null ? existing.getSectionId()
                     : (existing.getSection() != null ? existing.getSection().getId() : null);
             if (questionId != null && sectionId != null) {
                 context.marksRowByQuestionAndSection.putIfAbsent(questionId + "|" + sectionId, existing);
+                if (isEvaluatorMarked(existing)) context.protectedKeys.add(questionId + "|" + sectionId);
             }
         }
 
@@ -540,9 +604,13 @@ public class StudentAttemptService {
         Long timeTakenInSecs = attemptDataParserService.extractTimeTakenInSecondsFromQuestionJson(questionJson);
 
         QuestionWiseMarks marksRow = context.marksRowByQuestionAndSection.get(questionId + "|" + sectionId);
-        if (marksRow != null && isEvaluatorMarked(marksRow)) {
+        if (marksRow != null && (isEvaluatorMarked(marksRow)
+                || legacyProtectedOnRevaluate(marksRow, scoringType(type, markingScheme.getMarkingJson()))
+                || context.protectedKeys.contains(questionId + "|" + sectionId))) {
             // Read by the AI (and maybe a teacher) - a recalculation must not put
             // the word-overlap score back over that mark.
+            RevaluateScope scope = REVALUATE.get();
+            if (scope != null) scope.skippedKeys.add(sectionId + ":" + questionId);
             return marksRow.getMarks();
         }
         if (marksRow != null) {
@@ -551,6 +619,11 @@ public class StudentAttemptService {
             }
             if (!Objects.isNull(questionWiseResponseData)) {
                 marksRow.setResponseJson(questionWiseResponseData);
+            }
+            if (Math.abs(marksRow.getMarks() - marksObtained) > 0.0001
+                    || !Objects.equals(marksRow.getStatus(), answerStatus)) {
+                // Submission review: the answer's mark changed - an open edit form must notice.
+                marksRow.setRevision(marksRow.getRevision() + 1);
             }
             marksRow.setMarks(marksObtained);
             marksRow.setSection(section);
@@ -579,12 +652,13 @@ public class StudentAttemptService {
     }
 
     /**
-     * A mark the AI, or a person, set: a recalculation from the key keeps it. TEACHER
-     * is a mark staff changed from the submission view (QuestionMarksOverrideService).
+     * A mark the answer key must not overwrite: the AI's, or one a person set (submission
+     * review: a teacher's MANUAL mark or its legacy alias TEACHER from PR #3814, an OMR fix,
+     * an offline entry). Also guards the submit and offline re-scoring of such rows.
      */
     static boolean isEvaluatorMarked(QuestionWiseMarks marksRow) {
-        return "AI".equals(marksRow.getMarksSource()) || "AI_REVIEWED".equals(marksRow.getMarksSource())
-                || QuestionMarksOverrideService.TEACHER.equals(marksRow.getMarksSource());
+        String source = marksRow.getMarksSource();
+        return MarksSource.AI.equals(source) || MarksSource.isProtected(source);
     }
 
     public LearnerAssessmentAttemptDataDto validateAndCreateJsonObject(String jsonContent) {
@@ -640,64 +714,260 @@ public class StudentAttemptService {
     }
 
     public void revaluateForAllParticipants(String assessmentId) {
+        revaluateForAllParticipants(assessmentId, null);
+    }
+
+    public void revaluateForAllParticipants(String assessmentId, String actorUserId) {
         List<StudentAttempt> allAttempts = studentAttemptRepository.findAllParticipantsFromAssessmentAndStatusNotIn(assessmentId, List.of("DELETED"));
-        revaluateAssessmentForAttempts(allAttempts);
+        revaluateAssessmentForAttempts(allAttempts, "ENTIRE_ASSESSMENT", actorUserId);
     }
 
     public void revaluateAssessmentForAttempts(List<StudentAttempt> allAttempts) {
-        allAttempts.forEach(attempt -> {
+        revaluateAssessmentForAttempts(allAttempts, "ENTIRE_ASSESSMENT_PARTICIPANTS", null);
+    }
+
+    public void revaluateAssessmentForAttempts(List<StudentAttempt> allAttempts, String mode, String actorUserId) {
+        allAttempts.forEach(loaded -> inAttemptLock(loaded, attempt -> {
             if (attempt.getStatus().equals("ENDED")) {
-                updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt));
+                Double before = attempt.getTotalMarks();
+                RevaluateScope scope = new RevaluateScope(legacyProtection(attempt));
+                REVALUATE.set(scope);
+                StudentAttempt saved;
+                try {
+                    saved = updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt));
+                } finally {
+                    REVALUATE.remove();
+                }
+                afterRevaluate(saved != null ? saved : attempt, before, scope.skippedKeys, mode, actorUserId, null);
             } else if (attempt.getStatus().equals("LIVE")) {
                 updateStudentAttemptWithTotalAfterMarksCalculation(Optional.of(attempt));
             }
+        }));
+    }
 
+    /**
+     * Runs one attempt's re-mark in its own transaction holding the attempt row lock (the
+     * lock MarkWriter, the release and the AI callback take first), on a copy read AFTER the
+     * lock. The list was loaded when the re-mark started, possibly minutes ago: saving that
+     * copy would undo a release or a teacher's mark made since.
+     */
+    private void inAttemptLock(StudentAttempt loaded, java.util.function.Consumer<StudentAttempt> work) {
+        if (transactionManager == null) {
+            work.accept(loaded);
+            return;
+        }
+        new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(tx -> {
+            studentAttemptRepository.lockById(loaded.getId());
+            StudentAttempt fresh = studentAttemptRepository.findById(loaded.getId()).orElse(null);
+            if (fresh == null) return;
+            work.accept(fresh);
         });
     }
 
     public void revaluateForCustomParticipantsAndQuestions(Assessment assessment, RevaluateRequest request) {
+        revaluateForCustomParticipantsAndQuestions(assessment, request, null);
+    }
+
+    public void revaluateForCustomParticipantsAndQuestions(Assessment assessment, RevaluateRequest request,
+                                                           String actorUserId) {
         List<StudentAttempt> allAttempts = StreamSupport
                 .stream(studentAttemptRepository.findAllById(request.getAttemptIds()).spliterator(), false)
                 .toList();
-
         List<RevaluateRequest.RevaluateQuestionDto> questionDtos = request.getQuestions();
-        questionDtos.forEach(question -> {
-            String sectionId = question.getSectionId();
-            List<String> questionIds = question.getQuestionIds();
-
-            for (StudentAttempt attempt : allAttempts) {
-                calculateMarksForSectionIdAndQuestionIds(Optional.of(attempt), sectionId, questionIds, assessment);
+        // One attempt at a time, under its lock, on a fresh copy (see inAttemptLock).
+        for (StudentAttempt loaded : allAttempts) {
+            inAttemptLock(loaded, attempt -> {
+                Double before = attempt.getTotalMarks();
+                LegacyProtection protectLegacy = legacyProtection(attempt);
+                for (RevaluateRequest.RevaluateQuestionDto question : questionDtos) {
+                    String sectionId = question.getSectionId();
+                    List<String> questionIds = question.getQuestionIds();
+                    RevaluateScope scope = new RevaluateScope(protectLegacy);
+                    REVALUATE.set(scope);
+                    try {
+                        calculateMarksForSectionIdAndQuestionIds(Optional.of(attempt), sectionId, questionIds,
+                                assessment);
+                    } finally {
+                        REVALUATE.remove();
+                    }
+                    for (String key : scope.skippedKeys) {
+                        int colon = key.indexOf(':');
+                        recordSkipped(attempt, List.of(key), "PARTICIPANTS_AND_QUESTIONS", actorUserId,
+                                key.substring(0, colon), key.substring(colon + 1));
+                    }
+                }
                 updateMarksAfterRevaluation(attempt, assessment.getId());
+                afterRevaluate(attempt, before, List.of(), "PARTICIPANTS_AND_QUESTIONS", actorUserId, null);
+            });
+        }
+    }
+
+    /**
+     * A legacy row (no marks_source) a person marked - only during a revaluate. On a test
+     * that is not hand-marked, an answer-key question is never protected this way: the
+     * answer key wrote that row (no scoring path sets a source), so "Re-mark with answer
+     * key" must re-score it (pre-ship review R1).
+     */
+    private static boolean legacyProtectedOnRevaluate(QuestionWiseMarks row, String questionType) {
+        RevaluateScope scope = REVALUATE.get();
+        if (scope == null || row.getMarksSource() != null) return false;
+        return switch (scope.protectLegacy) {
+            case ALL -> true;
+            case PERSON_MARKED -> !QuestionKinds.isObjective(questionType);
+            case NONE -> false;
+        };
+    }
+
+    /** The question type the key scores with: the response's, else the marking scheme's. */
+    static String scoringType(String responseType, String markingJson) {
+        if (responseType != null && !responseType.isBlank()) return responseType;
+        if (markingJson == null || markingJson.isBlank()) return null;
+        try {
+            JsonNode node = new ObjectMapper().readTree(markingJson).path("type");
+            return node.isMissingNode() || node.isNull() ? null : node.asText();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private LegacyProtection legacyProtection(StudentAttempt attempt) {
+        try {
+            Assessment assessment = attempt.getRegistration().getAssessment();
+            if (assessment != null && EvaluationTypes.MANUAL.name().equals(assessment.getEvaluationType())) {
+                // ALL only when a person marks an uploaded sheet: there a legacy row is the
+                // teacher's mark (a scanned sheet has no option ids for the key to score). A
+                // hand-marked test answered on screen (the learner app submits it through the
+                // normal endpoint when no PDF is attached) has key-scored objective rows, which
+                // the re-mark must re-score (second review of F1).
+                return marksAnUploadedSheet(attempt) ? LegacyProtection.ALL : LegacyProtection.PERSON_MARKED;
             }
-        });
+            boolean logged = evaluationLogsRepository != null && evaluationLogsRepository.existsBySourceIdAndType(
+                    attempt.getId(),
+                    vacademy.io.assessment_service.features.assessment.enums.EvaluationLogsTypeEnum.MANUAL_EVALUATION.name());
+            return logged ? LegacyProtection.PERSON_MARKED : LegacyProtection.NONE;
+        } catch (Exception e) {
+            log.warn("Could not tell whether attempt {} was marked by hand: {}", attempt.getId(), e.getMessage());
+            return LegacyProtection.PERSON_MARKED;
+        }
+    }
+
+    /**
+     * Whether the attempt's marks were given on an uploaded answer sheet: a copy-check copy,
+     * the learner's (or an admin's) uploaded sheet in attempt_data "fileId", or an older
+     * attempt whose sheet only reached evaluated_file_id (the upload used to write it there
+     * and drop the "fileId" key).
+     */
+    static boolean marksAnUploadedSheet(StudentAttempt attempt) {
+        if ("COPY_CHECK".equals(attempt.getStatus())) return true;
+        if (attempt.getEvaluatedFileId() != null && !attempt.getEvaluatedFileId().isBlank()) return true;
+        String data = attempt.getAttemptData();
+        if (data == null || data.isBlank()) return false;
+        try {
+            JsonNode id = new ObjectMapper().readTree(data).path("fileId");
+            return id.isTextual() && !id.asText().isBlank();
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    /**
+     * Submission review after a re-mark (contract 7.5, D9, D11): one SKIPPED_PROTECTED event
+     * per attempt that kept a person's marks, and "Released, changed" when the re-mark moved
+     * a released total.
+     */
+    private void afterRevaluate(StudentAttempt attempt, Double totalBefore, List<String> skippedKeys, String mode,
+                                String actorUserId, String unused) {
+        try {
+            if (!skippedKeys.isEmpty()) {
+                recordSkipped(attempt, skippedKeys, mode, actorUserId, null, null);
+            }
+            Double after = attempt.getTotalMarks();
+            boolean changed = (totalBefore == null) != (after == null)
+                    || (totalBefore != null && Math.abs(totalBefore - after) > 0.005);
+            if (changed && ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus())) {
+                studentAttemptRepository.bumpRevisionAfterRevaluate(attempt.getId(), new Date());
+            }
+        } catch (Exception e) {
+            log.warn("Could not record the re-mark of attempt {}: {}", attempt.getId(), e.getMessage());
+        }
+    }
+
+    private void recordSkipped(StudentAttempt attempt, List<String> keys, String mode, String actorUserId,
+                               String sectionId, String questionId) {
+        if (markHistory == null) return;
+        java.util.Map<String, Object> payload = new java.util.LinkedHashMap<>();
+        payload.put("keys", keys);
+        payload.put("mode", mode);
+        boolean released = ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus());
+        markHistory.save(markHistory.base(attempt,
+                        vacademy.io.assessment_service.features.submission_review.model.MarkEventType.SKIPPED_PROTECTED,
+                        vacademy.io.assessment_service.features.submission_review.model.ActorType.SYSTEM, actorUserId,
+                        released)
+                .sectionId(sectionId).questionId(questionId)
+                .payloadJson(vacademy.io.assessment_service.features.submission_review.service.MarkHistory.json(payload))
+                .reason("Kept the mark a person gave")
+                .build());
     }
 
     @Async
     public CompletableFuture<Void> revaluateForAllParticipantsWrapper(Assessment assessment, String instituteId) {
-        return CompletableFuture.runAsync(() -> revaluateForAllParticipants(assessment.getId()))
+        return revaluateForAllParticipantsWrapper(assessment, instituteId, null);
+    }
+
+    @Async
+    public CompletableFuture<Void> revaluateForAllParticipantsWrapper(Assessment assessment, String instituteId,
+                                                                      String actorUserId) {
+        return CompletableFuture.runAsync(() -> revaluateForAllParticipants(assessment.getId(), actorUserId))
                 .thenRun(() -> sendEmail(instituteId, assessment));
     }
 
     @Async
     public CompletableFuture<Void> revaluateForParticipantIdsWrapper(Assessment assessment, List<String> allAttemptIds, String instituteId) {
+        return revaluateForParticipantIdsWrapper(assessment, allAttemptIds, instituteId, null);
+    }
+
+    @Async
+    public CompletableFuture<Void> revaluateForParticipantIdsWrapper(Assessment assessment, List<String> allAttemptIds,
+                                                                     String instituteId, String actorUserId) {
         List<StudentAttempt> allAttempts = StreamSupport
                 .stream(studentAttemptRepository.findAllById(allAttemptIds).spliterator(), false)
                 .toList();
 
-        return CompletableFuture.runAsync(() -> revaluateAssessmentForAttempts(allAttempts))
+        return CompletableFuture.runAsync(() -> revaluateAssessmentForAttempts(allAttempts,
+                        "ENTIRE_ASSESSMENT_PARTICIPANTS", actorUserId))
                 .thenRun(() -> sendEmail(instituteId, assessment));
     }
 
     @Async
     public CompletableFuture<Void> revaluateCustomParticipantAndQuestionsWrapper(Assessment assessment, RevaluateRequest request, String instituteId) {
+        return revaluateCustomParticipantAndQuestionsWrapper(assessment, request, instituteId, null);
+    }
 
-        return CompletableFuture.runAsync(() -> revaluateForCustomParticipantsAndQuestions(assessment, request))
+    @Async
+    public CompletableFuture<Void> revaluateCustomParticipantAndQuestionsWrapper(Assessment assessment,
+                                                                                RevaluateRequest request,
+                                                                                String instituteId,
+                                                                                String actorUserId) {
+        return CompletableFuture.runAsync(() -> revaluateForCustomParticipantsAndQuestions(assessment, request,
+                        actorUserId))
                 .thenRun(() -> sendEmail(instituteId, assessment));
     }
 
 
     public void updateMarksAfterRevaluation(StudentAttempt studentAttempt, String assessmentId) {
         List<QuestionWiseMarks> allQuestionWiseMarks = questionWiseMarksService.getAllQuestionWiseMarksForAttemptId(studentAttempt.getId(), assessmentId);
+        // Submission review R6 (newest row per question of the paper, choice groups): the total
+        // every other screen shows. Summing every row counted old duplicates and rows of
+        // questions no longer on the paper. The query above flushed this re-mark's rows.
+        Double r6 = r6Total(studentAttempt);
+        if (r6 != null) {
+            studentAttempt.setTotalMarks(r6);
+            if (studentAttempt.getStatus().equals("ENDED")) {
+                studentAttempt.setResultMarks(r6);
+            }
+            studentAttemptRepository.save(studentAttempt);
+            return;
+        }
         double totalMarks = 0.0;
 
         for (QuestionWiseMarks questionWiseMarks : allQuestionWiseMarks) {
@@ -724,6 +994,17 @@ public class StudentAttemptService {
         studentAttemptRepository.save(studentAttempt);
     }
 
+    private Double r6Total(StudentAttempt attempt) {
+        if (submissionReleaseService == null || submissionReviewStore == null) return null;
+        try {
+            var state = submissionReviewStore.attempt(attempt.getId());
+            return state == null ? null : submissionReleaseService.snapshot(attempt, state).total();
+        } catch (Exception e) {
+            log.warn("Could not compute the review total of attempt {}: {}", attempt.getId(), e.getMessage());
+            return null;
+        }
+    }
+
     public void calculateMarksForSectionIdAndQuestionIds(Optional<StudentAttempt> studentAttemptOptional, String sectionId, List<String> questionIds, Assessment assessment) {
         questionIds.forEach(questionId -> {
             calculateMarksForSectionIdAndQuestionId(studentAttemptOptional, sectionId, questionId, assessment);
@@ -747,6 +1028,17 @@ public class StudentAttemptService {
 
         QuestionAssessmentSectionMapping markingScheme = questionAssessmentSectionMapping.get();
         Question questionAsked = markingScheme.getQuestion();
+
+        // Submission review guard (contract 7.5): a mark a person set (or the AI's) is kept.
+        Optional<QuestionWiseMarks> existing = questionWiseMarksService
+                .getQuestionWiseMarkForAssessmentIdAndSectionIdAndQuestionIdAndAttemptId(assessment.getId(),
+                        studentAttempt.getId(), sectionId, questionId);
+        if (existing.isPresent() && (isEvaluatorMarked(existing.get())
+                || legacyProtectedOnRevaluate(existing.get(), questionAsked.getQuestionType()))) {
+            RevaluateScope scope = REVALUATE.get();
+            if (scope != null) scope.skippedKeys.add(sectionId + ":" + questionId);
+            return existing.get().getMarks();
+        }
         String questionWiseResponseData = getQuestionDetails(questionId, jsonAttemptData);
 
         QuestionWiseBasicDetailDto questionWiseBasicDetailDto = QuestionBasedStrategyFactory.calculateMarks(
@@ -761,12 +1053,14 @@ public class StudentAttemptService {
 
         Section section = questionAssessmentSectionMapping.get().getSection();
 
-        // Question-wise re-evaluation keeps marks a teacher set from the submission
-        // view (TEACHER). AI rows are re-scored here exactly as before. A list
-        // lookup, so old duplicate rows add no new failure path.
+        // Any older duplicate row of this question a person or the AI marked keeps the
+        // question too (the guard above sees one row only). A list lookup, so old duplicate
+        // rows add no new failure path (PR #3814).
         for (QuestionWiseMarks row : questionWiseMarksService.getAllQuestionWiseMarksForQuestionIdsAndAttemptId(
                 studentAttempt.getId(), List.of(questionId), section.getId())) {
-            if (QuestionMarksOverrideService.TEACHER.equals(row.getMarksSource())) {
+            if (isEvaluatorMarked(row)) {
+                RevaluateScope scope = REVALUATE.get();
+                if (scope != null) scope.skippedKeys.add(sectionId + ":" + questionId);
                 return row.getMarks();
             }
         }

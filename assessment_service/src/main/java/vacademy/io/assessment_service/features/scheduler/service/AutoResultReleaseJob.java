@@ -70,6 +70,7 @@ public class AutoResultReleaseJob {
                   AND sa.status = 'ENDED'
                   AND sa.result_status = 'COMPLETED'
                   AND (sa.report_release_status IS NULL OR sa.report_release_status = 'PENDING')
+                  AND sa.result_withheld_at IS NULL
                 ORDER BY sa.id
                 LIMIT :limit
                 FOR UPDATE OF sa SKIP LOCKED

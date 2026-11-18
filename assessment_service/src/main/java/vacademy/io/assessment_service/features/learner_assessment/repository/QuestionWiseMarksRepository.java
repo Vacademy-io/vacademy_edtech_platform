@@ -336,4 +336,16 @@ public interface QuestionWiseMarksRepository extends JpaRepository<QuestionWiseM
     List<QuestionClassStatsDto> findQuestionClassStatsForAssessment(
             @Param("assessmentId") String assessmentId,
             @Param("instituteId") String instituteId);
+
+    /**
+     * Submission review - every marks row of an attempt, row-locked, in the global lock
+     * order (taken after the attempt row lock). Newest first within an answer.
+     */
+    @Query(value = """
+            SELECT qwm.* FROM question_wise_marks qwm
+            WHERE qwm.attempt_id = :attemptId
+            ORDER BY qwm.section_id NULLS FIRST, qwm.question_id, qwm.created_at DESC
+            FOR UPDATE
+            """, nativeQuery = true)
+    List<QuestionWiseMarks> lockAllForAttempt(@Param("attemptId") String attemptId);
 }

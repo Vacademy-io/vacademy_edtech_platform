@@ -14,6 +14,7 @@ import vacademy.io.assessment_service.features.learner_assessment.repository.Que
 import vacademy.io.assessment_service.features.question_core.entity.Question;
 import vacademy.io.assessment_service.features.question_core.util.CbeAnswers;
 import vacademy.io.assessment_service.features.question_core.util.CbeConfigRedactor;
+import vacademy.io.assessment_service.features.submission_review.model.MarksSource;
 
 import vacademy.io.assessment_service.features.assessment.entity.AiEvaluationProcess;
 import vacademy.io.assessment_service.features.assessment.entity.QuestionAssessmentSectionMapping;
@@ -378,7 +379,8 @@ public class TypedAnswerEvaluation {
             }
             for (QuestionWiseMarks row : rows) {
                 if (!isAiGraded(row.getQuestion())) continue;
-                if ("AI".equals(row.getMarksSource()) || "AI_REVIEWED".equals(row.getMarksSource())) continue;
+                if (MarksSource.AI.equals(row.getMarksSource()) || MarksSource.AI_REVIEWED.equals(row.getMarksSource())
+                        || MarksSource.isHandMarked(row.getMarksSource())) continue;
                 JsonNode sent = submitted.get(row.getQuestion().getId());
                 if (sent == null) continue;
                 JsonNode stored = row.getResponseJson() == null || row.getResponseJson().isBlank()
@@ -396,15 +398,15 @@ public class TypedAnswerEvaluation {
 
     /**
      * Whether a teacher has already set a mark an AI run would overwrite: on the AI
-     * review page (AI_REVIEWED), or from the submission view (TEACHER) on a written /
-     * CBT question. A teacher's mark on an MCQ is never touched by an AI run, so it
-     * does not stop one.
+     * review page (AI_REVIEWED), or by hand (MANUAL from the Submission page / PDF tool,
+     * or the legacy TEACHER value of PR #3814) on a written / CBT question. A hand mark on
+     * an MCQ is never touched by an AI run, so it does not stop one.
      */
     public boolean hasTeacherReviewedMarks(StudentAttempt attempt) {
         if (attempt == null || attempt.getId() == null) return false;
         return questionWiseMarksRepository.findByStudentAttemptId(attempt.getId()).stream()
-                .anyMatch(marks -> "AI_REVIEWED".equals(marks.getMarksSource())
-                        || ("TEACHER".equals(marks.getMarksSource()) && isAiGraded(marks.getQuestion())));
+                .anyMatch(marks -> MarksSource.AI_REVIEWED.equals(marks.getMarksSource())
+                        || (MarksSource.isHandMarked(marks.getMarksSource()) && isAiGraded(marks.getQuestion())));
     }
 
     /**

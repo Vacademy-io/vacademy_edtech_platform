@@ -193,7 +193,9 @@ class AutoResultReleaseJobTest {
     void the_claim_queries_only_take_rows_nobody_else_holds() {
         assertThat(AutoResultReleaseJob.CLAIM_AFTER_END_SQL).contains("SKIP LOCKED").contains("'AUTO_AFTER_ASSESSMENT_END'")
                 .contains("report_release_status IS NULL OR sa.report_release_status = 'PENDING'")
-                .contains("a.status <> 'DELETED'");
+                .contains("a.status <> 'DELETED'")
+                // "Hide result again" (submission review): a result a teacher hid is never re-released.
+                .contains("sa.result_withheld_at IS NULL");
         assertThat(AutoResultReleaseJob.CLAIM_SUBMIT_RELEASED_SQL).contains("SKIP LOCKED")
                 .contains("result_notice_pending = TRUE").contains("SET result_notice_pending = NULL");
     }

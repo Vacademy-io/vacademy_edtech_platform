@@ -51,4 +51,11 @@ class TypedAnswerEvaluationTeacherMarksTest {
     void teacher_bonus_on_an_mcq_does_not_stop_an_ai_rerun() {
         assertThat(reviewed(row("MCQS", "TEACHER"), row("NUMERIC", "TEACHER"))).isFalse();
     }
+
+    @Test
+    void manual_hand_mark_counts_exactly_like_teacher() {
+        assertThat(reviewed(row("LONG_ANSWER", "MANUAL"))).isTrue();
+        assertThat(reviewed(row("CBE_RESPONSE", "MANUAL"))).isTrue();
+        assertThat(reviewed(row("MCQS", "MANUAL"), row("NUMERIC", "MANUAL"))).isFalse();
+    }
 }
