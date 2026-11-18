@@ -77,6 +77,15 @@ public interface InstituteDomainRoutingRepository extends CrudRepository<Institu
   Optional<InstituteDomainRouting> findByInstituteIdAndRole(@Param("instituteId") String instituteId,
       @Param("role") String role);
 
+  /** Every row on one domain, any subdomain, oldest first. */
+  @Query(value = """
+      SELECT *
+      FROM institute_domain_routing
+      WHERE LOWER(domain) = LOWER(:domain)
+      ORDER BY created_at, id
+      """, nativeQuery = true)
+  List<InstituteDomainRouting> findByDomain(@Param("domain") String domain);
+
   /**
    * Every row for one host of an institute, oldest first. Normally one: the
    * white-label setup keys a row by its host and edits the role list in place.

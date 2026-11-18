@@ -147,6 +147,28 @@ public class WhiteLabelService {
             }
         }
 
+        // A "*" row answers for every host on its domain that has no row of its own
+        // AND for those that do (resolve prefers the "*" row). So a new one — an
+        // apex domain added here, or a broken apex row being moved into that shape
+        // — would take over the domain's other portals. Refused, not guessed at.
+        for (RowTarget target : targets.values()) {
+            if (!"*".equals(target.subdomain())
+                    || target.existing().map(r -> "*".equals(r.getSubdomain())).orElse(false)) {
+                continue;
+            }
+            String existingId = target.existing().map(InstituteDomainRouting::getId).orElse(null);
+            List<String> others = routingRepository.findByDomain(target.domain()).stream()
+                    .filter(r -> !r.getId().equals(existingId))
+                    .map(PortalUrlReconciler::hostOf)
+                    .distinct()
+                    .toList();
+            if (!others.isEmpty()) {
+                throw new VacademyException(target.domain() + " can only be added as the address for the whole "
+                        + "domain, which would override " + String.join(", ", others)
+                        + ". Contact support to set it up.");
+            }
+        }
+
         // Validate: at most one primary per portal. The portal is the entry's
         // LEARNER / ADMIN / TEACHER token; its other tokens are roles allowed to log
         // in. Counting every token made an admin portal that lets teachers in
@@ -671,7 +693,17 @@ public class WhiteLabelService {
                     .filter(r -> r.getInstituteId() != null && instituteId.equals(r.getInstituteId().trim()))
                     .filter(r -> entry.getDomain().equalsIgnoreCase(PortalUrlReconciler.hostOf(r)));
             if (own.isPresent()) {
-                return new RowTarget(own.get().getDomain(), own.get().getSubdomain(), own);
+                InstituteDomainRouting row = own.get();
+                // A row whose domain is a bare TLD ("com") came from the old apex
+                // split and is never looked up; saving it moves it to the shape the
+                // portals ask for. Any other stored shape is kept as it is.
+                boolean tldOnly = row.getDomain() != null && !row.getDomain().contains(".")
+                        && !"localhost".equalsIgnoreCase(row.getDomain());
+                if (!tldOnly) {
+                    return new RowTarget(row.getDomain(), row.getSubdomain(), own);
+                }
+                String[] healed = splitDomain(entry.getDomain());
+                return new RowTarget(healed[0], healed[1], own);
             }
         }
         String[] parts = splitDomain(entry.getDomain());
@@ -768,13 +800,22 @@ public class WhiteLabelService {
     }
 
     /**
-     * Splits "learn.myschool.com" → ["myschool.com", "learn"]
+     * Splits a host the way the portals split it when they resolve themselves:
+     * "learn.myschool.com" → ["myschool.com", "learn"], and a bare two-label
+     * domain "myschool.com" → ["myschool.com", "*"]. The apex case used to come
+     * out as ["com", "myschool"], a row no portal ever asks for, so an apex
+     * domain could only be set up by editing the database. "x.localhost" keeps
+     * the first-label split, as the apps do for local hosts.
      */
-    private String[] splitDomain(String fullDomain) {
+    static String[] splitDomain(String fullDomain) {
         String d = fullDomain.trim().toLowerCase()
                 .replaceFirst("^https?://", "")
                 .replaceFirst("/.*$", "");
 
+        String[] labels = d.split("\\.");
+        if (labels.length == 2 && !"localhost".equals(labels[1])) {
+            return new String[] { d, "*" };
+        }
         String[] parts = d.split("\\.", 2);
         if (parts.length == 2) {
             return new String[] { parts[1], parts[0] };
