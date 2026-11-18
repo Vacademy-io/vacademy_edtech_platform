@@ -16,6 +16,7 @@ import {
     getStudentExportColumns,
     type ExportColumn,
 } from '../../../-utils/student-export';
+import { nudgeAssistant } from '@/components/vacademy-assistant/page-ask';
 
 interface ExportColumnsDialogProps {
     open: boolean;
@@ -81,6 +82,7 @@ export const ExportColumnsDialog = ({
             return;
         }
         setIsExporting(true);
+        nudgeAssistant('learners');
         try {
             const students = await fetchAllStudentsForExport(appliedFilters, totalElements);
             if (students.length === 0) {

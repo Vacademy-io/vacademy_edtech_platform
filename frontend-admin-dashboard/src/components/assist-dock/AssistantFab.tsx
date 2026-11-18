@@ -11,6 +11,8 @@ import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { ASSISTANT_CAPABILITIES } from '@/constants/urls';
 import type { AssistantCapabilities } from '@/components/vacademy-assistant/types';
 import { useInstituteChatbotName } from '@/components/vacademy-assistant/useInstituteChatbotName';
+import { AssistantTip } from '@/components/vacademy-assistant/AssistantTip';
+import { useAssistantWelcome } from '@/components/vacademy-assistant/useAssistantWelcome';
 import { useAssistDock } from './store';
 import { useAssistDockVisible } from './visibility';
 
@@ -150,6 +152,10 @@ export function AssistantFab() {
         setAssistantFabEnabled(enabled);
     }, [enabled, setAssistantFabEnabled]);
 
+    // Opens the panel once for a new admin (see useAssistantWelcome).
+    useAssistantWelcome(enabled, scope);
+    const tipShown = useAssistDock((s) => s.tipTopic !== null);
+
     if (!enabled || panel !== 'none' || tutorialOpen) return null;
 
     const dismissHint = () => {
@@ -169,7 +175,8 @@ export function AssistantFab() {
     return (
         <div className="assistant-fab pointer-events-none fixed bottom-0 end-0 z-40">
             <div className="relative me-4 flex items-center md:me-2">
-                {!hintSeen && (
+                <AssistantTip />
+                {!hintSeen && !tipShown && (
                     <div className="pointer-events-auto absolute end-full top-1/2 me-3 hidden -translate-y-1/2 items-center gap-1 whitespace-nowrap rounded-lg border border-neutral-200 bg-white py-1 pe-1 ps-3 shadow-lg md:flex">
                         <button
                             type="button"

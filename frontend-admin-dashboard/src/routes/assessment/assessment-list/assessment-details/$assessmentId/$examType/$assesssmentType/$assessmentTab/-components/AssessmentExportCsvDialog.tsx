@@ -20,6 +20,7 @@ import { useInstituteQuery } from '@/services/student-list-section/getInstituteD
 import { convertToLocalDateTime, extractDateTime } from '@/constants/helper';
 import { getBatchNameById } from '../-utils/helper';
 import { SubmissionStudentData } from '@/types/assessments/assessment-overview';
+import { nudgeAssistant } from '@/components/vacademy-assistant/page-ask';
 
 interface AssessmentExportCsvDialogProps {
     assessmentId: string;
@@ -201,6 +202,7 @@ export const AssessmentExportCsvDialog = ({
 
     const handleExport = async () => {
         setIsExporting(true);
+        nudgeAssistant('assessments');
         try {
             const data = await handleExportResultCSV(
                 instituteId,

@@ -63,6 +63,7 @@ import {
     useManagePaymentsSettings,
     useSaveManagePaymentsSettings,
 } from '@/services/manage-payments-settings';
+import { nudgeAssistant } from '@/components/vacademy-assistant/page-ask';
 
 const PAGE_SIZE = 20;
 
@@ -917,6 +918,7 @@ export function TransactionsView() {
                 toast.info('No payment records to export.');
                 return;
             }
+            nudgeAssistant('fees');
             // The table only holds one page now, so the export fetches the rows it needs at click
             // time — with the tile the admin is looking at, so the file matches what they see.
             const { entries } = await fetchAllPaymentLogs(tableFilters);

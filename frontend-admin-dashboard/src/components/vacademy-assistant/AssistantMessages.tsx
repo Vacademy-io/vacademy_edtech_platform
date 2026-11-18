@@ -227,7 +227,7 @@ export function FollowUpChips({
                     disabled={disabled}
                     onClick={() => onPick(s)}
                     className={cn(
-                        'flex min-h-8 max-w-full items-center gap-1.5 rounded-full border border-primary-200 bg-white px-3 py-1 text-start text-caption text-primary-600 transition-colors hover:border-primary-300 hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
+                        'flex min-h-8 max-w-full items-center gap-1.5 rounded-2xl border border-primary-200 bg-white px-3 py-1 text-start text-caption text-primary-600 transition-colors hover:border-primary-300 hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
                         FOCUS_RING
                     )}
                 >

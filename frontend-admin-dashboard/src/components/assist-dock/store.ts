@@ -48,6 +48,14 @@ interface AssistDockState {
      *  so layouts that leave room for it don't shift on open/close. */
     assistantFabEnabled: boolean;
     setAssistantFabEnabled: (enabled: boolean) => void;
+    /** Page topic of the assistant tip on show (null = none); see vacademy-assistant/page-ask. */
+    tipTopic: string | null;
+    showTip: (topic: string) => void;
+    clearTip: () => void;
+    /** The panel was opened as a first-visit welcome: its empty state offers setup questions. */
+    welcome: boolean;
+    openWelcome: () => void;
+    clearWelcome: () => void;
 }
 
 export const useAssistDock = create<AssistDockState>((set) => ({
@@ -64,6 +72,12 @@ export const useAssistDock = create<AssistDockState>((set) => ({
     setDockVisible: (dockVisible) => set({ dockVisible }),
     assistantFabEnabled: false,
     setAssistantFabEnabled: (assistantFabEnabled) => set({ assistantFabEnabled }),
+    tipTopic: null,
+    showTip: (tipTopic) => set({ tipTopic }),
+    clearTip: () => set({ tipTopic: null }),
+    welcome: false,
+    openWelcome: () => set({ panel: 'assistant', welcome: true, tipTopic: null }),
+    clearWelcome: () => set({ welcome: false }),
     minimized: readMinimized(),
     setMinimized: (minimized) => {
         try {

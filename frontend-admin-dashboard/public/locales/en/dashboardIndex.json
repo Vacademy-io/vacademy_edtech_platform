@@ -283,6 +283,44 @@
                 "continue": "That chat couldn’t be reopened. Please try again.",
                 "delete": "That chat couldn’t be deleted. Please try again."
             }
+        },
+        "pageAsk": {
+            "button": "Ask",
+            "buttonLabel": "Ask {{chatbotName}} about this page",
+            "menuTitle": "Ask {{chatbotName}} about this page",
+            "somethingElse": "Ask something else",
+            "questions": {
+                "leadsNotContacted": "Which new leads haven't been contacted yet?",
+                "leadsBySource": "How many leads came in this week, by source?",
+                "leadsOverdueFollowUps": "Which follow-ups are overdue, and for which counsellor?",
+                "leadsNoActivity": "Which open leads have had no activity for 7 days?",
+                "learnersRecent": "Who enrolled in the last 7 days?",
+                "learnersOverdueFees": "Which learners have the biggest overdue fees?",
+                "learnersInBatch": "List the learners in a batch",
+                "feesOverdue30": "Who has fees overdue by more than 30 days?",
+                "feesCollectedMonth": "How much did we collect this month?",
+                "feesWhoOwesWeek": "Who owes fees this week?",
+                "feesOutstanding": "What is the total fee outstanding?",
+                "assessmentsPending": "Which submissions are still pending evaluation?",
+                "assessmentsToppers": "Who topped the latest test?",
+                "assessmentsNotAttempted": "Who hasn't attempted the latest test yet?"
+            },
+            "tip": {
+                "lead": "Next time, just ask:",
+                "ask": "Ask now",
+                "stop": "Don't show tips",
+                "dismiss": "Dismiss tip"
+            },
+            "welcome": {
+                "hint": "Welcome! I can help you set up your institute. Start with one of these, or ask anything.",
+                "startHere": "Start here",
+                "questions": {
+                    "firstSteps": "What should I set up first?",
+                    "createCourse": "How do I create a course?",
+                    "addLearners": "How do I add learners to a batch?",
+                    "inviteTeam": "How do I invite my team?"
+                }
+            }
         }
     },
     "quickActions": {

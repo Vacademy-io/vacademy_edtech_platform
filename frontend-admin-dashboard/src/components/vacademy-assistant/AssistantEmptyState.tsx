@@ -32,6 +32,7 @@ export function AssistantEmptyState({
     onAsk,
     onOpenChat,
     onViewAllChats,
+    welcome = false,
 }: {
     firstName: string;
     capabilities: CapabilityItem[];
@@ -41,12 +42,43 @@ export function AssistantEmptyState({
     onAsk: (text: string) => void;
     onOpenChat: (id: string) => void;
     onViewAllChats: () => void;
+    /** First visit of a new admin: setup questions come first. */
+    welcome?: boolean;
 }) {
     const { t } = useTranslation('dashboardIndex');
     const capsId = useId();
     const startersId = useId();
     const [showAll, setShowAll] = useState(false);
     const shown = showAll ? capabilities : capabilities.slice(0, VISIBLE_CAPABILITIES);
+
+    const startersSection = starters.length > 0 && (
+        <section aria-labelledby={startersId} className="flex flex-col gap-2">
+            <h3
+                id={startersId}
+                className="text-2xs font-semibold uppercase tracking-wide text-neutral-500"
+            >
+                {welcome
+                    ? t('assistant.pageAsk.welcome.startHere')
+                    : t('assistant.panel.tryAsking')}
+            </h3>
+            <div className="flex flex-wrap gap-2">
+                {starters.slice(0, VISIBLE_STARTERS).map((s) => (
+                    <button
+                        key={s}
+                        type="button"
+                        disabled={busy}
+                        onClick={() => onAsk(s)}
+                        className={cn(
+                            'min-h-8 max-w-full rounded-2xl border border-neutral-200 bg-white px-3 py-1 text-start text-caption text-neutral-700 transition-colors hover:border-primary-300 hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
+                            FOCUS_RING
+                        )}
+                    >
+                        {s}
+                    </button>
+                ))}
+            </div>
+        </section>
+    );
 
     return (
         <div className="flex flex-col gap-5 py-2">
@@ -64,13 +96,16 @@ export function AssistantEmptyState({
                             : t('assistant.panel.greetingNoName')}
                     </h2>
                     <p className="mt-0.5 text-caption text-neutral-500">
-                        {capabilities.length
-                            ? t('assistant.panel.greetingHint')
-                            : t('assistant.helpDescription')}
+                        {welcome
+                            ? t('assistant.pageAsk.welcome.hint')
+                            : capabilities.length
+                              ? t('assistant.panel.greetingHint')
+                              : t('assistant.helpDescription')}
                     </p>
                 </div>
             </div>
 
+            {welcome && startersSection}
             {capabilities.length > 0 && (
                 <section aria-labelledby={capsId} className="flex flex-col gap-2">
                     <h3
@@ -117,32 +152,7 @@ export function AssistantEmptyState({
                 </section>
             )}
 
-            {starters.length > 0 && (
-                <section aria-labelledby={startersId} className="flex flex-col gap-2">
-                    <h3
-                        id={startersId}
-                        className="text-2xs font-semibold uppercase tracking-wide text-neutral-500"
-                    >
-                        {t('assistant.panel.tryAsking')}
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                        {starters.slice(0, VISIBLE_STARTERS).map((s) => (
-                            <button
-                                key={s}
-                                type="button"
-                                disabled={busy}
-                                onClick={() => onAsk(s)}
-                                className={cn(
-                                    'min-h-8 max-w-full rounded-full border border-neutral-200 bg-white px-3 py-1 text-start text-caption text-neutral-700 transition-colors hover:border-primary-300 hover:bg-primary-50 disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none',
-                                    FOCUS_RING
-                                )}
-                            >
-                                {s}
-                            </button>
-                        ))}
-                    </div>
-                </section>
-            )}
+            {!welcome && startersSection}
 
             <RecentChatsCompact
                 chats={recentChats}

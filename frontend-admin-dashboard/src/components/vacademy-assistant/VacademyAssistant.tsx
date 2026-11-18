@@ -56,6 +56,7 @@ import { AssistantComposer } from './AssistantComposer';
 import { AssistantEmptyState, type CapabilityItem } from './AssistantEmptyState';
 import { ASSISTANT_CHATS_KEY, AssistantHistoryList, useRecentChats } from './AssistantHistoryList';
 import { firstNameOf } from './assistant-format';
+import { WELCOME_QUESTIONS } from './page-ask';
 
 export { ActionCardLines } from './AssistantMessages';
 
@@ -236,6 +237,13 @@ export function capabilityCopyFor(
     return { capabilityBlurbs: items.map((i) => i.blurb), suggestions };
 }
 
+/**
+ * Radix wraps the scroll content in a `display: table` box that grows to the widest
+ * unwrapped line (a truncated chat title, a long chip), pushing the narrow panel's
+ * content past its edge. A block box keeps the content at the panel's width.
+ */
+const SCROLL_FIT = 'flex-1 [&_[data-radix-scroll-area-viewport]>div]:!block';
+
 const HEADER_BUTTON =
     'flex size-8 shrink-0 items-center justify-center rounded-md text-white/90 transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none';
 
@@ -285,6 +293,8 @@ export function VacademyAssistant() {
     const setPanel = useAssistDock((s) => s.setPanel);
     const pendingPrompt = useAssistDock((s) => s.pendingPrompt);
     const clearPendingPrompt = useAssistDock((s) => s.clearPendingPrompt);
+    const welcome = useAssistDock((s) => s.welcome);
+    const clearWelcome = useAssistDock((s) => s.clearWelcome);
     const open = panel === 'assistant';
     const {
         messages,
@@ -325,6 +335,11 @@ export function VacademyAssistant() {
     useEffect(() => {
         if (!panelVisible) cancelVoice();
     }, [panelVisible, cancelVoice]);
+
+    // The first-visit welcome lasts while the panel stays open.
+    useEffect(() => {
+        if (!open && welcome) clearWelcome();
+    }, [open, welcome, clearWelcome]);
 
     // The message box takes focus when the panel opens.
     useEffect(() => {
@@ -557,7 +572,7 @@ export function VacademyAssistant() {
                             {t('assistant.panel.recentChats')}
                         </h2>
                     </div>
-                    <ScrollArea className="flex-1">
+                    <ScrollArea className={SCROLL_FIT}>
                         <AssistantHistoryList
                             currentId={pastChat?.id ?? sessionId}
                             onOpen={showChat}
@@ -568,13 +583,16 @@ export function VacademyAssistant() {
             ) : (
                 <>
                     {/* Messages */}
-                    <ScrollArea className="flex-1">
+                    <ScrollArea className={SCROLL_FIT}>
                         <div className="flex flex-col gap-4 p-4">
                             {showEmpty && (
                                 <AssistantEmptyState
                                     firstName={firstName}
                                     capabilities={capabilityItems}
-                                    starters={suggestions}
+                                    starters={
+                                        welcome ? WELCOME_QUESTIONS.map((k) => t(k)) : suggestions
+                                    }
+                                    welcome={welcome}
                                     recentChats={recentChats.data ?? []}
                                     busy={isBusy || loadingChat}
                                     onAsk={ask}

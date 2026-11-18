@@ -283,6 +283,44 @@
                 "continue": "Impossible de reprendre cette discussion. Veuillez réessayer.",
                 "delete": "Impossible de supprimer cette discussion. Veuillez réessayer."
             }
+        },
+        "pageAsk": {
+            "button": "Demander",
+            "buttonLabel": "Demander à {{chatbotName}} à propos de cette page",
+            "menuTitle": "Demander à {{chatbotName}} à propos de cette page",
+            "somethingElse": "Poser une autre question",
+            "questions": {
+                "leadsNotContacted": "Quels nouveaux prospects n’ont pas encore été contactés ?",
+                "leadsBySource": "Combien de prospects sont arrivés cette semaine, par source ?",
+                "leadsOverdueFollowUps": "Quels suivis sont en retard, et pour quel conseiller ?",
+                "leadsNoActivity": "Quels prospects ouverts n’ont eu aucune activité depuis 7 jours ?",
+                "learnersRecent": "Qui s’est inscrit ces 7 derniers jours ?",
+                "learnersOverdueFees": "Quels apprenants ont les plus gros impayés ?",
+                "learnersInBatch": "Lister les apprenants d’un groupe",
+                "feesOverdue30": "Qui a des frais en retard de plus de 30 jours ?",
+                "feesCollectedMonth": "Combien avons-nous encaissé ce mois-ci ?",
+                "feesWhoOwesWeek": "Qui doit des frais cette semaine ?",
+                "feesOutstanding": "Quel est le total des frais impayés ?",
+                "assessmentsPending": "Quelles copies attendent encore d’être corrigées ?",
+                "assessmentsToppers": "Qui est arrivé en tête au dernier test ?",
+                "assessmentsNotAttempted": "Qui n’a pas encore passé le dernier test ?"
+            },
+            "tip": {
+                "lead": "La prochaine fois, demandez simplement :",
+                "ask": "Demander",
+                "stop": "Ne plus afficher les astuces",
+                "dismiss": "Fermer l’astuce"
+            },
+            "welcome": {
+                "hint": "Bienvenue ! Je peux vous aider à configurer votre établissement. Commencez par l’une de ces questions, ou demandez ce que vous voulez.",
+                "startHere": "Commencer ici",
+                "questions": {
+                    "firstSteps": "Que dois-je configurer en premier ?",
+                    "createCourse": "Comment créer un cours ?",
+                    "addLearners": "Comment ajouter des apprenants à un groupe ?",
+                    "inviteTeam": "Comment inviter mon équipe ?"
+                }
+            }
         }
     },
     "quickActions": {
