@@ -18,6 +18,9 @@ import java.util.UUID;
 public class CommerceCounterService {
 
     public static final String SCOPE_GOODS_RECEIPT = "GRN";
+    public static final String SCOPE_TRANSFER = "TRF";
+    public static final String SCOPE_COUNT = "CNT";
+    public static final String SCOPE_QUICK_ADD = "QA";
 
     private final StockVariantRepository repository;
     private final TransactionTemplate ownTransaction;

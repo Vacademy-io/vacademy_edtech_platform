@@ -1,0 +1,368 @@
+package vacademy.io.admin_core_service.features.commerce.stock.dto;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Requests and answers of the stock operations ({@code /commerce/v1/stock/transfers},
+ * {@code /stock/counts}, {@code /stock/overview}, {@code /stock/low}, {@code /stock/variants},
+ * {@code /stock/approvers}). Field names are snake case; nulls are left out. Times are the
+ * ISO text of the stored timestamp. No answer here carries a cost, a standard cost or a cost
+ * price; the money a count review shows ({@code value*}) is set only for cost viewers.
+ */
+public final class StockOpsDtos {
+
+    private StockOpsDtos() {
+    }
+
+    // ================================================================== shared
+
+    /**
+     * Who is asking, as the controllers worked it out after the access guard passed. Not JSON.
+     *
+     * @param visibleLocationIds null for an institute ADMIN (every location)
+     */
+    public record Caller(String userId, boolean admin, boolean manager, boolean stockStaff, boolean seesCost,
+                         Set<String> visibleLocationIds) {
+
+        /** May read what happens at the location. */
+        public boolean reads(String locationId) {
+            return admin || (visibleLocationIds != null && locationId != null && visibleLocationIds.contains(locationId));
+        }
+
+        /** May move stock at the location (manager or warehouse staff assigned there, or ADMIN). */
+        public boolean actsAt(String locationId) {
+            return admin || (stockStaff && reads(locationId));
+        }
+    }
+
+    /** A manager's PIN given with a request (the admin app's {@code ManagerApproval}). */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Approval(String approverUserId, String pin, String reason) {
+
+        /** Never prints the PIN. */
+        @Override
+        public String toString() {
+            return "Approval[approverUserId=" + approverUserId + ", pin=" + (pin == null ? "null" : "***")
+                    + ", reason=" + reason + "]";
+        }
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record PlaceRef(String id, String code, String name, String gstin) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record LocationRef(String id, String name) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CollectionRef(String id, String name) {
+    }
+
+    // ================================================================== transfers
+
+    /** {@code {package_session_id, quantity}} for a quantity item, or {@code {piece_id}} / {@code {piece_code}}. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TransferLineInput(String packageSessionId, Integer quantity, String pieceId, String pieceCode,
+                                    String note) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TransferCreateRequest(String clientRequestId, String fromLocationId, String toLocationId,
+                                        String note, List<TransferLineInput> lines) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TransferUpdateRequest(String clientRequestId, String toLocationId, String note,
+                                        List<TransferLineInput> lines) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CancelRequest(String clientRequestId, String reason) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TransferDispatchRequest(String clientRequestId, String ewayBillNo, String documentType,
+                                          String documentNumber, Boolean confirmPromisedOnline) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ReceiveLineInput(String lineId, Integer qtyReceived, String shortfallReason) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TransferReceiveRequest(String clientRequestId, List<ReceiveLineInput> lines, String note,
+                                         Approval approval) {
+
+        /** The body the request hash is taken over: the PIN is resent under the same key. */
+        public TransferReceiveRequest withoutApproval() {
+            return new TransferReceiveRequest(clientRequestId, lines, note, null);
+        }
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TransferLineView(String id, String packageSessionId, String sku, String itemName,
+                                   String variantName, String stockMode, String unit, Integer qtyScale,
+                                   String pieceId, String pieceCode, Integer qtySent, Integer qtyReceived,
+                                   String shortfallReason, BigDecimal unitValue, BigDecimal lineValue,
+                                   String hsnCode) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TransferTotals(long qtySent, Long qtyReceived, BigDecimal value) {
+    }
+
+    /** Units that left an online location although they were held or sold online. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Shortfall(String packageSessionId, int units) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TransferView(String id, String transferNumber, String status, PlaceRef from, PlaceRef to,
+                               boolean gstinDiffers, String documentType, String documentNumber,
+                               String documentDate, String ewayBillNo, String note, String receiveNote,
+                               String createdBy, String createdAt, String dispatchedAt, String dispatchedBy,
+                               String receivedAt, String receivedBy, String cancelledAt,
+                               List<TransferLineView> lines, TransferTotals totals, boolean overdue,
+                               List<String> warnings, List<String> nextActions, List<Shortfall> sellableShortfall,
+                               Boolean replayed) {
+
+        public TransferView withReplayed() {
+            return new TransferView(id, transferNumber, status, from, to, gstinDiffers, documentType, documentNumber,
+                    documentDate, ewayBillNo, note, receiveNote, createdBy, createdAt, dispatchedAt, dispatchedBy,
+                    receivedAt, receivedBy, cancelledAt, lines, totals, overdue, warnings, nextActions,
+                    sellableShortfall, Boolean.TRUE);
+        }
+
+        public TransferView withShortfall(List<Shortfall> shortfall) {
+            return new TransferView(id, transferNumber, status, from, to, gstinDiffers, documentType, documentNumber,
+                    documentDate, ewayBillNo, note, receiveNote, createdBy, createdAt, dispatchedAt, dispatchedBy,
+                    receivedAt, receivedBy, cancelledAt, lines, totals, overdue, warnings, nextActions, shortfall,
+                    replayed);
+        }
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TransferRow(String id, String transferNumber, String status, PlaceRef from, PlaceRef to,
+                              String documentNumber, long lineCount, long qtySent, String createdAt,
+                              String dispatchedAt, String receivedAt, boolean overdue) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TransfersAnswer(List<TransferRow> transfers, int page, int size, long total) {
+    }
+
+    /** {@code POST /stock/challan-series}. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ChallanSeriesRequest(String prefix, String locationId, Long nextValue, String financialYear) {
+    }
+
+    // ================================================================== counts
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CountCreateRequest(String clientRequestId, String locationId, String kind,
+                                     String scopeCollectionId, String recountOfCountId, String note) {
+    }
+
+    /** {@code {package_session_id, mode: SET|ADD, quantity}}, or {@code {piece_code}} / {@code {piece_id}}. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CountLineInput(String packageSessionId, String mode, Integer quantity, String pieceCode,
+                                 String pieceId) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CountLinesRequest(String clientRequestId, List<CountLineInput> lines) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CountPostRequest(String clientRequestId, String uncounted, Approval approval) {
+
+        public CountPostRequest withoutApproval() {
+            return new CountPostRequest(clientRequestId, uncounted, null);
+        }
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CountLineView(String id, String packageSessionId, String sku, String itemName, String variantName,
+                                String stockMode, String unit, Integer qtyScale, String pieceId, String pieceCode,
+                                Integer countedQty, String countedAt, String countedBy) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CountLinesAnswer(List<CountLineView> lines, long lineCount, Boolean replayed) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record LineCountAnswer(long lineCount) {
+    }
+
+    /** A blind recount against the count it rechecks; {@code passes} at 98 % or more. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Agreement(int compared, int agreeing, BigDecimal percent, boolean passes) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record RecountRef(String id, String status, Agreement agreement) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CountView(String id, String countNumber, String kind, String status, LocationRef location,
+                            CollectionRef scopeCollection, String recountOfCountId, RecountRef recount, String note,
+                            String startedBy, String startedAt, String postedAt, String postedBy,
+                            String uncountedChoice, Map<String, Object> summary, List<CountLineView> lines,
+                            long lineCount, List<String> nextActions, Boolean replayed) {
+
+        public CountView withReplayed() {
+            return new CountView(id, countNumber, kind, status, location, scopeCollection, recountOfCountId, recount,
+                    note, startedBy, startedAt, postedAt, postedBy, uncountedChoice, summary, lines, lineCount,
+                    nextActions, Boolean.TRUE);
+        }
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CountRow(String id, String countNumber, String kind, String status, LocationRef location,
+                           CollectionRef scopeCollection, String startedBy, String startedAt, String postedAt,
+                           long lineCount, String recountOfCountId) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CountsAnswer(List<CountRow> counts, int page, int size, long total) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ReviewLine(String lineId, String packageSessionId, String sku, String itemName, String pieceCode,
+                             Integer countedQty, String countedAt, Integer onHandNow, Integer movedSince,
+                             Integer expectedAtCount, Integer adjustment, BigDecimal value) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record UncountedItem(String packageSessionId, String sku, String itemName, int onHandNow) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ReviewPiece(String pieceId, String code, String sku, String itemName, String status,
+                              String locationName) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ReviewTotals(int linesWithDifference, int unitsUp, int unitsDown, BigDecimal valueUp,
+                               BigDecimal valueDown) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CountReview(String countId, String asOf, List<ReviewLine> lines, List<UncountedItem> uncounted,
+                              List<ReviewPiece> missingPieces, List<ReviewPiece> foundPieces,
+                              List<ReviewPiece> misplacedPieces, List<ReviewPiece> notInStockPieces,
+                              List<ReviewPiece> reservedNotCounted, List<ReviewPiece> arrivedDuringCount,
+                              ReviewTotals totals, boolean needsApproval) {
+    }
+
+    // ================================================================== reads
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record LevelCell(String locationId, int onHand, Integer reorderLevel, boolean low) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record OverviewRow(String packageSessionId, String productId, String sku, String productName,
+                              String variantName, String stockMode, String unit, Integer qtyScale, String labelCode,
+                              List<LevelCell> levels, int inTransit, int heldOnline, Integer sellableOnline) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record OverviewLocation(String id, String code, String name) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record OverviewAnswer(List<OverviewLocation> locations, List<OverviewRow> rows, int page, int size,
+                                 long total) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Elsewhere(String locationId, String locationName, int onHand) {
+    }
+
+    /** A low-stock row: REORDER fills the level fields, OUT_ONLINE the online ones. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record LowRow(String locationId, String packageSessionId, String sku, String productName,
+                         String variantName, String unit, Integer qtyScale, Integer onHand, Integer reorderLevel,
+                         Integer shortage, String lastSaleAt, List<Elsewhere> elsewhere, Integer onlineOnHand,
+                         Integer heldOnline, Integer sellableOnline) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record LowAnswer(String kind, List<LowRow> rows, int page, int size, long total) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record VariantPick(String packageSessionId, String productId, String sku, String productName,
+                              Map<String, String> names, String variantName, String status, String stockMode,
+                              String stockPolicy, String unit, Integer qtyScale, Integer qtyStep, String labelCode,
+                              String barcode, Integer onHand) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record VariantsAnswer(List<VariantPick> items) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Approver(String userId, String fullName) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ApproversAnswer(List<Approver> approvers) {
+    }
+}

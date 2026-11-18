@@ -304,7 +304,7 @@ public final class CommerceDocumentHtml {
     }
 
     /** XML text escape. Control characters that XML 1.0 forbids are dropped. */
-    static String esc(String value) {
+    public static String esc(String value) {
         if (value == null) {
             return "";
         }

@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.commerce.stock.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLe
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLevelRepository.LevelQuantity;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLocationRepository;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLocationRepository.LocationFacts;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockTransferRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
 import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.InvalidRequestException;
@@ -54,6 +56,14 @@ public class StockLocationService {
     private final PackageSessionRepository packageSessionRepository;
     private final CommerceStaffLocationRepository staffLocationRepository;
     private final CommerceAuditService auditService;
+
+    /** Transfers (WP-40), for the in-transit check; absent in tests built by hand. */
+    private StockTransferRepository transferRepository;
+
+    @Autowired(required = false)
+    public void setTransferRepository(StockTransferRepository transferRepository) {
+        this.transferRepository = transferRepository;
+    }
 
     public StockLocationService(StockLocationRepository locationRepository,
                                 StockLevelRepository levelRepository,
@@ -154,7 +164,17 @@ public class StockLocationService {
             throw new InvalidRequestException("The code of a location cannot be changed");
         }
         String before = json(view(location));
+        boolean wasActive = LocationStatus.ACTIVE.name().equals(location.getStatus());
         apply(location, request, false);
+        if (wasActive && LocationStatus.INACTIVE.name().equals(location.getStatus()) && transferRepository != null) {
+            // The row lock first: a dispatch holds it shared until it commits, so it is seen here.
+            locationRepository.lockForChange(instituteId, locationId);
+            List<String> onTheWay = transferRepository.findDispatchedTouching(instituteId, locationId);
+            if (!onTheWay.isEmpty()) {
+                throw new ConflictException("LOCATION_HAS_TRANSFER_IN_TRANSIT: transfer " + onTheWay.get(0)
+                        + " to or from this location is on the way");
+            }
+        }
         if (LocationStatus.INACTIVE.name().equals(location.getStatus()) && location.isSellsOnline()) {
             throw new ConflictException("LOCATION_SELLS_ONLINE: stop selling online from this location first");
         }
