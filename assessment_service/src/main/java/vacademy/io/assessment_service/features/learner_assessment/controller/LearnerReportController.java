@@ -95,4 +95,14 @@ public class LearnerReportController {
             @RequestParam(name = "instituteId") String instituteId) {
         return learnerReportService.getAiReportPdf(user, assessmentId, attemptId, instituteId);
     }
+
+    /** The same AI report as /ai-pdf, as an HTML page ({"html": ...}) for the learner app's screen. */
+    @GetMapping("/ai-html")
+    public ResponseEntity<Map<String, String>> getAiReportWebHtml(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam(name = "assessmentId") String assessmentId,
+            @RequestParam(name = "attemptId", required = false) String attemptId,
+            @RequestParam(name = "instituteId") String instituteId) {
+        return learnerReportService.getAiReportWebHtml(user, assessmentId, attemptId, instituteId);
+    }
 }
