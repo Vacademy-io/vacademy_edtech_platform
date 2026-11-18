@@ -30,6 +30,7 @@ from fastapi import APIRouter, FastAPI, Query, Request, Response, WebSocket
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from . import admin_core
+from . import vendor_failures
 from .ambience import build_ambience_mixer
 from .bot import CallOutcome, run_bot
 from . import memory, ttscache, ttswarm
@@ -40,6 +41,9 @@ from .report import build_and_post_report, report_spool_sweeper
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(name)s %(message)s")
 from .sarvam_v4_voices import SARVAM_V4_MODEL  # noqa: E402
+
+# Before any HTTP session exists: every later aiohttp/httpx client is covered.
+vendor_failures.install()
 
 logger = logging.getLogger("voice_bot")
 
@@ -138,6 +142,9 @@ async def health():
         "ws": s.wss_url("corr=<corr>"),
         # Per Sarvam STT key: rest left after a refusal. Numbers only, no key text.
         "sarvamSttKeys": _sarvam_key_status(),
+        # Recent failed calls to outside vendors; admin-core copies them into the
+        # platform's failed-call log. Host, path head, status and a short reason only.
+        "vendorFailures": vendor_failures.recent(),
     }
 
 
@@ -536,8 +543,10 @@ def _google_tts_mp3(text: str, voice: str, pace: float) -> bytes:
             ),
         )
         return resp.audio_content or b""
-    except Exception:
+    except Exception as exc:
         logger.exception("preview: google tts failed voice=%s", voice)
+        vendor_failures.record("texttospeech.googleapis.com", "TTS", reason=vendor_failures.clean_reason(
+            f"{type(exc).__name__}: {exc}"))
         return b""
 
 
@@ -565,8 +574,10 @@ async def _edge_tts_mp3(text: str, voice: str, pace: float) -> bytes:
         async for chunk in edge_tts.Communicate(text, v, rate=f"{pct:+d}%").stream():
             if chunk.get("type") == "audio" and chunk.get("data"):
                 out += chunk["data"]
-    except Exception:
+    except Exception as exc:
         logger.exception("preview: edge synthesis failed for voice %r", v[:40])
+        vendor_failures.record("speech.platform.bing.com", "TTS", reason=vendor_failures.clean_reason(
+            f"{type(exc).__name__}: {exc}"))
         return b""
     return out
 
@@ -612,9 +623,12 @@ async def _smallest_tts_wav(text: str, voice: str, model: str, pace: float,
                 if status in ("complete", "error"):
                     if status == "error":
                         logger.warning("preview: smallest error %s", str(ev)[:200])
+                        vendor_failures.record("waves-api.smallest.ai", "TTS stream", reason=vendor_failures.clean_reason(
+                            ev.get("message") or ev.get("error") or "Smallest returned an error"))
                     break
-    except Exception:
+    except Exception as exc:
         logger.exception("preview: smallest tts failed voice=%s model=%s", voice, model)
+        vendor_failures.record("waves-api.smallest.ai", "TTS stream", reason=type(exc).__name__)
         return b""
     if not pcm:
         return b""

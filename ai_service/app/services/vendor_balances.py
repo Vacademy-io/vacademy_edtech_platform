@@ -28,6 +28,9 @@ OPENROUTER_CREDITS_URL = "https://openrouter.ai/api/v1/credits"
 OPENROUTER_KEY_URL = "https://openrouter.ai/api/v1/key"
 FAL_BILLING_URL = "https://api.fal.ai/v1/account/billing"
 RUNPOD_GRAPHQL_URL = "https://api.runpod.io/graphql"
+# Sarvam has no balance API. The voice bot opens a Sarvam socket per call and keeps, per key,
+# Sarvam's last refusal ("Credits exhausted", rate limit, bad key) and when it last opened.
+VOICE_BOT_HEALTH_URL = "https://backend-stage.vacademy.io/voice-bot-service/health"
 
 CACHE_SECONDS = 600
 MIN_REFRESH_SECONDS = 30
@@ -37,6 +40,8 @@ TIMEOUT_SECONDS = 10
 # what one key may still spend under the cap set on it, which can be less than the account has.
 ACCOUNT_BALANCE = "account_balance"
 KEY_LIMIT = "key_limit"
+# No money figure: whether the account still works, from its last real use.
+ACCOUNT_STATUS = "account_status"
 
 
 def _now() -> str:
@@ -203,7 +208,66 @@ def runpod_rows(client: httpx.Client, env: Mapping[str, str]) -> List[Dict[str, 
         parse_runpod_myself) for k in keys]
 
 
-FETCHERS = (openrouter_rows, fal_rows, runpod_rows)
+SARVAM_ACCOUNTS = {1: "account 1 (main key)", 2: "account 2 (voice-bot speech-to-text)"}
+
+
+def _when(iso: Any) -> str:
+    return f" at {iso.replace('T', ' ').replace('Z', ' UTC')}" if isinstance(iso, str) and iso else ""
+
+
+def parse_sarvam_health(payload: Mapping[str, Any]) -> List[Dict[str, Any]]:
+    """One row per Sarvam key the voice bot holds, from its /health `sarvamSttKeys`.
+    `state` is what the key's last use says; an older voice bot sends only `lastRefusal`."""
+    keys = payload.get("sarvamSttKeys")
+    if not isinstance(keys, list):
+        raise ValueError("health without sarvamSttKeys")
+    rows = []
+    for k in keys:
+        if not isinstance(k, Mapping):
+            continue
+        n = k.get("key")
+        account = SARVAM_ACCOUNTS.get(n, f"account {n}")
+        state = k.get("state")
+        refusal = k.get("lastRefusal")
+        if state is None:  # voice bot from before `state`: the last refusal, recency unknown
+            state = refusal or "ok"
+            dated = " (this voice-bot version doesn't say when)"
+        else:
+            dated = _when(k.get("lastRefusalAt"))
+        used = _when(k.get("lastUsedAt"))
+        if state == "credits":
+            row = dict(status="error", state_label="Out of credits",
+                       message=f"Sarvam answered \"Credits exhausted\"{dated} and no call has worked on it since. "
+                               "Top up this Sarvam account.")
+        elif state == "refused":
+            row = dict(status="error", state_label="Key refused",
+                       message=f"Sarvam refused this key{dated}: it may be revoked or invalid.")
+        elif state == "rate_limit":
+            row = dict(status="ok", state_label="Working, rate limited",
+                       message=f"Sarvam rate-limited it{dated}; it has credit. Too many calls started at once.")
+        elif state == "unused":
+            row = dict(status="unknown", state_label="Not used yet",
+                       message="No call has used it since the voice bot last restarted, so its state isn't known.")
+        else:
+            row = dict(status="ok", state_label="Working",
+                       message=f"A call opened on it{used} and Sarvam didn't refuse it." if used
+                       else "Sarvam hasn't refused it.")
+        rows.append(_row("Sarvam", account, kind=ACCOUNT_STATUS, **row))
+    return rows
+
+
+def sarvam_rows(client: httpx.Client, env: Mapping[str, str]) -> List[Dict[str, Any]]:
+    url = (env.get("VOICE_BOT_HEALTH_URL") or VOICE_BOT_HEALTH_URL).strip()
+    try:
+        rows = parse_sarvam_health(_get_json(client, "GET", url))
+    except (httpx.HTTPError, ValueError) as exc:
+        logger.warning("Sarvam status check failed: %s", type(exc).__name__)
+        return [_error("Sarvam", None, "The voice bot didn't answer, so Sarvam's state isn't known. "
+                                       "Sarvam has no balance API of its own.")]
+    return rows or [_not_set_up("Sarvam", "The voice bot holds no Sarvam key.")]
+
+
+FETCHERS = (openrouter_rows, fal_rows, runpod_rows, sarvam_rows)
 
 
 def fetch_all(env: Optional[Mapping[str, str]] = None, client: Optional[httpx.Client] = None) -> List[Dict[str, Any]]:
@@ -244,6 +308,7 @@ balance_cache = BalanceCache()
 
 __all__ = [
     "ACCOUNT_BALANCE",
+    "ACCOUNT_STATUS",
     "KEY_LIMIT",
     "BalanceCache",
     "balance_cache",
@@ -252,4 +317,5 @@ __all__ = [
     "parse_openrouter_credits",
     "parse_openrouter_key",
     "parse_runpod_myself",
+    "parse_sarvam_health",
 ]

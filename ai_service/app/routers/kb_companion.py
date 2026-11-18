@@ -27,6 +27,7 @@ from ..core.security import get_pinned_principal
 from ..db import db_session
 from ..models.ai_token_usage import RequestType
 from ..services.ai_billing import UC, charge_tool, preflight_tool_credits
+from ..services.provider_rates import tts_cost_usd
 from ..services.kb.repository import KbRepository
 from ..services.kb_companion import ask as ask_svc
 from ..services.kb_companion import lesson as lesson_svc
@@ -715,6 +716,7 @@ async def speech(companion_id: str, body: SpeechIn, caller: Caller = Depends(_ca
                 charge_tool(db, tool_key=speech_svc.SPEECH_TOOL, tool_params={}, request_type=RequestType.KNOWLEDGE_BASE,
                             model=provider, institute_id=caller.institute_id, user_id=caller.user_id,
                             character_count=len(text_),
+                            provider_cost_usd=tts_cost_usd(provider, len(text_)),
                             use_case=UC.KB_COMPANION, metering=getattr(caller, "metering", None),
                             usage_context={"companion_id": companion_id, "feature": "kbc_speech"})
             except Exception:  # noqa: BLE001

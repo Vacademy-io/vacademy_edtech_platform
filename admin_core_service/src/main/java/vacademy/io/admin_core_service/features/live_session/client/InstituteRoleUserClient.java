@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.live_session.client;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -237,6 +238,6 @@ public class InstituteRoleUserClient {
                 new org.springframework.http.client.SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5000);
         factory.setReadTimeout(10000);
-        return new RestTemplate(factory);
+        return ExternalCallLog.attach(new RestTemplate(factory));
     }
 }

@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.aavtaar;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.telephony.enums.ProviderType;
@@ -19,7 +20,7 @@ import java.net.URI;
 @Component
 public class AavtaarRecordingFetcher implements RecordingFetcher {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
 
     @Override
     public String providerType() {

@@ -89,6 +89,7 @@ class VoiceSessionService:
         characters: int,
         detail: Optional[str] = None,
         provider: str = "sarvam",
+        seconds: Optional[float] = None,
     ) -> None:
         """
         Attribute Sarvam STT/TTS spend to the institute that caused it.
@@ -99,6 +100,10 @@ class VoiceSessionService:
         tts_provider carries the real vendor (see V225).
         """
         try:
+            from .provider_rates import stt_cost_usd, tts_cost_usd
+            # What the vendor charged us: characters for TTS, audio length for STT.
+            cost = (tts_cost_usd(provider, characters) if kind == "tts"
+                    else stt_cost_usd("sarvam", seconds or 0.0) if seconds else None)
             TokenUsageService(self.db).record_usage(
                 api_provider=ApiProvider.GOOGLE_TTS,
                 prompt_tokens=0,
@@ -117,6 +122,8 @@ class VoiceSessionService:
                 request_id=session_id,
                 tts_provider=provider if kind == "tts" else "sarvam",
                 character_count=max(characters, 0),
+                total_price=cost,
+                seconds=int(round(seconds)) if seconds else None,
                 metadata={"surface": "voice_call", "language": language, "detail": detail},
             )
         except Exception:
