@@ -87,6 +87,40 @@ def discussion_segments(raw: Optional[str]) -> List[Segment]:
     return html_segments(str(data.get("prompt_html") or ""))
 
 
+def activity_segments(raw: Optional[str], doc_type: str) -> List[Segment]:
+    """FLASHCARDS / POLL / GAME slides store JSON. Index only the lesson text.
+
+    FLASHCARDS: each card's front and back. POLL: the question and its choices
+    (votes live in slide_activity_response and are never indexed). GAME: the
+    teacher's instructions only, never the page's HTML or script.
+    """
+    data = _json_obj(raw) or {}
+    if doc_type == "FLASHCARDS":
+        lines = []
+        for card in data.get("cards") or []:
+            if not isinstance(card, dict):
+                continue
+            front = str(card.get("front") or "").strip()
+            back = str(card.get("back") or "").strip()
+            if front and back:
+                lines.append(f"{front} — {back}")
+        text = "\n".join(lines)
+        return [Segment(text=f"Flashcards:\n{text}"[:40_000], label="Flashcards")] if text else []
+    if doc_type == "POLL":
+        question = str(data.get("question") or "").strip()
+        options = [
+            str(o.get("text") or "").strip()
+            for o in data.get("options") or []
+            if isinstance(o, dict) and str(o.get("text") or "").strip()
+        ]
+        if not question:
+            return []
+        body = question + ("\n" + "\n".join(f"- {o}" for o in options) if options else "")
+        return [Segment(text=f"Poll: {body}"[:10_000], label="Poll")]
+    instructions = str(data.get("instructions") or "").strip()
+    return [Segment(text=f"Game: {instructions}"[:10_000], label="Game")] if instructions else []
+
+
 def drawing_segments(scene: Any) -> List[Segment]:
     """Excalidraw text elements in reading order (top to bottom, then left to right)."""
     elements = scene.get("elements") if isinstance(scene, dict) else None
