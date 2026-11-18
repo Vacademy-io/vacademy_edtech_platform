@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.features.chatbot_flow.dto.WhatsAppTemplateDTO;
 import vacademy.io.notification_service.features.chatbot_flow.entity.WhatsAppTemplate;
@@ -19,6 +20,8 @@ import vacademy.io.notification_service.features.chatbot_flow.repository.WhatsAp
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
 import vacademy.io.notification_service.institute.InstituteInternalService;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
@@ -702,7 +705,7 @@ public class WhatsAppTemplateManagerService {
         String contentType;
         try {
             ResponseEntity<byte[]> downloadResp = restTemplate.exchange(
-                    mediaUrl, HttpMethod.GET, HttpEntity.EMPTY, byte[].class);
+                    toRequestUri(mediaUrl), HttpMethod.GET, HttpEntity.EMPTY, byte[].class);
             bytes = downloadResp.getBody();
             if (bytes == null || bytes.length == 0) {
                 throw WhatsAppTemplateException.invalid("SAMPLE_MEDIA_EMPTY", "headerSampleUrl",
@@ -710,7 +713,8 @@ public class WhatsAppTemplateManagerService {
                         "Re-upload the sample file and try again.");
             }
             contentType = downloadResp.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE);
-        } catch (RestClientException e) {
+        } catch (RestClientException | IllegalArgumentException e) {
+            log.warn("Sample {} download failed for {}: {}", headerType, mediaUrl, e.getMessage());
             throw WhatsAppTemplateException.invalid("SAMPLE_MEDIA_UNREACHABLE", "headerSampleUrl",
                     "Could not download the sample " + headerType.toLowerCase() + " from " + mediaUrl + ".",
                     "The URL must be publicly reachable — Meta downloads it too. Re-upload the sample file.");
@@ -807,12 +811,37 @@ public class WhatsAppTemplateManagerService {
                         + "The template has not been submitted.");
     }
 
-    private String extractFileName(String url, String headerType) {
+    /**
+     * The sample URL as a request URI, used exactly as stored. RestTemplate's String overloads treat
+     * the argument as a URI template and percent-encode it again, so an uploaded key such as
+     * "image_%2819%29.png" (from "image (19).png") was fetched as "image_%252819%2529.png" — an
+     * object that does not exist, which the CDN answers with 403 — and the submit failed as "not
+     * publicly reachable" although the URL was public. A pasted URL that is not valid as-is (a raw
+     * space, say) is encoded once instead.
+     */
+    static URI toRequestUri(String url) {
+        String trimmed = url == null ? "" : url.trim();
+        try {
+            URI uri = new URI(trimmed);
+            if (uri.getScheme() != null && uri.getHost() != null) return uri;
+        } catch (URISyntaxException ignored) {
+            // not valid as-is; encode it below
+        }
+        return UriComponentsBuilder.fromUriString(trimmed).build().encode().toUri();
+    }
+
+    /**
+     * Name sent to Meta's upload session. Meta only uses it as a label, so it is reduced to
+     * characters that need no encoding in the query string — the stored key is percent-encoded and
+     * would otherwise be encoded twice more on the way out.
+     */
+    static String extractFileName(String url, String headerType) {
         try {
             String path = url.split("\\?", 2)[0];
             int slash = path.lastIndexOf('/');
             String name = slash >= 0 ? path.substring(slash + 1) : path;
-            if (!name.isBlank()) return name;
+            String clean = name.replaceAll("%[0-9A-Fa-f]{2}", "_").replaceAll("[^A-Za-z0-9._-]", "_");
+            if (!clean.isBlank()) return clean;
         } catch (Exception ignored) {
             // fall through to default
         }
