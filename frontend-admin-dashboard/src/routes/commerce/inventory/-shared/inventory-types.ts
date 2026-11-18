@@ -502,6 +502,8 @@ export interface CountReview {
     needs_recount: number;
     /** A measured item differs by more than the shop's limit: a manager confirms on Post. */
     measured_confirm: boolean;
+    /** A hash of the count's lines as reviewed; a post that sends it is refused (`COUNT_CHANGED`) if lines changed since. */
+    fingerprint: string | null;
 }
 
 /** A line change the count sheet sends (`PUT …/lines`). */

@@ -46,6 +46,7 @@ export const INVENTORY_ERROR_CODES = [
     'STOCK_EXISTS',
     'TRANSFER_CHANGED',
     'LOCATION_NOT_FOUND',
+    'COUNT_CHANGED',
     // Reused codes the inventory screens meet, worded for them.
     'APPROVAL_REQUIRED',
     'PIN_INVALID',

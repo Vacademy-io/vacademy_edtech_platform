@@ -2992,7 +2992,8 @@
             "missing": "Pieces not found",
             "found": "Pieces found again",
             "misplaced": "Pieces from another place",
-            "confirmMeasured": "I checked the large differences of measured items; post them."
+            "confirmMeasured": "I checked the large differences of measured items; post them.",
+            "changedSinceReview": "Lines of this count changed since you reviewed it. The review was read again: check the differences, then post."
         },
         "countSheet": {
             "title": "Count here",
@@ -3206,7 +3207,8 @@
             "RECOUNT_OTHER_PERSON": "Only the person who started this blind recount can count or finish it.",
             "STOCK_EXISTS": "Stock has moved for this item: its unit and how it is counted cannot change.",
             "TRANSFER_CHANGED": "The transfer changed while it was being sent. Check it and send again.",
-            "LOCATION_NOT_FOUND": "This place was not found."
+            "LOCATION_NOT_FOUND": "This place was not found.",
+            "COUNT_CHANGED": "Lines of this count changed since it was reviewed. Check the review again before posting."
         }
     }
 }

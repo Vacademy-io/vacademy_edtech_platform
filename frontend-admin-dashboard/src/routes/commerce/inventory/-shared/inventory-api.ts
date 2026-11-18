@@ -752,6 +752,7 @@ export function normalizeReview(data: unknown): CountReview {
         needs_approval: r.needs_approval === true,
         needs_recount: int(r.needs_recount),
         measured_confirm: r.measured_confirm === true,
+        fingerprint: str(r.fingerprint),
     };
 }
 
@@ -764,6 +765,8 @@ export const postCount = async (
         approval?: ManagerApproval;
         /** A manager's explicit yes to a large measured difference (left out of the request hash). */
         confirm_measured?: boolean;
+        /** The `fingerprint` of the review the person looked at (part of the request hash). */
+        review_fingerprint?: string;
     }
 ) => normalizeCount(await post(COMMERCE_STOCK_COUNT_POST(id), body));
 

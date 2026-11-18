@@ -93,6 +93,7 @@ const review: CountReview = {
     needs_approval: true,
     needs_recount: 0,
     measured_confirm: false,
+    fingerprint: 'fp-1',
 };
 
 const renderSheet = (view: CountView) => {
@@ -288,5 +289,73 @@ describe('CountSheet fix round', () => {
         fireEvent.click(screen.getByTestId('count-post'));
         await waitFor(() => expect(mocked.postCount).toHaveBeenCalledTimes(1));
         expect(mocked.postCount.mock.calls[0]?.[1]).toMatchObject({ uncounted: 'SKIP', confirm_measured: true });
+    });
+});
+
+describe('CountSheet review fingerprint', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        try {
+            sessionStorage.clear();
+        } catch {
+            // No storage here.
+        }
+        state.access = accessFor(WAREHOUSE);
+        mocked.fetchCountReview.mockResolvedValue(review);
+    });
+
+    const openPost = async () => {
+        fireEvent.click(screen.getByTestId('count-open-post'));
+        fireEvent.click(await screen.findByText('inventory.counts.uncountedSKIP'));
+        await waitFor(() => expect(screen.getByTestId('count-post')).not.toBeDisabled());
+    };
+
+    it('every post carries the fingerprint of the review shown, the PIN resend too, under the same id', async () => {
+        mocked.postCount
+            .mockRejectedValueOnce(serverError(403, 'APPROVAL_REQUIRED: STOCK_COUNT_POST above the limit'))
+            .mockResolvedValueOnce(countView({ status: 'POSTED' }));
+        renderSheet(countView());
+        await openPost();
+        fireEvent.click(screen.getByTestId('count-post'));
+        fireEvent.click(await screen.findByTestId('pin-approve'));
+        await waitFor(() => expect(mocked.postCount).toHaveBeenCalledTimes(2));
+        const [first, second] = mocked.postCount.mock.calls.map((call) => call[1]);
+        expect(first).toMatchObject({ uncounted: 'SKIP', review_fingerprint: 'fp-1' });
+        expect(second).toMatchObject({ review_fingerprint: 'fp-1', approval: { approver_user_id: 'm-1', pin: '123456' } });
+        expect(second?.client_request_id).toBe(first?.client_request_id);
+    });
+
+    it('COUNT_CHANGED reads the review again, says so, and posts nothing by itself; the next post sends the new fingerprint', async () => {
+        mocked.postCount
+            .mockRejectedValueOnce(serverError(409, 'COUNT_CHANGED: lines of this count changed since it was reviewed; review it again'))
+            .mockResolvedValueOnce(countView({ status: 'POSTED' }));
+        renderSheet(countView());
+        await openPost();
+        mocked.fetchCountReview.mockResolvedValue({ ...review, fingerprint: 'fp-2' });
+        const reads = mocked.fetchCountReview.mock.calls.length;
+        fireEvent.click(screen.getByTestId('count-post'));
+        expect(await screen.findByTestId('post-count-changed')).toBeTruthy();
+        await waitFor(() => expect(mocked.fetchCountReview.mock.calls.length).toBeGreaterThan(reads));
+        expect(mocked.postCount).toHaveBeenCalledTimes(1);
+        await waitFor(() => expect(screen.getByTestId('count-post')).not.toBeDisabled());
+        fireEvent.click(screen.getByTestId('count-post'));
+        await waitFor(() => expect(mocked.postCount).toHaveBeenCalledTimes(2));
+        const [first, second] = mocked.postCount.mock.calls.map((call) => call[1]);
+        expect(second).toMatchObject({ review_fingerprint: 'fp-2' });
+        expect(second?.client_request_id).not.toBe(first?.client_request_id);
+    });
+
+    it('COUNT_CHANGED on the PIN resend also reads the review again', async () => {
+        mocked.postCount
+            .mockRejectedValueOnce(serverError(403, 'APPROVAL_REQUIRED: STOCK_COUNT_POST above the limit'))
+            .mockRejectedValueOnce(serverError(409, 'COUNT_CHANGED: lines of this count changed since it was reviewed; review it again'));
+        renderSheet(countView());
+        await openPost();
+        const reads = mocked.fetchCountReview.mock.calls.length;
+        fireEvent.click(screen.getByTestId('count-post'));
+        fireEvent.click(await screen.findByTestId('pin-approve'));
+        await waitFor(() => expect(mocked.postCount).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(mocked.fetchCountReview.mock.calls.length).toBeGreaterThan(reads));
+        expect(mocked.postCount).toHaveBeenCalledTimes(2);
     });
 });
