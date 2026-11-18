@@ -7,8 +7,8 @@ import type { StatusType } from '@/components/design-system/status-chips';
  *
  * Values are the binding enum names of the backend. Labels live in the
  * `commerce` strings under `status.<kind>.<VALUE>`, in Hindi and English.
- * Maps for areas that are not built yet (POS sessions) are added here by the
- * work package that builds the screen.
+ * Maps for areas that are not built yet are added here by the work package
+ * that builds the screen.
  */
 export interface CommerceStatusMeta {
     /** Key under the `commerce` namespace. */
@@ -150,6 +150,25 @@ export const TEMPLATE_STATUS_MAP = {
     UNKNOWN: meta('templateStatus', 'UNKNOWN', 'INFO'),
 } as const;
 
+/** A billing counter's session (WP-43). */
+export const POS_SESSION_STATUS_MAP = {
+    OPEN: meta('posSession', 'OPEN', 'SUCCESS'),
+    CLOSED: meta('posSession', 'CLOSED', 'INFO'),
+} as const;
+
+/** A billing counter (register). */
+export const POS_REGISTER_STATUS_MAP = {
+    ACTIVE: meta('posRegister', 'ACTIVE', 'SUCCESS'),
+    INACTIVE: meta('posRegister', 'INACTIVE', 'INFO'),
+} as const;
+
+/** A payment taken on an order (`commerce_order_tender.status`). */
+export const TENDER_STATUS_MAP = {
+    RECEIVED: meta('tender', 'RECEIVED', 'SUCCESS'),
+    PENDING: meta('tender', 'PENDING', 'WARNING'),
+    VOID: meta('tender', 'VOID', 'DANGER'),
+} as const;
+
 export const COMMERCE_STATUS_MAPS = {
     product: PRODUCT_STATUS_MAP,
     collection: COLLECTION_STATUS_MAP,
@@ -168,6 +187,9 @@ export const COMMERCE_STATUS_MAPS = {
     refund: REFUND_STATUS_MAP,
     delivery: DELIVERY_STATUS_MAP,
     templateStatus: TEMPLATE_STATUS_MAP,
+    posSession: POS_SESSION_STATUS_MAP,
+    posRegister: POS_REGISTER_STATUS_MAP,
+    tender: TENDER_STATUS_MAP,
 } as const;
 
 export type CommerceStatusKind = keyof typeof COMMERCE_STATUS_MAPS;

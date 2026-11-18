@@ -244,11 +244,14 @@ import { Route as ErpAttendanceRegularizationsIndexRouteImport } from "./routes/
 import { Route as EngagementEnginesDashboardOutcomesIndexRouteImport } from "./routes/engagement-engines/dashboard/outcomes/index"
 import { Route as CommerceSettingsTaxClassesIndexRouteImport } from "./routes/commerce/settings/tax-classes/index"
 import { Route as CommerceSettingsStaffIndexRouteImport } from "./routes/commerce/settings/staff/index"
+import { Route as CommerceSettingsRegistersIndexRouteImport } from "./routes/commerce/settings/registers/index"
 import { Route as CommerceSettingsNotificationsIndexRouteImport } from "./routes/commerce/settings/notifications/index"
 import { Route as CommerceSettingsLocationsIndexRouteImport } from "./routes/commerce/settings/locations/index"
 import { Route as CommerceSettingsBusinessIndexRouteImport } from "./routes/commerce/settings/business/index"
 import { Route as CommerceProductsImportIndexRouteImport } from "./routes/commerce/products/import/index"
 import { Route as CommerceProductsProductIdIndexRouteImport } from "./routes/commerce/products/$productId/index"
+import { Route as CommercePosSessionsIndexRouteImport } from "./routes/commerce/pos/sessions/index"
+import { Route as CommercePosSessionIdIndexRouteImport } from "./routes/commerce/pos/$sessionId/index"
 import { Route as CommerceOrdersRemittancesIndexRouteImport } from "./routes/commerce/orders/remittances/index"
 import { Route as CommerceOrdersPrintIndexRouteImport } from "./routes/commerce/orders/print/index"
 import { Route as CommerceOrdersPackIndexRouteImport } from "./routes/commerce/orders/pack/index"
@@ -282,6 +285,11 @@ import { Route as StudyLibraryCoursesCourseDetailsTranslationIndexRouteImport } 
 import { Route as StudyLibraryCoursesCourseDetailsSubjectsIndexRouteImport } from "./routes/study-library/courses/course-details/subjects/index"
 import { Route as StudyLibraryAiCopilotCourseOutlineGeneratingIndexRouteImport } from "./routes/study-library/ai-copilot/course-outline/generating/index"
 import { Route as HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRouteImport } from "./routes/homework-creation/create-assessment/$assessmentId/$examtype/index"
+import { Route as CommercePosSessionsSessionIdIndexRouteImport } from "./routes/commerce/pos/sessions/$sessionId/index"
+import { Route as CommercePosSessionIdReturnsIndexRouteImport } from "./routes/commerce/pos/$sessionId/returns/index"
+import { Route as CommercePosSessionIdCloseIndexRouteImport } from "./routes/commerce/pos/$sessionId/close/index"
+import { Route as CommercePosSessionIdBillsIndexRouteImport } from "./routes/commerce/pos/$sessionId/bills/index"
+import { Route as CommercePosSessionIdBillBookIndexRouteImport } from "./routes/commerce/pos/$sessionId/bill-book/index"
 import { Route as AudienceManagerListCampaignUsersAddIndexRouteImport } from "./routes/audience-manager/list/campaign-users/add/index"
 import { Route as AssessmentEvaluationAiAttemptIdProcessIdIndexRouteImport } from "./routes/assessment/evaluation-ai/$attemptId/$processId/index"
 import { Route as AssessmentCreateAssessmentAssessmentIdExamtypeIndexRouteImport } from "./routes/assessment/create-assessment/$assessmentId/$examtype/index"
@@ -2064,6 +2072,16 @@ const CommerceSettingsStaffIndexRoute =
   } as any).lazy(() =>
     import("./routes/commerce/settings/staff/index.lazy").then((d) => d.Route),
   )
+const CommerceSettingsRegistersIndexRoute =
+  CommerceSettingsRegistersIndexRouteImport.update({
+    id: "/commerce/settings/registers/",
+    path: "/commerce/settings/registers/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/settings/registers/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
 const CommerceSettingsNotificationsIndexRoute =
   CommerceSettingsNotificationsIndexRouteImport.update({
     id: "/commerce/settings/notifications/",
@@ -2111,6 +2129,22 @@ const CommerceProductsProductIdIndexRoute =
     import("./routes/commerce/products/$productId/index.lazy").then(
       (d) => d.Route,
     ),
+  )
+const CommercePosSessionsIndexRoute =
+  CommercePosSessionsIndexRouteImport.update({
+    id: "/commerce/pos/sessions/",
+    path: "/commerce/pos/sessions/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/sessions/index.lazy").then((d) => d.Route),
+  )
+const CommercePosSessionIdIndexRoute =
+  CommercePosSessionIdIndexRouteImport.update({
+    id: "/commerce/pos/$sessionId/",
+    path: "/commerce/pos/$sessionId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/$sessionId/index.lazy").then((d) => d.Route),
   )
 const CommerceOrdersRemittancesIndexRoute =
   CommerceOrdersRemittancesIndexRouteImport.update({
@@ -2385,6 +2419,56 @@ const HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute =
     import(
       "./routes/homework-creation/create-assessment/$assessmentId/$examtype/index.lazy"
     ).then((d) => d.Route),
+  )
+const CommercePosSessionsSessionIdIndexRoute =
+  CommercePosSessionsSessionIdIndexRouteImport.update({
+    id: "/commerce/pos/sessions/$sessionId/",
+    path: "/commerce/pos/sessions/$sessionId/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/sessions/$sessionId/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommercePosSessionIdReturnsIndexRoute =
+  CommercePosSessionIdReturnsIndexRouteImport.update({
+    id: "/commerce/pos/$sessionId/returns/",
+    path: "/commerce/pos/$sessionId/returns/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/$sessionId/returns/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommercePosSessionIdCloseIndexRoute =
+  CommercePosSessionIdCloseIndexRouteImport.update({
+    id: "/commerce/pos/$sessionId/close/",
+    path: "/commerce/pos/$sessionId/close/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/$sessionId/close/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommercePosSessionIdBillsIndexRoute =
+  CommercePosSessionIdBillsIndexRouteImport.update({
+    id: "/commerce/pos/$sessionId/bills/",
+    path: "/commerce/pos/$sessionId/bills/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/$sessionId/bills/index.lazy").then(
+      (d) => d.Route,
+    ),
+  )
+const CommercePosSessionIdBillBookIndexRoute =
+  CommercePosSessionIdBillBookIndexRouteImport.update({
+    id: "/commerce/pos/$sessionId/bill-book/",
+    path: "/commerce/pos/$sessionId/bill-book/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/pos/$sessionId/bill-book/index.lazy").then(
+      (d) => d.Route,
+    ),
   )
 const AudienceManagerListCampaignUsersAddIndexRoute =
   AudienceManagerListCampaignUsersAddIndexRouteImport.update({
@@ -2761,11 +2845,14 @@ export interface FileRoutesByFullPath {
   "/commerce/orders/pack/": typeof CommerceOrdersPackIndexRoute
   "/commerce/orders/print/": typeof CommerceOrdersPrintIndexRoute
   "/commerce/orders/remittances/": typeof CommerceOrdersRemittancesIndexRoute
+  "/commerce/pos/$sessionId/": typeof CommercePosSessionIdIndexRoute
+  "/commerce/pos/sessions/": typeof CommercePosSessionsIndexRoute
   "/commerce/products/$productId/": typeof CommerceProductsProductIdIndexRoute
   "/commerce/products/import/": typeof CommerceProductsImportIndexRoute
   "/commerce/settings/business/": typeof CommerceSettingsBusinessIndexRoute
   "/commerce/settings/locations/": typeof CommerceSettingsLocationsIndexRoute
   "/commerce/settings/notifications/": typeof CommerceSettingsNotificationsIndexRoute
+  "/commerce/settings/registers/": typeof CommerceSettingsRegistersIndexRoute
   "/commerce/settings/staff/": typeof CommerceSettingsStaffIndexRoute
   "/commerce/settings/tax-classes/": typeof CommerceSettingsTaxClassesIndexRoute
   "/engagement-engines/dashboard/outcomes/": typeof EngagementEnginesDashboardOutcomesIndexRoute
@@ -2808,6 +2895,11 @@ export interface FileRoutesByFullPath {
   "/assessment/create-assessment/$assessmentId/$examtype/": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId/": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add/": typeof AudienceManagerListCampaignUsersAddIndexRoute
+  "/commerce/pos/$sessionId/bill-book/": typeof CommercePosSessionIdBillBookIndexRoute
+  "/commerce/pos/$sessionId/bills/": typeof CommercePosSessionIdBillsIndexRoute
+  "/commerce/pos/$sessionId/close/": typeof CommercePosSessionIdCloseIndexRoute
+  "/commerce/pos/$sessionId/returns/": typeof CommercePosSessionIdReturnsIndexRoute
+  "/commerce/pos/sessions/$sessionId/": typeof CommercePosSessionsSessionIdIndexRoute
   "/homework-creation/create-assessment/$assessmentId/$examtype/": typeof HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/study-library/ai-copilot/course-outline/generating/": typeof StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute
   "/study-library/courses/course-details/subjects/": typeof StudyLibraryCoursesCourseDetailsSubjectsIndexRoute
@@ -3051,11 +3143,14 @@ export interface FileRoutesByTo {
   "/commerce/orders/pack": typeof CommerceOrdersPackIndexRoute
   "/commerce/orders/print": typeof CommerceOrdersPrintIndexRoute
   "/commerce/orders/remittances": typeof CommerceOrdersRemittancesIndexRoute
+  "/commerce/pos/$sessionId": typeof CommercePosSessionIdIndexRoute
+  "/commerce/pos/sessions": typeof CommercePosSessionsIndexRoute
   "/commerce/products/$productId": typeof CommerceProductsProductIdIndexRoute
   "/commerce/products/import": typeof CommerceProductsImportIndexRoute
   "/commerce/settings/business": typeof CommerceSettingsBusinessIndexRoute
   "/commerce/settings/locations": typeof CommerceSettingsLocationsIndexRoute
   "/commerce/settings/notifications": typeof CommerceSettingsNotificationsIndexRoute
+  "/commerce/settings/registers": typeof CommerceSettingsRegistersIndexRoute
   "/commerce/settings/staff": typeof CommerceSettingsStaffIndexRoute
   "/commerce/settings/tax-classes": typeof CommerceSettingsTaxClassesIndexRoute
   "/engagement-engines/dashboard/outcomes": typeof EngagementEnginesDashboardOutcomesIndexRoute
@@ -3098,6 +3193,11 @@ export interface FileRoutesByTo {
   "/assessment/create-assessment/$assessmentId/$examtype": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add": typeof AudienceManagerListCampaignUsersAddIndexRoute
+  "/commerce/pos/$sessionId/bill-book": typeof CommercePosSessionIdBillBookIndexRoute
+  "/commerce/pos/$sessionId/bills": typeof CommercePosSessionIdBillsIndexRoute
+  "/commerce/pos/$sessionId/close": typeof CommercePosSessionIdCloseIndexRoute
+  "/commerce/pos/$sessionId/returns": typeof CommercePosSessionIdReturnsIndexRoute
+  "/commerce/pos/sessions/$sessionId": typeof CommercePosSessionsSessionIdIndexRoute
   "/homework-creation/create-assessment/$assessmentId/$examtype": typeof HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/study-library/ai-copilot/course-outline/generating": typeof StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute
   "/study-library/courses/course-details/subjects": typeof StudyLibraryCoursesCourseDetailsSubjectsIndexRoute
@@ -3344,11 +3444,14 @@ export interface FileRoutesById {
   "/commerce/orders/pack/": typeof CommerceOrdersPackIndexRoute
   "/commerce/orders/print/": typeof CommerceOrdersPrintIndexRoute
   "/commerce/orders/remittances/": typeof CommerceOrdersRemittancesIndexRoute
+  "/commerce/pos/$sessionId/": typeof CommercePosSessionIdIndexRoute
+  "/commerce/pos/sessions/": typeof CommercePosSessionsIndexRoute
   "/commerce/products/$productId/": typeof CommerceProductsProductIdIndexRoute
   "/commerce/products/import/": typeof CommerceProductsImportIndexRoute
   "/commerce/settings/business/": typeof CommerceSettingsBusinessIndexRoute
   "/commerce/settings/locations/": typeof CommerceSettingsLocationsIndexRoute
   "/commerce/settings/notifications/": typeof CommerceSettingsNotificationsIndexRoute
+  "/commerce/settings/registers/": typeof CommerceSettingsRegistersIndexRoute
   "/commerce/settings/staff/": typeof CommerceSettingsStaffIndexRoute
   "/commerce/settings/tax-classes/": typeof CommerceSettingsTaxClassesIndexRoute
   "/engagement-engines/dashboard/outcomes/": typeof EngagementEnginesDashboardOutcomesIndexRoute
@@ -3391,6 +3494,11 @@ export interface FileRoutesById {
   "/assessment/create-assessment/$assessmentId/$examtype/": typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/assessment/evaluation-ai/$attemptId/$processId/": typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   "/audience-manager/list/campaign-users/add/": typeof AudienceManagerListCampaignUsersAddIndexRoute
+  "/commerce/pos/$sessionId/bill-book/": typeof CommercePosSessionIdBillBookIndexRoute
+  "/commerce/pos/$sessionId/bills/": typeof CommercePosSessionIdBillsIndexRoute
+  "/commerce/pos/$sessionId/close/": typeof CommercePosSessionIdCloseIndexRoute
+  "/commerce/pos/$sessionId/returns/": typeof CommercePosSessionIdReturnsIndexRoute
+  "/commerce/pos/sessions/$sessionId/": typeof CommercePosSessionsSessionIdIndexRoute
   "/homework-creation/create-assessment/$assessmentId/$examtype/": typeof HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute
   "/study-library/ai-copilot/course-outline/generating/": typeof StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute
   "/study-library/courses/course-details/subjects/": typeof StudyLibraryCoursesCourseDetailsSubjectsIndexRoute
@@ -3638,11 +3746,14 @@ export interface FileRouteTypes {
     | "/commerce/orders/pack/"
     | "/commerce/orders/print/"
     | "/commerce/orders/remittances/"
+    | "/commerce/pos/$sessionId/"
+    | "/commerce/pos/sessions/"
     | "/commerce/products/$productId/"
     | "/commerce/products/import/"
     | "/commerce/settings/business/"
     | "/commerce/settings/locations/"
     | "/commerce/settings/notifications/"
+    | "/commerce/settings/registers/"
     | "/commerce/settings/staff/"
     | "/commerce/settings/tax-classes/"
     | "/engagement-engines/dashboard/outcomes/"
@@ -3685,6 +3796,11 @@ export interface FileRouteTypes {
     | "/assessment/create-assessment/$assessmentId/$examtype/"
     | "/assessment/evaluation-ai/$attemptId/$processId/"
     | "/audience-manager/list/campaign-users/add/"
+    | "/commerce/pos/$sessionId/bill-book/"
+    | "/commerce/pos/$sessionId/bills/"
+    | "/commerce/pos/$sessionId/close/"
+    | "/commerce/pos/$sessionId/returns/"
+    | "/commerce/pos/sessions/$sessionId/"
     | "/homework-creation/create-assessment/$assessmentId/$examtype/"
     | "/study-library/ai-copilot/course-outline/generating/"
     | "/study-library/courses/course-details/subjects/"
@@ -3928,11 +4044,14 @@ export interface FileRouteTypes {
     | "/commerce/orders/pack"
     | "/commerce/orders/print"
     | "/commerce/orders/remittances"
+    | "/commerce/pos/$sessionId"
+    | "/commerce/pos/sessions"
     | "/commerce/products/$productId"
     | "/commerce/products/import"
     | "/commerce/settings/business"
     | "/commerce/settings/locations"
     | "/commerce/settings/notifications"
+    | "/commerce/settings/registers"
     | "/commerce/settings/staff"
     | "/commerce/settings/tax-classes"
     | "/engagement-engines/dashboard/outcomes"
@@ -3975,6 +4094,11 @@ export interface FileRouteTypes {
     | "/assessment/create-assessment/$assessmentId/$examtype"
     | "/assessment/evaluation-ai/$attemptId/$processId"
     | "/audience-manager/list/campaign-users/add"
+    | "/commerce/pos/$sessionId/bill-book"
+    | "/commerce/pos/$sessionId/bills"
+    | "/commerce/pos/$sessionId/close"
+    | "/commerce/pos/$sessionId/returns"
+    | "/commerce/pos/sessions/$sessionId"
     | "/homework-creation/create-assessment/$assessmentId/$examtype"
     | "/study-library/ai-copilot/course-outline/generating"
     | "/study-library/courses/course-details/subjects"
@@ -4220,11 +4344,14 @@ export interface FileRouteTypes {
     | "/commerce/orders/pack/"
     | "/commerce/orders/print/"
     | "/commerce/orders/remittances/"
+    | "/commerce/pos/$sessionId/"
+    | "/commerce/pos/sessions/"
     | "/commerce/products/$productId/"
     | "/commerce/products/import/"
     | "/commerce/settings/business/"
     | "/commerce/settings/locations/"
     | "/commerce/settings/notifications/"
+    | "/commerce/settings/registers/"
     | "/commerce/settings/staff/"
     | "/commerce/settings/tax-classes/"
     | "/engagement-engines/dashboard/outcomes/"
@@ -4267,6 +4394,11 @@ export interface FileRouteTypes {
     | "/assessment/create-assessment/$assessmentId/$examtype/"
     | "/assessment/evaluation-ai/$attemptId/$processId/"
     | "/audience-manager/list/campaign-users/add/"
+    | "/commerce/pos/$sessionId/bill-book/"
+    | "/commerce/pos/$sessionId/bills/"
+    | "/commerce/pos/$sessionId/close/"
+    | "/commerce/pos/$sessionId/returns/"
+    | "/commerce/pos/sessions/$sessionId/"
     | "/homework-creation/create-assessment/$assessmentId/$examtype/"
     | "/study-library/ai-copilot/course-outline/generating/"
     | "/study-library/courses/course-details/subjects/"
@@ -4504,11 +4636,14 @@ export interface RootRouteChildren {
   CommerceOrdersPackIndexRoute: typeof CommerceOrdersPackIndexRoute
   CommerceOrdersPrintIndexRoute: typeof CommerceOrdersPrintIndexRoute
   CommerceOrdersRemittancesIndexRoute: typeof CommerceOrdersRemittancesIndexRoute
+  CommercePosSessionIdIndexRoute: typeof CommercePosSessionIdIndexRoute
+  CommercePosSessionsIndexRoute: typeof CommercePosSessionsIndexRoute
   CommerceProductsProductIdIndexRoute: typeof CommerceProductsProductIdIndexRoute
   CommerceProductsImportIndexRoute: typeof CommerceProductsImportIndexRoute
   CommerceSettingsBusinessIndexRoute: typeof CommerceSettingsBusinessIndexRoute
   CommerceSettingsLocationsIndexRoute: typeof CommerceSettingsLocationsIndexRoute
   CommerceSettingsNotificationsIndexRoute: typeof CommerceSettingsNotificationsIndexRoute
+  CommerceSettingsRegistersIndexRoute: typeof CommerceSettingsRegistersIndexRoute
   CommerceSettingsStaffIndexRoute: typeof CommerceSettingsStaffIndexRoute
   CommerceSettingsTaxClassesIndexRoute: typeof CommerceSettingsTaxClassesIndexRoute
   EngagementEnginesDashboardOutcomesIndexRoute: typeof EngagementEnginesDashboardOutcomesIndexRoute
@@ -4551,6 +4686,11 @@ export interface RootRouteChildren {
   AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute: typeof AssessmentCreateAssessmentAssessmentIdExamtypeIndexRoute
   AssessmentEvaluationAiAttemptIdProcessIdIndexRoute: typeof AssessmentEvaluationAiAttemptIdProcessIdIndexRoute
   AudienceManagerListCampaignUsersAddIndexRoute: typeof AudienceManagerListCampaignUsersAddIndexRoute
+  CommercePosSessionIdBillBookIndexRoute: typeof CommercePosSessionIdBillBookIndexRoute
+  CommercePosSessionIdBillsIndexRoute: typeof CommercePosSessionIdBillsIndexRoute
+  CommercePosSessionIdCloseIndexRoute: typeof CommercePosSessionIdCloseIndexRoute
+  CommercePosSessionIdReturnsIndexRoute: typeof CommercePosSessionIdReturnsIndexRoute
+  CommercePosSessionsSessionIdIndexRoute: typeof CommercePosSessionsSessionIdIndexRoute
   HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute: typeof HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute
   StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute: typeof StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute
   StudyLibraryCoursesCourseDetailsSubjectsIndexRoute: typeof StudyLibraryCoursesCourseDetailsSubjectsIndexRoute
@@ -6230,6 +6370,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof CommerceSettingsStaffIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/commerce/settings/registers/": {
+      id: "/commerce/settings/registers/"
+      path: "/commerce/settings/registers"
+      fullPath: "/commerce/settings/registers/"
+      preLoaderRoute: typeof CommerceSettingsRegistersIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/commerce/settings/notifications/": {
       id: "/commerce/settings/notifications/"
       path: "/commerce/settings/notifications"
@@ -6263,6 +6410,20 @@ declare module "@tanstack/react-router" {
       path: "/commerce/products/$productId"
       fullPath: "/commerce/products/$productId/"
       preLoaderRoute: typeof CommerceProductsProductIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/sessions/": {
+      id: "/commerce/pos/sessions/"
+      path: "/commerce/pos/sessions"
+      fullPath: "/commerce/pos/sessions/"
+      preLoaderRoute: typeof CommercePosSessionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/$sessionId/": {
+      id: "/commerce/pos/$sessionId/"
+      path: "/commerce/pos/$sessionId"
+      fullPath: "/commerce/pos/$sessionId/"
+      preLoaderRoute: typeof CommercePosSessionIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/commerce/orders/remittances/": {
@@ -6494,6 +6655,41 @@ declare module "@tanstack/react-router" {
       path: "/homework-creation/create-assessment/$assessmentId/$examtype"
       fullPath: "/homework-creation/create-assessment/$assessmentId/$examtype/"
       preLoaderRoute: typeof HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/sessions/$sessionId/": {
+      id: "/commerce/pos/sessions/$sessionId/"
+      path: "/commerce/pos/sessions/$sessionId"
+      fullPath: "/commerce/pos/sessions/$sessionId/"
+      preLoaderRoute: typeof CommercePosSessionsSessionIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/$sessionId/returns/": {
+      id: "/commerce/pos/$sessionId/returns/"
+      path: "/commerce/pos/$sessionId/returns"
+      fullPath: "/commerce/pos/$sessionId/returns/"
+      preLoaderRoute: typeof CommercePosSessionIdReturnsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/$sessionId/close/": {
+      id: "/commerce/pos/$sessionId/close/"
+      path: "/commerce/pos/$sessionId/close"
+      fullPath: "/commerce/pos/$sessionId/close/"
+      preLoaderRoute: typeof CommercePosSessionIdCloseIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/$sessionId/bills/": {
+      id: "/commerce/pos/$sessionId/bills/"
+      path: "/commerce/pos/$sessionId/bills"
+      fullPath: "/commerce/pos/$sessionId/bills/"
+      preLoaderRoute: typeof CommercePosSessionIdBillsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/pos/$sessionId/bill-book/": {
+      id: "/commerce/pos/$sessionId/bill-book/"
+      path: "/commerce/pos/$sessionId/bill-book"
+      fullPath: "/commerce/pos/$sessionId/bill-book/"
+      preLoaderRoute: typeof CommercePosSessionIdBillBookIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/audience-manager/list/campaign-users/add/": {
@@ -6887,12 +7083,15 @@ const rootRouteChildren: RootRouteChildren = {
   CommerceOrdersPackIndexRoute: CommerceOrdersPackIndexRoute,
   CommerceOrdersPrintIndexRoute: CommerceOrdersPrintIndexRoute,
   CommerceOrdersRemittancesIndexRoute: CommerceOrdersRemittancesIndexRoute,
+  CommercePosSessionIdIndexRoute: CommercePosSessionIdIndexRoute,
+  CommercePosSessionsIndexRoute: CommercePosSessionsIndexRoute,
   CommerceProductsProductIdIndexRoute: CommerceProductsProductIdIndexRoute,
   CommerceProductsImportIndexRoute: CommerceProductsImportIndexRoute,
   CommerceSettingsBusinessIndexRoute: CommerceSettingsBusinessIndexRoute,
   CommerceSettingsLocationsIndexRoute: CommerceSettingsLocationsIndexRoute,
   CommerceSettingsNotificationsIndexRoute:
     CommerceSettingsNotificationsIndexRoute,
+  CommerceSettingsRegistersIndexRoute: CommerceSettingsRegistersIndexRoute,
   CommerceSettingsStaffIndexRoute: CommerceSettingsStaffIndexRoute,
   CommerceSettingsTaxClassesIndexRoute: CommerceSettingsTaxClassesIndexRoute,
   EngagementEnginesDashboardOutcomesIndexRoute:
@@ -6949,6 +7148,13 @@ const rootRouteChildren: RootRouteChildren = {
     AssessmentEvaluationAiAttemptIdProcessIdIndexRoute,
   AudienceManagerListCampaignUsersAddIndexRoute:
     AudienceManagerListCampaignUsersAddIndexRoute,
+  CommercePosSessionIdBillBookIndexRoute:
+    CommercePosSessionIdBillBookIndexRoute,
+  CommercePosSessionIdBillsIndexRoute: CommercePosSessionIdBillsIndexRoute,
+  CommercePosSessionIdCloseIndexRoute: CommercePosSessionIdCloseIndexRoute,
+  CommercePosSessionIdReturnsIndexRoute: CommercePosSessionIdReturnsIndexRoute,
+  CommercePosSessionsSessionIdIndexRoute:
+    CommercePosSessionsSessionIdIndexRoute,
   HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute:
     HomeworkCreationCreateAssessmentAssessmentIdExamtypeIndexRoute,
   StudyLibraryAiCopilotCourseOutlineGeneratingIndexRoute:

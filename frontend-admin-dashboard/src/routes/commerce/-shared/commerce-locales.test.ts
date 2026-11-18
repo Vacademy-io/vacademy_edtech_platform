@@ -32,6 +32,17 @@ import {
     TENDER_MODES,
 } from '../orders/-shared/order-types';
 import { PACK_REFUSALS } from '../orders/-shared/pack-session';
+import { CART_REFUSALS } from '../pos/-shared/pos-cart';
+import { POS_ERROR_CODES } from '../pos/-shared/pos-errors';
+import { RECEIPT_DOCUMENT_TYPES } from '../pos/-shared/pos-receipt';
+import { TENDER_PROBLEMS } from '../pos/-shared/pos-tenders';
+import {
+    POS_APPROVAL_ACTIONS,
+    POS_RETURN_REASONS,
+    POS_RETURN_SETTLE,
+    REGISTER_SETUP_WARNINGS,
+    TENDER_MODES_POS,
+} from '../pos/-shared/pos-types';
 import { NAMED_MEDIA_TAGS } from '../products/-components/media-tags';
 import {
     DELIVERY_CODES,
@@ -305,6 +316,35 @@ describe('commerce strings: every key the code asks for exists', () => {
         expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
     });
 
+    it('billing counter keys built at run time exist for every value', () => {
+        const need: string[] = [];
+        const each = (prefix: string, values: readonly string[]) =>
+            values.forEach((value) => need.push(`${prefix}.${value}`));
+        each('pos.errors', POS_ERROR_CODES);
+        // Tender labels reuse the order desk's; "Other" and the exchange credit are the counter's.
+        each('orders.tender', TENDER_MODES_POS);
+        each('pos.tender', ['OTHER', 'CREDIT_NOTE']);
+        each('pos.approval', [...POS_APPROVAL_ACTIONS, 'title', 'generic', 'managersFailed']);
+        each('pos.cart', CART_REFUSALS);
+        each('pos.pay.problems', TENDER_PROBLEMS);
+        each('pos.registers.warnings', REGISTER_SETUP_WARNINGS);
+        each('pos.receipt.types', RECEIPT_DOCUMENT_TYPES);
+        each('pos.returns.settleOptions', POS_RETURN_SETTLE);
+        each('orders.returns.reasons', POS_RETURN_REASONS);
+        each('pos.discount.kinds', ['AMOUNT', 'PERCENT']);
+        each('pos.length.problems', ['format', 'quantityStep', 'quantityRange']);
+        each('pos.registers.problems', ['location', 'code', 'name', 'prefix', 'nextValue']);
+        each('pos.billBooks.problems', ['prefix', 'financial_year', 'from', 'to']);
+        each('pos.lineMarks', ['PRICE_CHANGED', 'UNAVAILABLE']);
+        // Z-report labels.
+        each('pos.z', [
+            'title', 'opened', 'closed', 'stillOpen', 'sales', 'bills', 'voided', 'billBook', 'discounts',
+            'numbers', 'byMode', 'none', 'tax', 'taxRate', 'returns', 'returnCount', 'refund', 'cash', 'openingCash',
+        ]);
+        expect(need.length).toBeGreaterThan(90);
+        expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
+    });
+
     it('the settings cards in the code are the ones with strings', async () => {
         const { SETTINGS_CARDS } = await import('../settings/-components/settings-cards');
         SETTINGS_CARDS.forEach((card) => {
@@ -317,9 +357,9 @@ describe('commerce strings: every key the code asks for exists', () => {
             'locations',
             'staff',
             'notifications',
+            'registers',
         ]);
         expect(SETTINGS_CARDS.filter((card) => !card.to).map((card) => card.id)).toEqual([
-            'registers',
             'shipping',
             'payments',
             'documents',

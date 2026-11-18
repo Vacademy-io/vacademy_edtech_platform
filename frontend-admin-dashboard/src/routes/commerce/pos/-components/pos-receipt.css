@@ -1,0 +1,26 @@
+/*
+ * 80 mm bill and day report. Print sizing only (no colours): every rule is
+ * scoped to body.pos-printing, which printReceipt() sets for the one print
+ * and removes after it, so other print pages (packing slips) are untouched.
+ * The 80 mm page size cannot be scoped by a class (@page is global), so
+ * printReceipt() adds it as a <style> for the one print and removes it after.
+ */
+@media print {
+    body.pos-printing * {
+        visibility: hidden;
+    }
+    body.pos-printing .pos-receipt-print,
+    body.pos-printing .pos-receipt-print * {
+        visibility: visible;
+    }
+    body.pos-printing .pos-receipt-print {
+        position: absolute;
+        inset-block-start: 0;
+        inset-inline-start: 0;
+        width: 72mm;
+    }
+    body.pos-printing .pos-receipt-print .pos-receipt-qr {
+        width: 24mm;
+        height: 24mm;
+    }
+}

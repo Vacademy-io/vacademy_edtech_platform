@@ -119,3 +119,38 @@ export const COMMERCE_NOTIFICATION_TRIGGER = (code: string) =>
 export const COMMERCE_NOTIFICATION_SHOP = `${COMMERCE_NOTIFICATION_SETTINGS}/shop`;
 export const COMMERCE_NOTIFICATION_TEST_SEND = `${COMMERCE_NOTIFICATION_SETTINGS}/test-send`;
 export const COMMERCE_NOTIFICATION_WHATSAPP_TEMPLATES = `${COMMERCE_NOTIFICATION_SETTINGS}/whatsapp-templates`;
+
+// Billing counter (PosRegisterController, PosSessionController, PosSaleController,
+// PosLookupController, PosSettingsController)
+export const COMMERCE_POS = `${COMMERCE_BASE}/pos`;
+export const COMMERCE_POS_REGISTERS = `${COMMERCE_POS}/registers`;
+export const COMMERCE_POS_REGISTER_BY_ID = (id: string) => `${COMMERCE_POS_REGISTERS}/${id$(id)}`;
+export const COMMERCE_POS_REGISTER_SESSION = (id: string) => `${COMMERCE_POS_REGISTER_BY_ID(id)}/session`;
+export const COMMERCE_POS_REGISTER_CATALOGUE = (id: string) =>
+    `${COMMERCE_POS_REGISTER_BY_ID(id)}/catalogue`;
+export const COMMERCE_POS_REGISTER_SCAN = (id: string, code: string) =>
+    `${COMMERCE_POS_REGISTER_BY_ID(id)}/scan/${id$(code)}`;
+export const COMMERCE_POS_REGISTER_APPROVERS = (id: string) =>
+    `${COMMERCE_POS_REGISTER_BY_ID(id)}/approvers`;
+export const COMMERCE_POS_SESSIONS = `${COMMERCE_POS}/sessions`;
+export const COMMERCE_POS_SESSION_BY_ID = (id: string) => `${COMMERCE_POS_SESSIONS}/${id$(id)}`;
+export const COMMERCE_POS_SESSION_SALES = (id: string) => `${COMMERCE_POS_SESSION_BY_ID(id)}/sales`;
+export const COMMERCE_POS_SESSION_CASH = (id: string) =>
+    `${COMMERCE_POS_SESSION_BY_ID(id)}/cash-movements`;
+export const COMMERCE_POS_SESSION_CLOSE = (id: string) => `${COMMERCE_POS_SESSION_BY_ID(id)}/close`;
+export const COMMERCE_POS_CUSTOMER_LOOKUP = `${COMMERCE_POS}/customers/lookup`;
+export const COMMERCE_POS_QUOTE = `${COMMERCE_POS}/quote`;
+export const COMMERCE_POS_SALES = `${COMMERCE_POS}/sales`;
+export const COMMERCE_POS_SALES_LOOKUP = `${COMMERCE_POS_SALES}/lookup`;
+export const COMMERCE_POS_SALE_BY_ID = (id: string) => `${COMMERCE_POS_SALES}/${id$(id)}`;
+export const COMMERCE_POS_SALE_RECEIPT = (id: string) => `${COMMERCE_POS_SALE_BY_ID(id)}/receipt`;
+export const COMMERCE_POS_SALE_VOID = (id: string) => `${COMMERCE_POS_SALE_BY_ID(id)}/void`;
+export const COMMERCE_POS_TENDER_CHANGE = (orderId: string, tenderId: string) =>
+    `${COMMERCE_POS_SALE_BY_ID(orderId)}/tenders/${id$(tenderId)}/change`;
+export const COMMERCE_POS_BILL_BOOK = `${COMMERCE_POS}/bill-book-entries`;
+export const COMMERCE_POS_RETURNS = `${COMMERCE_POS}/returns`;
+export const COMMERCE_POS_RETURN_PREVIEW = `${COMMERCE_POS_RETURNS}/preview`;
+export const COMMERCE_POS_SETTINGS = `${COMMERCE_POS}/settings`;
+
+// Document series (CommerceDocumentSeriesController): bill books on the registers page
+export const COMMERCE_DOCUMENT_SERIES = `${COMMERCE_BASE}/document-series`;
