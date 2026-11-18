@@ -1,6 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { useEffect } from 'react';
+import { createFileRoute, useLocation } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { Clock } from '@phosphor-icons/react';
+import { cn } from '@/lib/utils';
 import { TutorialVideo } from './-components/Tutorials';
 import { FULL_TUTORIAL, TUTORIALS, formatSeconds } from './-lib/tutorials';
 
@@ -11,6 +13,18 @@ export const Route = createFileRoute('/evalezy/help')({
 /** How to use Evalezy: the full tutorial, then one short video and its written steps per step. */
 function EvalezyHelp() {
     const { t } = useTranslation('evalezy');
+    // Opened from a tutorial on the home screen (/evalezy/help#<slug>): go straight to that video.
+    const { hash } = useLocation();
+    useEffect(() => {
+        if (!hash) return;
+        // After the router's own scroll on navigation, which would otherwise win.
+        const frame = requestAnimationFrame(() =>
+            document.getElementById(hash)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        );
+        return () => cancelAnimationFrame(frame);
+    }, [hash]);
+    // The tutorial asked for, outlined so it is found at a glance.
+    const target = (slug: string) => hash === slug && 'border-primary-400 ring-2 ring-primary-200';
     // A missing or non-list entry (e.g. a half-translated locale) shows no steps rather than crashing.
     const steps = (slug: string): string[] => {
         const list: unknown = t(`tutorials.items.${slug}.steps`, {
@@ -26,7 +40,13 @@ function EvalezyHelp() {
                 <p className="text-body text-neutral-500">{t('tutorials.subtitle')}</p>
             </div>
 
-            <section className="flex flex-col gap-3 rounded-lg border border-primary-200 bg-white p-4 sm:flex-row">
+            <section
+                id={FULL_TUTORIAL.slug}
+                className={cn(
+                    'flex scroll-mt-20 flex-col gap-3 rounded-lg border border-primary-200 bg-white p-4 sm:flex-row',
+                    target(FULL_TUTORIAL.slug)
+                )}
+            >
                 <TutorialVideo
                     slug={FULL_TUTORIAL.slug}
                     title={t('tutorials.full.title')}
@@ -59,7 +79,10 @@ function EvalezyHelp() {
                     <li
                         key={v.slug}
                         id={v.slug}
-                        className="flex gap-3 rounded-lg border border-neutral-200 bg-white p-3 sm:p-4"
+                        className={cn(
+                            'flex scroll-mt-20 gap-3 rounded-lg border border-neutral-200 bg-white p-3 sm:p-4',
+                            target(v.slug)
+                        )}
                     >
                         <TutorialVideo
                             slug={v.slug}

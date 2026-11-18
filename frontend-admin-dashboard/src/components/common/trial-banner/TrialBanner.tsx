@@ -46,13 +46,14 @@ export const TrialBanner = ({ ns, renderUpgrade, enabled = true }: TrialBannerPr
     return (
         <div
             className={cn(
-                'border-b px-4 py-2 text-caption',
+                'border-b py-2 text-caption',
                 data.expired
                     ? 'border-danger-200 bg-danger-50 text-danger-700'
                     : 'border-warning-200 bg-warning-50 text-warning-700'
             )}
         >
-            <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3">
+            {/* Padding inside the max width, like the Evalezy header and page: the warning icon lines up with the logo. */}
+            <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4">
                 <span className="flex min-w-0 items-center gap-1">
                     {data.expired && <Warning size={14} weight="fill" className="shrink-0" />}
                     {data.expired

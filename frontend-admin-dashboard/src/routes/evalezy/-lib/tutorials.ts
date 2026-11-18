@@ -20,6 +20,14 @@ export const TUTORIALS = [
     { slug: '10-checking-style', seconds: 80 },
 ] as const;
 
+/** On the home screen, below the tests: the steps a signed-in user does next (sign-up is behind them). */
+export const HOME_TUTORIALS = TUTORIALS.filter((v) =>
+    ['03-create-test', '04-marks-criteria', '05-upload-copies', '07-check-results'].includes(v.slug)
+);
+
+/** From this many tests on, the list fills the home screen and the tutorials section steps aside. */
+export const HOME_TUTORIALS_MAX_TESTS = 5;
+
 export const tutorialVideo = (slug: string) => `${TUTORIAL_BASE}${slug}.mp4`;
 export const tutorialPoster = (slug: string) => `${TUTORIAL_BASE}${slug}.jpg`;
 export const formatSeconds = (s: number) =>
@@ -30,8 +38,11 @@ export const formatSeconds = (s: number) =>
  * once. Kept on logout (sessionUtility LOGOUT_PRESERVE_KEYS) so the sign-up's own logout cannot drop it.
  */
 export const WELCOME_TUTORIAL_KEY = 'evalezy-welcome-tutorial';
-/** The "New to Evalezy?" card on the home screen, once closed. */
-export const TUTORIAL_CARD_KEY = 'evalezy-tutorial-card-hidden';
+/**
+ * The home tutorials section, once closed. Session storage: it stays closed while the app is open
+ * and is back on the next launch (a new tab, or the native app started again).
+ */
+export const TUTORIAL_CARD_KEY = 'evalezy-tutorial-card-closed';
 
 const read = (key: string) => {
     try {
@@ -51,5 +62,17 @@ const write = (key: string, value: string) => {
 export const markWelcomeTutorial = () => write(WELCOME_TUTORIAL_KEY, 'pending');
 export const isWelcomeTutorialPending = () => read(WELCOME_TUTORIAL_KEY) === 'pending';
 export const finishWelcomeTutorial = () => write(WELCOME_TUTORIAL_KEY, 'done');
-export const isTutorialCardHidden = () => read(TUTORIAL_CARD_KEY) === '1';
-export const hideTutorialCard = () => write(TUTORIAL_CARD_KEY, '1');
+export const isTutorialCardHidden = () => {
+    try {
+        return sessionStorage.getItem(TUTORIAL_CARD_KEY) === '1';
+    } catch {
+        return false;
+    }
+};
+export const hideTutorialCard = () => {
+    try {
+        sessionStorage.setItem(TUTORIAL_CARD_KEY, '1');
+    } catch {
+        // private mode: closed until this screen is left
+    }
+};
