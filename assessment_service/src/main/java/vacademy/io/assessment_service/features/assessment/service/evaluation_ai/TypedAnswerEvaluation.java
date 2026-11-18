@@ -394,11 +394,17 @@ public class TypedAnswerEvaluation {
         }
     }
 
-    /** Whether a teacher has already set a mark on the AI review page (marks_source AI_REVIEWED). */
+    /**
+     * Whether a teacher has already set a mark an AI run would overwrite: on the AI
+     * review page (AI_REVIEWED), or from the submission view (TEACHER) on a written /
+     * CBT question. A teacher's mark on an MCQ is never touched by an AI run, so it
+     * does not stop one.
+     */
     public boolean hasTeacherReviewedMarks(StudentAttempt attempt) {
         if (attempt == null || attempt.getId() == null) return false;
         return questionWiseMarksRepository.findByStudentAttemptId(attempt.getId()).stream()
-                .anyMatch(marks -> "AI_REVIEWED".equals(marks.getMarksSource()));
+                .anyMatch(marks -> "AI_REVIEWED".equals(marks.getMarksSource())
+                        || ("TEACHER".equals(marks.getMarksSource()) && isAiGraded(marks.getQuestion())));
     }
 
     /**
