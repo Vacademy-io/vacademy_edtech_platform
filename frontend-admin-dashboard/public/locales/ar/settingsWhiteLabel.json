@@ -93,7 +93,12 @@
             "afterLogoutLabel": "المسار بعد تسجيل الخروج",
             "afterLogoutPlaceholder": "/login",
             "homeClickLabel": "مسار النقر على أيقونة الصفحة الرئيسية",
-            "homeClickPlaceholder": "/"
+            "homeClickPlaceholder": "/",
+            "rootCatalogueLabel": "الموقع على الصفحة الرئيسية (/)",
+            "rootCatalogueNone": "لا شيء — يتبع / مسار إعادة التوجيه",
+            "rootCatalogueLoading": "جارٍ تحميل المواقع…",
+            "rootCatalogueDraft": "{{tag}} (مسودة)",
+            "rootCatalogueHint": "يفتح موقع Manage Pages المختار على جذر هذا النطاق وصفحاته على /<page>. تبقى روابط /<site>/… القديمة تعمل."
         },
         "links": {
             "heading": "الروابط",

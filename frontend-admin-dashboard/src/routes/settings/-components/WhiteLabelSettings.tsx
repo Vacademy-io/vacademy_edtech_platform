@@ -58,6 +58,7 @@ import {
 } from '@/services/domain-routing';
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import { WHITE_LABEL_SETUP, WHITE_LABEL_STATUS } from '@/constants/urls';
+import { getCatalogueTags } from '@/routes/manage-pages/-services/catalogue-service';
 import { getInstituteId } from '@/constants/helper';
 import { copyTextToClipboard } from '@/lib/clipboard';
 import { Badge } from '@/components/ui/badge';
@@ -170,6 +171,12 @@ interface RoutingConfig {
      * portal's login / sign-up screens too, not only after login.
      */
     apply_naming_setting?: boolean;
+    /**
+     * Learner portals: tag of the Manage Pages site that opens at this domain's
+     * root ("/"), with its pages at /<page>. '' clears it (then "/" follows the
+     * redirect route); undefined leaves the saved value alone.
+     */
+    root_catalogue_tag?: string;
     /**
      * Sub-organisation this domain serves. Not styling — the routing row's
      * institute stays the PARENT, so this id is the only thing that tells one
@@ -329,6 +336,9 @@ const toPayloadRole = (
     if (entry.portalImplied && entry.role === 'ADMIN' && extra.length > 0) return extra.join(',');
     return [entry.role, ...extra].join(',');
 };
+
+/** Select value standing for "no website on the home page" (a Select item can't be ''). */
+const NO_ROOT_CATALOGUE = '__none__';
 
 /** Roles that can never be ticked: learners never open a staff portal, and ADMIN always does. */
 const NON_TICKABLE_ROLES = new Set(['STUDENT', 'LEARNER', 'ADMIN']);
@@ -887,11 +897,25 @@ const ConfigValue = ({ label, value }: { label: string; value: any }) => {
 const ConfigFormSection = ({
     config,
     onUpdate,
+    portal,
+    catalogueTags,
 }: {
     config: RoutingConfig;
     onUpdate: (field: keyof RoutingConfig, value: any) => void;
+    /** Which portal this entry is; the home-page website is a learner-portal setting. */
+    portal?: PortalType;
+    /** Manage Pages sites of the institute, or null while they load. */
+    catalogueTags?: { tag: string; label: string }[] | null;
 }) => {
     const { t } = useTranslation('settingsWhiteLabel');
+    // A saved tag whose site was since deleted still shows, so it can be cleared.
+    const rootTag = config.root_catalogue_tag || '';
+    const rootTagOptions = [
+        ...(catalogueTags ?? []),
+        ...(rootTag && !(catalogueTags ?? []).some((o) => o.tag === rootTag)
+            ? [{ tag: rootTag, label: rootTag }]
+            : []),
+    ];
     return (
     <div className="space-y-5 pt-4">
         {/* Branding */}
@@ -1133,6 +1157,32 @@ const ConfigFormSection = ({
                            onChange={e => onUpdate('home_icon_click_route', e.target.value)} className="h-8 text-sm" />
                 </div>
             </div>
+
+            {/* The Manage Pages site served at "/". Learner portals only — the
+                admin app never renders a catalogue at its root. */}
+            {portal === 'LEARNER' && (
+                <div className="space-y-1">
+                    <Label className="text-xs text-slate-500">{t('configForm.routes.rootCatalogueLabel')}</Label>
+                    <Select
+                        value={rootTag || NO_ROOT_CATALOGUE}
+                        onValueChange={(v) => onUpdate('root_catalogue_tag', v === NO_ROOT_CATALOGUE ? '' : v)}
+                        disabled={catalogueTags === null}
+                    >
+                        <SelectTrigger className="h-8 max-w-sm text-sm">
+                            <SelectValue
+                                placeholder={catalogueTags === null ? t('configForm.routes.rootCatalogueLoading') : undefined}
+                            />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value={NO_ROOT_CATALOGUE}>{t('configForm.routes.rootCatalogueNone')}</SelectItem>
+                            {rootTagOptions.map((o) => (
+                                <SelectItem key={o.tag} value={o.tag}>{o.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <p className="text-caption text-neutral-400">{t('configForm.routes.rootCatalogueHint')}</p>
+                </div>
+            )}
         </div>
 
         <Separator />
@@ -1298,6 +1348,38 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
         return [...options, ...saved];
     };
 
+    // Manage Pages sites, for a learner domain's "Website on the home page".
+    // Loaded the first time a learner domain's settings are opened: the list
+    // carries every site's full page JSON, too heavy to fetch on every visit.
+    // null = not loaded yet; a failed load degrades to "no sites to pick".
+    const [catalogueTags, setCatalogueTags] = useState<{ tag: string; label: string }[] | null>(null);
+    const catalogueRequestedRef = useRef(false);
+    const learnerSettingsOpen = formEntries.some((e) => e.role === 'LEARNER' && e.expanded);
+
+    useEffect(() => {
+        if (!instituteId || !learnerSettingsOpen || catalogueRequestedRef.current) return;
+        catalogueRequestedRef.current = true;
+        getCatalogueTags(instituteId)
+            .then((tags) =>
+                setCatalogueTags(
+                    tags
+                        .filter((c) => c.tagName && c.status !== 'ARCHIVED')
+                        .map((c) => ({
+                            tag: c.tagName,
+                            label:
+                                c.status === 'DRAFT'
+                                    ? t('configForm.routes.rootCatalogueDraft', { tag: c.tagName })
+                                    : c.tagName,
+                        }))
+                        .sort((a, b) => a.label.localeCompare(b.label))
+                )
+            )
+            .catch((err) => {
+                console.error('[WhiteLabel] Failed to load sites', err);
+                setCatalogueTags([]);
+            });
+    }, [instituteId, learnerSettingsOpen, t]);
+
     const subOrgSearchPlaceholder = t('subOrg.searchPlaceholder');
     const subOrgSearchEmpty = t('subOrg.searchEmpty');
 
@@ -1370,6 +1452,7 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                     logo_height_px: r.logo_height_px ?? undefined,
                     stack_name_below_logo: r.stack_name_below_logo ?? undefined,
                     apply_naming_setting: r.apply_naming_setting ?? undefined,
+                    root_catalogue_tag: r.root_catalogue_tag ?? undefined,
                     // Round-trip the linkage. Before this the wizard didn't know the
                     // field existed, so every save posted a config without it and the
                     // backend blanked sub_org_id — un-branding the portal and
@@ -1863,6 +1946,8 @@ export default function WhiteLabelSettings({ isTab }: { isTab?: boolean }) {
                                         <ConfigFormSection
                                             config={entry.config}
                                             onUpdate={(field, value) => updateEntryConfig(entry.id, field, value)}
+                                            portal={entry.role}
+                                            catalogueTags={catalogueTags}
                                         />
                                     </div>
                                 )}
@@ -1990,7 +2075,7 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
         entry.hide_institute_name != null ||
         entry.logo_width_px != null || entry.logo_height_px != null ||
         entry.stack_name_below_logo != null ||
-        entry.apply_naming_setting
+        entry.apply_naming_setting || entry.root_catalogue_tag
     );
 
     // Under GEO_FIRST the first configured country is NOT what a phone field
@@ -2162,6 +2247,7 @@ function RoutingEntryCard({ entry, subOrgs }: { entry: RoutingEntry; subOrgs: Su
                         <ConfigValue label={t('routingEntryCard.fields.logoHeight')} value={entry.logo_height_px} />
                         <ConfigValue label={t('routingEntryCard.fields.stackNameBelowLogo')} value={entry.stack_name_below_logo} />
                         <ConfigValue label={t('configForm.branding.applyNamingLabel')} value={entry.apply_naming_setting || undefined} />
+                        <ConfigValue label={t('configForm.routes.rootCatalogueLabel')} value={entry.root_catalogue_tag} />
                         <ConfigValue
                             label={t('configForm.phone.geoModeLabel')}
                             value={t(`configForm.phone.geoModes.${savedGeoMode}.label`)}

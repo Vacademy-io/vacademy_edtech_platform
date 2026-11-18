@@ -93,7 +93,12 @@
             "afterLogoutLabel": "Route après déconnexion",
             "afterLogoutPlaceholder": "/login",
             "homeClickLabel": "Route au clic sur l'icône d'accueil",
-            "homeClickPlaceholder": "/"
+            "homeClickPlaceholder": "/",
+            "rootCatalogueLabel": "Site affiché sur la page d'accueil (/)",
+            "rootCatalogueNone": "Aucun — / suit la route de redirection",
+            "rootCatalogueLoading": "Chargement des sites…",
+            "rootCatalogueDraft": "{{tag}} (brouillon)",
+            "rootCatalogueHint": "Le site Manage Pages choisi s'ouvre à la racine de ce domaine et ses pages sur /<page>. Les anciens liens /<site>/… continuent de fonctionner."
         },
         "links": {
             "heading": "Liens",

@@ -453,6 +453,7 @@ public class WhiteLabelService {
                         // Set from the database only until now, so the wizard has to
                         // read them back or a save would look like it cleared them.
                         .applyNamingSetting(r.isApplyNamingSetting())
+                        .rootCatalogueTag(r.getRootCatalogueTag())
                         .build())
                 .collect(Collectors.toList());
 
@@ -824,6 +825,7 @@ public class WhiteLabelService {
             r.setLogoHeightPx(cfg.getLogoHeightPx());
             r.setStackNameBelowLogo(cfg.getStackNameBelowLogo());
             r.setApplyNamingSetting(cfg.getApplyNamingSetting());
+            r.setRootCatalogueTag(cfg.getRootCatalogueTag());
         } else {
             r.setAllowUsernamePasswordAuth(true);
             r.setConvertUsernamePasswordToLowercase(false);

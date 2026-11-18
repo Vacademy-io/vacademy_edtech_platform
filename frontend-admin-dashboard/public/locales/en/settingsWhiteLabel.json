@@ -93,7 +93,12 @@
             "afterLogoutLabel": "After Logout Route",
             "afterLogoutPlaceholder": "/login",
             "homeClickLabel": "Home Icon Click Route",
-            "homeClickPlaceholder": "/"
+            "homeClickPlaceholder": "/",
+            "rootCatalogueLabel": "Website on the home page (/)",
+            "rootCatalogueNone": "None — / goes to the redirect route",
+            "rootCatalogueLoading": "Loading sites…",
+            "rootCatalogueDraft": "{{tag}} (draft)",
+            "rootCatalogueHint": "The chosen Manage Pages site opens at this domain's root and its pages at /<page>. Old /<site>/… links keep working."
         },
         "links": {
             "heading": "Links",

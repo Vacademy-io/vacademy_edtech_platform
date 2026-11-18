@@ -188,5 +188,8 @@ public class WhiteLabelStatusResponse {
 
         @JsonProperty("apply_naming_setting")
         private boolean applyNamingSetting;
+
+        @JsonProperty("root_catalogue_tag")
+        private String rootCatalogueTag;
     }
 }
