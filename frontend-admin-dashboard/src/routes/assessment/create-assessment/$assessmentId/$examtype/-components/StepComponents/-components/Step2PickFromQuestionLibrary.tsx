@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
@@ -18,18 +18,34 @@ import {
 } from '@/routes/assessment/question-papers/-utils/merge-section-questions';
 import {
     buildTree,
+    collectMatchingIds,
     copyLibraryQuestions,
     fetchLibraryQuestions,
     libraryErrorMessage,
     pageTotals,
     randomPickLibraryQuestions,
     useLibraryAvailability,
+    useLibraryFacets,
     useLibraryPapers,
     useLibraryQuestions,
     useLibraryTree,
     type LibraryCopyResult,
     type LibraryQuestion,
+    type LibraryTag,
 } from '@/routes/assessment/question-library/-services/question-library-services';
+import {
+    buildFacetGroups,
+    clearFacet,
+    emptySelection,
+    rememberTags,
+    selectionCount,
+    selectionToFilters,
+    toggleFacet,
+    type FacetKey,
+    type FacetSelection,
+} from '@/routes/assessment/question-library/-utils/library-facets';
+import { LibraryFacetChips } from '@/routes/assessment/question-library/-components/LibraryFacetChips';
+import { ActiveFacetChips } from '@/routes/assessment/question-library/-components/LibraryFacetPanel';
 import { LibraryFilterBar } from '@/routes/assessment/question-library/-components/LibraryFilterBar';
 import { LibraryQuestionCard } from '@/routes/assessment/question-library/-components/LibraryQuestionCard';
 import { TopicTree } from '@/routes/assessment/question-library/-components/TopicTree';
@@ -59,8 +75,9 @@ const toCount = (value: string): number => {
 /**
  * Add ready-made questions, or a whole paper, from the Question Library to a section.
  *
- * Pick a folder on the left. On the right choose questions by hand, select them all, take a
- * random number per difficulty, or take a whole paper.
+ * Pick a folder on the left. On the right narrow it down (topics inside it, difficulty, type,
+ * tags: any value inside a filter, every filter) and choose questions by hand, select them
+ * all, take a random number per difficulty, or take a whole paper.
  *
  * Adding makes the server copy them into this institute and the section links to the
  * copies. So an edit made in this test stays in this test: the library and every other
@@ -80,7 +97,9 @@ const Step2PickFromQuestionLibrary = ({
     const [topicId, setTopicId] = useState('');
     const [search, setSearch] = useState('');
     const [appliedSearch, setAppliedSearch] = useState('');
-    const [difficulty, setDifficulty] = useState('');
+    const [selection, setSelection] = useState<FacetSelection>(emptySelection);
+    const [knownTags, setKnownTags] = useState<Map<string, LibraryTag>>(() => new Map());
+    /** Random pick only: the question list filters by type in its own filter row. */
     const [questionType, setQuestionType] = useState('');
     const [page, setPage] = useState(0);
     const [pickedQuestions, setPickedQuestions] = useState<Set<string>>(new Set());
@@ -114,20 +133,57 @@ const Step2PickFromQuestionLibrary = ({
             .map((question) => question.questionId)
             .filter((id): id is string => Boolean(id));
 
-    const filters = useMemo(
-        () => {
-            const ids = open ? inSection() : [];
-            return {
-                name: appliedSearch || undefined,
-                library_node_ids: scopeNodeIds,
-                difficulties: difficulty ? [difficulty] : undefined,
-                question_types: questionType ? [questionType] : undefined,
-                exclude_question_ids: ids.length ? ids : undefined,
-            };
-        },
+    const excluded = useMemo(
+        () => (open ? inSection() : []),
         // eslint-disable-next-line react-hooks/exhaustive-deps -- the section is read as the dialog opens
-        [open, appliedSearch, scopeNodeIds, difficulty, questionType]
+        [open]
     );
+    const filters = useMemo(
+        () =>
+            selectionToFilters(selection, scopeNodeIds, {
+                name: appliedSearch || undefined,
+                exclude_question_ids: excluded.length ? excluded : undefined,
+            }),
+        [selection, scopeNodeIds, appliedSearch, excluded]
+    );
+    const facets = useLibraryFacets(
+        open && mode === 'questions' && hasTopics ? instituteId : undefined,
+        filters,
+        topicId || null
+    );
+    useEffect(() => {
+        setKnownTags((known) => rememberTags(known, facets.data?.tags));
+    }, [facets.data]);
+    const topicNode = topicId ? nodes.find((node) => node.id === topicId) : undefined;
+    const subtopics = useMemo(
+        () =>
+            nodes
+                .filter((node) => (node.parent_id ?? null) === (topicId || null))
+                .sort((a, b) => a.display_order - b.display_order || a.name.localeCompare(b.name)),
+        [nodes, topicId]
+    );
+    const groups = useMemo(
+        () =>
+            buildFacetGroups({
+                t,
+                topicNodes: subtopics,
+                topicsTitle: topicNode
+                    ? t('facets.inside', { name: topicNode.name })
+                    : t('browse.courses'),
+                facets: facets.data,
+                selection,
+                knownTags,
+            }),
+        [t, subtopics, topicNode, facets.data, selection, knownTags]
+    );
+    const toggleFilter = (key: FacetKey, value: string) => {
+        setSelection((prev) => toggleFacet(prev, key, value));
+        setPage(0);
+    };
+    const clearFilterGroup = (key: FacetKey) => {
+        setSelection((prev) => clearFacet(prev, key));
+        setPage(0);
+    };
     const questions = useLibraryQuestions(
         open && mode === 'questions' && hasTopics ? instituteId : undefined,
         filters,
@@ -142,7 +198,7 @@ const Step2PickFromQuestionLibrary = ({
         open && mode === 'random' && hasTopics ? instituteId : undefined,
         {
             library_node_ids: scopeNodeIds,
-            question_types: filters.question_types,
+            question_types: questionType ? [questionType] : undefined,
             exclude_question_ids: filters.exclude_question_ids,
         }
     );
@@ -156,7 +212,7 @@ const Step2PickFromQuestionLibrary = ({
         setTopicId('');
         setSearch('');
         setAppliedSearch('');
-        setDifficulty('');
+        setSelection(emptySelection());
         setQuestionType('');
         setPage(0);
         setPickedQuestions(new Set());
@@ -247,18 +303,12 @@ const Step2PickFromQuestionLibrary = ({
         if (!instituteId) return;
         setSelectingAll(true);
         try {
-            const ids: string[] = [];
-            for (let pageNo = 0; ids.length < MAX_ADD; pageNo += 1) {
-                const result = await fetchLibraryQuestions(
-                    instituteId,
-                    filters,
-                    pageNo,
-                    SELECT_ALL_PAGE_SIZE
-                );
-                result.content.forEach((row) => ids.push(row.question.id));
-                if (result.content.length < SELECT_ALL_PAGE_SIZE) break;
-            }
-            setPickedQuestions((prev) => new Set([...prev, ...ids.slice(0, MAX_ADD)]));
+            const ids = await collectMatchingIds(
+                (pageNo, size) => fetchLibraryQuestions(instituteId, filters, pageNo, size),
+                MAX_ADD,
+                SELECT_ALL_PAGE_SIZE
+            );
+            setPickedQuestions((prev) => new Set([...prev, ...ids]));
             if (totals.elements > MAX_ADD) toast.info(t('pick.tooMany', { count: MAX_ADD }));
         } catch (error) {
             toast.error(libraryErrorMessage(error, t('pick.loadFailed')));
@@ -278,7 +328,7 @@ const Step2PickFromQuestionLibrary = ({
         try {
             const result = await randomPickLibraryQuestions(instituteId, {
                 library_node_ids: scopeNodeIds,
-                question_types: filters.question_types,
+                question_types: questionType ? [questionType] : undefined,
                 exclude_question_ids: filters.exclude_question_ids,
                 easy: toCount(counts.EASY),
                 medium: toCount(counts.MEDIUM),
@@ -301,6 +351,8 @@ const Step2PickFromQuestionLibrary = ({
 
     const selectTopic = (id: string) => {
         setTopicId(id === ALL_QUESTIONS ? '' : id);
+        // Topics ticked inside the old folder mean nothing in the new one.
+        setSelection((prev) => ({ ...prev, topics: [] }));
         setPage(0);
         setPickedPaper(null);
         setRandomRows([]);
@@ -310,8 +362,7 @@ const Step2PickFromQuestionLibrary = ({
         setPage(0);
         setSearch('');
         setAppliedSearch('');
-        setDifficulty('');
-        setQuestionType('');
+        setSelection(emptySelection());
     };
 
     const canAdd = mode === 'papers' ? !!pickedPaper : pickedQuestions.size > 0;
@@ -480,21 +531,21 @@ const Step2PickFromQuestionLibrary = ({
                                             setPage(0);
                                             setAppliedSearch(search.trim());
                                         }}
-                                        difficulty={difficulty}
-                                        onDifficultyChange={(value) => {
-                                            setPage(0);
-                                            setDifficulty(value);
-                                        }}
-                                        questionType={questionType}
-                                        onQuestionTypeChange={(value) => {
-                                            setPage(0);
-                                            setQuestionType(value);
-                                        }}
                                         onClear={
-                                            appliedSearch || difficulty || questionType
+                                            appliedSearch || selectionCount(selection) > 0
                                                 ? clearFilters
                                                 : undefined
                                         }
+                                    />
+                                    <LibraryFacetChips
+                                        groups={groups}
+                                        onToggle={toggleFilter}
+                                        onClearGroup={clearFilterGroup}
+                                    />
+                                    <ActiveFacetChips
+                                        groups={groups}
+                                        onToggle={toggleFilter}
+                                        onClearAll={clearFilters}
                                     />
 
                                     {questions.isLoading ? (

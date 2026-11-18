@@ -7,7 +7,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Filters for browsing INDIVIDUAL questions, as opposed to whole question papers.
@@ -42,6 +44,13 @@ public class QuestionBankFilter {
     private List<String> difficulties = new ArrayList<>();
 
     private List<String> tagIds = new ArrayList<>();
+
+    /**
+     * Tags in named groups (the library uses the tag kind: CONCEPT, PYQ, SOURCE). A question
+     * matches when it carries at least one tag of EVERY group: any-of inside a group, all-of
+     * across groups. "Projectile or Friction, and PYQ 2023" is two groups.
+     */
+    private Map<String, List<String>> tagGroups = new LinkedHashMap<>();
 
     /** Defaults to ACTIVE at the query layer when left empty. */
     private List<String> statuses = new ArrayList<>();

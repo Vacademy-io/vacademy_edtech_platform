@@ -270,6 +270,49 @@
         "tagsImported_one": "{{topics}} nouveaux thèmes, {{count}} question classée",
         "tagsImported_other": "{{topics}} nouveaux thèmes, {{count}} questions classées"
     },
+    "facets": {
+        "title": "Filtres",
+        "clearAll": "Tout effacer",
+        "clearGroup": "Effacer",
+        "searchIn": "Rechercher dans {{name}}",
+        "openTopic": "Ouvrir {{name}}",
+        "noMatch": "Aucun résultat",
+        "showAll": "Tout afficher ({{total}})",
+        "showLess": "Afficher moins",
+        "remove": "Retirer le filtre {{name}}",
+        "inside": "Dans {{name}}",
+        "countsFailed": "Les nombres n’ont pas pu être chargés. Les filtres fonctionnent quand même."
+    },
+    "autoTag": {
+        "button": "Étiqueter avec l’IA",
+        "title": "Étiqueter avec l’IA : {{name}}",
+        "hint": "L’IA lit chaque question ici sans étiquette de notion et en ajoute 1 à 3, en réutilisant les étiquettes déjà utilisées ici. Les étiquettes existantes ne changent pas.",
+        "nothingToDo": "Chaque question ici a déjà une étiquette de notion.",
+        "untagged": "{{total}} questions sans étiquette de notion",
+        "progress": "{{tried}} sur {{total}} lues, {{tagged}} étiquetées",
+        "start": "Lancer l’étiquetage",
+        "resume": "Continuer",
+        "stop": "Arrêter",
+        "done": "Terminé. {{tagged}} questions étiquetées.",
+        "stopped": "Arrêté. {{tagged}} questions étiquetées jusqu’ici.",
+        "tagsUsed": "Étiquettes utilisées"
+    },
+    "manageTags": {
+        "button": "Gérer les étiquettes",
+        "title": "Étiquettes de la bibliothèque",
+        "titleIn": "Étiquettes dans {{name}}",
+        "hint": "Renommer une étiquette avec le nom d’une autre les fusionne. Supprimer retire l’étiquette de toutes les questions ; les questions restent.",
+        "search": "Rechercher une étiquette",
+        "empty": "Aucune étiquette ici",
+        "loadFailed": "Impossible de charger les étiquettes.",
+        "save": "Enregistrer",
+        "rename": "Renommer {{name}}",
+        "delete": "Supprimer {{name}}",
+        "confirmDelete": "Retirer de {{total}} questions ?",
+        "yesDelete": "Retirer",
+        "renamed": "« {{from}} » devient « {{to}} »",
+        "deleted": "« {{name}} » retirée de toutes les questions"
+    },
     "tabs": {
         "questions": "Questions"
     },
@@ -294,7 +337,8 @@
         "unsortedHint_one": "{{count}} question à classer",
         "unsortedHint_other": "{{count}} questions à classer",
         "addCourse": "Ajouter un cours",
-        "addTopic": "Ajouter un thème"
+        "addTopic": "Ajouter un thème",
+        "subtopicCards": "Sous-thèmes ({{total}})"
     },
     "tags": {
         "kind": {

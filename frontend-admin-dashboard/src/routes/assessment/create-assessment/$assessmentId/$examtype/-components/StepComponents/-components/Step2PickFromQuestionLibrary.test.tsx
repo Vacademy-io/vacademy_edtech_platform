@@ -8,6 +8,11 @@ const api = vi.hoisted(() => ({
     copyLibraryQuestions: vi.fn(),
 }));
 
+const seen = vi.hoisted(() => ({
+    filters: undefined as Record<string, unknown> | undefined,
+    scope: undefined as string | null | undefined,
+}));
+
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({ t: (key: string) => key }),
 }));
@@ -65,12 +70,34 @@ vi.mock(
                 query(
                     id ? { nodes: NODES, summary: {}, max_depth: 4, can_manage: false } : undefined
                 ),
-            useLibraryQuestions: () =>
-                query({
+            useLibraryFacets: (
+                _id: string | undefined,
+                _filters: Record<string, unknown>,
+                scope: string | null
+            ) => {
+                seen.scope = scope;
+                return query({
+                    difficulties: { EASY: 1, MEDIUM: 1 },
+                    question_types: { MCQS: 2 },
+                    topics: [{ id: 'chem', count: 10 }],
+                    tags: [
+                        {
+                            tag_id: 't1',
+                            tag_name: 'Rusting',
+                            kind: 'CONCEPT',
+                            question_count: 2,
+                        },
+                    ],
+                });
+            },
+            useLibraryQuestions: (_id: string | undefined, filters: Record<string, unknown>) => {
+                seen.filters = filters;
+                return query({
                     content: [row('q1', 'Page one question')],
                     total_elements: 2,
                     total_pages: 2,
-                }),
+                });
+            },
             useLibraryPapers: () => query([]),
             useLibraryAvailability: () =>
                 query({ available: { EASY: 8, MEDIUM: 3, HARD: 0 }, questions: [] }),
@@ -123,6 +150,27 @@ describe('Step2PickFromQuestionLibrary', () => {
 
         expect(screen.getByText('Chemical Reactions')).toBeTruthy();
         expect(screen.queryByText('Life Processes')).toBeNull();
+    });
+
+    it('offers the library filters, counted, inside the chosen folder', () => {
+        openPicker();
+
+        // Nothing chosen: every folder, and the top level is what the topics filter lists.
+        expect(seen.filters?.library_node_ids).toEqual(['ncert', 'chem', 'life']);
+        expect(seen.scope).toBeNull();
+        for (const label of [
+            'browse.courses',
+            'filters.difficulty',
+            'filters.type',
+            'tags.kind.CONCEPT',
+        ]) {
+            expect(screen.getByText(label)).toBeTruthy();
+        }
+
+        fireEvent.click(screen.getByText('NCERT'));
+        expect(seen.filters?.library_node_ids).toEqual(['ncert']);
+        expect(seen.scope).toBe('ncert');
+        expect(screen.getByText('facets.inside')).toBeTruthy();
     });
 
     it('selects every matching question across pages, not only the visible one', async () => {
