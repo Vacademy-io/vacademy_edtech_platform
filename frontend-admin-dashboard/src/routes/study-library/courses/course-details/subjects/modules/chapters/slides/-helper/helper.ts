@@ -524,6 +524,13 @@ export const converDataToAssignmentFormat = ({
     };
 };
 
+/** The slide's "show answer after submit" setting as the backend sent it; unset = on. */
+export function readShowAnswerAfterSubmit(questionSlide: unknown): boolean {
+    const value = (questionSlide as { show_answer_after_submit?: unknown } | null | undefined)
+        ?.show_answer_after_submit;
+    return value !== false;
+}
+
 export function convertToQuestionSlideFormat(question: MyQuestion, sourceId?: string) {
     let options;
     if (question?.questionType === QuestionType.MCQS) {
@@ -657,6 +664,13 @@ export function convertToQuestionSlideFormat(question: MyQuestion, sourceId?: st
         evaluation_type: 'AUTO',
         default_question_time_mins: parseInt(question?.questionDuration?.min || '0'),
         re_attempt_count: question?.reattemptCount || '',
+        // Learner sees correct/wrong + the correct answer after submitting (on unless the
+        // author turned it off; Spreadsheet & Written Response ignores it). Sent only when
+        // the editor holds the setting: a slide saved from a path that never loaded it
+        // (raw slide data, older drafts) sends nothing, and the stored value is kept.
+        ...(typeof question?.showAnswerAfterSubmit === 'boolean'
+            ? { show_answer_after_submit: question.showAnswerAfterSubmit }
+            : {}),
         points: cbe ? cbe.points : '0',
         options: options?.map((opt, idx) => ({
             id: opt?.id || '',
@@ -865,11 +879,15 @@ export function cleanVideoQuestions(data: Slide[]) {
             if (item.source_type === 'QUESTION') {
                 return {
                     ...item,
-                    question_slide: transformResponseDataToMyQuestionsSchemaSingleQuestion(
-                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                        // @ts-expect-error
-                        item.question_slide
-                    ),
+                    question_slide: {
+                        ...transformResponseDataToMyQuestionsSchemaSingleQuestion(
+                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                            // @ts-expect-error
+                            item.question_slide
+                        ),
+                        // Unset (slides saved before the setting existed) = on.
+                        showAnswerAfterSubmit: readShowAnswerAfterSubmit(item.question_slide),
+                    },
                 };
             }
             if (item.source_type === 'ASSIGNMENT') {

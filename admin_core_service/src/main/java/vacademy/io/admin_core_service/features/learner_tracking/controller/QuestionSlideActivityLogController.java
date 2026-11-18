@@ -9,6 +9,7 @@ import vacademy.io.admin_core_service.features.learner_tracking.cbe.CbeSlideSubm
 import vacademy.io.admin_core_service.features.learner_tracking.cbe.dto.CbeAttemptResponse;
 import vacademy.io.admin_core_service.features.learner_tracking.cbe.dto.CbeSubmitRequest;
 import vacademy.io.admin_core_service.features.learner_tracking.dto.ActivityLogDTO;
+import vacademy.io.admin_core_service.features.learner_tracking.dto.QuestionSlideResultDTO;
 import vacademy.io.admin_core_service.features.learner_tracking.service.QuestionSlideActivityLogService;
 import vacademy.io.common.auth.config.PageConstants;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -43,6 +44,17 @@ public class QuestionSlideActivityLogController {
             @RequestAttribute("user") CustomUserDetails userDetails) {
 
         return ResponseEntity.ok(activityLogService.getQuestionSlideActivityLogs(userId, slideId, PageRequest.of(pageNo, pageSize), userDetails));
+    }
+
+    /**
+     * The signed-in learner's latest answer on a choice / text question slide: whether it was
+     * correct and the correct answer, when the slide's author left "show answer after submit"
+     * on. Nothing about the answer key comes back before the learner has submitted.
+     */
+    @GetMapping("/my-result")
+    public ResponseEntity<QuestionSlideResultDTO> myResult(@RequestParam("slide_id") String slideId,
+                                                           @RequestAttribute("user") CustomUserDetails user) {
+        return ResponseEntity.ok(activityLogService.getMyResult(slideId, user));
     }
 
     /**

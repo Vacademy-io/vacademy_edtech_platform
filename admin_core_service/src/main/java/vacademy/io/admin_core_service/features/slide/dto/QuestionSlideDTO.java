@@ -55,4 +55,10 @@ public class QuestionSlideDTO {
      */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private String evaluationSecretJson;
+
+    /**
+     * Whether the learner is shown, after submitting, if the answer was correct and the
+     * correct answer. Null on a write keeps the stored value (on, for a new slide).
+     */
+    private Boolean showAnswerAfterSubmit;
 }

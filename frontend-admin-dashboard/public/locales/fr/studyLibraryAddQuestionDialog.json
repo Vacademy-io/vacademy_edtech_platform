@@ -17,5 +17,7 @@
     "comprehensionNumeric": "Compréhension numérique",
     "cbeSection": "Examen sur ordinateur (CBE)",
     "cbeResponse": "Tableur et réponse rédigée",
-    "cbeTitleType": "Tableur et rédaction"
+    "cbeTitleType": "Tableur et rédaction",
+    "showAnswerAfterSubmit": "Afficher la bonne réponse après l'envoi",
+    "showAnswerAfterSubmitHint": "Les apprenants voient si leur réponse est correcte ou fausse, ainsi que la bonne réponse, dès qu'ils l'envoient. Désactivé : seule l'explication s'affiche."
 }

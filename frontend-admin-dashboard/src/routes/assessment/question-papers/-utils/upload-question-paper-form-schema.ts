@@ -376,6 +376,9 @@ export const uploadQuestionPaperFormSchema = (examType?: string) => {
                 newQuestion: z.boolean().optional(),
                 status: z.string().optional(),
                 canSkip: z.boolean().optional(),
+                // Question slides only: tell the learner after submitting whether the
+                // answer was correct, and the correct answer. Unset = on.
+                showAnswerAfterSubmit: z.boolean().optional(),
                 codingConfig: z
                     .object({
                         problemHtml: z.string().default(''),
