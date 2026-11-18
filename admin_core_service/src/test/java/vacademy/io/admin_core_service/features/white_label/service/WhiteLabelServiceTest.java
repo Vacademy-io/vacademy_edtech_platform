@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -102,8 +103,11 @@ class WhiteLabelServiceTest {
 
         routingRepository = Mockito.mock(InstituteDomainRoutingRepository.class);
         when(routingRepository.findByInstituteId(INSTITUTE_ID)).thenAnswer(inv -> storedRows);
-        when(routingRepository.findByInstituteIdAndDomainAndSubdomainAndRole(any(), any(), any(), any()))
-                .thenReturn(Optional.empty());
+        when(routingRepository.findByInstituteIdAndDomainAndSubdomain(any(), any(), any()))
+                .thenAnswer(inv -> storedRows.stream()
+                        .filter(r -> inv.getArgument(1, String.class).equals(r.getDomain())
+                                && inv.getArgument(2, String.class).equals(r.getSubdomain()))
+                        .toList());
 
         domainRoutingAdminService = Mockito.mock(DomainRoutingAdminService.class);
         when(domainRoutingAdminService.create(any())).thenAnswer(inv -> {
@@ -313,6 +317,29 @@ class WhiteLabelServiceTest {
         }
 
         @Test
+        @DisplayName("Changing the roles of a saved domain updates its row instead of adding a second one")
+        void changingRolesUpdatesTheSameRow() {
+            givenStoredRow("admin.myschool.com", "ADMIN,EVALUATOR,COURSE CREATOR,TEACHER", true);
+
+            service.setup(admin(), INSTITUTE_ID,
+                    setupRequest("admin.myschool.com", "ADMIN,COUNSELLOR,TEACHER", true));
+
+            ArgumentCaptor<DomainRoutingUpsertRequest> captor =
+                    ArgumentCaptor.forClass(DomainRoutingUpsertRequest.class);
+            verify(domainRoutingAdminService).update(eq("row-0"), captor.capture());
+            verify(domainRoutingAdminService, never()).create(any());
+            assertEquals("ADMIN,COUNSELLOR,TEACHER", captor.getValue().getRole());
+        }
+
+        @Test
+        @DisplayName("The same domain twice in one request is refused, not silently merged")
+        void duplicateHostIsRejected() {
+            assertThrows(VacademyException.class, () -> service.setup(admin(), INSTITUTE_ID, setupRequest(
+                    entry("admin.myschool.com", "ADMIN", true),
+                    entry("Admin.MySchool.com", "TEACHER", false))));
+        }
+
+        @Test
         @DisplayName("An admin portal that lets teachers in and the teacher portal can both be primary")
         void adminPortalWithTeacherDoesNotCollideWithTeacherPortal() {
             cloudflareStatus.put("admin.myschool.com", "active");
@@ -354,6 +381,40 @@ class WhiteLabelServiceTest {
     class FormerlyDatabaseOnly {
 
         @Test
+        @DisplayName("Two saved rows showing the same host each update their own row")
+        void routingIdKeepsLookalikeRowsApart() {
+            // Seen in prod: a "*" row on school.co.in and an exact row
+            // school @ co.in. Both display as school.co.in, so the form posts that
+            // host twice; only the row id says which row each entry is.
+            InstituteDomainRouting wildcard = new InstituteDomainRouting();
+            wildcard.setId("row-star");
+            wildcard.setInstituteId(INSTITUTE_ID);
+            wildcard.setDomain("school.co.in");
+            wildcard.setSubdomain("*");
+            wildcard.setRole("LEARNER");
+            givenStoredRow("school.co.in", "LEARNER", false);
+            storedRows.add(wildcard);
+            when(routingRepository.findById("row-0")).thenReturn(Optional.of(storedRows.get(0)));
+            when(routingRepository.findById("row-star")).thenReturn(Optional.of(wildcard));
+
+            WhiteLabelSetupRequest.DomainEntry exact = entry("school.co.in", "LEARNER", false);
+            exact.setRoutingId("row-0");
+            WhiteLabelSetupRequest.DomainEntry star = entry("school.co.in", "LEARNER", false);
+            star.setRoutingId("row-star");
+
+            service.setup(admin(), INSTITUTE_ID, setupRequest(exact, star));
+
+            ArgumentCaptor<DomainRoutingUpsertRequest> captor =
+                    ArgumentCaptor.forClass(DomainRoutingUpsertRequest.class);
+            verify(domainRoutingAdminService).update(eq("row-0"), any());
+            verify(domainRoutingAdminService).update(eq("row-star"), captor.capture());
+            verify(domainRoutingAdminService, never()).create(any());
+            // The "*" row keeps its shape rather than being rewritten as school @ co.in.
+            assertEquals("school.co.in", captor.getValue().getDomain());
+            assertEquals("*", captor.getValue().getSubdomain());
+        }
+
+        @Test
         @DisplayName("Free-text custom role names are accepted; an over-long list is refused with a reason")
         void roleNameRules() {
             service.setup(admin(), INSTITUTE_ID,
@@ -368,6 +429,25 @@ class WhiteLabelServiceTest {
             VacademyException e = assertThrows(VacademyException.class, () -> service.setup(admin(),
                     INSTITUTE_ID, setupRequest("staff.myschool.com", tooMany, false)));
             assertTrue(e.getMessage().contains("Too many roles"), e.getMessage());
+        }
+
+        @Test
+        @DisplayName("A row id from another institute is ignored, not written through")
+        void foreignRoutingIdIsIgnored() {
+            InstituteDomainRouting foreign = new InstituteDomainRouting();
+            foreign.setId("row-x");
+            foreign.setInstituteId("someone-else");
+            foreign.setDomain("myschool.com");
+            foreign.setSubdomain("learn");
+            foreign.setRole("LEARNER");
+            when(routingRepository.findById("row-x")).thenReturn(Optional.of(foreign));
+
+            WhiteLabelSetupRequest.DomainEntry e = entry("learn.myschool.com", "LEARNER", false);
+            e.setRoutingId("row-x");
+            service.setup(admin(), INSTITUTE_ID, setupRequest(e));
+
+            verify(domainRoutingAdminService, never()).update(eq("row-x"), any());
+            verify(domainRoutingAdminService).create(any());
         }
 
     }

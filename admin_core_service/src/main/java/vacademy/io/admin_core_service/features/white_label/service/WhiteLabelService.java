@@ -126,6 +126,27 @@ public class WhiteLabelService {
                     .replaceFirst("/.*$", ""));
         }
 
+        // Two entries writing one routing row would have the second silently
+        // overwrite the first. Keyed by the row each entry writes, so
+        // "myschool.com" and "*.myschool.com" (both the apex row) count as one
+        // host, while two saved rows that merely display the same host stay
+        // apart. Identity map, not equals(): DomainEntry is a Lombok @Data value.
+        Map<WhiteLabelSetupRequest.DomainEntry, RowTarget> targets = new IdentityHashMap<>();
+        for (WhiteLabelSetupRequest.DomainEntry e : entries) {
+            targets.put(e, resolveRowTarget(instituteId, e));
+        }
+        Map<String, List<String>> hostsByRow = entries.stream()
+                .collect(Collectors.groupingBy(e -> targets.get(e).key(),
+                        LinkedHashMap::new,
+                        Collectors.mapping(WhiteLabelSetupRequest.DomainEntry::getDomain, Collectors.toList())));
+        for (List<String> hosts : hostsByRow.values()) {
+            if (hosts.size() > 1) {
+                throw new VacademyException("Domain '" + hosts.get(0) + "' is listed " + hosts.size()
+                        + " times (" + String.join(", ", hosts) + "). Add it once and tick every role"
+                        + " that may log in there.");
+            }
+        }
+
         // Validate: at most one primary per portal. The portal is the entry's
         // LEARNER / ADMIN / TEACHER token; its other tokens are roles allowed to log
         // in. Counting every token made an admin portal that lets teachers in
@@ -209,7 +230,8 @@ public class WhiteLabelService {
             // primary flag is recorded here rather than applied to the institute
             // row — it is an intent that outlives this request, and it is honoured
             // only when the host actually serves.
-            upsertRoutingRow(instituteId, host, entry.getRole(), entry.isPrimary(), entry.getRoutingConfig());
+            upsertRoutingRow(instituteId, targets.get(entry), entry.getRole(), entry.isPrimary(),
+                    entry.getRoutingConfig());
         }
 
         // 4) Keep "at most one primary row per portal" true across ALL of the
@@ -623,23 +645,52 @@ public class WhiteLabelService {
         return false;
     }
 
+    /** The routing row an entry writes: its stored domain/subdomain, and the row if it exists. */
+    private record RowTarget(String domain, String subdomain, Optional<InstituteDomainRouting> existing) {
+        String key() {
+            return existing.map(r -> "id:" + r.getId()).orElse("host:" + domain + "|" + subdomain);
+        }
+    }
+
     /**
-     * Upsert a domain routing row. Looks up by institute+domain+subdomain+role
-     * (exact match on the full role string, so "ADMIN" and "ADMIN,MANAGE_LEAD"
-     * are separate rows). Updates if found, creates otherwise.
+     * Which row an entry edits. The row the form loaded it from wins, as long as
+     * the domain was not changed: two rows can display the same host (a "*" row
+     * and an exact one on a host like school.co.in), and only the id tells them apart.
+     * Otherwise the host decides, not the role string — that is what the admin
+     * edits (which roles may log in), and matching on it made every change of
+     * roles create a second row for the same host. A legacy host that already
+     * has several rows takes the one with this exact role string, else the oldest.
      */
-    private void upsertRoutingRow(String instituteId, String fullDomain,
+    private RowTarget resolveRowTarget(String instituteId, WhiteLabelSetupRequest.DomainEntry entry) {
+        if (StringUtils.hasText(entry.getRoutingId())) {
+            Optional<InstituteDomainRouting> own = routingRepository.findById(entry.getRoutingId())
+                    .filter(r -> r.getInstituteId() != null && instituteId.equals(r.getInstituteId().trim()))
+                    .filter(r -> entry.getDomain().equalsIgnoreCase(PortalUrlReconciler.hostOf(r)));
+            if (own.isPresent()) {
+                return new RowTarget(own.get().getDomain(), own.get().getSubdomain(), own);
+            }
+        }
+        String[] parts = splitDomain(entry.getDomain());
+        List<InstituteDomainRouting> hostRows = routingRepository.findByInstituteIdAndDomainAndSubdomain(
+                instituteId, parts[0], parts[1]);
+        Optional<InstituteDomainRouting> existing = hostRows.stream()
+                .filter(r -> entry.getRole().equals(r.getRole()))
+                .findFirst()
+                .or(() -> hostRows.stream().findFirst());
+        return new RowTarget(parts[0], parts[1], existing);
+    }
+
+    /** Writes one entry's routing row: updates the target row, or creates it. */
+    private void upsertRoutingRow(String instituteId, RowTarget target,
             String role, boolean isPrimary, PortalRoutingConfig config) {
 
-        String[] parts = splitDomain(fullDomain);
-        String domain = parts[0];
-        String subdomain = parts[1];
+        String domain = target.domain();
+        String subdomain = target.subdomain();
 
         DomainRoutingUpsertRequest req = buildUpsertRequest(instituteId, domain, subdomain, role, config);
         req.setPrimary(isPrimary);
 
-        Optional<InstituteDomainRouting> existing = routingRepository.findByInstituteIdAndDomainAndSubdomainAndRole(
-                instituteId, domain, subdomain, role);
+        Optional<InstituteDomainRouting> existing = target.existing();
 
         if (existing.isPresent()) {
             domainRoutingAdminService.update(existing.get().getId(), req);
