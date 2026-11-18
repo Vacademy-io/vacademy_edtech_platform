@@ -54,6 +54,7 @@ from sqlalchemy.orm import Session
 
 from ..config import get_settings
 from ..core.security import get_current_user
+from ..dependencies import require_internal_service_token
 from ..db import db_dependency, db_session
 from ..models.ai_task import AiTask, AiTaskInputType, AiTaskStatus
 from ..models.ai_token_usage import RequestType
@@ -796,6 +797,10 @@ async def start_draft_job(
     """Start a draft that keeps running if the teacher leaves. The same brief as
     POST /draft; auth, brief checks and the credit pre-flight still fail fast
     here (401/403/400/402/422/503)."""
+    return await _start_job(body, current_user, db)
+
+
+async def _start_job(body: DraftRequest, current_user, db: Session) -> Dict[str, Any]:
     d = await _prepare(body, current_user, db)
     existing = _reusable_job(db, d)
     if existing is not None:
@@ -904,6 +909,46 @@ async def ack_draft_job(
     """The wizard applied (or dismissed) this result — stop offering it."""
     _set_acked(db, _load_job(db, task_id, current_user))
     return {"ok": True}
+
+
+# ── service-to-service (weekly planning email) ──────────────────────────────
+#
+# admin_core drafts a week for a teacher who answered the weekly planning email
+# ("What are you teaching next week?") from a signed link, without signing in.
+# There is no user JWT to forward, so these two routes take the shared
+# X-Internal-Service-Token instead and name the teacher the draft is for. Same
+# brief, same credit pre-flight and billing as the teacher's own wizard; the
+# draft is billed to the institute and attributed to that teacher.
+
+
+class InternalDraftJobRequest(DraftRequest):
+    acting_user_id: str = Field(..., min_length=1, description="The teacher the draft is for.")
+    acting_role: str = Field("TEACHER", description="TEACHER or ADMIN; anything else is TEACHER.")
+
+
+@router.post("/internal/draft/jobs", dependencies=[Depends(require_internal_service_token)])
+async def internal_start_draft_job(
+    body: InternalDraftJobRequest,
+    db: Session = Depends(db_dependency),
+) -> Dict[str, Any]:
+    if not body.institute_id:
+        raise HTTPException(status_code=400, detail="institute_id is required.")
+    role = "ADMIN" if (body.acting_role or "").strip().upper() == "ADMIN" else "TEACHER"
+    actor = {"user_id": body.acting_user_id, "institute_id": body.institute_id, "roles": [role]}
+    brief = DraftRequest(**body.model_dump(exclude={"acting_user_id", "acting_role"}))
+    return await _start_job(brief, actor, db)
+
+
+@router.get("/internal/draft/jobs/{task_id}", dependencies=[Depends(require_internal_service_token)])
+async def internal_get_draft_job(
+    task_id: str,
+    institute_id: str,
+    db: Session = Depends(db_dependency),
+) -> Dict[str, Any]:
+    task = AiTaskRepository(db).get(task_id)
+    if not task or task.task_type != JOB_TYPE or (task.institute_id and task.institute_id != institute_id):
+        raise HTTPException(status_code=404, detail="Draft not found.")
+    return _job_view(task)
 
 
 # ── pictures ─────────────────────────────────────────────────────────────────

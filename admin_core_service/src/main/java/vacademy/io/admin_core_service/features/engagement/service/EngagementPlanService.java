@@ -274,12 +274,27 @@ public class EngagementPlanService {
     @Transactional(readOnly = true)
     public PlanListResult listPlans(String instituteId, String packageSessionId, String status,
                                     String q, String sort, Integer page, Integer size) {
+        return listPlans(instituteId, packageSessionId, status, q, sort, page, size, null, null);
+    }
+
+    /**
+     * As above, plus "My batches": when {@code mineUserId} is set, only plans on a batch
+     * that user teaches ({@code myCohorts}) or plans they created themselves.
+     */
+    @Transactional(readOnly = true)
+    public PlanListResult listPlans(String instituteId, String packageSessionId, String status,
+                                    String q, String sort, Integer page, Integer size,
+                                    String mineUserId, Set<String> myCohorts) {
         List<EngagementPlan> found = (packageSessionId == null || packageSessionId.isBlank())
                 ? planRepository.findByInstitute(instituteId)
                 : planRepository.findByPackageSession(packageSessionId);
         List<EngagementPlan> plans = new ArrayList<>();
         for (EngagementPlan plan : found) {
-            if (Objects.equals(plan.getInstituteId(), instituteId)) plans.add(plan);
+            if (!Objects.equals(plan.getInstituteId(), instituteId)) continue;
+            if (mineUserId != null
+                    && !Objects.equals(plan.getCreatedByUserId(), mineUserId)
+                    && (myCohorts == null || !myCohorts.contains(plan.getPackageSessionId()))) continue;
+            plans.add(plan);
         }
 
         List<EngagementPlanDTO> out = summarizeForList(plans);
@@ -319,6 +334,64 @@ public class EngagementPlanService {
         out = from >= total ? List.of()
                 : new ArrayList<>(out.subList((int) from, (int) Math.min(total, from + pageSize)));
         return new PlanListResult(out, total, pageNo, pageSize);
+    }
+
+    /** A plan that runs on at least one day of a date window. */
+    public record WindowPlan(String planId, String packageSessionId, String createdByUserId, String status) {}
+
+    /**
+     * Non-archived plans of the institute that run on at least one date in
+     * [{@code from}, {@code to}] (both inclusive, plan-local dates), with the weekday mask
+     * applied. RELATIVE plans have no calendar dates; a published one runs for every
+     * learner on their own schedule, so it counts as running in any window.
+     */
+    @Transactional(readOnly = true)
+    public List<WindowPlan> plansRunningIn(String instituteId, LocalDate from, LocalDate to) {
+        List<EngagementPlan> plans = new ArrayList<>();
+        for (EngagementPlan plan : planRepository.findByInstitute(instituteId)) {
+            if (!Objects.equals(plan.getInstituteId(), instituteId)) continue;
+            if (EngagementEnums.PlanStatus.ARCHIVED.name().equals(plan.getStatus())) continue;
+            plans.add(plan);
+        }
+        List<WindowPlan> out = new ArrayList<>();
+        Map<String, EngagementPlan> calendar = new HashMap<>();
+        for (EngagementPlan plan : plans) {
+            if (plan.isRelative()) {
+                if (EngagementEnums.PlanStatus.PUBLISHED.name().equals(plan.getStatus())) {
+                    out.add(new WindowPlan(plan.getId(), plan.getPackageSessionId(),
+                            plan.getCreatedByUserId(), plan.getStatus()));
+                }
+            } else {
+                calendar.put(plan.getId(), plan);
+            }
+        }
+        Set<String> running = new HashSet<>();
+        for (List<String> chunk : chunks(new ArrayList<>(calendar.keySet()))) {
+            for (EngagementSlot slot : planRepository.findActiveSlotsForPlans(chunk)) {
+                if (running.contains(slot.getPlanId())) continue;
+                if (slotRunsIn(slot, from, to, scheduleResolver)) running.add(slot.getPlanId());
+            }
+        }
+        for (String id : running) {
+            EngagementPlan plan = calendar.get(id);
+            out.add(new WindowPlan(plan.getId(), plan.getPackageSessionId(), plan.getCreatedByUserId(),
+                    plan.getStatus()));
+        }
+        return out;
+    }
+
+    /** Whether the slot runs on any date in [from, to]. */
+    static boolean slotRunsIn(EngagementSlot slot, LocalDate from, LocalDate to,
+                              EngagementScheduleResolver resolver) {
+        LocalDate start = slot.getStartDate();
+        LocalDate end = slot.effectiveEndDate();
+        if (start == null || end == null) return false;
+        LocalDate d = start.isAfter(from) ? start : from;
+        LocalDate last = end.isBefore(to) ? end : to;
+        for (int i = 0; !d.isAfter(last) && i < 400; d = d.plusDays(1), i++) {
+            if (resolver.runsOn(slot, d)) return true;
+        }
+        return false;
     }
 
     /**
@@ -530,6 +603,12 @@ public class EngagementPlanService {
             }
         }
         return out;
+    }
+
+    /** packageSessionId -> human batch label, for callers outside this service. */
+    @Transactional(readOnly = true)
+    public Map<String, String> batchLabels(List<String> packageSessionIds) {
+        return labels(packageSessionIds);
     }
 
     /** packageSessionId -> label: the batch's own name, else "Course · Session · Level". */

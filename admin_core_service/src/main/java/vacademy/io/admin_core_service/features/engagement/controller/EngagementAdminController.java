@@ -10,6 +10,7 @@ import vacademy.io.admin_core_service.features.engagement.dto.EngagementPlanDTO;
 import vacademy.io.admin_core_service.features.engagement.dto.EngagementPlanRequest;
 import vacademy.io.admin_core_service.features.engagement.dto.EngagementSlotDTO;
 import vacademy.io.admin_core_service.features.engagement.dto.EngagementSlotRequest;
+import vacademy.io.admin_core_service.features.engagement.planning.EngagementTeacherScope;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementPlanService;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementTrackingService;
 import vacademy.io.common.auth.model.CustomUserDetails;
@@ -35,6 +36,7 @@ public class EngagementAdminController {
     private final EngagementPlanService planService;
     private final EngagementTrackingService trackingService;
     private final InstituteAccessValidator instituteAccessValidator;
+    private final EngagementTeacherScope teacherScope;
 
     /**
      * Create the plan for one batch, or for several at once via packageSessionIds.
@@ -79,6 +81,9 @@ public class EngagementAdminController {
      * Shape: without page and size the body is the plain array it has always been
      * (filtered when status / q are sent). With page (0-based) or size (default 20,
      * max 100) it is a page object: {content, page, size, totalRows, totalPages}.
+     *
+     * mine=true narrows to "My batches": plans on batches the caller teaches (faculty
+     * mapping) plus plans the caller created.
      */
     @GetMapping("/plan/list")
     public ResponseEntity<?> listPlans(
@@ -89,10 +94,14 @@ public class EngagementAdminController {
             @RequestParam(required = false) String sort,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size,
+            @RequestParam(required = false, defaultValue = "false") boolean mine,
             @RequestAttribute("user") CustomUserDetails user) {
         instituteAccessValidator.requireStaffAccess(user, instituteId);
-        EngagementPlanService.PlanListResult result =
-                planService.listPlans(instituteId, packageSessionId, status, q, sort, page, size);
+        // mine=true: "My batches" — plans on batches the caller teaches, or that they created.
+        EngagementPlanService.PlanListResult result = mine
+                ? planService.listPlans(instituteId, packageSessionId, status, q, sort, page, size,
+                        user.getUserId(), teacherScope.cohortsOf(user.getUserId(), instituteId))
+                : planService.listPlans(instituteId, packageSessionId, status, q, sort, page, size);
         if (page == null && size == null) {
             return ResponseEntity.ok(result.plans());
         }
