@@ -367,7 +367,7 @@ public class PosReadRepository {
         List<PosDtos.SessionRow> out = new ArrayList<>();
         for (Object[] r : rows(list)) {
             out.add(new PosDtos.SessionRow(text(r[0]), text(r[1]), text(r[2]), text(r[3]), text(r[4]), date(r[5]),
-                    date(r[6]), integer(r[7]), money(r[8]), r[9] == null ? null : money(r[9])));
+                    date(r[6]), integer(r[7]), money(r[8]), r[9] == null ? null : money(r[9]), null));
         }
         return new SessionPage(out, total);
     }

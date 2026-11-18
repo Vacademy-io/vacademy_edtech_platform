@@ -809,6 +809,22 @@ class CommercePosDatabaseProofIT {
         assertEquals(next + 1, nextValue(r1Series));
         same("450.00", expected(s), "one bill of cash");
 
+        // m8: the race branch itself. The first tap is held in its transaction after its order row
+        // is written; the second, started while nothing is committed, meets it on the client key
+        // (DataIntegrityViolation) and answers its bill.
+        long raceNext = nextValue(r1Series);
+        String raceKey = key();
+        PosDtos.SaleRequest raceTap = body(raceKey, s, List.of(line("l1", spoon, 1, null)), List.of(cash("50.00")));
+        List<PosSaleService.Outcome> held = holdFirstTap(raceKey, () -> sales.sale(cashier, inst, raceTap));
+        assertFalse(held.get(0).replayed(), "the held tap made the bill");
+        assertTrue(held.get(1).replayed(), "the second answered it");
+        assertEquals(held.get(0).answer().sale().orderId(), held.get(1).answer().sale().orderId());
+        assertEquals(held.get(0).answer().receipt().document().number(),
+                held.get(1).answer().receipt().document().number());
+        assertEquals(1, count("SELECT count(*) FROM commerce_order WHERE client_request_id = ?", raceKey));
+        assertEquals(raceNext + 1, nextValue(r1Series), "one number");
+        same("500.00", expected(s), "one more bill of cash");
+
         // Two different bills race for the same piece: one sells it, the other is refused whole.
         String piece = pieces(scarf, "IN_STOCK").get(0);
         int scarfSlots = slots(scarf);
@@ -838,7 +854,7 @@ class CommercePosDatabaseProofIT {
         assertEquals(scarfSlots - 1, slots(scarf), "one unit left the online counters");
         assertEquals(racedNext + 1, nextValue(r1Series), "one number for one bill");
         assertEquals(1, count("SELECT count(*) FROM stock_movement WHERE piece_id = ? AND type = 'POS_SALE'", piece));
-        same("1650.00", expected(s), "one more bill of cash");
+        same("1700.00", expected(s), "one more bill of cash");
         closeEven(cashier, s);
     }
 
@@ -907,6 +923,51 @@ class CommercePosDatabaseProofIT {
                 sold.answer().sale().orderId()), "the number the failed sale did not use");
         assertEquals(r1Next + 1, nextValue(r1Series));
         assertEquals(r1Issued + 1, count("SELECT count(*) FROM invoice WHERE series_id = ?", r1Series));
+        consecutive(r1Series);
+
+        // (c) m8: a failure AFTER the invoice number was taken (the sale's audit row, written after
+        // the document, is refused by a test trigger): the series counter rolls back with the rest.
+        long takenNext = nextValue(r1Series);
+        long takenIssued = count("SELECT count(*) FROM invoice WHERE series_id = ?", r1Series);
+        int spoonOnline = onHand(online, spoon);
+        movements = allMovements();
+        orders = allOrders();
+        BigDecimal cashBefore = expected(s1);
+        String lateKey = key();
+        db.execute("""
+                CREATE OR REPLACE FUNCTION proof_pos_fail_audit() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN
+                    IF NEW.kind = 'POS_SALE' AND NEW.institute_id = '%s' THEN
+                        RAISE EXCEPTION 'proof: forced failure after the invoice number';
+                    END IF;
+                    RETURN NEW;
+                END $$""".formatted(inst));
+        db.execute("DROP TRIGGER IF EXISTS proof_pos_fail_audit ON commerce_audit");
+        db.execute("CREATE TRIGGER proof_pos_fail_audit BEFORE INSERT ON commerce_audit FOR EACH ROW "
+                + "EXECUTE FUNCTION proof_pos_fail_audit()");
+        try {
+            RuntimeException late = assertThrows(RuntimeException.class, () -> sales.sale(cashier, inst, body(lateKey,
+                    s1, List.of(line("l1", spoon, 2, null)), List.of(cash("100.00")))));
+            String chain = "";
+            for (Throwable t = late; t != null; t = t.getCause()) {
+                chain += " | " + t.getMessage();
+            }
+            assertTrue(chain.contains("proof: forced failure after the invoice number"), chain);
+        } finally {
+            db.execute("DROP TRIGGER IF EXISTS proof_pos_fail_audit ON commerce_audit");
+        }
+        assertEquals(takenNext, nextValue(r1Series), "the number taken by the failed sale is not used");
+        assertEquals(takenIssued, count("SELECT count(*) FROM invoice WHERE series_id = ?", r1Series));
+        assertEquals(orders, allOrders());
+        assertEquals(movements, allMovements());
+        assertEquals(spoonOnline, onHand(online, spoon));
+        assertEquals(0, count("SELECT count(*) FROM commerce_order WHERE client_request_id = ?", lateKey));
+        assertEquals(0, cashBefore.compareTo(expected(s1)));
+        // The same request then goes through with exactly that number.
+        PosSaleService.Outcome after = sales.sale(cashier, inst, body(lateKey, s1, List.of(line("l1", spoon, 2, null)),
+                List.of(cash("100.00"))));
+        assertEquals(takenNext, count("SELECT substring(invoice_number from '([0-9]+)$')::bigint FROM invoice WHERE "
+                + "commerce_order_id = ?", after.answer().sale().orderId()));
         consecutive(r1Series);
         closeEven(cashier, s1);
     }
@@ -1074,7 +1135,8 @@ class CommercePosDatabaseProofIT {
         assertEquals("PIN_INVALID", denied(() -> corrections.voidSale(cashier, inst, orderId,
                 new PosDtos.VoidRequest(key(), "Keyed twice", pin(cashierId, PIN)))));
 
-        PosDtos.SaleAnswer voided = corrections.voidSale(cashier, inst, orderId, new PosDtos.VoidRequest(key(),
+        String voidKey = key();
+        PosDtos.SaleAnswer voided = corrections.voidSale(cashier, inst, orderId, new PosDtos.VoidRequest(voidKey,
                 "Keyed twice", pin(managerId, PIN)));
         assertEquals("CANCELLED", voided.sale().status());
         assertEquals("POS_VOID", text("SELECT cancel_reason FROM commerce_order WHERE id = ?", orderId));
@@ -1115,7 +1177,9 @@ class CommercePosDatabaseProofIT {
         assertEquals(0, count("SELECT count(*) FROM commerce_staff_pin WHERE pin_hash IN (?, ?)", PIN, WRONG_PIN));
 
         // Tender change by the cashier needs a PIN and moves the expected cash.
-        PosSaleService.Outcome second = sell(cashier, s1, List.of(line("l1", bottle, 1, null)), List.of(cash("450.00")));
+        String secondKey = key();
+        PosSaleService.Outcome second = sales.sale(cashier, inst, body(secondKey, s1, List.of(line("l1", bottle, 1,
+                null)), List.of(cash("450.00"))));
         String secondId = second.answer().sale().orderId();
         String tenderId = second.answer().sale().tenders().get(0).id();
         same("1450.00", expected(s1), "with the second bill");
@@ -1130,13 +1194,22 @@ class CommercePosDatabaseProofIT {
         same("1000.00", expected(s1), "the cash left the expected drawer");
         assertEquals(1, approvals("POS_TENDER_CHANGE", tenderId));
 
-        // A manager voids a bill of the cashier's session at their own location with no PIN.
+        // D5: a void or tender change is made at the bill's own drawer, by its cashier: a manager
+        // acting from elsewhere (no PIN needed otherwise) is refused, and nothing moves.
         PosSaleService.Outcome third = sell(cashier, s1, List.of(line("l1", bottle, 1, null)), List.of(cash("450.00")));
-        PosDtos.SaleAnswer byManager = corrections.voidSale(manager, inst, third.answer().sale().orderId(),
-                new PosDtos.VoidRequest(key(), "Buyer changed their mind", null));
-        assertEquals("CANCELLED", byManager.sale().status());
-        assertEquals(0, approvals("POS_VOID", third.answer().sale().orderId()));
-        same("1000.00", expected(s1), "after the manager's void");
+        String thirdId = third.answer().sale().orderId();
+        refused("SESSION_MISMATCH", () -> corrections.voidSale(manager, inst, thirdId,
+                new PosDtos.VoidRequest(key(), "Buyer changed their mind", null)));
+        refused("SESSION_MISMATCH", () -> corrections.changeTender(manager, inst, thirdId,
+                third.answer().sale().tenders().get(0).id(), new PosDtos.TenderChangeRequest(key(), "UPI", "UPI 9003",
+                        null)));
+        assertEquals("DELIVERED", text("SELECT status FROM commerce_order WHERE id = ?", thirdId));
+        same("1450.00", expected(s1), "the manager's refused void moved nothing");
+        PosDtos.SaleAnswer atTheDrawer = corrections.voidSale(cashier, inst, thirdId,
+                new PosDtos.VoidRequest(key(), "Buyer changed their mind", pin(managerId, PIN)));
+        assertEquals("CANCELLED", atTheDrawer.sale().status());
+        assertEquals(1, approvals("POS_VOID", thirdId));
+        same("1000.00", expected(s1), "after the void at the bill's drawer");
 
         PosDtos.SessionView closed = closeEven(cashier, s1);
         assertEquals(2, closed.zReport().voided().count());
@@ -1145,6 +1218,16 @@ class CommercePosDatabaseProofIT {
                 new PosDtos.VoidRequest(key(), "Too late", pin(managerId, PIN))));
         refused("SESSION_NOT_OPEN", () -> corrections.changeTender(manager, inst, secondId,
                 changed.sale().tenders().get(1).id(), new PosDtos.TenderChangeRequest(key(), "CASH", null, null)));
+        // A retry that comes after the close gets its answer, not SESSION_NOT_OPEN (the void, the sale).
+        PosDtos.SaleAnswer voidAgain = corrections.voidSale(cashier, inst, orderId, new PosDtos.VoidRequest(voidKey,
+                "Keyed twice", pin(managerId, PIN)));
+        assertTrue(voidAgain.replayed());
+        assertEquals("CANCELLED", voidAgain.sale().status());
+        PosSaleService.Outcome saleAgain = sales.sale(cashier, inst, body(secondKey, s1, List.of(line("l1", bottle, 1,
+                null)), List.of(cash("450.00"))));
+        assertTrue(saleAgain.replayed());
+        assertEquals(secondId, saleAgain.answer().sale().orderId());
+        assertEquals(1, approvals("POS_VOID", orderId), "a replay asks for no new approval");
     }
 
     // ================================================================== 11. discount limit
@@ -1280,17 +1363,75 @@ class CommercePosDatabaseProofIT {
         same("900.00", two.answer().credit(), "credit");
         assertEquals(1, approvals("POS_CASH_REFUND", bigId));
         assertEquals(0, mid.subtract(amount("900.00")).compareTo(expected(s2)));
+
+        // D2: money back by UPI above the limit needs the PIN too (and moves no drawer cash).
+        PosSaleService.Outcome byUpi = sell(cashier, s2, List.of(line("l1", bottle, 2, null)), List.of(cash("900.00")));
+        String upiId = byUpi.answer().sale().orderId();
+        String upiLine = byUpi.answer().sale().lines().get(0).orderLineId();
+        PosDtos.ReturnRequest upiBack = new PosDtos.ReturnRequest(key(), s2, upiId,
+                List.of(new PosDtos.ReturnLine(upiLine, 2, "RESALEABLE", null)), "DEFECTIVE", null, null,
+                new PosDtos.Settle("REFUND", "UPI", "UPI back 5501"), null);
+        refused("APPROVAL_REQUIRED: POS_CASH_REFUND", () -> posReturns.create(cashier, inst, upiBack));
+        assertEquals(0, count("SELECT count(*) FROM commerce_return WHERE order_id = ?", upiId));
+        // G1: the preview takes the UPI refund before its reference is typed.
+        assertEquals(List.of("POS_CASH_REFUND"), posReturns.preview(cashier, inst, new PosDtos.ReturnPreviewRequest(
+                s2, upiId, List.of(new PosDtos.ReturnLine(upiLine, 2, null, null)), "DEFECTIVE",
+                new PosDtos.Settle("REFUND", "UPI", null))).needsApproval());
+        BigDecimal beforeUpi = expected(s2);
+        PosDtos.ReturnAnswer upiDone = posReturns.create(cashier, inst, new PosDtos.ReturnRequest(
+                upiBack.clientRequestId(), s2, upiId, upiBack.lines(), "DEFECTIVE", null, null, upiBack.settle(),
+                pin(managerId, PIN))).answer();
+        assertEquals("UPI", upiDone.refund().method());
+        assertEquals("PROCESSED", upiDone.refund().status());
+        assertEquals(1, approvals("POS_CASH_REFUND", upiId));
+        assertEquals(0, beforeUpi.compareTo(expected(s2)), "UPI back moves no drawer cash");
+        assertEquals(s2, text("SELECT pos_session_id FROM commerce_return WHERE id = ?", upiDone.returnId()),
+                "the return carries its counter session");
+
+        // D3 + D6: a bill of the other location's counter, taken back here with cash above the limit:
+        // one PIN covers both reasons (two approval rows), never asked twice.
+        String other = open(cashierB, r1, "0.00");
+        PosSaleService.Outcome elsewhere = sell(cashierB, other, List.of(line("l1", bottle, 2, null)),
+                List.of(cash("900.00")));
+        closeEven(cashierB, other);
+        String elsewhereId = elsewhere.answer().sale().orderId();
+        String elsewhereLine = elsewhere.answer().sale().lines().get(0).orderLineId();
+        assertEquals(List.of("POS_RETURN_OVERRIDE", "POS_CASH_REFUND"), posReturns.preview(cashier, inst,
+                new PosDtos.ReturnPreviewRequest(s2, elsewhereId, List.of(new PosDtos.ReturnLine(elsewhereLine, 2, null,
+                        null)), "DEFECTIVE", new PosDtos.Settle("REFUND", "CASH", null))).needsApproval());
+        PosDtos.ReturnRequest fromL1 = new PosDtos.ReturnRequest(key(), s2, elsewhereId,
+                List.of(new PosDtos.ReturnLine(elsewhereLine, 2, "RESALEABLE", null)), "DEFECTIVE", null, null,
+                new PosDtos.Settle("REFUND", "CASH", null), null);
+        refused("APPROVAL_REQUIRED: POS_RETURN_OVERRIDE", () -> posReturns.create(cashier, inst, fromL1));
+        BigDecimal beforeL1 = expected(s2);
+        PosReturnService.Outcome l1Back = posReturns.create(cashier, inst, new PosDtos.ReturnRequest(
+                fromL1.clientRequestId(), s2, elsewhereId, fromL1.lines(), "DEFECTIVE", null, null, fromL1.settle(),
+                pin(managerId, PIN)));
+        same("900.00", l1Back.answer().credit(), "credit");
+        assertEquals(1, approvals("POS_RETURN_OVERRIDE", elsewhereId));
+        assertEquals(1, approvals("POS_CASH_REFUND", elsewhereId));
+        assertEquals(0, beforeL1.subtract(amount("900.00")).compareTo(expected(s2)));
+
         PosDtos.SessionView closed = closeEven(cashier, s2);
-        assertTrue(closed.zReport().refunds().stream().anyMatch(r -> "CASH".equals(r.method()) && r.count() == 2),
+        assertTrue(closed.zReport().refunds().stream().anyMatch(r -> "CASH".equals(r.method()) && r.count() == 3),
                 closed.zReport().refunds().toString());
-        assertEquals(2, closed.zReport().returns().count());
+        assertTrue(closed.zReport().refunds().stream().anyMatch(r -> "UPI".equals(r.method()) && r.count() == 1),
+                closed.zReport().refunds().toString());
+        assertEquals(4, closed.zReport().returns().count());
+
+        // A retry after the close gets the return, not SESSION_NOT_OPEN.
+        PosReturnService.Outcome again = posReturns.create(cashier, inst, new PosDtos.ReturnRequest(
+                whole.clientRequestId(), s2, bigId, whole.lines(), "DEFECTIVE", null, null, whole.settle(),
+                pin(managerId, PIN)));
+        assertTrue(again.replayed());
+        assertEquals(two.answer().returnId(), again.answer().returnId());
     }
 
     // ================================================================== 14. exchange
 
     @Test
     @Order(14)
-    void exchangeAtTill() {
+    void exchangeAtTill() throws Exception {
         String s1 = open(cashier, r1, "0.00");
         String piece = pieces(scarf, "IN_STOCK").get(0);
         PosSaleService.Outcome sold = sell(cashier, s1, List.of(line("l1", scarf, 1, List.of(piece))),
@@ -1304,10 +1445,21 @@ class CommercePosDatabaseProofIT {
         same("1200.00", credit.exchangeCredit(), "exchange credit");
         assertEquals("IN_STOCK", text("SELECT status FROM commerce_piece WHERE id = ?", piece));
         BigDecimal before = expected(s1);
-        PosSaleService.Outcome swapped = sales.sale(cashier, inst, new PosDtos.SaleRequest(key(), s1,
-                List.of(line("l1", bottle, 1, null)), null, null, List.of(),
-                new PosDtos.Exchange(credit.returnId(), new PosDtos.RemainderRefund("CASH", null)), null, null, null,
-                null));
+        assertEquals(s1, text("SELECT pos_session_id FROM commerce_return WHERE id = ?", credit.returnId()));
+        // D1: the return was taken in this session: its credit is the cashier's to see and use.
+        PosDtos.Quote quoted = sales.quote(cashier, inst, new PosDtos.SaleRequest(null, s1,
+                List.of(line("l1", bottle, 1, null)), null, null, null, new PosDtos.Exchange(credit.returnId(),
+                new PosDtos.RemainderRefund("CASH", null)), null, null, null, null));
+        same("1200.00", quoted.exchangeCredit(), "the credit");
+        // D2: the remainder of 750 in cash is above the cashier's 500 limit: a PIN.
+        assertEquals(List.of("POS_CASH_REFUND"), quoted.needsApproval());
+        String swapKey = key();
+        PosDtos.SaleRequest swap = new PosDtos.SaleRequest(swapKey, s1, List.of(line("l1", bottle, 1, null)), null,
+                null, List.of(), new PosDtos.Exchange(credit.returnId(), new PosDtos.RemainderRefund("CASH", null)),
+                null, null, null, null);
+        refused("APPROVAL_REQUIRED: POS_CASH_REFUND", () -> sales.sale(cashier, inst, swap));
+        PosSaleService.Outcome swapped = sales.sale(cashier, inst, new PosDtos.SaleRequest(swapKey, s1,
+                swap.lines(), null, null, List.of(), swap.exchange(), pin(managerId, PIN), null, null, null));
         String newOrder = swapped.answer().sale().orderId();
         assertEquals(orderId, text("SELECT exchange_of_order_id FROM commerce_order WHERE id = ?", newOrder));
         assertEquals("CREDIT_NOTE", swapped.answer().sale().tenders().get(0).mode());
@@ -1318,15 +1470,112 @@ class CommercePosDatabaseProofIT {
                 "remainder");
         assertNull(text("SELECT pos_session_id FROM commerce_refund WHERE idempotency_key = ?", "EXCH:" + newOrder));
         assertEquals(0, before.subtract(amount("750.00")).compareTo(expected(s1)));
-        refused("VOID_HAS_EXCHANGE", () -> corrections.voidSale(manager, inst, newOrder,
-                new PosDtos.VoidRequest(key(), "No", null)));
-        // Recorded, not changed: the remainder is cash out of the drawer above the cashier's refund
-        // limit, and the contract asks no PIN for it (see the build record).
-        assertEquals(0, count("SELECT count(*) FROM commerce_approval WHERE institute_id = ? AND reference_id IN (?, ?)",
-                inst, orderId, newOrder));
+        refused("VOID_HAS_EXCHANGE", () -> corrections.voidSale(cashier, inst, newOrder,
+                new PosDtos.VoidRequest(key(), "No", pin(managerId, PIN))));
+        assertEquals(1, approvals("POS_CASH_REFUND", newOrder), "the remainder's approval");
+        same("750.00", money("SELECT amount FROM commerce_approval WHERE reference_id = ? AND action = "
+                + "'POS_CASH_REFUND'", newOrder), "names the remainder");
+        assertEquals(0, approvals("POS_EXCHANGE", newOrder), "the cashier's own return needs no PIN to spend");
         sessions.cashMovement(manager, inst, s1, new PosDtos.CashMovementRequest(key(), "CASH_IN", amount("750.00"),
                 "Cover the exchange"));
+
+        // D1: a return taken in an earlier session is not the cashier's to spend without a manager.
+        PosSaleService.Outcome one = sell(cashier, s1, List.of(line("l1", bottle, 1, null)), List.of(cash("450.00")));
+        PosDtos.ReturnAnswer older = posReturns.create(cashier, inst, new PosDtos.ReturnRequest(key(), s1,
+                one.answer().sale().orderId(), List.of(new PosDtos.ReturnLine(one.answer().sale().lines().get(0)
+                .orderLineId(), 1, "RESALEABLE", null)), "DEFECTIVE", null, null,
+                new PosDtos.Settle("EXCHANGE", null, null), null)).answer();
         closeEven(cashier, s1);
+        String s1b = open(cashier, r1, "0.00");
+        PosDtos.SaleRequest quoteOlder = new PosDtos.SaleRequest(null, s1b, List.of(line("l1", bottle, 1, null)), null,
+                null, null, new PosDtos.Exchange(older.returnId(), null), null, null, null, null);
+        PosDtos.Quote hidden = sales.quote(cashier, inst, quoteOlder);
+        assertNull(hidden.exchangeCredit(), "no amount told without a manager");
+        assertEquals(List.of("POS_EXCHANGE"), hidden.needsApproval());
+        PosDtos.Quote shown = sales.quote(cashier, inst, new PosDtos.SaleRequest(null, s1b, quoteOlder.lines(), null,
+                null, null, quoteOlder.exchange(), pin(managerId, PIN), null, null, null));
+        same("450.00", shown.exchangeCredit(), "told with the PIN");
+        assertEquals(1, approvals("POS_EXCHANGE", older.returnId()), "the quote's approval names the return");
+        PosDtos.SaleRequest spend = new PosDtos.SaleRequest(key(), s1b, quoteOlder.lines(), null, null, List.of(),
+                quoteOlder.exchange(), null, null, null, null);
+        refused("APPROVAL_REQUIRED: POS_EXCHANGE", () -> sales.sale(cashier, inst, spend));
+        assertEquals(0, count("SELECT count(*) FROM commerce_order WHERE exchange_of_order_id = ?",
+                one.answer().sale().orderId()));
+        PosSaleService.Outcome spent = sales.sale(cashier, inst, new PosDtos.SaleRequest(spend.clientRequestId(), s1b,
+                spend.lines(), null, null, List.of(), spend.exchange(), pin(managerId, PIN), null, null, null));
+        assertEquals(1, approvals("POS_EXCHANGE", spent.answer().sale().orderId()));
+        same("450.00", spent.answer().sale().tenders().get(0).amount(), "the credit paid the bill");
+
+        // M1: a double tap of an exchange bill while the first is still in its transaction answers
+        // the bill, not EXCHANGE_NOT_AVAILABLE. The first tap is held 3 s after its order row is
+        // written (a test trigger), with the old order locked; the second waits on that lock.
+        PosSaleService.Outcome two = sell(cashier, s1b, List.of(line("l1", bottle, 2, null)), List.of(cash("900.00")));
+        PosDtos.ReturnAnswer both = posReturns.create(cashier, inst, new PosDtos.ReturnRequest(key(), s1b,
+                two.answer().sale().orderId(), List.of(new PosDtos.ReturnLine(two.answer().sale().lines().get(0)
+                .orderLineId(), 2, "RESALEABLE", null)), "DEFECTIVE", null, null,
+                new PosDtos.Settle("EXCHANGE", null, null), null)).answer();
+        String tapKey = key();
+        // The remainder 450 goes back by UPI with no reference yet: a PENDING refund (m6).
+        PosDtos.SaleRequest tap = new PosDtos.SaleRequest(tapKey, s1b, List.of(line("l1", bottle, 1, null)), null,
+                null, List.of(), new PosDtos.Exchange(both.returnId(), new PosDtos.RemainderRefund("UPI", null)), null,
+                null, null, null);
+        BigDecimal cashBefore = expected(s1b);
+        List<PosSaleService.Outcome> taps = holdFirstTap(tapKey, () -> sales.sale(cashier, inst, tap));
+        String tapped = taps.get(0).answer().sale().orderId();
+        assertEquals(tapped, taps.get(1).answer().sale().orderId(), "both taps answer the same bill");
+        assertEquals(1, taps.stream().filter(PosSaleService.Outcome::replayed).count());
+        assertEquals(1, count("SELECT count(*) FROM commerce_order WHERE client_request_id = ?", tapKey));
+        assertEquals(1, count("SELECT count(*) FROM commerce_refund WHERE idempotency_key = ?", "EXCH_REST:" + tapped));
+        assertEquals("PENDING", text("SELECT status FROM commerce_refund WHERE idempotency_key = ?",
+                "EXCH_REST:" + tapped));
+        assertEquals(0, cashBefore.compareTo(expected(s1b)), "a pending UPI refund moves no cash");
+        PosDtos.SessionView closedB = closeEven(cashier, s1b);
+        assertTrue(closedB.zReport().refunds().stream().noneMatch(r -> "UPI".equals(r.method())),
+                "a refund not paid yet is not in the paid refunds: " + closedB.zReport().refunds());
+        assertTrue(closedB.zReport().refundsPending().stream().anyMatch(r -> "UPI".equals(r.method())
+                && r.count() == 1 && r.amount().compareTo(amount("450.00")) == 0), closedB.zReport().refundsPending()
+                .toString());
+    }
+
+    /**
+     * Two taps of the same request: the first is held inside its transaction for 3 s after its
+     * order row is written (an AFTER INSERT trigger on the client key, local database only); the
+     * second starts 1 s later, when nothing is committed yet, so it can only meet the first on the
+     * key or on what the first locked. Returns both answers, the first tap's first.
+     */
+    private <T> List<T> holdFirstTap(String clientKey, Callable<T> call) throws Exception {
+        db.execute("CREATE TABLE IF NOT EXISTS proof_pos_hold_key (k VARCHAR(64) PRIMARY KEY)");
+        db.execute("""
+                CREATE OR REPLACE FUNCTION proof_pos_hold() RETURNS trigger LANGUAGE plpgsql AS $$
+                BEGIN
+                    IF EXISTS (SELECT 1 FROM proof_pos_hold_key WHERE k = NEW.client_request_id) THEN
+                        PERFORM pg_sleep(3);
+                    END IF;
+                    RETURN NEW;
+                END $$""");
+        db.execute("DROP TRIGGER IF EXISTS proof_pos_hold ON commerce_order");
+        db.execute("CREATE TRIGGER proof_pos_hold AFTER INSERT ON commerce_order FOR EACH ROW "
+                + "EXECUTE FUNCTION proof_pos_hold()");
+        db.update("INSERT INTO proof_pos_hold_key (k) VALUES (?)", clientKey);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            Future<T> first = pool.submit(() -> {
+                header(inst);
+                return call.call();
+            });
+            Thread.sleep(1000);
+            assertEquals(0, count("SELECT count(*) FROM commerce_order WHERE client_request_id = ?", clientKey),
+                    "nothing committed when the second tap starts");
+            Future<T> second = pool.submit(() -> {
+                header(inst);
+                return call.call();
+            });
+            return List.of(first.get(60, TimeUnit.SECONDS), second.get(60, TimeUnit.SECONDS));
+        } finally {
+            pool.shutdown();
+            db.execute("DROP TRIGGER IF EXISTS proof_pos_hold ON commerce_order");
+            db.update("DELETE FROM proof_pos_hold_key");
+        }
     }
 
     // ================================================================== 15. gate 19

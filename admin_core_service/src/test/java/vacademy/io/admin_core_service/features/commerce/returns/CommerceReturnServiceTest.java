@@ -55,6 +55,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -702,9 +703,23 @@ class CommerceReturnServiceTest {
         assertEquals(0, new BigDecimal("1000.00").compareTo(f.order.getRefundDue()));
         verify(f.requestGuard, never()).run(any(), any(), any());
         verify(f.desk, never()).authorize(any(), anyString(), any(), any());
-        assertTrue(f.eventTypes.contains(CommerceOrderEvents.RETURN_APPROVED));
+        // G4: the buyer stands at the counter: no "return approved" message.
+        assertFalse(f.eventTypes.contains(CommerceOrderEvents.RETURN_APPROVED), f.eventTypes.toString());
+        assertNull(ret.getPosSessionId(), "no session given, none stamped");
         assertEquals(2, posted.size());
         assertEquals("loc-2", posted.get(0).getLocationId());
+    }
+
+    @Test
+    void pos_aCounterReturnIsStampedWithItsSessionAndSendsNoApprovedMessage() {
+        counterBill();
+        line("l1", 3, "1500.00");
+        service.counterReturnInside(INST, counterBody("l1", 1), "loc-2", "RET-000010", "hash-9", "cashier-1",
+                List.of(named("l1", "RESALEABLE", 1)), "session-7");
+        CommerceReturn ret = f.returns.get(0);
+        assertEquals("session-7", ret.getPosSessionId(), "the till knows the return was taken in this session");
+        assertEquals("RECEIVED", ret.getStatus());
+        assertFalse(f.eventTypes.contains(CommerceOrderEvents.RETURN_APPROVED), f.eventTypes.toString());
     }
 
     @Test

@@ -494,6 +494,38 @@ class CommerceInvoiceServiceTest {
         verify(invoices, never()).saveAndFlush(any());
     }
 
+    @Test
+    void m7_aPaperBillGoesToTheBookOfItsDatesFinancialYear() {
+        // The 2025-26 book 1..200 is still ACTIVE next to the 2026-27 book 1..200, same location.
+        CommerceDocumentSeries old = book(1, 200);
+        old.setId("book-old");
+        old.setPrefix("BK0/");
+        old.setFinancialYear("2025-26");
+        CommerceDocumentSeries current = book(1, 200);
+        current.setId("book-new");
+        when(seriesRepository.findByInstituteIdAndDocumentTypeAndStatus(INST, "TAX_INVOICE", "ACTIVE"))
+                .thenReturn(List.of(old, current));
+        CommerceInvoiceRequest april = request(TaxMode.REGULAR);
+        april.setChannel("POS");
+        april.setExternalInvoiceNumber("57");
+        april.setDocumentDate(LocalDate.of(2026, 4, 2));
+        Invoice invoice = service.issue(INST, april).invoice();
+        assertEquals("book-new", invoice.getSeriesId(), "FY 2026-27 by the bill's date");
+        assertEquals("BK1/2627-00057", invoice.getInvoiceNumber());
+
+        CommerceInvoiceRequest march = request(TaxMode.REGULAR);
+        march.setChannel("POS");
+        march.setExternalInvoiceNumber("57");
+        march.setDocumentDate(LocalDate.of(2026, 3, 30));
+        assertEquals("book-old", service.issue(INST, march).invoice().getSeriesId(), "FY 2025-26");
+
+        // No book of the bill's year: refused, never filed in another year's book.
+        when(seriesRepository.findByInstituteIdAndDocumentTypeAndStatus(INST, "TAX_INVOICE", "ACTIVE"))
+                .thenReturn(List.of(old));
+        assertTrue(assertThrows(ConflictException.class, () -> service.issue(INST, april)).getMessage()
+                .startsWith("BILL_BOOK_NOT_REGISTERED"));
+    }
+
     // ------------------------------------------------------------------ cancel, reissue
 
     private Invoice issuedInvoice() {

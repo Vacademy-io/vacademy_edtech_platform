@@ -12,6 +12,7 @@ import vacademy.io.admin_core_service.features.commerce.common.request.CommerceR
 import vacademy.io.admin_core_service.features.commerce.document.entity.CommerceCreditNote;
 import vacademy.io.admin_core_service.features.commerce.document.repository.CommerceCreditNoteRepository;
 import vacademy.io.admin_core_service.features.commerce.document.service.DocumentClock;
+import vacademy.io.admin_core_service.features.commerce.order.checkout.CommerceOrderWriter;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderDeskService;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrder;
 import vacademy.io.admin_core_service.features.commerce.order.enums.ReturnCondition;
@@ -56,6 +57,10 @@ import java.util.Set;
  * {@code exchange.return_id}). The return service does the stock, the credit note and the
  * order's refund due; the refund service writes the refund. One transaction, in the shop's lock
  * order: the order, the PINs (remote), the session FOR SHARE, then the return's own locks.
+ *
+ * <p>A cashier needs a manager's PIN for a return against the policy or of a bill not sold at a
+ * counter of this location ({@code POS_RETURN_OVERRIDE}), and for money back above the refund
+ * limit by any method ({@code POS_CASH_REFUND}); one PIN covers every reason of the return.
  */
 @Slf4j
 @Service
@@ -124,6 +129,11 @@ public class PosReturnService {
         boolean cashRefund() {
             return SETTLE_REFUND.equals(kind) && method == RefundMethod.CASH;
         }
+
+        /** Money back by any method (CASH, UPI, BANK_TRANSFER): the cashier's refund limit applies. */
+        boolean refund() {
+            return SETTLE_REFUND.equals(kind);
+        }
     }
 
     /** The body as validated: the create body, the receive lines, the settle. */
@@ -180,6 +190,14 @@ public class PosReturnService {
     }
 
     static CleanSettle settle(PosDtos.Settle settle) {
+        return settle(settle, false);
+    }
+
+    /**
+     * The settle as validated. {@code preview}: a UPI or BANK_TRANSFER refund may come without its
+     * reference (typed at the end); the real return still needs it.
+     */
+    static CleanSettle settle(PosDtos.Settle settle, boolean preview) {
         String kind = settle == null || settle.kind() == null ? null
                 : settle.kind().trim().toUpperCase(Locale.ROOT);
         if (SETTLE_EXCHANGE.equals(kind)) {
@@ -199,7 +217,7 @@ public class PosReturnService {
         if (reference != null && !PosSaleService.REFERENCE.matcher(reference).matches()) {
             throw validation("settle.reference holds letters, digits, spaces and / _ . : # -");
         }
-        if (method != RefundMethod.CASH && reference == null) {
+        if (method != RefundMethod.CASH && reference == null && !preview) {
             throw validation("a " + method.name() + " refund needs its reference");
         }
         if (method == RefundMethod.CASH && reference != null) {
@@ -216,9 +234,9 @@ public class PosReturnService {
         if (request == null) {
             throw validation("the request has no body");
         }
-        access.session(user, instituteId, required(request.sessionId(), "session_id"));
+        PosSession session = access.session(user, instituteId, required(request.sessionId(), "session_id"));
         String orderId = required(request.orderId(), "order_id");
-        desk.readOrder(instituteId, orderId);
+        CommerceOrder order = desk.readOrder(instituteId, orderId);
         Map<String, Integer> units = new LinkedHashMap<>();
         if (request.lines() != null) {
             for (PosDtos.ReturnLine line : request.lines()) {
@@ -245,14 +263,15 @@ public class PosReturnService {
         CleanSettle settle = null;
         if (request.settle() != null) {
             try {
-                settle = settle(request.settle());
+                settle = settle(request.settle(), true);
             } catch (InvalidRequestException e) {
                 settle = null;
             }
         }
-        boolean cash = settle == null || settle.cashRefund();
-        List<String> needs = needsApproval(PosAccess.isManager(user), warnings, cash, preview.getCreditEstimate(),
-                settings.limits(instituteId).cashRefundLimit());
+        // No settle (or an invalid one): money back is assumed, the stricter case.
+        boolean refund = settle == null || settle.refund();
+        List<String> needs = needsApproval(PosAccess.isManager(user), warnings, otherBill(order, session), refund,
+                preview.getCreditEstimate(), settings.limits(instituteId).cashRefundLimit());
         List<PosDtos.Returnable> returnable = new ArrayList<>();
         if (preview.getLines() != null) {
             for (ReturnDtos.ReturnableLine line : preview.getLines()) {
@@ -265,24 +284,44 @@ public class PosReturnService {
     }
 
     /**
-     * The PINs a cashier needs: {@code POS_RETURN_OVERRIDE} when the policy warns,
-     * {@code POS_CASH_REFUND} when cash going back is more than the cashier's limit. A manager
-     * needs none.
+     * The PINs a cashier needs: {@code POS_RETURN_OVERRIDE} when the policy warns or the bill was
+     * not sold at a counter of this session's location ({@code otherBill}),
+     * {@code POS_CASH_REFUND} when money going back (any method) is more than the cashier's
+     * refund limit. A manager needs none. One PIN covers every reason of the return.
      */
-    static List<String> needsApproval(boolean manager, List<String> warnings, boolean cashRefund,
-                                      BigDecimal credit, BigDecimal cashRefundLimit) {
+    static List<String> needsApproval(boolean manager, List<String> warnings, boolean otherBill, boolean refund,
+                                      BigDecimal credit, BigDecimal refundLimit) {
         List<String> needs = new ArrayList<>();
         if (manager) {
             return needs;
         }
-        if (warnings != null && !warnings.isEmpty()) {
+        if ((warnings != null && !warnings.isEmpty()) || otherBill) {
             needs.add(PosApprovalAction.POS_RETURN_OVERRIDE.name());
         }
-        if (cashRefund && aboveLimit(credit, cashRefundLimit)) {
+        if (refund && aboveLimit(credit, refundLimit)) {
             needs.add(PosApprovalAction.POS_CASH_REFUND.name());
         }
         return needs;
     }
+
+    static List<String> needsApproval(boolean manager, List<String> warnings, boolean refund, BigDecimal credit,
+                                      BigDecimal refundLimit) {
+        return needsApproval(manager, warnings, false, refund, credit, refundLimit);
+    }
+
+    /**
+     * Whether a cashier needs a PIN to take this bill back at this counter: only a bill sold at a
+     * billing counter (channel POS) of the session's location is taken back on the cashier's own
+     * say; an online or desk order, or a counter bill of another location, is not.
+     */
+    static boolean otherBill(CommerceOrder order, PosSession session) {
+        return !CommerceOrderWriter.CHANNEL_POS.equals(order.getChannel())
+                || order.getFulfilmentLocationId() == null
+                || !order.getFulfilmentLocationId().equals(session.getLocationId());
+    }
+
+    /** The most a credit note can come out above its estimate: the invoice's round-off (under a rupee). */
+    static final BigDecimal ESTIMATE_MARGIN = BigDecimal.ONE;
 
     static boolean aboveLimit(BigDecimal amount, BigDecimal limit) {
         BigDecimal l = limit == null ? BigDecimal.ZERO : limit;
@@ -293,21 +332,21 @@ public class PosReturnService {
 
     /** What the transaction needs, decided before it opens. */
     record Plan(String instituteId, Clean clean, PosSession session, String number, String hash, String actor,
-                boolean manager, boolean override, boolean cashApproved, BigDecimal estimate, BigDecimal limit) {
+                boolean manager, boolean override, boolean refundApproved, BigDecimal estimate, BigDecimal limit) {
     }
 
     /** {@code POST /pos/returns}. */
     public Outcome create(CustomUserDetails user, String instituteId, PosDtos.ReturnRequest request) {
         Clean clean = validate(request);
         PosSession session = access.session(user, instituteId, clean.sessionId());
-        PosSessionService.requireOpen(session);
         String actor = user.getUserId();
         String hash = CommerceRequestGuard.hash("POS_RETURN", request.withoutApproval());
+        // A retry of a return that finished is answered (by the request guard) even after the counter closed.
         CommerceReturn earlier = readOnly.execute(tx -> returnRepository
                 .findByInstituteIdAndClientRequestId(instituteId, clean.clientRequestId()).orElse(null));
         boolean manager = PosAccess.isManager(user);
         boolean override = false;
-        boolean cashApproved = false;
+        boolean refundApproved = false;
         BigDecimal estimate = null;
         BigDecimal limit = settings.limits(instituteId).cashRefundLimit();
         String number;
@@ -315,7 +354,8 @@ public class PosReturnService {
             // A repeat: the request guard answers it (or refuses another body); no rule is asked again.
             number = earlier.getReturnNumber();
         } else {
-            desk.readOrder(instituteId, clean.orderId());
+            PosSessionService.requireOpen(session);
+            CommerceOrder order = desk.readOrder(instituteId, clean.orderId());
             ReturnDtos.ReturnPreview preview = returnService.previewForCounter(instituteId, copy(clean.create()));
             List<String> warnings = preview.getWarnings() == null ? List.of() : preview.getWarnings();
             estimate = preview.getCreditEstimate();
@@ -323,23 +363,26 @@ public class PosReturnService {
                 throw new ConflictException(CommerceReturnService.RETURN_POLICY_WARNING + ": "
                         + String.join(", ", warnings) + "; go ahead with override_reason");
             }
-            override = !warnings.isEmpty() && !manager;
+            boolean otherBill = otherBill(order, session);
+            override = !manager && (!warnings.isEmpty() || otherBill);
             if (override && clean.approval() == null) {
-                throw PosSessionService.approvalRequired(PosApprovalAction.POS_RETURN_OVERRIDE,
-                        "a return against the shop's policy needs a manager's PIN");
+                throw PosSessionService.approvalRequired(PosApprovalAction.POS_RETURN_OVERRIDE, !warnings.isEmpty()
+                        ? "a return against the shop's policy needs a manager's PIN"
+                        : "a bill not sold at this location's counter is taken back with a manager's PIN");
             }
-            boolean cashNeeded = clean.settle().cashRefund() && !manager && aboveLimit(estimate, limit);
-            if (cashNeeded && clean.approval() == null) {
-                throw PosSessionService.approvalRequired(PosApprovalAction.POS_CASH_REFUND, "cash back of "
+            boolean refundNeeded = clean.settle().refund() && !manager && aboveLimit(estimate, limit);
+            if (refundNeeded && clean.approval() == null) {
+                throw PosSessionService.approvalRequired(PosApprovalAction.POS_CASH_REFUND, "a refund of "
                         + estimate.toPlainString() + " is above the cashier's limit");
             }
-            // A PIN sent with a cash refund that neither rule above asked for answers the check
-            // after the credit note (the credit came out above the limit): it covers the cash.
-            cashApproved = clean.settle().cashRefund() && !manager && clean.approval() != null
-                    && (cashNeeded || !override);
+            // One PIN covers every reason of the return: a PIN sent with a refund approves the refund
+            // too whenever the credit could come out above the limit (the credit note may add the
+            // invoice's round-off to the estimate).
+            refundApproved = clean.settle().refund() && !manager && clean.approval() != null
+                    && (refundNeeded || aboveLimit(estimate == null ? null : estimate.add(ESTIMATE_MARGIN), limit));
             number = counterService.nextNumber(instituteId, CommerceReturnService.COUNTER_SCOPE);
         }
-        Plan plan = new Plan(instituteId, clean, session, number, hash, actor, manager, override, cashApproved,
+        Plan plan = new Plan(instituteId, clean, session, number, hash, actor, manager, override, refundApproved,
                 estimate, limit);
         CommerceRequestGuard.Outcome<String> outcome = requestGuard.run(new CommerceRequestGuard.Key(instituteId,
                         clean.clientRequestId(), "POS_RETURN", "ORDER", clean.orderId(), hash, actor),
@@ -367,7 +410,7 @@ public class PosReturnService {
                     clip(why, 500));
             approver = approval.approverUserId();
         }
-        if (plan.cashApproved()) {
+        if (plan.refundApproved()) {
             approvalService.approve(instituteId, locationId, actor, approval.approverUserId(), approval.pin(),
                     PosApprovalAction.POS_CASH_REFUND.name(), "ORDER", order.getId(), plan.estimate(),
                     clip(why, 500));
@@ -384,7 +427,8 @@ public class PosReturnService {
 
         // 2. The return: created COUNTER, approved, received here (stock, credit note, refund due).
         CommerceReturnService.CounterReturn made = returnService.counterReturnInside(instituteId,
-                copy(clean.create()), locationId, plan.number(), plan.hash(), actor, clean.received());
+                copy(clean.create()), locationId, plan.number(), plan.hash(), actor, clean.received(),
+                session.getId());
         BigDecimal credit = made.credit() == null ? BigDecimal.ZERO.setScale(2) : made.credit();
 
         // 3. Settle: money back from this drawer, or the credit kept for a new bill.
@@ -392,10 +436,15 @@ public class PosReturnService {
         CleanSettle settle = clean.settle();
         if (SETTLE_REFUND.equals(settle.kind()) && credit.signum() > 0) {
             CommerceRefundService.requireWithinDue(order, credit);
-            if (settle.cashRefund() && !plan.manager() && !plan.cashApproved()
-                    && aboveLimit(credit, plan.limit())) {
-                throw PosSessionService.approvalRequired(PosApprovalAction.POS_CASH_REFUND, "cash back of "
-                        + credit.toPlainString() + " is above the cashier's limit");
+            if (!plan.manager() && !plan.refundApproved() && aboveLimit(credit, plan.limit())) {
+                if (approval == null) {
+                    throw PosSessionService.approvalRequired(PosApprovalAction.POS_CASH_REFUND, "a refund of "
+                            + credit.toPlainString() + " is above the cashier's limit");
+                }
+                // The PIN given for this return covers its refund too (never asked twice).
+                approvalService.approve(instituteId, locationId, actor, approval.approverUserId(), approval.pin(),
+                        PosApprovalAction.POS_CASH_REFUND.name(), "ORDER", order.getId(), credit, clip(why, 500));
+                approver = approval.approverUserId();
             }
             RefundStatus status = settle.method() == RefundMethod.CASH || settle.reference() != null
                     ? RefundStatus.PROCESSED : RefundStatus.PENDING;

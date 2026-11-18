@@ -1,5 +1,5 @@
 -- Commerce WP-42: POS registers, sessions and cash movements; the walk-in buyer; cash handed over on a tender.
--- New tables first, then one nullable column and two partial indexes on commerce tables. Re-runnable.
+-- New tables first, then two partial indexes, then two nullable columns on commerce tables (last). Re-runnable.
 SET LOCAL lock_timeout = '5s';
 
 CREATE TABLE IF NOT EXISTS pos_register (
@@ -96,11 +96,14 @@ CREATE TABLE IF NOT EXISTS commerce_pos_walk_in (
     CONSTRAINT uq_commerce_pos_walk_in UNIQUE (institute_id)
 );
 
--- Cash the buyer handed over for a CASH tender; change = cash_tendered - amount. NULL elsewhere.
-ALTER TABLE commerce_order_tender ADD COLUMN IF NOT EXISTS cash_tendered NUMERIC(12, 2);
-
 -- Day close and the session's bills read by session.
 CREATE INDEX IF NOT EXISTS idx_commerce_order_pos_session
     ON commerce_order (pos_session_id) WHERE pos_session_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_commerce_refund_pos_session
     ON commerce_refund (pos_session_id) WHERE pos_session_id IS NOT NULL;
+
+-- The ALTERs are the LAST statements: their ACCESS EXCLUSIVE locks are held only for the instant before commit.
+-- Cash the buyer handed over for a CASH tender; change = cash_tendered - amount. NULL elsewhere.
+ALTER TABLE commerce_order_tender ADD COLUMN IF NOT EXISTS cash_tendered NUMERIC(12, 2);
+-- The counter session a return was taken in (a return at the billing counter); NULL for every other return.
+ALTER TABLE commerce_return ADD COLUMN IF NOT EXISTS pos_session_id VARCHAR(36);

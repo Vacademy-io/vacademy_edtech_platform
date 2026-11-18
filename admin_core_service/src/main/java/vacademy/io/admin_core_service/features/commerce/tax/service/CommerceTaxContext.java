@@ -10,7 +10,7 @@ import vacademy.io.admin_core_service.features.commerce.tax.enums.TaxMode;
 
 /** The tax settings of an institute as code reads them. Defaults apply when nothing was saved. */
 @Value
-@Builder
+@Builder(toBuilder = true)
 public class CommerceTaxContext {
 
     /** False when the institute has never saved its tax settings. */

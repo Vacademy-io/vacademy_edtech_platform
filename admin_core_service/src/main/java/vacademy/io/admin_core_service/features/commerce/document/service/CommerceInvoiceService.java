@@ -308,7 +308,8 @@ public class CommerceInvoiceService {
         // The number comes last: nothing after this line can refuse the document.
         String externalNumber = trimToNull(request.getExternalInvoiceNumber());
         if (externalNumber != null) {
-            numberFromBillBook(instituteId, invoice, documentType, locationId, externalNumber);
+            numberFromBillBook(instituteId, invoice, documentType, locationId, externalNumber,
+                    FinancialYear.of(documentDate, settings.getFyStartMonth()));
         } else {
             String financialYear = FinancialYear.of(documentDate, settings.getFyStartMonth());
             DocumentNumberAllocator.Allocation number = numberService.allocate(instituteId, documentType,
@@ -327,10 +328,11 @@ public class CommerceInvoiceService {
 
     /**
      * A bill-book entry: the paper number must fall inside a registered book of
-     * the location and be unused. No system number is issued and no counter moves.
+     * the location for the financial year of the bill's date, and be unused. No system number
+     * is issued and no counter moves.
      */
     private void numberFromBillBook(String instituteId, Invoice invoice, DocumentType documentType,
-                                    String locationId, String externalNumber) {
+                                    String locationId, String externalNumber, String financialYear) {
         require(locationId != null, "a bill-book entry needs its location");
         require(externalNumber.matches("^[0-9]{1,9}$"), "external_invoice_number is the number printed on the paper bill");
         long page = Long.parseLong(externalNumber);
@@ -341,9 +343,10 @@ public class CommerceInvoiceService {
                 .filter(s -> locationId.equals(s.getLocationId()))
                 .filter(s -> s.getBookFrom() != null && s.getBookTo() != null
                         && page >= s.getBookFrom() && page <= s.getBookTo())
+                .filter(s -> financialYear.equals(s.getFinancialYear()))
                 .findFirst()
                 .orElseThrow(() -> new ConflictException("BILL_BOOK_NOT_REGISTERED: number " + externalNumber
-                        + " is not inside a registered bill book of this location"));
+                        + " is not inside a registered bill book of this location for " + financialYear));
         String number = DocumentNumberAllocator.format(book.getPrefix(), book.getFinancialYear(), page);
         if (invoiceRepository.existsByInstituteIdAndInvoiceNumber(instituteId, number)) {
             throw new ConflictException("BILL_BOOK_NUMBER_USED: bill number " + externalNumber

@@ -232,6 +232,26 @@ class CommerceAccessGuardTest {
     }
 
     @Test
+    void g3_aPosOnlyShopsManagerReadsLocationsAndBillBooksThroughThePosFeature() {
+        // Stock and orders off, the billing counter on.
+        grantCommerce(INSTITUTE, row(INSTITUTE, "commerce.stock", false), row(INSTITUTE, "commerce.orders", false));
+        CustomUserDetails manager = principal(false, "COMMERCE_STORE_MANAGER");
+        assertDoesNotThrow(() -> guard.requireEither(manager, INSTITUTE, CommerceFeature.INVENTORY, TILL,
+                CommerceFeature.POS, MANAGER));
+        assertDoesNotThrow(() -> guard.requireEither(manager, INSTITUTE, CommerceFeature.ORDERS,
+                Set.of(CommerceRole.STORE_MANAGER, CommerceRole.ACCOUNTANT), CommerceFeature.POS, MANAGER));
+        // A cashier is not let in by the POS side (manager or ADMIN only); the first refusal is answered.
+        CustomUserDetails cashier = principal(false, "COMMERCE_POS_CASHIER");
+        CommerceAccessDeniedException refused = assertThrows(CommerceAccessDeniedException.class,
+                () -> guard.requireEither(cashier, INSTITUTE, CommerceFeature.ORDERS, MANAGER, CommerceFeature.POS,
+                        MANAGER));
+        assertEquals(CommerceAccessDeniedException.FEATURE_DISABLED, refused.getCode());
+        // A feature that is off on both sides stays refused.
+        assertThrows(CommerceAccessDeniedException.class, () -> guard.requireEither(manager, INSTITUTE,
+                CommerceFeature.INVENTORY, TILL, CommerceFeature.ORDERS, MANAGER));
+    }
+
+    @Test
     void requireFeatureForPublicEndpoints() {
         RequestContextHolder.resetRequestAttributes();
         assertDoesNotThrow(() -> guard.requireFeature(INSTITUTE, CommerceFeature.CATALOGUE));

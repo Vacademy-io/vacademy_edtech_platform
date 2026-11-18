@@ -285,14 +285,19 @@ public class CommerceReturnService {
                 : counterService.nextNumber(instituteId, COUNTER_SCOPE);
         CommerceRequestGuard.Outcome<String> outcome = requestGuard.run(new CommerceRequestGuard.Key(instituteId,
                         clean.clientRequestId(), "RETURN_CREATE", "ORDER", clean.orderId(), hash, actor),
-                () -> createInside(instituteId, clean, location, number, hash, actor),
+                () -> createInside(instituteId, clean, location, number, hash, actor, true, null),
                 () -> returnRepository.findByInstituteIdAndClientRequestId(instituteId, clean.clientRequestId())
                         .map(CommerceReturn::getId).orElse(null));
         return view(instituteId, outcome.value(), user, outcome.replayed());
     }
 
+    /**
+     * {@code notifyApproved}: false for a return taken at the billing counter, whose buyer is
+     * standing there (no "return approved" message); the refund and credit-note messages stay.
+     * {@code posSessionId}: the counter session of such a return, else null.
+     */
     String createInside(String instituteId, Clean clean, String locationId, String number, String hash,
-                        String actor) {
+                        String actor, boolean notifyApproved, String posSessionId) {
         CommerceOrder order = desk.lockOrder(instituteId, clean.orderId());
         requireReturnable(order);
         List<CommerceOrderLine> lines = desk.freshLines(order.getId());
@@ -329,6 +334,7 @@ public class CommerceReturnService {
         ret.setNote(clean.note());
         ret.setClientRequestId(clean.clientRequestId());
         ret.setRequestHash(hash);
+        ret.setPosSessionId(posSessionId);
         ret = returnRepository.saveAndFlush(ret);
         for (Map.Entry<String, Integer> asked : clean.lines().entrySet()) {
             CommerceReturnLine line = new CommerceReturnLine();
@@ -351,7 +357,7 @@ public class CommerceReturnService {
                     CommerceInputRules.json(Map.of("warnings", a.warnings())), clean.overrideReason());
         }
         if (clean.approveNow()) {
-            approveInside(order, ret, actor, clean.note());
+            approveInside(order, ret, actor, clean.note(), notifyApproved);
         }
         return ret.getId();
     }
@@ -372,12 +378,24 @@ public class CommerceReturnService {
     public CounterReturn counterReturnInside(String instituteId, ReturnDtos.CreateReturnRequest request,
                                              String locationId, String number, String hash, String actor,
                                              List<ReturnDtos.ReceiveLine> received) {
+        return counterReturnInside(instituteId, request, locationId, number, hash, actor, received, null);
+    }
+
+    /**
+     * As {@link #counterReturnInside(String, ReturnDtos.CreateReturnRequest, String, String, String, String, List)},
+     * stamping the return with the counter session it was taken in ({@code pos_session_id}): the
+     * till lets that session's cashier spend its credit on a new bill without a PIN. No "return
+     * approved" message is sent: the buyer is at the counter.
+     */
+    public CounterReturn counterReturnInside(String instituteId, ReturnDtos.CreateReturnRequest request,
+                                             String locationId, String number, String hash, String actor,
+                                             List<ReturnDtos.ReceiveLine> received, String posSessionId) {
         request.setRequestedVia(RequestedVia.COUNTER.name());
         request.setApproveNow(Boolean.TRUE);
         request.setLocationId(locationId);
         Clean clean = validate(request, true);
         Map<String, Named> named = named(received);
-        String returnId = createInside(instituteId, clean, locationId, number, hash, actor);
+        String returnId = createInside(instituteId, clean, locationId, number, hash, actor, false, posSessionId);
         receiveInside(instituteId, returnId, clean.orderId(), ReturnStatus.APPROVED, null, named, actor,
                 clean.note());
         CommerceReturn ret = returnRepository.findByIdAndInstituteId(returnId, instituteId).orElseThrow();
@@ -413,13 +431,19 @@ public class CommerceReturnService {
     }
 
     private void approveInside(CommerceOrder order, CommerceReturn ret, String actor, String note) {
+        approveInside(order, ret, actor, note, true);
+    }
+
+    private void approveInside(CommerceOrder order, CommerceReturn ret, String actor, String note, boolean notify) {
         ret.setStatus(ReturnStatus.APPROVED.name());
         ret.setApprovedAt(new Date());
         ret.setApprovedBy(actor);
         returnRepository.save(ret);
         auditService.record(ret.getInstituteId(), actor, ret.getLocationId(), "RETURN_APPROVED", "RETURN", ret.getId(),
                 null, null, note);
-        events.afterCommit(desk.event(CommerceOrderEvents.RETURN_APPROVED, order, ret.getId(), true));
+        if (notify) {
+            events.afterCommit(desk.event(CommerceOrderEvents.RETURN_APPROVED, order, ret.getId(), true));
+        }
     }
 
     /** {@code POST /returns/{id}/reject} (R3): its units may be asked for again. */

@@ -93,4 +93,13 @@ class PosDtosTest {
         assertTrue(back.has("notify"));
         assertFalse(back.has("notify_buyer"));
     }
+
+    @org.junit.jupiter.api.Test
+    void s8_anApprovalNeverPrintsItsPin() {
+        PosDtos.Approval approval = new PosDtos.Approval("manager-1", "482917", "Checked");
+        org.junit.jupiter.api.Assertions.assertFalse(approval.toString().contains("482917"), approval.toString());
+        org.junit.jupiter.api.Assertions.assertTrue(approval.toString().contains("pin=***"));
+        PosDtos.VoidRequest body = new PosDtos.VoidRequest("void-key-0001", "Keyed twice", approval);
+        org.junit.jupiter.api.Assertions.assertFalse(body.toString().contains("482917"), body.toString());
+    }
 }

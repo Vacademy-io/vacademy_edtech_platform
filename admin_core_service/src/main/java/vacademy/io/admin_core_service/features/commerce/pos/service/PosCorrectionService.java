@@ -68,6 +68,8 @@ public class PosCorrectionService {
     public static final String VOID_HAS_RETURNS = "VOID_HAS_RETURNS";
     public static final String VOID_HAS_EXCHANGE = "VOID_HAS_EXCHANGE";
     public static final String TENDER_STATE_CHANGED = "TENDER_STATE_CHANGED";
+    /** 409: a void or tender change is made only from the bill's own counter session (its drawer). */
+    public static final String SESSION_MISMATCH = "SESSION_MISMATCH";
     static final String REFERENCE_ORDER_LINE = "ORDER_LINE";
     static final String REASON_POS_VOID = "POS_VOID";
 
@@ -141,17 +143,53 @@ public class PosCorrectionService {
         CommerceOrder seen = receipts.readPosOrder(instituteId, orderId);
         access.requireAt(user, instituteId, PosAccess.TILL, seen.getFulfilmentLocationId());
         boolean manager = PosAccess.isManager(user);
+        String actor = user.getUserId();
+        String hash = CommerceRequestGuard.hash("POS_VOID", request.withoutApproval(), seen.getId());
+        CommerceRequestGuard.Key guardKey = new CommerceRequestGuard.Key(instituteId, key, "POS_VOID", "ORDER",
+                seen.getId(), hash, actor);
+        // A retry of a void that finished is answered first, even after the counter closed.
+        CommerceRequestGuard.Outcome<String> done = requestGuard.replayIfDone(guardKey, seen::getId);
+        if (done != null) {
+            return answer(user, instituteId, done.value(), true);
+        }
+        if (!voided(seen)) {
+            requireOwnDrawer(instituteId, seen, actor, true);
+        }
         if (!manager && request.approval() == null && !voided(seen)) {
             throw PosSessionService.approvalRequired(PosApprovalAction.POS_VOID, "a bill is voided with a manager's "
                     + "PIN");
         }
-        String actor = user.getUserId();
-        String hash = CommerceRequestGuard.hash("POS_VOID", request.withoutApproval(), seen.getId());
-        CommerceRequestGuard.Outcome<String> outcome = requestGuard.run(new CommerceRequestGuard.Key(instituteId, key,
-                        "POS_VOID", "ORDER", seen.getId(), hash, actor),
+        CommerceRequestGuard.Outcome<String> outcome = requestGuard.run(guardKey,
                 () -> voidInside(instituteId, seen.getId(), reason, request.approval(), manager, actor),
                 seen::getId);
         return answer(user, instituteId, outcome.value(), outcome.replayed());
+    }
+
+    /**
+     * Before any PIN: the bill's session is open (else 409 VOID_SESSION_CLOSED for a void,
+     * SESSION_NOT_OPEN for a tender change) and is the caller's own open session (else 409
+     * SESSION_MISMATCH): the money of a void or a tender change moves in that drawer, so it is
+     * done at that drawer, by its cashier, managers included. Read without a lock; checked again
+     * under the session lock.
+     */
+    private void requireOwnDrawer(String instituteId, CommerceOrder order, String actor, boolean isVoid) {
+        PosSession session = order.getPosSessionId() == null ? null
+                : sessionRepository.findByInstituteIdAndId(instituteId, order.getPosSessionId()).orElse(null);
+        requireOwnDrawer(session, actor, isVoid);
+    }
+
+    static void requireOwnDrawer(PosSession session, String actor, boolean isVoid) {
+        if (session == null || !session.isOpen()) {
+            throw isVoid
+                    ? new ConflictException(VOID_SESSION_CLOSED + ": the counter was closed after this bill; take a "
+                    + "return instead")
+                    : new ConflictException(PosSessionService.SESSION_NOT_OPEN + ": the counter of this bill is "
+                    + "closed");
+        }
+        if (actor == null || !actor.equals(session.getCashierUserId())) {
+            throw new ConflictException(SESSION_MISMATCH + ": this bill was made at another counter session; "
+                    + (isVoid ? "take a return instead" : "change the payment at that counter, or take a return"));
+        }
     }
 
     static boolean voided(CommerceOrder order) {
@@ -177,12 +215,9 @@ public class PosCorrectionService {
         String approver = approve(instituteId, locationId, actor, approval, manager, PosApprovalAction.POS_VOID,
                 "ORDER", order.getId(), order.getTotal(), reason);
 
-        // 3. The session FOR SHARE (lock 3): a void belongs to the open session of the bill.
+        // 3. The session FOR SHARE (lock 3): a void belongs to the open session of the bill, at its drawer.
         PosSession session = lockSession(instituteId, order.getPosSessionId());
-        if (session == null || !session.isOpen()) {
-            throw new ConflictException(VOID_SESSION_CLOSED + ": the counter was closed after this bill; take a "
-                    + "return instead");
-        }
+        requireOwnDrawer(session, actor, true);
         List<CommerceOrderLine> lines = desk.freshLines(order.getId());
         for (CommerceReturn ret : returnRepository.findByOrderIdOrderByCreatedAtAsc(order.getId())) {
             if (!ReturnStatus.REJECTED.name().equals(ret.getStatus())) {
@@ -338,14 +373,21 @@ public class PosCorrectionService {
         CommerceOrder seen = receipts.readPosOrder(instituteId, orderId);
         access.requireAt(user, instituteId, PosAccess.TILL, seen.getFulfilmentLocationId());
         boolean manager = PosAccess.isManager(user);
+        String actor = user.getUserId();
+        String hash = CommerceRequestGuard.hash("POS_TENDER_CHANGE", request.withoutApproval(), seen.getId(), tender);
+        CommerceRequestGuard.Key guardKey = new CommerceRequestGuard.Key(instituteId, key, "POS_TENDER_CHANGE",
+                "ORDER_TENDER", tender, hash, actor);
+        // A retry of a change that finished is answered first, even after the counter closed.
+        CommerceRequestGuard.Outcome<String> done = requestGuard.replayIfDone(guardKey, seen::getId);
+        if (done != null) {
+            return answer(user, instituteId, done.value(), true);
+        }
+        requireOwnDrawer(instituteId, seen, actor, false);
         if (!manager && request.approval() == null) {
             throw PosSessionService.approvalRequired(PosApprovalAction.POS_TENDER_CHANGE, "a payment mode is changed "
                     + "with a manager's PIN");
         }
-        String actor = user.getUserId();
-        String hash = CommerceRequestGuard.hash("POS_TENDER_CHANGE", request.withoutApproval(), seen.getId(), tender);
-        CommerceRequestGuard.Outcome<String> outcome = requestGuard.run(new CommerceRequestGuard.Key(instituteId, key,
-                        "POS_TENDER_CHANGE", "ORDER_TENDER", tender, hash, actor),
+        CommerceRequestGuard.Outcome<String> outcome = requestGuard.run(guardKey,
                 () -> changeInside(instituteId, seen.getId(), tender, mode, reference, request.approval(), manager,
                         actor),
                 seen::getId);
@@ -370,9 +412,7 @@ public class PosCorrectionService {
         String approver = approve(instituteId, locationId, actor, approval, manager,
                 PosApprovalAction.POS_TENDER_CHANGE, "ORDER_TENDER", old.getId(), old.getAmount(), null);
         PosSession session = lockSession(instituteId, order.getPosSessionId());
-        if (session == null || !session.isOpen()) {
-            throw new ConflictException(PosSessionService.SESSION_NOT_OPEN + ": the counter of this bill is closed");
-        }
+        requireOwnDrawer(session, actor, false);
         if (!CommerceOrderTender.STATUS_RECEIVED.equals(old.getStatus())
                 || TenderMode.CREDIT_NOTE.name().equals(old.getMode())) {
             throw new ConflictException(TENDER_STATE_CHANGED + ": this payment is " + old.getStatus()

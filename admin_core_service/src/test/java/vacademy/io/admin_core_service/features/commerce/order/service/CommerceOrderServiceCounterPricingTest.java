@@ -183,6 +183,23 @@ class CommerceOrderServiceCounterPricingTest {
     }
 
     @Test
+    void d4_aCounterBillIsRoundedToTheRupeeWhileTheCartKeepsTheShopsSetting() {
+        // The shop's setting is NONE. A bill discount of 0.95 leaves 1199.05 of goods.
+        CommerceOrderService.CartPrice counter = service.priceCart(INSTITUTE,
+                cart(line("l1", "ps-scarf", 2), line("l2", "ps-bottle", 1)), null, counter(Map.of(), "100.95"));
+        assertMoney("1199.00", counter.view().getTotals().getTotal());
+        assertMoney("-0.05", counter.view().getTotals().getRoundOff());
+        assertEquals(RoundTotalTo.RUPEE, counter.snapshot().getTax().getRoundTotalTo());
+        assertMoney("1199.00", counter.snapshot().getTotal());
+
+        CommerceOrderService.CartPrice online = service.priceCart(INSTITUTE,
+                cart(line("l1", "ps-scarf", 2), line("l2", "ps-bottle", 1)));
+        assertEquals(RoundTotalTo.NONE, online.snapshot().getTax().getRoundTotalTo(), "online keeps NONE");
+        assertEquals(0, online.view().getTotals().getRoundOff() == null ? 0
+                : online.view().getTotals().getRoundOff().signum());
+    }
+
+    @Test
     void aLineDiscountIsTakenOnItsLineOnly() {
         CommerceOrderService.CartPrice priced = service.priceCart(INSTITUTE,
                 cart(line("l1", "ps-scarf", 2), line("l2", "ps-bottle", 1)), null,

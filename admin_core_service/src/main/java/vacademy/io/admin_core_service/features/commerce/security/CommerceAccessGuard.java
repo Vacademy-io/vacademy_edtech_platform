@@ -66,6 +66,25 @@ public class CommerceAccessGuard {
         }
     }
 
+    /**
+     * As {@link #require(CustomUserDetails, String, CommerceFeature, Set)} for {@code feature} and
+     * {@code roles}, or else for {@code orFeature} and {@code orRoles}: a read two modules share
+     * (the billing counter's settings read locations and bill books). When neither passes, the
+     * refusal of the first is thrown.
+     */
+    public void requireEither(CustomUserDetails user, String instituteId, CommerceFeature feature,
+                              Set<CommerceRole> roles, CommerceFeature orFeature, Set<CommerceRole> orRoles) {
+        try {
+            require(user, instituteId, feature, roles);
+        } catch (CommerceAccessDeniedException first) {
+            try {
+                require(user, instituteId, orFeature, orRoles);
+            } catch (CommerceAccessDeniedException second) {
+                throw first;
+            }
+        }
+    }
+
     /** For public storefront endpoints: the institute has the feature, nothing about the caller. */
     public void requireFeature(String instituteId, CommerceFeature feature) {
         if (feature == null || !capabilityResolver.isFeatureGranted(instituteId, feature.key())) {

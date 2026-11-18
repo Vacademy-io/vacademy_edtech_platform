@@ -78,4 +78,55 @@ class PosZReportTest {
         assertEquals("R1", z.register().code());
         assertEquals("Main store", z.location().name());
     }
+
+    @Test
+    void m6_refundsCountOnlyWhatWasPaidAndPendingIsShownApart() {
+        PosSession session = new PosSession();
+        session.setId("s-2");
+        session.setOpeningCash(money("0.00"));
+        PosRegister register = new PosRegister();
+        register.setCode("R1");
+        PosSessionService.Facts facts = new PosSessionService.Facts(List.of(), List.of(), List.of(),
+                List.of(new RefundFact("CASH", money("450.00"), "PROCESSED"),
+                        new RefundFact("UPI", money("750.00"), "PENDING"),
+                        new RefundFact("UPI", money("100.00"), "PROCESSED"),
+                        new RefundFact("BANK_TRANSFER", money("20.00"), "FAILED")),
+                List.of(), List.of(), new PosDtos.ReturnsTotal(0, money("0.00")));
+        PosDtos.ZReport z = PosSessionService.zReport(session, register, "Main store", facts, null, null, null, null);
+        assertEquals(List.of("CASH", "UPI"), z.refunds().stream().map(PosDtos.MethodTotal::method).toList());
+        assertEquals(0, money("100.00").compareTo(z.refunds().get(1).amount()), "only the paid UPI refund");
+        assertEquals(1, z.refundsPending().size());
+        assertEquals("UPI", z.refundsPending().get(0).method());
+        assertEquals(0, money("750.00").compareTo(z.refundsPending().get(0).amount()));
+        assertEquals(0, money("-450.00").compareTo(z.expectedCash()), "the drawer: cash refunds paid only");
+    }
+
+    @Test
+    void d4_aDifferenceOfThePaiseOfTheExpectedCashNeedsNoNoteOrPin() {
+        // A partial return paid 449.73 in cash: expected 550.27, the drawer is counted in rupees.
+        assertEquals(0, PosSessionService.ruleVariance(money("550.27"), money("-0.27")).signum());
+        assertEquals(0, PosSessionService.ruleVariance(money("550.27"), money("0.73")).signum());
+        assertEquals(0, money("-1.27").compareTo(PosSessionService.ruleVariance(money("550.27"), money("-1.27"))),
+                "a rupee or more is a difference");
+        assertEquals(0, money("-0.50").compareTo(PosSessionService.ruleVariance(money("550.00"), money("-0.50"))),
+                "with a whole-rupee expected cash every paisa counts");
+    }
+
+    @Test
+    void s3_anotherCashierSeesWhoHoldsTheRegisterButNoMoney() {
+        PosDtos.SessionView full = new PosDtos.SessionView("s-1", "OPEN", new PosDtos.Ref("r1", "R1", "Front"),
+                new PosDtos.Ref("loc-1", null, "Main"), "cashier-1", "First Cashier", false, new Date(0),
+                money("500.00"), "Float", money("500.00"), null, null, null, null, null, null, null,
+                List.of(new PosDtos.CashMovementView("m-1", "CASH_IN", money("100.00"), "Float", "manager-1", null)),
+                null, null, List.of("CLOSE"));
+        PosDtos.SessionView seen = PosSessionService.withoutMoney(full);
+        assertEquals("cashier-1", seen.cashierUserId());
+        assertEquals("First Cashier", seen.cashierName());
+        assertEquals("R1", seen.register().code());
+        assertEquals(null, seen.openingCash());
+        assertEquals(null, seen.openingNote());
+        assertEquals(null, seen.summary());
+        assertEquals(List.of(), seen.cashMovements());
+        assertEquals(List.of(), seen.nextActions());
+    }
 }

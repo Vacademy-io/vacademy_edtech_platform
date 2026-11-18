@@ -528,6 +528,25 @@ public class PosSaleService {
         return cashierDiscount.compareTo(allowed) > 0;
     }
 
+    /**
+     * Whether a cashier needs a manager's PIN to spend a return's credit on a new bill: only the
+     * credit of a return taken at the counter in the cashier's own session (this sale's session)
+     * is theirs to use. A manager or ADMIN never needs a PIN.
+     */
+    static boolean exchangeNeedsApproval(boolean manager, CommerceReturn ret, PosSession session) {
+        return !manager && (ret.getPosSessionId() == null || !ret.getPosSessionId().equals(session.getId()));
+    }
+
+    /** The credit left over after the new bill: money back to the buyer (0 when the bill takes it all). */
+    static BigDecimal remainder(BigDecimal credit, BigDecimal total) {
+        return credit == null || total == null ? ZERO : credit.subtract(total).max(ZERO);
+    }
+
+    /** Whether a cashier needs a PIN for the remainder paid back: above the refund limit, whatever the method. */
+    static boolean remainderNeedsApproval(boolean manager, BigDecimal credit, BigDecimal total, BigDecimal limit) {
+        return !manager && PosReturnService.aboveLimit(remainder(credit, total), limit);
+    }
+
     // ================================================================== pricing
 
     /** One priced cart and what the cashier gave off it. */
@@ -588,7 +607,29 @@ public class PosSaleService {
             if (exchanges != null) {
                 CommerceReturn ret = readOnly.execute(tx -> exchanges.readReturn(instituteId,
                         clean.exchange().returnId()));
-                credit = ret == null ? null : ret.getCreditTotal();
+                access.requireAt(user, instituteId, PosAccess.TILL, ret.getLocationId());
+                boolean usable = !exchangeNeedsApproval(PosAccess.isManager(user), ret, session);
+                if (!usable && clean.approval() != null) {
+                    // The manager's PIN lets the cashier see (and then spend, with the same PIN on the
+                    // sale) the credit of a return not taken in this session.
+                    PosDtos.Approval approval = clean.approval();
+                    transaction.executeWithoutResult(tx -> approvalService.approve(instituteId,
+                            session.getLocationId(), user.getUserId(), approval.approverUserId(), approval.pin(),
+                            PosApprovalAction.POS_EXCHANGE.name(), "RETURN", ret.getId(), ret.getCreditTotal(),
+                            clip(approval.reason(), 500)));
+                    usable = true;
+                }
+                if (usable) {
+                    credit = ret.getCreditTotal();
+                    BigDecimal total = view.getTotals() == null ? null : view.getTotals().getTotal();
+                    if (total != null && remainderNeedsApproval(PosAccess.isManager(user), credit, total,
+                            limits.cashRefundLimit())) {
+                        needs.add(PosApprovalAction.POS_CASH_REFUND.name());
+                    }
+                } else {
+                    // Not the caller's to spend without a manager: no amount is told.
+                    needs.add(PosApprovalAction.POS_EXCHANGE.name());
+                }
             }
         }
         List<PosDtos.QuoteLine> lines = new ArrayList<>();
@@ -641,8 +682,8 @@ public class PosSaleService {
     /** Everything the transaction needs, resolved before it opens. */
     record Plan(String instituteId, Clean clean, Kind kind, PosSession session, PosRegister register,
                 CartPriceSnapshot snapshot, Map<String, CartVariant> variants, String orderNumber, String hash,
-                String userId, String actor, boolean manager, PosApprovalAction approvalAction,
-                BigDecimal cashierDiscount) {
+                String userId, String actor, boolean manager, List<PosApprovalAction> approvals,
+                BigDecimal cashierDiscount, BigDecimal refundLimit) {
     }
 
     private Outcome place(CustomUserDetails user, String instituteId, PosDtos.SaleRequest request, Kind kind) {
@@ -650,19 +691,20 @@ public class PosSaleService {
         Clean clean = validate(request, kind, today);
         // 1. Before any transaction: the guard, the session, the replay, the price, the rules.
         PosSession session = access.session(user, instituteId, clean.sessionId());
+        String hash = CommerceRequestGuard.hash(kind == Kind.SALE ? "POS_SALE" : "POS_BILL_BOOK",
+                request.withoutApproval());
+        // A retry of a bill that was made is answered first, even after the counter closed.
+        CommerceOrder earlier = readOnly.execute(tx -> orderRepository
+                .findByInstituteIdAndClientRequestId(instituteId, clean.clientRequestId()).orElse(null));
+        if (earlier != null) {
+            return replay(user, instituteId, earlier, hash);
+        }
         if (!session.isOpen()) {
             throw new ConflictException(PosSessionService.SESSION_NOT_OPEN + ": this counter is closed");
         }
         PosRegister register = access.readRegister(instituteId, session.getRegisterId());
         if (!PosRegisterStatus.ACTIVE.name().equals(register.getStatus())) {
             throw new ConflictException(PosSessionService.REGISTER_INACTIVE + ": this register is not in use");
-        }
-        String hash = CommerceRequestGuard.hash(kind == Kind.SALE ? "POS_SALE" : "POS_BILL_BOOK",
-                request.withoutApproval());
-        CommerceOrder earlier = readOnly.execute(tx -> orderRepository
-                .findByInstituteIdAndClientRequestId(instituteId, clean.clientRequestId()).orElse(null));
-        if (earlier != null) {
-            return replay(user, instituteId, earlier, hash);
         }
         boolean manager = PosAccess.isManager(user);
         if (kind == Kind.BILL_BOOK) {
@@ -694,20 +736,21 @@ public class PosSaleService {
         if (snapshot == null || snapshot.getTotal() == null || snapshot.getTotal().signum() <= 0) {
             throw new ConflictException(NOT_PRICEABLE + ": a bill with nothing to pay cannot be made");
         }
-        PosApprovalAction approvalAction = null;
+        // Every reason this sale needs a manager's PIN for; one PIN covers them all.
+        PosSettingsService.Limits limits = settings.limits(instituteId);
+        List<PosApprovalAction> approvals = new ArrayList<>();
         if (kind == Kind.BILL_BOOK) {
             // The manager's PIN on a paper bill approves the bill as a whole, its discounts included.
-            approvalAction = manager ? null : PosApprovalAction.POS_BILL_BOOK;
-        } else if (discountNeedsApproval(manager, priced.cashierDiscount(), priced.gross(),
-                settings.limits(instituteId).cashierDiscountPercent())) {
-            if (clean.approval() == null) {
-                throw PosSessionService.approvalRequired(PosApprovalAction.POS_DISCOUNT, "the discount "
-                        + priced.cashierDiscount().toPlainString() + " is above the cashier's limit");
+            if (!manager) {
+                approvals.add(PosApprovalAction.POS_BILL_BOOK);
             }
-            approvalAction = PosApprovalAction.POS_DISCOUNT;
+        } else if (discountNeedsApproval(manager, priced.cashierDiscount(), priced.gross(),
+                limits.cashierDiscountPercent())) {
+            approvals.add(PosApprovalAction.POS_DISCOUNT);
         }
         BigDecimal total = snapshot.getTotal();
         BigDecimal received = clean.received();
+        String why = null;
         if (clean.exchange() != null) {
             CommerceExchangeService exchanges = exchanges();
             CommerceReturn ret = readOnly.execute(tx -> exchanges.readReturn(instituteId, clean.exchange().returnId()));
@@ -715,8 +758,26 @@ public class PosSaleService {
             if (received.compareTo(total) > 0) {
                 throw tendersOver(received, total);
             }
+            if (exchangeNeedsApproval(manager, ret, session)) {
+                approvals.add(PosApprovalAction.POS_EXCHANGE);
+                why = "the credit of a return not taken in this counter session is used with a manager's PIN";
+            }
+            // The remainder is decided again under the lock (the credit is read there); this is the early answer.
+            if (clean.exchange().remainderMethod() != null
+                    && remainderNeedsApproval(manager, ret.getCreditTotal(), total, limits.cashRefundLimit())) {
+                approvals.add(PosApprovalAction.POS_CASH_REFUND);
+                why = why != null ? why : "a refund of " + remainder(ret.getCreditTotal(), total).toPlainString()
+                        + " is above the cashier's limit";
+            }
         } else {
             requireTendersEqual(received, total);
+        }
+        if (!approvals.isEmpty() && clean.approval() == null) {
+            PosApprovalAction first = approvals.get(0);
+            throw PosSessionService.approvalRequired(first, first == PosApprovalAction.POS_BILL_BOOK
+                    ? "a paper bill is keyed in with a manager's PIN"
+                    : first == PosApprovalAction.POS_DISCOUNT ? "the discount "
+                    + priced.cashierDiscount().toPlainString() + " is above the cashier's limit" : why);
         }
 
         // Remote, then the counter in its own short transaction: nothing is locked meanwhile.
@@ -730,27 +791,36 @@ public class PosSaleService {
         }
         String orderNumber = counterService.nextNumber(instituteId, CommerceOrderWriter.ORDER_COUNTER_SCOPE);
         Plan plan = new Plan(instituteId, clean, kind, session, register, snapshot, variants, orderNumber, hash,
-                userId, user.getUserId(), manager, approvalAction, priced.cashierDiscount());
+                userId, user.getUserId(), manager, List.copyOf(approvals), priced.cashierDiscount(),
+                limits.cashRefundLimit());
 
         // 2. One transaction.
         Written written;
         try {
             written = transaction.execute(status -> write(plan));
-        } catch (DataIntegrityViolationException e) {
+        } catch (RuntimeException e) {
+            // A double tap, or a retry while the first request still ran: the first may have
+            // committed while this one was refused on what the first changed (the exchange's
+            // return already spent, a piece already sold) or on the client key. Answer its bill.
             CommerceOrder winner = readOnly.execute(tx -> orderRepository
                     .findByInstituteIdAndClientRequestId(instituteId, clean.clientRequestId()).orElse(null));
             if (winner != null) {
                 return replay(user, instituteId, winner, hash);
             }
-            if (kind == Kind.BILL_BOOK) {
-                throw new ConflictException(BILL_BOOK_NUMBER_USED + ": bill number " + clean.bookNumber()
-                        + " has already been entered");
+            if (e instanceof DataIntegrityViolationException) {
+                if (kind == Kind.BILL_BOOK && isConstraint(e, INVOICE_NUMBER_CONSTRAINT)) {
+                    throw new ConflictException(BILL_BOOK_NUMBER_USED + ": bill number " + clean.bookNumber()
+                            + " has already been entered");
+                }
+                throw e;
+            }
+            if (e instanceof CheckoutException checkout) {
+                throw refusal(checkout);
+            }
+            if (e instanceof ConflictException conflict) {
+                throw stockRefusal(instituteId, plan, conflict);
             }
             throw e;
-        } catch (ConflictException e) {
-            throw stockRefusal(instituteId, plan, e);
-        } catch (CheckoutException e) {
-            throw refusal(e);
         }
         // 3. After the commit.
         if (written.exchangeRemainder() && clean.exchange() != null) {
@@ -803,14 +873,31 @@ public class PosSaleService {
             order = orderRepository.save(order);
         }
 
-        // 2.3 The PIN (a remote role check), before the session, stock and series locks.
+        // 2.3 The PIN (a remote role check), before the session, stock and series locks: one
+        // approval row per reason, all by the one PIN. The remainder is decided here, on the
+        // credit read under the lock.
+        List<PosApprovalAction> reasons = new ArrayList<>(plan.approvals());
+        BigDecimal rest = exchange == null ? ZERO : remainder(exchange.credit(), snapshot.getTotal());
+        if (exchange != null && clean.exchange().remainderMethod() != null && !reasons.contains(
+                PosApprovalAction.POS_CASH_REFUND) && remainderNeedsApproval(plan.manager(), exchange.credit(),
+                snapshot.getTotal(), plan.refundLimit())) {
+            if (clean.approval() == null) {
+                throw PosSessionService.approvalRequired(PosApprovalAction.POS_CASH_REFUND, "a refund of "
+                        + rest.toPlainString() + " is above the cashier's limit");
+            }
+            reasons.add(PosApprovalAction.POS_CASH_REFUND);
+        }
         String approver = null;
-        if (plan.approvalAction() != null) {
+        for (PosApprovalAction reason : reasons) {
             PosDtos.Approval approval = clean.approval();
-            BigDecimal amount = plan.approvalAction() == PosApprovalAction.POS_DISCOUNT ? plan.cashierDiscount()
-                    : order.getTotal();
+            BigDecimal amount = switch (reason) {
+                case POS_DISCOUNT -> plan.cashierDiscount();
+                case POS_EXCHANGE -> exchange == null ? order.getTotal() : exchange.credit();
+                case POS_CASH_REFUND -> rest;
+                default -> order.getTotal();
+            };
             approvalService.approve(instituteId, locationId, actor, approval.approverUserId(), approval.pin(),
-                    plan.approvalAction().name(), "ORDER", order.getId(), amount, clip(approval.reason(), 500));
+                    reason.name(), "ORDER", order.getId(), amount, clip(approval.reason(), 500));
             approver = approval.approverUserId();
         }
 
@@ -1010,6 +1097,25 @@ public class PosSaleService {
     }
 
     // ================================================================== answers and refusals
+
+    /** The unique number of an invoice (V432): a paper bill number entered twice at once. */
+    static final String INVOICE_NUMBER_CONSTRAINT = "uq_invoice_institute_number";
+
+    /** Whether {@code e} (or a cause) names the database constraint {@code name}. */
+    static boolean isConstraint(Throwable e, String name) {
+        for (Throwable t = e; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t instanceof org.hibernate.exception.ConstraintViolationException violation
+                    && violation.getConstraintName() != null
+                    && violation.getConstraintName().toLowerCase(java.util.Locale.ROOT).contains(name)) {
+                return true;
+            }
+            String message = t.getMessage();
+            if (message != null && message.contains("\"" + name + "\"")) {
+                return true;
+            }
+        }
+        return false;
+    }
 
     private Outcome replay(CustomUserDetails user, String instituteId, CommerceOrder earlier, String hash) {
         if (!hash.equals(earlier.getRequestHash()) || !CommerceOrderWriter.CHANNEL_POS.equals(earlier.getChannel())) {

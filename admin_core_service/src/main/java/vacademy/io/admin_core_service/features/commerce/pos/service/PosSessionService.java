@@ -245,12 +245,29 @@ public class PosSessionService {
 
     // ================================================================== reads
 
-    /** {@code GET /pos/registers/{id}/session}: the register's OPEN session, or null. */
+    /**
+     * {@code GET /pos/registers/{id}/session}: the register's OPEN session, or null. Its money
+     * (summary, cash movements, opening cash) only for the session's cashier or a manager / ADMIN;
+     * another cashier sees who holds the register and since when ({@link #withoutMoney}), as
+     * {@code GET /pos/sessions/{id}} would refuse them.
+     */
     public PosDtos.CurrentSessionAnswer current(CustomUserDetails user, String instituteId, String registerId) {
         PosRegister register = access.register(user, instituteId, registerId, PosAccess.TILL);
         PosSession open = readOnly.execute(status -> sessionRepository.findOpenByRegister(instituteId,
                 register.getId()).orElse(null));
-        return new PosDtos.CurrentSessionAnswer(open == null ? null : view(user, instituteId, open.getId()));
+        if (open == null) {
+            return new PosDtos.CurrentSessionAnswer(null);
+        }
+        PosDtos.SessionView view = view(user, instituteId, open.getId());
+        boolean seesMoney = PosAccess.isManager(user) || PosAccess.isOwner(user, open);
+        return new PosDtos.CurrentSessionAnswer(seesMoney ? view : withoutMoney(view));
+    }
+
+    /** The session as another cashier may see it: who holds the register and since when; no money. */
+    static PosDtos.SessionView withoutMoney(PosDtos.SessionView v) {
+        return new PosDtos.SessionView(v.id(), v.status(), v.register(), v.location(), v.cashierUserId(),
+                v.cashierName(), v.mine(), v.openedAt(), null, null, null, v.closedAt(), v.closedBy(), null, null,
+                null, null, null, List.of(), null, null, List.of());
     }
 
     /** {@code GET /pos/sessions/{id}}: the session guard (own session, or a manager at its location). */
@@ -290,7 +307,11 @@ public class PosSessionService {
                     CommerceInputRules.trimToNull(registerId), CommerceInputRules.trimToNull(locationId), mine,
                     filterStatus == null ? null : filterStatus.name(), cashier, openedFrom, openedBefore), p, size);
         });
-        return new PosDtos.SessionsPage(found.rows(), p, size, found.total());
+        Map<String, String> names = userNames.names(found.rows().stream().map(PosDtos.SessionRow::cashierUserId)
+                .toList());
+        List<PosDtos.SessionRow> rows = found.rows().stream()
+                .map(r -> r.withCashierName(names.get(r.cashierUserId()))).toList();
+        return new PosDtos.SessionsPage(rows, p, size, found.total());
     }
 
     /** The UTC start of an India date (plus {@code plusDays}), for a timestamp column written in UTC. */
@@ -424,6 +445,17 @@ public class PosSessionService {
         return !manager && variance.abs().compareTo(limit == null ? ZERO : limit) > 0;
     }
 
+    /**
+     * The difference the close rules (note, PIN) look at. A drawer is counted in rupees: when the
+     * expected cash has paise (a partial return's credit paid in cash, an exchange remainder), a
+     * difference of less than one rupee is those paise, not a difference. Otherwise the variance
+     * itself. The variance stored and printed stays exact.
+     */
+    static BigDecimal ruleVariance(BigDecimal expected, BigDecimal variance) {
+        boolean paise = expected.remainder(BigDecimal.ONE).signum() != 0;
+        return paise && variance.abs().compareTo(BigDecimal.ONE) < 0 ? ZERO : variance;
+    }
+
     /** {@code POST /pos/sessions/{id}/close}: the session guard. */
     public Saved close(CustomUserDetails user, String instituteId, String sessionId,
                        PosDtos.SessionCloseRequest request) {
@@ -441,7 +473,7 @@ public class PosSessionService {
         // 1. Before the transaction, from the live figures: the note and the PIN rule.
         if (seen.isOpen()) {
             BigDecimal expected = readOnly.execute(tx -> expectedCash(seen, readFacts(instituteId, seen.getId())));
-            BigDecimal variance = count.counted().subtract(expected);
+            BigDecimal variance = ruleVariance(expected, count.counted().subtract(expected));
             if (variance.signum() != 0 && note == null) {
                 throw new InvalidRequestException(VARIANCE_NOTE_REQUIRED + ": the counted cash differs from the "
                         + "expected " + expected.toPlainString() + "; say why");
@@ -470,7 +502,8 @@ public class PosSessionService {
         PosSession before = sessionRepository.findByInstituteIdAndId(instituteId, sessionId).orElseThrow();
         boolean approved = false;
         if (approval != null && !manager) {
-            BigDecimal estimate = count.counted().subtract(expectedCash(before, readFacts(instituteId, sessionId)));
+            BigDecimal expectedBefore = expectedCash(before, readFacts(instituteId, sessionId));
+            BigDecimal estimate = ruleVariance(expectedBefore, count.counted().subtract(expectedBefore));
             if (varianceNeedsApproval(false, estimate, limit)) {
                 approvalService.approve(instituteId, before.getLocationId(), actor, approval.approverUserId(),
                         approval.pin(), PosApprovalAction.POS_VARIANCE.name(), "POS_SESSION", sessionId,
@@ -483,11 +516,12 @@ public class PosSessionService {
         Facts facts = readFacts(instituteId, sessionId);
         BigDecimal expected = expectedCash(session, facts);
         BigDecimal variance = count.counted().subtract(expected);
-        if (variance.signum() != 0 && note == null) {
+        BigDecimal ruled = ruleVariance(expected, variance);
+        if (ruled.signum() != 0 && note == null) {
             throw new InvalidRequestException(VARIANCE_NOTE_REQUIRED + ": the counted cash differs from the expected "
                     + expected.toPlainString() + "; say why");
         }
-        if (varianceNeedsApproval(manager, variance, limit) && !approved) {
+        if (varianceNeedsApproval(manager, ruled, limit) && !approved) {
             throw approvalRequired(PosApprovalAction.POS_VARIANCE, "the difference " + variance.toPlainString()
                     + " is above the cashier's limit");
         }
@@ -625,15 +659,8 @@ public class PosSessionService {
         }
         List<PosDtos.ModeTotal> byMode = new ArrayList<>();
         modeAmount.forEach((mode, amount) -> byMode.add(new PosDtos.ModeTotal(mode, modeCount.get(mode), amount)));
-        Map<String, BigDecimal> refundAmount = new TreeMap<>();
-        Map<String, Integer> refundCount = new TreeMap<>();
-        for (PosReadRepository.RefundFact refund : facts.refunds()) {
-            refundAmount.merge(refund.method(), refund.amount(), BigDecimal::add);
-            refundCount.merge(refund.method(), 1, Integer::sum);
-        }
-        List<PosDtos.MethodTotal> refunds = new ArrayList<>();
-        refundAmount.forEach((method, amount) -> refunds.add(new PosDtos.MethodTotal(method, refundCount.get(method),
-                amount)));
+        List<PosDtos.MethodTotal> refunds = refundTotals(facts.refunds(), List.of("PROCESSED"));
+        List<PosDtos.MethodTotal> refundsPending = refundTotals(facts.refunds(), List.of("PENDING", "IN_PROGRESS"));
         BigDecimal cashIn = ZERO;
         BigDecimal cashOut = ZERO;
         for (PosReadRepository.MovementFact movement : facts.movements()) {
@@ -658,7 +685,22 @@ public class PosSessionService {
                 session.getOpeningCash(), new PosDtos.CountTotal(bills, billsTotal),
                 new PosDtos.CountTotal(voided, voidedTotal), discounts, byMode, facts.taxByRate(), refunds,
                 facts.returns(), cashIn, cashOut, expectedCash(session, facts), counted, variance, denominations,
-                new PosDtos.CountTotal(book, bookTotal), first, last);
+                new PosDtos.CountTotal(book, bookTotal), first, last, refundsPending);
+    }
+
+    /** Refunds of the given statuses by method: count and amount. FAILED refunds are in neither list. */
+    static List<PosDtos.MethodTotal> refundTotals(List<PosReadRepository.RefundFact> facts, List<String> statuses) {
+        Map<String, BigDecimal> amount = new TreeMap<>();
+        Map<String, Integer> count = new TreeMap<>();
+        for (PosReadRepository.RefundFact refund : facts) {
+            if (statuses.contains(refund.status())) {
+                amount.merge(refund.method(), refund.amount(), BigDecimal::add);
+                count.merge(refund.method(), 1, Integer::sum);
+            }
+        }
+        List<PosDtos.MethodTotal> out = new ArrayList<>();
+        amount.forEach((method, total) -> out.add(new PosDtos.MethodTotal(method, count.get(method), total)));
+        return out;
     }
 
     // ================================================================== view

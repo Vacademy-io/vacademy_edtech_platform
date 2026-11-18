@@ -59,23 +59,32 @@ class PosReturnServiceTest {
     private final CommerceReturnRepository returnRepository = mock(CommerceReturnRepository.class);
     private final CommerceRequestGuard guard = mock(CommerceRequestGuard.class);
     private final CommerceCounterService counter = mock(CommerceCounterService.class);
+    private final CommerceApprovalService approvals = mock(CommerceApprovalService.class);
+    private final PosSessionRepository sessionRepository = mock(PosSessionRepository.class);
+    private final CommerceRefundService refundService = mock(CommerceRefundService.class);
     private PosReturnService service;
     private final PosSession session = new PosSession();
+    private final CommerceOrder order = new CommerceOrder();
     private ReturnDtos.ReturnPreview preview;
 
     @BeforeEach
     void setUp() {
-        service = new PosReturnService(access, settings, mock(PosSessionRepository.class), desk, returnService,
-                mock(CommerceRefundService.class), returnRepository, mock(CommerceRefundRepository.class),
-                mock(CommerceCreditNoteRepository.class), counter, mock(CommerceApprovalService.class),
+        service = new PosReturnService(access, settings, sessionRepository, desk, returnService,
+                refundService, returnRepository, mock(CommerceRefundRepository.class),
+                mock(CommerceCreditNoteRepository.class), counter, approvals,
                 mock(CommerceAuditService.class), guard, mock(DocumentClock.class),
                 mock(PlatformTransactionManager.class));
+        // By default: a bill sold at a counter of this session's location (D3: no PIN for that).
+        order.setId("order-1");
+        order.setChannel("POS");
+        order.setFulfilmentLocationId("loc-2");
+        order.setOrderNumber("ORD-000001");
         session.setId("s-1");
         session.setStatus("OPEN");
         session.setLocationId("loc-2");
         session.setCashierUserId("cashier-1");
         lenient().when(access.session(any(), eq(INST), eq("s-1"))).thenReturn(session);
-        lenient().when(desk.readOrder(INST, "order-1")).thenReturn(new CommerceOrder());
+        lenient().when(desk.readOrder(INST, "order-1")).thenReturn(order);
         lenient().when(settings.limits(INST)).thenReturn(new PosSettingsService.Limits(new BigDecimal("5"),
                 new BigDecimal("500.00"), BigDecimal.ZERO, true));
         preview = ReturnDtos.ReturnPreview.builder().warnings(new ArrayList<>()).creditEstimate(new BigDecimal("300.00"))
@@ -187,7 +196,11 @@ class PosReturnServiceTest {
         assertEquals(List.of("POS_CASH_REFUND"), PosReturnService.needsApproval(false, List.of(), true,
                 new BigDecimal("500.01"), limit), "one paisa over needs a PIN");
         assertEquals(List.of(), PosReturnService.needsApproval(false, List.of(), false, new BigDecimal("9000.00"),
-                limit), "UPI back or an exchange is not cash");
+                limit), "credit kept for a new bill is no refund");
+        assertEquals(List.of("POS_RETURN_OVERRIDE"), PosReturnService.needsApproval(false, List.of(), true, false,
+                new BigDecimal("9000.00"), limit), "D3: a bill of another counter or channel");
+        assertEquals(List.of("POS_RETURN_OVERRIDE", "POS_CASH_REFUND"), PosReturnService.needsApproval(false,
+                List.of(), true, true, new BigDecimal("9000.00"), limit));
         assertEquals(List.of("POS_RETURN_OVERRIDE", "POS_CASH_REFUND"), PosReturnService.needsApproval(false,
                 List.of("OUTSIDE_WINDOW"), true, new BigDecimal("0.01"), null), "an unset limit is 0");
     }
@@ -218,12 +231,123 @@ class PosReturnServiceTest {
         verify(guard, never()).run(any(), any(), any());
         verify(counter, never()).nextNumber(anyString(), anyString());
 
-        // UPI back above the limit, or credit for a new bill, needs no PIN.
-        service.create(cashier, INST, body(new PosDtos.Settle("REFUND", "UPI", "UPI 1"), null, null,
-                line("l-1", 1, "RESALEABLE")));
+        // D2: UPI or a bank transfer back above the limit needs a PIN too; credit for a new bill does not.
+        for (String method : List.of("UPI", "BANK_TRANSFER")) {
+            ConflictException other = assertThrows(ConflictException.class, () -> service.create(cashier, INST,
+                    body(new PosDtos.Settle("REFUND", method, "UPI 1"), null, null, line("l-1", 1, "RESALEABLE"))));
+            assertTrue(other.getMessage().startsWith("APPROVAL_REQUIRED: POS_CASH_REFUND"), other.getMessage());
+        }
+        verify(guard, never()).run(any(), any(), any());
         service.create(cashier, INST, body(new PosDtos.Settle("EXCHANGE", null, null), null, null,
                 line("l-1", 1, "RESALEABLE")));
+        verify(guard, org.mockito.Mockito.times(1)).run(any(), any(), any());
+    }
+
+    @Test
+    void d3_aCashierNeedsAPinForAnOnlineOrderOrAnotherLocationsCounterBill() {
+        CustomUserDetails cashier = user("cashier-1", "COMMERCE_POS_CASHIER");
+        PosDtos.ReturnRequest small = body(new PosDtos.Settle("EXCHANGE", null, null), null, null,
+                line("l-1", 1, "RESALEABLE"));
+        order.setChannel("ONLINE");
+        ConflictException online = assertThrows(ConflictException.class, () -> service.create(cashier, INST, small));
+        assertTrue(online.getMessage().startsWith("APPROVAL_REQUIRED: POS_RETURN_OVERRIDE"), online.getMessage());
+        order.setChannel("POS");
+        order.setFulfilmentLocationId("loc-1");
+        ConflictException elsewhere = assertThrows(ConflictException.class, () -> service.create(cashier, INST,
+                small));
+        assertTrue(elsewhere.getMessage().startsWith("APPROVAL_REQUIRED: POS_RETURN_OVERRIDE"));
+        verify(guard, never()).run(any(), any(), any());
+        assertEquals(List.of("POS_RETURN_OVERRIDE"), service.preview(cashier, INST, new PosDtos.ReturnPreviewRequest(
+                "s-1", "order-1", List.of(line("l-1", 1, null)), "SIZE", new PosDtos.Settle("EXCHANGE", null, null)))
+                .needsApproval());
+        // A manager takes it back on their own login.
+        service.create(user("manager-1", "COMMERCE_STORE_MANAGER"), INST, small);
+        // The bill of this location's counter: no PIN.
+        order.setFulfilmentLocationId("loc-2");
+        service.create(cashier, INST, small);
         verify(guard, org.mockito.Mockito.times(2)).run(any(), any(), any());
+    }
+
+    /** Runs the guarded work, as the real guard does for a new key. */
+    private void guardRunsTheWork() {
+        when(guard.run(any(), any(), any())).thenAnswer(call -> new CommerceRequestGuard.Outcome<>(
+                ((java.util.function.Supplier<?>) call.getArgument(1)).get(), false));
+        when(desk.lockOrder(INST, "order-1")).thenReturn(order);
+        when(sessionRepository.lockForShare(INST, "s-1")).thenReturn(java.util.Optional.of(session));
+        order.setRefundDue(new BigDecimal("9999.00"));
+        order.setAmountPaid(new BigDecimal("9999.00"));
+    }
+
+    @Test
+    void d6_onePinCoversTheOverrideAndARefundTheCreditNoteLiftsAboveTheLimit() {
+        // The policy warns (PIN); the estimate 499.60 is under the 500.00 limit, but the credit note
+        // adds the invoice's round-off and comes out at 500.00 + 0.40. The same PIN covers the refund.
+        guardRunsTheWork();
+        preview.setWarnings(List.of("OUTSIDE_WINDOW"));
+        preview.setCreditEstimate(new BigDecimal("499.60"));
+        when(returnService.counterReturnInside(eq(INST), any(), eq("loc-2"), eq("RET-000042"), anyString(),
+                eq("cashier-1"), any(), eq("s-1"))).thenReturn(new CommerceReturnService.CounterReturn("ret-1",
+                "RET-000042", "cn-1", "CN-1", new BigDecimal("500.40")));
+        CustomUserDetails cashier = user("cashier-1", "COMMERCE_POS_CASHIER");
+        PosDtos.Approval pin = new PosDtos.Approval("manager-1", "4321", null);
+        service.create(cashier, INST, body(CASH, "Regular customer", pin, line("l-1", 1, "RESALEABLE")));
+        verify(approvals).approve(eq(INST), eq("loc-2"), eq("cashier-1"), eq("manager-1"), eq("4321"),
+                eq("POS_RETURN_OVERRIDE"), eq("ORDER"), eq("order-1"), any(), any());
+        verify(approvals).approve(eq(INST), eq("loc-2"), eq("cashier-1"), eq("manager-1"), eq("4321"),
+                eq("POS_CASH_REFUND"), eq("ORDER"), eq("order-1"), any(), any());
+        verify(refundService).insertInside(eq(order), any());
+    }
+
+    @Test
+    void d6_aCreditAboveTheEstimateIsApprovedByThePinGivenNeverAskedAgain() {
+        // Far from the limit before (no refund approval up front), above it after: the PIN given covers it.
+        guardRunsTheWork();
+        preview.setWarnings(List.of("OUTSIDE_WINDOW"));
+        preview.setCreditEstimate(new BigDecimal("100.00"));
+        when(returnService.counterReturnInside(eq(INST), any(), eq("loc-2"), anyString(), anyString(),
+                eq("cashier-1"), any(), eq("s-1"))).thenReturn(new CommerceReturnService.CounterReturn("ret-1",
+                "RET-000042", "cn-1", "CN-1", new BigDecimal("600.00")));
+        CustomUserDetails cashier = user("cashier-1", "COMMERCE_POS_CASHIER");
+        service.create(cashier, INST, body(new PosDtos.Settle("REFUND", "UPI", "UPI 77"), "Regular customer",
+                new PosDtos.Approval("manager-1", "4321", null), line("l-1", 1, "RESALEABLE")));
+        verify(approvals).approve(eq(INST), eq("loc-2"), eq("cashier-1"), eq("manager-1"), eq("4321"),
+                eq("POS_CASH_REFUND"), eq("ORDER"), eq("order-1"), eq(new BigDecimal("600.00")), any());
+        // Without any PIN the same refund is refused, not written.
+        org.mockito.Mockito.clearInvocations(refundService);
+        preview.setWarnings(new ArrayList<>());
+        ConflictException e = assertThrows(ConflictException.class, () -> service.create(cashier, INST,
+                body(new PosDtos.Settle("REFUND", "UPI", "UPI 78"), null, null, line("l-1", 1, "RESALEABLE"))));
+        assertTrue(e.getMessage().startsWith("APPROVAL_REQUIRED: POS_CASH_REFUND"), e.getMessage());
+        verify(refundService, never()).insertInside(any(), any());
+    }
+
+    @Test
+    void aRetryOfAFinishedReturnIsAnsweredAfterTheClose() {
+        session.setStatus("CLOSED");
+        vacademy.io.admin_core_service.features.commerce.returns.entity.CommerceReturn earlier =
+                new vacademy.io.admin_core_service.features.commerce.returns.entity.CommerceReturn();
+        earlier.setId("ret-1");
+        earlier.setReturnNumber("RET-000042");
+        when(returnRepository.findByInstituteIdAndClientRequestId(INST, KEY)).thenReturn(java.util.Optional.of(earlier));
+        when(guard.run(any(), any(), any())).thenReturn(new CommerceRequestGuard.Outcome<>("ret-1", true));
+        PosReturnService.Outcome again = service.create(user("cashier-1", "COMMERCE_POS_CASHIER"), INST,
+                body(CASH, null, null, line("l-1", 1, "RESALEABLE")));
+        assertTrue(again.replayed());
+        assertEquals("ret-1", again.answer().returnId());
+        verify(counter, never()).nextNumber(anyString(), anyString());
+    }
+
+    @Test
+    void g1_thePreviewTakesAUpiOrBankRefundWithoutItsReference() {
+        preview.setCreditEstimate(new BigDecimal("700.00"));
+        CustomUserDetails cashier = user("cashier-1", "COMMERCE_POS_CASHIER");
+        assertEquals(List.of("POS_CASH_REFUND"), service.preview(cashier, INST, new PosDtos.ReturnPreviewRequest(
+                "s-1", "order-1", List.of(line("l-1", 1, null)), "SIZE", new PosDtos.Settle("REFUND", "UPI", null)))
+                .needsApproval());
+        assertEquals(RefundMethod.BANK_TRANSFER, PosReturnService.settle(new PosDtos.Settle("REFUND",
+                "BANK_TRANSFER", null), true).method());
+        assertThrows(InvalidRequestException.class, () -> PosReturnService.settle(new PosDtos.Settle("REFUND",
+                "UPI", null)), "the real return still needs the reference");
     }
 
     @Test
@@ -255,7 +379,8 @@ class PosReturnServiceTest {
         PosDtos.ReturnPreview upi = service.preview(cashier, INST, new PosDtos.ReturnPreviewRequest("s-1",
                 "order-1", List.of(line("l-1", 1, null)), "SIZE", new PosDtos.Settle("REFUND", "UPI", "U1")));
         assertEquals(List.of("REASON_NOT_ALLOWED"), upi.warnings(), "a chosen reason keeps its warning");
-        assertEquals(List.of("POS_RETURN_OVERRIDE"), upi.needsApproval());
+        assertEquals(List.of("POS_RETURN_OVERRIDE", "POS_CASH_REFUND"), upi.needsApproval(),
+                "D2: UPI back above the limit needs the PIN too");
         when(settings.limits(INST)).thenReturn(new PosSettingsService.Limits(new BigDecimal("5"),
                 new BigDecimal("1000.00"), BigDecimal.ZERO, true));
         assertEquals(List.of(), service.preview(user("manager-1", "COMMERCE_STORE_MANAGER"), INST,

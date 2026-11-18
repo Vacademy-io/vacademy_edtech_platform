@@ -26,6 +26,13 @@ public final class PosDtos {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Approval(String approverUserId, String pin, String reason) {
+
+        /** Never prints the PIN (the records that carry an approval print it through this). */
+        @Override
+        public String toString() {
+            return "Approval[approverUserId=" + approverUserId + ", pin=" + (pin == null ? "null" : "***")
+                    + ", reason=" + reason + "]";
+        }
     }
 
     // ================================================================== registers
@@ -180,7 +187,9 @@ public final class PosDtos {
      * The day report of a session: frozen into {@code z_report_json} at close, the same shape
      * computed live ({@code summary}) while the session is open. {@code bills} are the sales
      * keyed at the till that are not voided; voided bills and bill-book entries are counted
-     * apart ({@code voided}, {@code bill_book}).
+     * apart ({@code voided}, {@code bill_book}). {@code refunds} are the refunds paid
+     * (PROCESSED); {@code refunds_pending} the ones recorded but not yet paid (PENDING or
+     * IN_PROGRESS, e.g. a UPI refund with no reference yet).
      */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -190,7 +199,7 @@ public final class PosDtos {
                           List<MethodTotal> refunds, ReturnsTotal returns, BigDecimal cashIn, BigDecimal cashOut,
                           BigDecimal expectedCash, BigDecimal countedCash, BigDecimal variance,
                           Map<String, Integer> denominations, CountTotal billBook, String firstInvoiceNumber,
-                          String lastInvoiceNumber) {
+                          String lastInvoiceNumber, List<MethodTotal> refundsPending) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -211,7 +220,13 @@ public final class PosDtos {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record SessionRow(String id, String status, String registerCode, String locationName,
                              String cashierUserId, Date openedAt, Date closedAt, int billsCount,
-                             BigDecimal billsTotal, BigDecimal variance) {
+                             BigDecimal billsTotal, BigDecimal variance, String cashierName) {
+
+        /** The same row with the cashier's name (null when the account service did not answer). */
+        public SessionRow withCashierName(String name) {
+            return new SessionRow(id, status, registerCode, locationName, cashierUserId, openedAt, closedAt,
+                    billsCount, billsTotal, variance, name);
+        }
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

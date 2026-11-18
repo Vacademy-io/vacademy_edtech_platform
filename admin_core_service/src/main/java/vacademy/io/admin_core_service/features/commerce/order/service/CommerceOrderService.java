@@ -34,6 +34,7 @@ import vacademy.io.admin_core_service.features.commerce.tax.calc.TaxRequest;
 import vacademy.io.admin_core_service.features.commerce.tax.calc.TaxResult;
 import vacademy.io.admin_core_service.features.commerce.tax.enums.TaxLineType;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxClassService;
+import vacademy.io.admin_core_service.features.commerce.tax.enums.RoundTotalTo;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxContext;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxSettingService;
 import vacademy.io.admin_core_service.features.product_page.service.BasketPricingCalculator;
@@ -399,6 +400,9 @@ public class CommerceOrderService {
 
         // 5. Tax: once as prepaid, and again with the COD charge when COD was asked for and allowed.
         CommerceTaxContext taxContext = taxSettingService.context(instituteId);
+        if (counter != null) {
+            taxContext = counterTaxContext(taxContext);
+        }
         String locationId = counter != null ? counter.locationId() : fulfilmentLocation(instituteId);
         String sellerState;
         Map<String, TaxClassRef> taxClasses;
@@ -879,6 +883,17 @@ public class CommerceOrderService {
             throw new CartPricingException(CartPricingException.NOT_PRICEABLE,
                     "The delivery charge of this shop is not set up correctly.");
         }
+    }
+
+    /**
+     * The tax settings of a counter sale: the bill total is rounded to the whole rupee
+     * ({@link RoundTotalTo#RUPEE}, the existing round-off line), whatever the shop's setting, so
+     * cash due, change and a full return's cash back are whole rupees. Online and desk orders
+     * keep the shop's setting.
+     */
+    static CommerceTaxContext counterTaxContext(CommerceTaxContext context) {
+        return context.getRoundTotalTo() == RoundTotalTo.RUPEE ? context
+                : context.toBuilder().roundTotalTo(RoundTotalTo.RUPEE).build();
     }
 
     private String fulfilmentLocation(String instituteId) {

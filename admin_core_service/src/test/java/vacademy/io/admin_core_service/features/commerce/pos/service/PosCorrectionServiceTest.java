@@ -117,6 +117,7 @@ class PosCorrectionServiceTest {
         lenient().when(receipts.readPosOrder(INST, ORDER)).thenReturn(order);
         lenient().when(desk.lockOrder(INST, ORDER)).thenReturn(order);
         lenient().when(sessions.lockForShare(INST, "s-1")).thenReturn(Optional.of(session));
+        lenient().when(sessions.findByInstituteIdAndId(INST, "s-1")).thenReturn(Optional.of(session));
         lenient().when(desk.freshLines(ORDER)).thenReturn(lines);
         lenient().when(returns.findByOrderIdOrderByCreatedAtAsc(ORDER)).thenReturn(new ArrayList<>());
         lenient().when(tenderRepository.findByOrderIdOrderByCreatedAtAsc(ORDER)).thenReturn(tenders);
@@ -294,6 +295,7 @@ class PosCorrectionServiceTest {
 
     @Test
     void aManagerVoidsWithoutAPin() {
+        session.setCashierUserId("manager-1");
         line("l-1", 1, null);
         sale("m-1", "l-1", -1, null);
         tender("t-1", "CASH", "1350.00", "RECEIVED");
@@ -304,6 +306,7 @@ class PosCorrectionServiceTest {
 
     @Test
     void aVoidIsRefusedAfterTheCloseAfterAReturnAndOnAnExchangeBill() {
+        session.setCashierUserId("manager-1");
         line("l-1", 1, null);
         session.setStatus("CLOSED");
         assertTrue(assertThrows(ConflictException.class, () -> service.voidInside(INST, ORDER, "x", null, true,
@@ -362,6 +365,7 @@ class PosCorrectionServiceTest {
 
     @Test
     void aTenderChangeIsRefusedForACreditNoteAVoidedPaymentNothingNewOrAClosedCounter() {
+        session.setCashierUserId("manager-1");
         CommerceOrderTender credit = tender("t-1", "CREDIT_NOTE", "200.00", "RECEIVED");
         when(tenderRepository.findById("t-1")).thenReturn(Optional.of(credit));
         assertTrue(assertThrows(ConflictException.class, () -> service.changeInside(INST, ORDER, "t-1",
@@ -381,5 +385,50 @@ class PosCorrectionServiceTest {
                 vacademy.io.admin_core_service.features.commerce.order.enums.TenderMode.UPI, "U1", null, true,
                 "manager-1")).getMessage().startsWith("SESSION_NOT_OPEN"));
         verify(tenderRepository, never()).save(any());
+    }
+
+    // ================================================================== D5: the bill's own drawer; retries first
+
+    @Test
+    void aVoidOrTenderChangeFromAnotherSessionIsRefusedForManagersToo() {
+        // The bill is of cashier-1's open session; a manager (no PIN needed) acts from elsewhere.
+        CustomUserDetails manager = user("manager-1", "COMMERCE_STORE_MANAGER");
+        ConflictException v = assertThrows(ConflictException.class, () -> service.voidSale(manager, INST, ORDER,
+                new PosDtos.VoidRequest(KEY, "Wrong item keyed", null)));
+        assertTrue(v.getMessage().startsWith("SESSION_MISMATCH"), v.getMessage());
+        assertTrue(v.getMessage().contains("take a return instead"), v.getMessage());
+        ConflictException t = assertThrows(ConflictException.class, () -> service.changeTender(manager, INST, ORDER,
+                "t-1", new PosDtos.TenderChangeRequest(KEY, "UPI", "UPI 4411", null)));
+        assertTrue(t.getMessage().startsWith("SESSION_MISMATCH"), t.getMessage());
+        // Another cashier with a PIN: refused before the PIN is checked.
+        CustomUserDetails other = user("cashier-2", "COMMERCE_POS_CASHIER");
+        assertTrue(assertThrows(ConflictException.class, () -> service.voidSale(other, INST, ORDER,
+                new PosDtos.VoidRequest(KEY, "Wrong item keyed", pin()))).getMessage().startsWith("SESSION_MISMATCH"));
+        verify(guard, never()).run(any(), any(), any());
+        verify(approvals, never()).approve(any(), any(), any(), any(), any(), any(), any(), any(), any(), any());
+
+        // Checked again under the session lock (the read before the lock may be old).
+        line("l-1", 1, null);
+        assertTrue(assertThrows(ConflictException.class, () -> service.voidInside(INST, ORDER, "x", null, true,
+                "manager-1")).getMessage().startsWith("SESSION_MISMATCH"));
+        CommerceOrderTender cash = tender("t-2", "CASH", "100.00", "RECEIVED");
+        when(tenderRepository.findById("t-2")).thenReturn(Optional.of(cash));
+        assertTrue(assertThrows(ConflictException.class, () -> service.changeInside(INST, ORDER, "t-2",
+                vacademy.io.admin_core_service.features.commerce.order.enums.TenderMode.UPI, "U1", null, true,
+                "manager-1")).getMessage().startsWith("SESSION_MISMATCH"));
+        verify(ledger, never()).postAll(anyList());
+        verify(tenderRepository, never()).save(any());
+    }
+
+    @Test
+    void aRetryOfAFinishedVoidOrChangeIsAnsweredAfterTheCloseWithoutAPin() {
+        session.setStatus("CLOSED");
+        CustomUserDetails cashier = user("cashier-1", "COMMERCE_POS_CASHIER");
+        when(guard.replayIfDone(any(), any())).thenReturn(new CommerceRequestGuard.Outcome<>(ORDER, true));
+        service.voidSale(cashier, INST, ORDER, new PosDtos.VoidRequest(KEY, "Wrong item keyed", null));
+        service.changeTender(cashier, INST, ORDER, "t-1", new PosDtos.TenderChangeRequest(KEY, "UPI", "UPI 4411",
+                null));
+        verify(guard, never()).run(any(), any(), any());
+        verify(receipts, org.mockito.Mockito.times(2)).saleDetail(cashier, INST, ORDER);
     }
 }
