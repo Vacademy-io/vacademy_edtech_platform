@@ -25,8 +25,8 @@ export const LibraryFilterBar = ({
     onSearchApply?: () => void;
     difficulty?: string;
     onDifficultyChange?: (value: string) => void;
-    questionType: string;
-    onQuestionTypeChange: (value: string) => void;
+    questionType?: string;
+    onQuestionTypeChange?: (value: string) => void;
     /** Present only while a filter is set. */
     onClear?: () => void;
 }) => {
@@ -79,18 +79,20 @@ export const LibraryFilterBar = ({
                     className="w-full text-body sm:w-40"
                 />
             )}
-            <MyDropdown
-                currentValue={questionType ? t(`types.${questionType}`) : t('filters.type')}
-                dropdownList={[
-                    { label: t('filters.any'), value: ANY },
-                    ...QUESTION_TYPES.map((type) => ({
-                        label: t(`types.${type}`),
-                        value: type,
-                    })),
-                ]}
-                handleChange={(value) => onQuestionTypeChange(value === ANY ? '' : value)}
-                className="w-full text-body sm:w-44"
-            />
+            {onQuestionTypeChange && (
+                <MyDropdown
+                    currentValue={questionType ? t(`types.${questionType}`) : t('filters.type')}
+                    dropdownList={[
+                        { label: t('filters.any'), value: ANY },
+                        ...QUESTION_TYPES.map((type) => ({
+                            label: t(`types.${type}`),
+                            value: type,
+                        })),
+                    ]}
+                    handleChange={(value) => onQuestionTypeChange(value === ANY ? '' : value)}
+                    className="w-full text-body sm:w-44"
+                />
+            )}
             {onClear && (
                 <MyButton
                     type="button"
