@@ -40,22 +40,29 @@ def test_the_list_is_bounded():
 
 def test_httpx_failures_are_caught_and_successes_are_not():
     def handler(request):
-        return httpx.Response(429 if request.url.path == "/busy" else 200)
+        return httpx.Response(429 if request.url.path == "/busy" else 200,
+                              json={"error": {"message": "Rate limit reached", "api_key": "sk_x"}})
     with httpx.Client(transport=httpx.MockTransport(handler)) as client:
-        client.get("https://api.openai.example/busy")
-        client.get("https://api.openai.example/fine")
+        client.post("https://openrouter.ai/busy?key=sk_q", json={"model": "m", "messages": [{"content": "hi"}]})
+        client.get("https://openrouter.ai/fine")
+        client.get("https://sayajihotels.com/busy")      # not an integration: never kept
     kept = vf.recent()
-    assert [(k["vendor"], k["httpStatus"]) for k in kept] == [("api.openai.example", 429)]
+    assert [(k["vendor"], k["httpStatus"]) for k in kept] == [("openrouter.ai", 429)]
+    sent, got = kept[0]["request"], kept[0]["response"]
+    assert sent["method"] == "POST" and sent["query_params"] == ["key"] and sent["body"]["model"] == "m"
+    assert got["status"] == 429 and got["body"]["error"]["message"] == "Rate limit reached"
+    assert "sk_x" not in repr(kept) and "sk_q" not in repr(kept)
 
 
 def test_aiohttp_sessions_are_traced(monkeypatch):
     # The trace hook is added to every ClientSession; an own host would be skipped,
     # so the check treats 127.0.0.1 as outside for this test only.
     monkeypatch.setattr(vf, "_external", lambda host: True)
+    monkeypatch.setattr(vf, "integrated", lambda host: True)
 
     async def run():
         app = web.Application()
-        app.router.add_get("/nope", lambda r: web.Response(status=401))
+        app.router.add_get("/nope", lambda r: web.json_response({"detail": "Invalid key"}, status=401))
         runner = web.AppRunner(app)
         await runner.setup()
         site = web.TCPSite(runner, "127.0.0.1", 0)
@@ -67,7 +74,9 @@ def test_aiohttp_sessions_are_traced(monkeypatch):
         await runner.cleanup()
 
     asyncio.run(run())
-    assert [k["httpStatus"] for k in vf.recent()] == [401]
+    kept = vf.recent()
+    assert [k["httpStatus"] for k in kept] == [401]
+    assert kept[0]["response"]["body"] == {"detail": "Invalid key"}
 
 
 def test_sarvam_refusals_are_recorded(monkeypatch):
@@ -103,7 +112,7 @@ def _push(processor, frame):
     ("RumikTTSService", "silk-api.rumik.ai", "in-call TTS"),
     ("SmallestTTSService", "waves-api.smallest.ai", "in-call TTS"),
     ("DeepgramTTSService", "api.deepgram.com", "in-call TTS"),
-    ("GoogleSTTService", "googleapis.com", "in-call STT"),
+    ("GoogleSTTService", "speech.googleapis.com", "in-call STT"),
     ("AWSBedrockLLMService", "bedrock (AWS)", "in-call LLM"),
     ("OpenRouterLLMService", "openrouter.ai", "in-call LLM"),
 ])
@@ -164,3 +173,10 @@ def test_an_openai_compatible_llm_is_named_by_where_it_goes(monkeypatch):
     svc._client = type("C", (), {"base_url": "https://api.sarvam.ai/v1/"})()
     _push(svc, ErrorFrame(error="402 insufficient_quota_error"))
     assert vf.recent()[-1]["vendor"] == "api.sarvam.ai"
+
+
+def test_only_integrated_vendors_count():
+    for host in ("api.sarvam.ai", "tts.navana.ai", "silk-api.rumik.ai", "waves-api.smallest.ai", "queue.fal.run"):
+        assert vf.integrated(host), host
+    for host in ("sayajihotels.com", "www.linkedin.com", "harilalventures.in", "cloudflare-dns.com"):
+        assert not vf.integrated(host), host

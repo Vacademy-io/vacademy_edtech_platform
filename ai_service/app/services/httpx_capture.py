@@ -17,11 +17,12 @@ import functools
 import ipaddress
 import logging
 import time
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 import httpx
 
 from .external_api_log import record_external_call
+from .integrated_vendors import body_summary, integrated_vendor
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,11 @@ _installed = False
 
 
 def vendor_for_host(host: Optional[str]) -> Optional[str]:
-    """The host as a vendor name, or None for our own services, which are not external APIs."""
+    """The host, when it belongs to an integrated vendor; None otherwise.
+
+    Only integrations are recorded: our own services, the cluster, and every other site an
+    HTTP client reaches (an institute's website fetched for lead research, a scraped page)
+    are not third-party APIs and would bury the real failures."""
     host = (host or "").strip().lower().rstrip(".")
     # A bare name ("admin-core-service") is a Kubernetes service.
     if not host or "." not in host or host in INTERNAL_HOSTS or host.endswith(INTERNAL_SUFFIXES):
@@ -42,7 +47,8 @@ def vendor_for_host(host: Optional[str]) -> Optional[str]:
         ipaddress.ip_address(host)
         return None
     except ValueError:
-        return host
+        pass
+    return host if integrated_vendor(host) else None
 
 
 def _operation(request: httpx.Request) -> str:
@@ -50,18 +56,54 @@ def _operation(request: httpx.Request) -> str:
     return f"{request.method} /{'/'.join(segments)}"[:MAX_OPERATION_LENGTH]
 
 
-def _record(request: httpx.Request, started: float, status: Optional[int], error: Optional[str]) -> None:
+def _request_summary(request: httpx.Request) -> Dict[str, Any]:
+    """What we sent, for debugging a failure: method, path, query parameter names (values can
+    carry keys), and the body with secrets and personal fields hidden. Never headers."""
+    out: Dict[str, Any] = {"method": request.method, "path": request.url.path}
+    if request.url.params:
+        out["query_params"] = sorted(set(request.url.params.keys()))
+    try:
+        body = body_summary(request.content)  # raises for a streamed body that was not read
+    except Exception:  # noqa: BLE001
+        body = None
+    if body is not None:
+        out["body"] = body
+    return out
+
+
+def _response_summary(response: Optional[httpx.Response], streamed: bool) -> Optional[Dict[str, Any]]:
+    """What the vendor answered: status and its body (the error message), when the body was
+    already read. A streamed response is left unread so the caller still gets all of it."""
+    if response is None:
+        return None
+    out: Dict[str, Any] = {"status": response.status_code, "reason": response.reason_phrase}
+    if not streamed:
+        try:
+            body = body_summary(response.content)
+        except Exception:  # noqa: BLE001
+            body = None
+        if body is not None:
+            out["body"] = body
+    return out
+
+
+def _record(request: httpx.Request, started: float, status: Optional[int], error: Optional[str],
+            response: Optional[httpx.Response] = None, streamed: bool = False) -> None:
     try:
         vendor = vendor_for_host(request.url.host)
         if vendor is None:
             return
+        failed = bool(error) or (status or 0) >= 400
         record_external_call(
             vendor=vendor,
             operation=_operation(request),
-            status="FAILED" if error or (status or 0) >= 400 else "SUCCESS",
+            status="FAILED" if failed else "SUCCESS",
             http_status=status,
             duration_ms=int((time.monotonic() - started) * 1000),
             error_message=error,
+            # Bodies only for failures: that is what someone debugs, and successes are many.
+            request_summary=_request_summary(request) if failed else None,
+            response_summary=_response_summary(response, streamed) if failed else None,
             automatic=True,
         )
     except Exception as exc:  # noqa: BLE001
@@ -90,7 +132,7 @@ def install() -> None:
         except Exception as exc:
             _record(request, started, None, type(exc).__name__)
             raise
-        _record(request, started, response.status_code, None)
+        _record(request, started, response.status_code, None, response, bool(kwargs.get("stream")))
         return response
 
     @functools.wraps(async_send)
@@ -102,7 +144,7 @@ def install() -> None:
         except Exception as exc:
             _record(request, started, None, type(exc).__name__)
             raise
-        _record(request, started, response.status_code, None)
+        _record(request, started, response.status_code, None, response, bool(kwargs.get("stream")))
         return response
 
     httpx.Client.send = send

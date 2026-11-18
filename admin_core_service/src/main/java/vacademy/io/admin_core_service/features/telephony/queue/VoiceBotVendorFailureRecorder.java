@@ -61,12 +61,19 @@ public class VoiceBotVendorFailureRecorder {
         String operation = text(f, "operation");
         return jdbc.update("""
                 INSERT INTO external_api_call_log
-                    (occurred_at, vendor, source_service, operation, status, http_status, error_message, run_id)
-                SELECT ?, ?, ?, ?, 'FAILED', ?, ?, ?
+                    (occurred_at, vendor, source_service, operation, status, http_status, error_message, run_id,
+                     request_summary, response_summary)
+                SELECT ?, ?, ?, ?, 'FAILED', ?, ?, ?, CAST(? AS jsonb), CAST(? AS jsonb)
                  WHERE NOT EXISTS (SELECT 1 FROM external_api_call_log WHERE run_id = ?)
                 """,
                 Timestamp.from(at), clip(vendor, 255), SOURCE_SERVICE, clip(operation == null ? "call" : operation, 64),
-                status, clip(text(f, "reason"), 1000), clip(id, 255), clip(id, 255));
+                status, clip(text(f, "reason"), 1000), clip(id, 255), json(f.get("request")), json(f.get("response")),
+                clip(id, 255));
+    }
+
+    /** An object node as JSON text for a jsonb column; null when absent. The bot already redacted it. */
+    private static String json(JsonNode node) {
+        return node == null || node.isNull() || !node.isContainerNode() ? null : node.toString();
     }
 
     private static String clip(String s, int max) {

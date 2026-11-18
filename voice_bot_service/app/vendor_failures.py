@@ -26,6 +26,7 @@ from __future__ import annotations
 import collections
 import ipaddress
 import itertools
+import json
 import logging
 import re
 import threading
@@ -59,13 +60,81 @@ def _external(host: str) -> bool:
         return True
 
 
+# The integrated vendors' domains. Only these are recorded: anything else is not a third-party
+# API we integrated. Same list as ai_service/app/services/integrated_vendors.py, admin_core's
+# IntegratedVendors.java and the portal's src/lib/integrated-vendors.ts.
+INTEGRATED_DOMAINS = (
+    "openrouter.ai", "api.isoquant.ai", "api.anthropic.com", "api.openai.com",
+    "generativelanguage.googleapis.com", "aiplatform.googleapis.com", "api.parallel.ai",
+    "api.sarvam.ai", "smallest.ai", "navana.ai", "rumik.ai", "deepgram.com",
+    "texttospeech.googleapis.com", "speech.googleapis.com", "speech.platform.bing.com",
+    "fal.run", "fal.ai", "fal.media", "runpod.ai", "runpod.io", "spatius.ai", "api.mathpix.com",
+    "api.docconverter.pro", "cloudconvert.com", "google.serper.dev", "api.pexels.com", "pixabay.com",
+    "www.googleapis.com", "oauth2.googleapis.com", "meet.googleapis.com", "workspaceevents.googleapis.com",
+    "api.plivo.com", "exotel.com", "exotel.in", "api.vonage.com", "api.nexmo.com", "aavtaar.ai",
+    "api.razorpay.com", "api.cashfree.com", "sandbox.cashfree.com", "api.stripe.com", "api.phonepe.com",
+    "api-preprod.phonepe.com", "api.paypal.com", "api-m.paypal.com", "api.sandbox.paypal.com",
+    "api-m.sandbox.paypal.com", "ewaypayments.com", "wati.io", "graph.facebook.com", "api.zoom.us",
+    "zoom.us", "zohoapis.in", "zohoapis.com", "zoho.in", "api.cloudflare.com", "open.er-api.com",
+)
+
+
+def integrated(host: str) -> bool:
+    h = (host or "").strip().lower().rstrip(".")
+    return bool(h) and any(h == d or h.endswith("." + d) for d in INTEGRATED_DOMAINS)
+
+
+MAX_BODY_CHARS = 4000
+MAX_STRING_CHARS = 500
+_SECRET_KEY = re.compile(r"(?i)(api[_-]?key|key|token|secret|password|passwd|authorization|auth|signature|"
+                         r"otp|phone|mobile|msisdn|email|card|cvv)")
+
+
+def _redact(value: Any, depth: int = 0) -> Any:
+    if depth > 8:
+        return "…"
+    if isinstance(value, dict):
+        return {k: ("<hidden>" if _SECRET_KEY.search(str(k)) else _redact(v, depth + 1)) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_redact(v, depth + 1) for v in value[:50]]
+    if isinstance(value, str):
+        v = clean_reason(value) if len(value) < 2000 else value[:MAX_STRING_CHARS]
+        return v[:MAX_STRING_CHARS]
+    return value
+
+
+def body_summary(raw: Any) -> Optional[Any]:
+    """A body that is safe to keep: JSON with secrets and personal fields hidden and long
+    strings cut, or the first part of plain text. None when empty."""
+    if raw is None:
+        return None
+    if isinstance(raw, (bytes, bytearray)):
+        if not raw:
+            return None
+        try:
+            raw = bytes(raw).decode("utf-8")
+        except UnicodeDecodeError:
+            return {"binary_bytes": len(raw)}
+    text = str(raw).strip()
+    if not text:
+        return None
+    try:
+        parsed = json.loads(text)
+    except ValueError:
+        return {"text": clean_reason(text[:MAX_BODY_CHARS])}
+    redacted = _redact(parsed)
+    dumped = json.dumps(redacted, default=str)
+    return redacted if len(dumped) <= MAX_BODY_CHARS else {"truncated_json": dumped[:MAX_BODY_CHARS]}
+
+
 def _operation(method: str, path: str) -> str:
     segments = [s for s in (path or "").split("/") if s][:2]
     return f"{(method or 'GET').upper()} /{'/'.join(segments)}"[:64]
 
 
 def record(vendor: str, operation: str, *, http_status: Optional[int] = None,
-           reason: Optional[str] = None, from_pipeline: bool = False) -> None:
+           reason: Optional[str] = None, from_pipeline: bool = False,
+           request: Optional[Dict[str, Any]] = None, response: Optional[Dict[str, Any]] = None) -> None:
     """Keep one failure. `vendor` is the host ("api.sarvam.ai"); `reason` must hold no secret.
 
     A pipeline error right after an HTTP failure to the same vendor is the same failure seen
@@ -86,6 +155,9 @@ def record(vendor: str, operation: str, *, http_status: Optional[int] = None,
             "operation": (operation or "call")[:64],
             "httpStatus": http_status,
             "reason": (reason or "")[:300] or None,
+            # What we sent and what came back, cleaned, for whoever debugs the failure.
+            "request": request,
+            "response": response if response is not None else ({"error": (reason or "")[:300]} if reason else None),
         }
         with _lock:
             _kept.append(entry)
@@ -144,6 +216,11 @@ def vendor_of(service: Any) -> str:
     except Exception:  # noqa: BLE001
         pass
     name = type(service).__name__.lower()
+    if "google" in name and "vertex" not in name:
+        # One company, three products on three hosts.
+        return ("speech.googleapis.com" if "stt" in name and "tts" not in name.replace("stt", "")
+                else "texttospeech.googleapis.com" if name.startswith("googletts") or "ttsservice" in name
+                else "generativelanguage.googleapis.com")
     for key, host in _SERVICE_HOSTS:
         if key in name:
             return host
@@ -157,13 +234,27 @@ def recent(limit: int = 100) -> List[Dict[str, Any]]:
     return items[-limit:]
 
 
-def _record_url(method: str, url: Any, status: Optional[int], error: Optional[BaseException]) -> None:
+def _record_url(method: str, url: Any, status: Optional[int], error: Optional[BaseException],
+                request_body: Any = None, response_body: Any = None, status_reason: Optional[str] = None) -> None:
     try:
         parts = urlsplit(str(url))
-        if not _external(parts.hostname or ""):
+        if not _external(parts.hostname or "") or not integrated(parts.hostname or ""):
             return
         reason = None if error is None else type(error).__name__
-        record(parts.hostname or "", _operation(method, parts.path), http_status=status, reason=reason)
+        sent: Dict[str, Any] = {"method": (method or "GET").upper(), "path": parts.path}
+        if parts.query:
+            sent["query_params"] = sorted({q.split("=", 1)[0] for q in parts.query.split("&") if q})
+        body = body_summary(request_body)
+        if body is not None:
+            sent["body"] = body
+        got: Optional[Dict[str, Any]] = None
+        if status is not None:
+            got = {"status": status, "reason": status_reason}
+            answer = body_summary(response_body)
+            if answer is not None:
+                got["body"] = answer
+        record(parts.hostname or "", _operation(method, parts.path), http_status=status, reason=reason,
+               request=sent, response=got)
     except Exception:  # noqa: BLE001
         pass
 
@@ -173,7 +264,14 @@ def _install_aiohttp() -> None:
 
     async def on_end(session, ctx, params):  # noqa: ANN001
         if params.response.status >= 400:
-            _record_url(params.method, params.url, params.response.status, None)
+            body = None
+            try:
+                # aiohttp keeps the body once read, so the caller still gets all of it.
+                body = await params.response.read()
+            except Exception:  # noqa: BLE001
+                pass
+            _record_url(params.method, params.url, params.response.status, None,
+                        response_body=body, status_reason=params.response.reason)
 
     async def on_exception(session, ctx, params):  # noqa: ANN001
         _record_url(params.method, params.url, None, params.exception)
@@ -194,6 +292,14 @@ def _install_aiohttp() -> None:
     aiohttp.ClientSession.__init__ = init
 
 
+def _content(message: Any) -> Any:
+    """An httpx request/response body if it was already read, else None (never forces a read)."""
+    try:
+        return message.content
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def _install_httpx() -> None:
     import httpx
 
@@ -206,7 +312,9 @@ def _install_httpx() -> None:
             _record_url(request.method, request.url, None, exc)
             raise
         if response.status_code >= 400:
-            _record_url(request.method, request.url, response.status_code, None)
+            _record_url(request.method, request.url, response.status_code, None,
+                        _content(request), None if kwargs.get("stream") else _content(response),
+                        response.reason_phrase)
         return response
 
     async def asend(self, request, *args, **kwargs):  # noqa: ANN001
@@ -216,7 +324,9 @@ def _install_httpx() -> None:
             _record_url(request.method, request.url, None, exc)
             raise
         if response.status_code >= 400:
-            _record_url(request.method, request.url, response.status_code, None)
+            _record_url(request.method, request.url, response.status_code, None,
+                        _content(request), None if kwargs.get("stream") else _content(response),
+                        response.reason_phrase)
         return response
 
     httpx.Client.send, httpx.AsyncClient.send = send, asend

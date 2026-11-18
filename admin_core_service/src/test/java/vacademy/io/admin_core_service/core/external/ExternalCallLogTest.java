@@ -29,6 +29,10 @@ class ExternalCallLogTest {
     void onlyOutsideHostsCount() {
         assertTrue(ExternalCallLog.external("api.plivo.com"));
         assertTrue(ExternalCallLog.external("api.razorpay.com"));
+        assertTrue(ExternalCallLog.recorded("api.plivo.com"));
+        assertTrue(ExternalCallLog.recorded("live-server.wati.io"));
+        assertFalse(ExternalCallLog.recorded("sayajihotels.com"), "a website, not an integration");
+        assertFalse(ExternalCallLog.recorded("cloudflare-dns.com"));
         for (String own : new String[]{"backend-stage.vacademy.io", "vacademy.io", "admin-core-service", "localhost",
                 "10.0.0.5", "127.0.0.1", "media.default.svc.cluster.local", ""}) {
             assertFalse(ExternalCallLog.external(own), own);
@@ -48,17 +52,26 @@ class ExternalCallLogTest {
         RestTemplate rest = ExternalCallLog.attach(new RestTemplate());
         MockRestServiceServer server = MockRestServiceServer.bindTo(rest).build();
         server.expect(requestTo("https://api.plivo.com/v1/Account/MA1/Call/?secret=x"))
-                .andRespond(withStatus(HttpStatus.UNAUTHORIZED));
+                .andRespond(withStatus(HttpStatus.UNAUTHORIZED)
+                        .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
+                        .body("{\"error\":\"Authentication failed\",\"auth_token\":\"tok_live_1\"}"));
         server.expect(requestTo("https://api.plivo.com/v1/ok")).andRespond(withSuccess());
 
-        assertThrows(HttpClientErrorException.class,
+        HttpClientErrorException error = assertThrows(HttpClientErrorException.class,
                 () -> rest.exchange("https://api.plivo.com/v1/Account/MA1/Call/?secret=x", HttpMethod.GET, null, String.class));
+        // The caller still gets the vendor's whole error body.
+        assertTrue(error.getResponseBodyAsString().contains("Authentication failed"));
         rest.getForObject("https://api.plivo.com/v1/ok", String.class);
 
         verify(jdbc, timeout(2000)).update(anyString(), org.mockito.ArgumentMatchers.any(java.sql.Timestamp.class),
-                eq("api.plivo.com"), eq("admin_core"), eq("GET /v1/Account"), eq(401), eq((Object) null));
+                eq("api.plivo.com"), eq("admin_core"), eq("GET /v1/Account"), eq(401), eq((Object) null),
+                org.mockito.ArgumentMatchers.argThat((String req) -> req.contains("\"query_params\":[\"secret\"]")
+                        && !req.contains("=x")),
+                org.mockito.ArgumentMatchers.argThat((String res) -> res.contains("Authentication failed")
+                        && !res.contains("tok_live_1")));
         verify(jdbc, never()).update(anyString(), org.mockito.ArgumentMatchers.any(java.sql.Timestamp.class),
                 eq("api.plivo.com"), eq("admin_core"), eq("GET /v1/ok"),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 
@@ -66,5 +79,15 @@ class ExternalCallLogTest {
     void attachingTwiceAddsOneInterceptor() {
         RestTemplate rest = ExternalCallLog.attach(ExternalCallLog.attach(new RestTemplate()));
         assertEquals(1, rest.getInterceptors().size());
+    }
+
+    @Test
+    void integratedVendorsSqlConditionMatchesHostsAndNames() {
+        String sql = IntegratedVendors.sqlCondition("e.vendor");
+        assertTrue(sql.contains("lower(e.vendor) = 'api.sarvam.ai'"));
+        assertTrue(sql.contains("LIKE '%.wati.io'"));
+        assertTrue(sql.contains("IN ('serper')"));
+        assertTrue(IntegratedVendors.isIntegrated("serper"));
+        assertFalse(IntegratedVendors.isIntegrated("www.linkedin.com"));
     }
 }
