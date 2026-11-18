@@ -587,6 +587,8 @@ export const STUDENT_RE_REGISTER_OPERATION = `${BASE_URL}/admin-core-service/ins
 export const STUDENT_CSV_UPLOAD_URL = `${BASE_URL}/admin-core-service/institute/institute_learner-bulk/v1/upload-csv`;
 export const STUDENT_REPORT_URL = `${BASE_URL}/assessment-service/assessment/admin/get-student-report`;
 export const STUDENT_REPORT_DETAIL_URL = `${BASE_URL}/assessment-service/admin/participants/get-report-detail`;
+// PUT: staff sets one question's marks on one attempt (submission view).
+export const OVERRIDE_QUESTION_MARKS_URL = `${BASE_URL}/assessment-service/admin/participants/question-marks`;
 export const GET_INSTITUTE_USERS = `${BASE_URL}/auth-service/v1/user-roles/users-of-status`;
 export const GET_USER_ROLES_COUNT = `${BASE_URL}/auth-service/v1/user-roles/user-roles-count`;
 export const GET_USER_AUTOSUGGEST = `${BASE_URL}/auth-service/v1/user/autosuggest-users`;
