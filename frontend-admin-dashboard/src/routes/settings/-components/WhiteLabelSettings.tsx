@@ -308,14 +308,18 @@ const PLATFORM_ZONE = 'vacademy.io';
  * label has to resolve to.
  *
  * Every short domain in production (u.aanandham.uk, u.readonrent.com,
- * u.elevateeducation.in, u.suchbliss.com) is a plain A record to this address —
+ * u.elevateeducation.in, u.suchbliss.com, …) is a plain A record to this address —
  * not a CNAME — and unproxied, because cert-manager answers an HTTP-01 challenge
  * that has to reach the origin directly.
+ *
+ * 43.242.225.46 is the CloudPe Mumbai ingress (prod moved off Hetzner 2026-11-16).
+ * The old Hetzner address 5.223.55.238 still forwards to it, so domains that
+ * point there keep working until their owners repoint them.
  *
  * Overridable so a change of ingress address is a deploy, not a code change.
  */
 const SHORT_LINK_LABEL = 'u';
-const SHORT_LINK_INGRESS_IP = import.meta.env.VITE_SHORT_LINK_INGRESS_IP || '5.223.55.238';
+const SHORT_LINK_INGRESS_IP = import.meta.env.VITE_SHORT_LINK_INGRESS_IP || '43.242.225.46';
 
 /**
  * Public suffixes made of two labels. Without them an apex host like
