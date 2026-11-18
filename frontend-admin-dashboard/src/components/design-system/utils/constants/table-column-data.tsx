@@ -1,6 +1,6 @@
 import { ColumnDef, Row } from '@tanstack/react-table';
 import { StudentTable } from '@/types/student-table-types';
-import { ArrowSquareOut, CaretUpDown, Info } from '@phosphor-icons/react';
+import { ArrowSquareOut, CaretUpDown, CheckCircle, Info, XCircle } from '@phosphor-icons/react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { MyDropdown } from '../../dropdown';
 import { useGetStudentBatch } from '@/routes/manage-students/students-list/-hooks/useGetStudentBatch';
@@ -1133,6 +1133,91 @@ export const activityResponseTypeColumns: ColumnDef<ActivityResponseType>[] = [
     {
         accessorKey: 'responseStatus',
         header: 'Response Status',
+    },
+];
+
+/** Question-slide rows of the Activity Stats dialog: the response table plus the answer key. */
+export interface QuestionSlideActivityRow extends ActivityResponseType {
+    correctAnswer: string;
+}
+
+/** CORRECT / WRONG as coloured chips; anything else (SUBMITTED, CBE states) as a neutral one. */
+const QuestionSlideResultChip = ({ status }: { status?: string | null }) => {
+    if (status === 'CORRECT') {
+        return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-success-50 px-2 py-0.5 text-caption font-medium text-success-700">
+                <CheckCircle size={12} weight="bold" />
+                Correct
+            </span>
+        );
+    }
+    if (status === 'WRONG') {
+        return (
+            <span className="inline-flex items-center gap-1 rounded-full bg-danger-50 px-2 py-0.5 text-caption font-medium text-danger-600">
+                <XCircle size={12} weight="bold" />
+                Wrong
+            </span>
+        );
+    }
+    if (!status) return <span className="text-neutral-400">—</span>;
+    const label = status.charAt(0) + status.slice(1).toLowerCase().replace(/_/g, ' ');
+    return (
+        <span className="inline-flex items-center rounded-full bg-neutral-100 px-2 py-0.5 text-caption font-medium text-neutral-600">
+            {label}
+        </span>
+    );
+};
+
+export const questionSlideActivityColumns: ColumnDef<QuestionSlideActivityRow>[] = [
+    {
+        accessorKey: 'attemptNumber',
+        header: 'Attempt',
+        cell: ({ row }) => row.original.attemptNumber ?? '—',
+    },
+    {
+        accessorKey: 'activityDate',
+        header: 'Activity Date',
+    },
+    {
+        accessorKey: 'startTime',
+        header: 'Start Time',
+    },
+    {
+        accessorKey: 'endTime',
+        header: 'End Time',
+    },
+    {
+        accessorKey: 'duration',
+        header: 'Duration',
+    },
+    {
+        accessorKey: 'questionName',
+        header: 'Question Name',
+        cell: ({ row }) => {
+            return (
+                <p
+                    dangerouslySetInnerHTML={{
+                        __html: row.original.questionName || '',
+                    }}
+                />
+            );
+        },
+    },
+    {
+        accessorKey: 'response',
+        header: 'Response',
+        cell: ({ row }) => row.original.response || <span className="text-neutral-400">—</span>,
+    },
+    {
+        accessorKey: 'correctAnswer',
+        header: 'Correct Answer',
+        cell: ({ row }) =>
+            row.original.correctAnswer || <span className="text-neutral-400">—</span>,
+    },
+    {
+        accessorKey: 'responseStatus',
+        header: 'Result',
+        cell: ({ row }) => <QuestionSlideResultChip status={row.original.responseStatus} />,
     },
 ];
 

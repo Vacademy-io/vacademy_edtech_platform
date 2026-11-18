@@ -17,5 +17,7 @@
     "comprehensionNumeric": "Comprehension Numeric",
     "cbeSection": "Computer-based exam (CBE)",
     "cbeResponse": "Spreadsheet & Written Response",
-    "cbeTitleType": "Spreadsheet & Written"
+    "cbeTitleType": "Spreadsheet & Written",
+    "showAnswerAfterSubmit": "Show correct answer after submit",
+    "showAnswerAfterSubmitHint": "Learners see whether their answer is correct or wrong, and the correct answer, right after they submit. When off, they see only the explanation."
 }

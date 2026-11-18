@@ -6,13 +6,20 @@ import { MyPagination } from '@/components/design-system/pagination';
 import {
     ACTIVITY_LOG_COLUMN_WIDTHS,
     ACTIVITY_RESPONSE_COLUMN_WIDTHS,
+    QUESTION_SLIDE_ACTIVITY_COLUMN_WIDTHS,
 } from '@/components/design-system/utils/constants/table-layout';
 import { usePaginationState } from '@/hooks/pagination';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     activityLogColumns,
     activityResponseTypeColumns,
+    questionSlideActivityColumns,
 } from '@/components/design-system/utils/constants/table-column-data';
+import {
+    questionSlideCorrectAnswer,
+    questionSlideQuestionName,
+    questionSlideResponseText,
+} from './question-slide-activity';
 import { useActivityStatsStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/activity-stats-store';
 import { useContentStore } from '@/routes/study-library/courses/course-details/subjects/modules/chapters/slides/-stores/chapter-sidebar-store';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -1124,6 +1131,7 @@ export const ActivityLogDialog = ({
             }));
         }
         if (activeItem?.source_type === 'QUESTION') {
+            const questionSlideAnswerKey = questionSlideCorrectAnswer(activeItem?.question_slide);
             transformedContent = activityLogs.content.map((item: ActivityContent) => {
                 // Spreadsheet & Written Response: {type, answer, evaluation} — shown as
                 // cards under the table, not as a selected-options string.
@@ -1149,6 +1157,7 @@ export const ActivityLogDialog = ({
                         cbeAttempt,
                     };
                 }
+                const responseJson = item.question_slides[0]?.response_json;
                 return {
                 activityDate: formatDateTime(item.start_time_in_millis).split(',')[0],
                 attemptNumber: item.question_slides[0]?.attempt_number,
@@ -1159,16 +1168,10 @@ export const ActivityLogDialog = ({
                     1000 /
                     60
                 ).toFixed(2)} mins`,
-                questionName: item.question_slides[0]?.response_json
-                    ? JSON.parse(item.question_slides[0]?.response_json || '')?.questionName
-                    : '',
-                response: item.question_slides[0]?.response_json
-                    ? JSON.parse(item.question_slides[0]?.response_json || '')
-                          ?.selectedOptions?.map(
-                              (option: { id: string; name: string }) => option.name
-                          )
-                          .join(',')
-                    : '',
+                questionName: questionSlideQuestionName(responseJson),
+                // Option labels are stored as editor HTML ("<p>9 J</p>").
+                response: questionSlideResponseText(responseJson),
+                correctAnswer: questionSlideAnswerKey,
                 responseStatus: item.question_slides[0]?.response_status,
                 };
             });
@@ -1696,10 +1699,10 @@ export const ActivityLogDialog = ({
                                 <div className="no-scrollbar mt-6 overflow-x-scroll px-4">
                                     <MyTable
                                         data={tableData}
-                                        columns={activityResponseTypeColumns}
+                                        columns={questionSlideActivityColumns}
                                         isLoading={isLoading}
                                         error={error}
-                                        columnWidths={ACTIVITY_RESPONSE_COLUMN_WIDTHS}
+                                        columnWidths={QUESTION_SLIDE_ACTIVITY_COLUMN_WIDTHS}
                                         currentPage={page}
                                     />
                                     {tableData.total_pages > 1 && (

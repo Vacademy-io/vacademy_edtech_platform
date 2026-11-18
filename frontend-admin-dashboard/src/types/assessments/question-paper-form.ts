@@ -48,6 +48,8 @@ export interface MyQuestion {
     reattemptCount?: string;
     status?: string;
     canSkip?: boolean;
+    /** Question slides only: show the learner, after submitting, if the answer was correct. Unset = on. */
+    showAnswerAfterSubmit?: boolean;
     // --- Add missing fields for type safety ---
     comprehensionText?: string;
     passage?: string;
