@@ -11,5 +11,7 @@
     "readingSkills": "पठन कौशल",
     "comprehensionMcqSingleCorrect": "अवबोधन एमसीक्यू (एकल सही)",
     "comprehensionMcqMultipleCorrect": "अवबोधन एमसीक्यू (बहु सही)",
-    "comprehensionNumeric": "अवबोधन संख्यात्मक"
+    "comprehensionNumeric": "अवबोधन संख्यात्मक",
+    "cbeSection": "कंप्यूटर-आधारित परीक्षा (CBE)",
+    "cbeResponse": "स्प्रेडशीट और लिखित उत्तर"
 }
