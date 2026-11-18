@@ -40,6 +40,7 @@ from ..services.assistant_tool_registry import (
     LOAD_TOOLS_TOOL_NAME,
     ToolContext,
     build_offered_tools,
+    capability_groups,
     execute_tool,
     in_product_specs,
     is_tool_allowed,
@@ -280,13 +281,13 @@ class AssistantAgentService:
         with self._get_db() as db:
             setting = load_assistant_tools_setting(db, principal.institute_id)
             ent = _entitlements_or_none_on(db, principal.institute_id)
-        groups: Dict[str, Dict[str, Any]] = {}
-        for spec in in_product_specs(principal, setting, ent):
-            g = groups.setdefault(spec.key(), {"key": spec.key(), "mode": spec.mode, "tools": []})
-            g["tools"].append(spec.name)
-            if spec.mode == "WRITE":
-                g["mode"] = "WRITE"
-        return {"groups": sorted(groups.values(), key=lambda g: g["key"])}
+        specs = {spec.name: spec for spec in in_product_specs(principal, setting, ent)}
+        groups = [
+            {"key": key, "tools": tools,
+             "mode": "WRITE" if any(specs[name].mode == "WRITE" for name in tools) else "READ"}
+            for key, tools in capability_groups(principal, setting, list(specs.values())).items()
+        ]
+        return {"groups": sorted(groups, key=lambda g: g["key"])}
 
     # ── write-confirmation protocol ──────────────────────────────────────
 
@@ -815,7 +816,7 @@ class AssistantAgentService:
         # schema when denied, so without this the model can't know they exist).
         # Only groups this assistant can offer at all count: MCP-only groups and
         # groups outside the institute's plan are left out.
-        enabled_groups: set = {spec.key() for spec in usable_specs}
+        enabled_groups: set = set(capability_groups(principal, setting, usable_specs))
         offerable_groups: set = {
             spec.key() for spec in ASSISTANT_TOOLS.values()
             if not spec.mcp_only
@@ -837,8 +838,8 @@ class AssistantAgentService:
         if has_crm:
             leads_rule = (
                 "- LEADS ARE NOT LEARNERS. If the user says 'lead', 'enquiry', or clearly means a "
-                "prospect who hasn't enrolled, use the CRM tools (see CRM below) — never find_learner, "
-                "get_student_360, update_learner_profile, or manage_enrollment, even if a student has "
+                "prospect who hasn't enrolled, use the CRM tools (see CRM below) — never the learner tools "
+                "(learners, learner_report, update_learner_profile, manage_enrollment), even if a student has "
                 "the same name.\n"
             )
             crm_loaded = CRM_TOPIC in (active_topics or set())
@@ -884,8 +885,8 @@ class AssistantAgentService:
         else:
             leads_rule = (
                 "- LEADS ARE NOT LEARNERS. If the user says 'lead', 'enquiry', or clearly means a "
-                "prospect who hasn't enrolled, you have NO tools for them — never use find_learner, "
-                "get_student_360, update_learner_profile, or manage_enrollment for a lead, even if a "
+                "prospect who hasn't enrolled, you have NO tools for them — never use the learner tools "
+                "(learners, learner_report, update_learner_profile, manage_enrollment) for a lead, even if a "
                 "student has the same name. Say lead data isn't available to you yet and point to "
                 "[Recent Leads](/audience-manager/recent-leads).\n"
             )
@@ -920,12 +921,16 @@ class AssistantAgentService:
             "- Answer with concise numbered steps and END with the article's route_path as a "
             "clickable link, e.g. `[Open Courses](/study-library/courses)` (never invent paths).\n\n"
             "LEARNER DATA (when those tools are enabled):\n"
-            "- A named learner → `find_learner` FIRST. Several matches → list them (name, batch, "
-            "enrollment no) and ask which — NEVER guess. A named batch → `find_batch` the same way.\n"
-            "- [Current page context: …] with a selected_student means 'this/that student' — use "
-            "their user_id (and package_session_id as batch_id) directly; skip the search.\n"
-            "- `get_student_360`: request ONLY the modules the question needs (usually 1-3); "
-            "`academics` is slow — only when asked about tests/scores. Default window: last 30 days.\n"
+            "- A named learner → `learners` with action 'find' FIRST (name, email, phone, username or "
+            "enrolment number). Several matches → list them (name, course / batch, enrolment no) and ask "
+            "which — NEVER guess. A named batch → `find_batch` the same way.\n"
+            "- [Current page context: …] with a selected_student means 'this/that student' — skip the "
+            "search: pass its user_id as learner_id (as target_user_id to tools that take that; never as "
+            "user_id) and its package_session_id as batch_id.\n"
+            "- How a learner is doing (attendance, scores, activity, progress, logins) → `learner_report` "
+            "with action 'data': pass ONLY the modules the question needs (usually 1-3) and detail "
+            "['none'] unless the user asks for class-by-class or per-attempt records; `academics` is slow — "
+            "only when asked about tests/scores. Default window: last 30 days.\n"
             "- Fees, one learner: `get_fee_dues` = what's outstanding/overdue; "
             "`get_payment_history` = what was actually paid and when.\n"
             "- Fees, institute-wide: `search_fee_records` lists WHO is overdue/unpaid; "
@@ -937,14 +942,17 @@ class AssistantAgentService:
             "assessment_id + visibility). Then `get_assessment_results` for attempt/grading/"
             "release status (evaluation PENDING = awaiting grading) or "
             "`get_assessment_leaderboard` for toppers/ranks. ONE learner's history across "
-            "tests → `get_student_360` with the `academics` module, not per-assessment calls.\n\n"
+            "tests → `learner_report` (action 'data') with the `academics` module, not per-assessment "
+            "calls.\n\n"
             "EDITS (when enabled): calling update_learner_profile / manage_enrollment / "
             "send_announcement only PROPOSES — the user must press Confirm on the card. NEVER "
             "claim a change happened or an announcement was sent unless a later message in this "
             "conversation confirms it executed; typed 'yes' does not execute anything — point "
             "to the card. Restate exactly what will change (for announcements: exact audience "
             "and text) before proposing. Check `list_announcements` for what's already "
-            "scheduled/delivered.\n\n"
+            "scheduled/delivered. A learner's name, phone, email, address or parents' details → "
+            "`update_learner_profile` (the only tool here that changes the email); `learner_edit` only "
+            "for what it alone sets (username, password, date of birth, city, custom fields).\n\n"
             + crm_section +
             "- You already know the user's identity and institute — never ask for ids.\n"
             "- After answering about a learner: `[Open learner profile](/manage-students/students-list)`.\n"

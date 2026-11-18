@@ -116,6 +116,34 @@ export const CRM_CAPABILITY_COPY_KEYS: Record<string, CapabilityCopy> = {
             'assistant.crmCopy.admissionsNoFeePlan',
         ],
     },
+    // CRM changes: each one is proposed on a card and made only when the user confirms it.
+    crm_lead_activity: {
+        blurb: 'assistant.crmCopy.crm_lead_activity',
+        suggestions: ['assistant.crmCopy.examples.leadFollowUp'],
+    },
+    crm_lead_edits: {
+        blurb: 'assistant.crmCopy.crm_lead_edits',
+        suggestions: ['assistant.crmCopy.examples.leadStatus'],
+    },
+    crm_team_edits: {
+        blurb: 'assistant.crmCopy.crm_team_edits',
+        suggestions: [
+            'assistant.crmCopy.examples.assignLeads',
+            'assistant.crmCopy.examples.pauseRouting',
+        ],
+    },
+    crm_lead_intake: {
+        blurb: 'assistant.crmCopy.crm_lead_intake',
+        suggestions: ['assistant.crmCopy.examples.addLead'],
+    },
+    crm_lead_merges: {
+        blurb: 'assistant.crmCopy.crm_lead_merges',
+        suggestions: ['assistant.crmCopy.examples.mergeLeads'],
+    },
+    crm_meeting_edits: {
+        blurb: 'assistant.crmCopy.crm_meeting_edits',
+        suggestions: ['assistant.crmCopy.examples.meetingOutcome'],
+    },
 };
 
 /**

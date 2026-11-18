@@ -59,8 +59,8 @@ const GENERIC_ERROR_MSG = 'Could not reach the assistant. Please try again in a 
 /** Friendly one-liners shown while a tool runs, so waits feel purposeful. */
 const TOOL_ACTIVITY_LABELS: Record<string, string> = {
     search_help_knowledge: 'Searching help articles…',
-    find_learner: 'Searching learners…',
-    get_student_360: 'Fetching learner data…',
+    learners: 'Searching learners…',
+    learner_report: 'Fetching learner data…',
     get_payment_history: 'Fetching payment history…',
     get_fee_dues: 'Checking fee dues…',
     get_subscription_plans: 'Checking payment plans…',

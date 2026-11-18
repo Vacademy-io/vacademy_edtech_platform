@@ -237,7 +237,7 @@ class Settings(BaseSettings):
     client_secret: Optional[str] = os.getenv("CLIENT_SECRET")
     auth_service_base_url: str = os.getenv("AUTH_SERVICE_BASE_URL", "http://auth-service:8071")
     # admin_core_service base URL — used by the Vacademy Assistant's data tools
-    # (find_learner via the caller's JWT; student-360 via internal HMAC headers).
+    # (the learner list via the caller's JWT; student-360 via internal HMAC headers).
     admin_core_service_base_url: str = os.getenv(
         "ADMIN_CORE_SERVICE_BASE_URL", "http://admin-core-service:8072"
     )

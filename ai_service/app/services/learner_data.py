@@ -85,10 +85,12 @@ LIMIT :lim
 _SEARCH_WHERE = """(
        s.full_name ILIKE '%' || :q || '%' OR s.email ILIKE '%' || :q || '%'
     OR s.username ILIKE '%' || :q || '%'
-    OR (:qd <> '' AND regexp_replace(COALESCE(s.mobile_number, ''), '\\D', '', 'g') LIKE '%' || :qd || '%'))"""
+    OR (:qd <> '' AND regexp_replace(COALESCE(s.mobile_number, ''), '\\D', '', 'g') LIKE '%' || :qd || '%')
+    OR s.user_id IN (SELECT e.user_id FROM student_session_institute_group_mapping e
+                     WHERE e.institute_id = :inst AND e.institute_enrollment_number ILIKE '%' || :q || '%'))"""
 
 _ENROLMENTS_SQL = """
-SELECT m.user_id, m.package_session_id, m.status, m.enrolled_date, m.expiry_date,
+SELECT m.user_id, m.package_session_id, m.status, m.enrolled_date, m.expiry_date, m.institute_enrollment_number,
        p.id AS course_id, p.package_name, se.session_name, l.level_name
 FROM student_session_institute_group_mapping m
 JOIN package_session ps ON ps.id = m.package_session_id
@@ -117,7 +119,7 @@ def _profile(row: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def search_learners(ctx: ToolContext, query: str, limit: int = 10) -> List[Dict[str, Any]]:
-    """Learners of this institute whose name / email / username / phone match."""
+    """Learners of this institute whose name / email / username / phone / enrolment number match."""
     q = str(query or "").strip()
     if not q:
         return []
@@ -189,6 +191,7 @@ def enrolments(ctx: ToolContext, user_ids: List[str]) -> Dict[str, List[Dict[str
             "batch": batch or "Default batch", "status": r.get("status"),
             "enrolled_on": str(r["enrolled_date"])[:10] if r.get("enrolled_date") else None,
             "expires_on": str(r["expiry_date"])[:10] if r.get("expiry_date") else None,
+            "enrolment_no": r.get("institute_enrollment_number") or None,
         })
     return out
 

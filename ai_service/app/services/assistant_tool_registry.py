@@ -468,82 +468,14 @@ async def _execute_search_help_knowledge(args: Dict[str, Any], ctx: ToolContext)
 
 
 # ──────────────────────────────────────────────────────────────────────────
-# Phase-2 tools: find_learner (resolver) + get_student_360 (data aggregate).
+# Phase-2 tools. Learners are found with `learners` (assistant_tools_learners)
+# and their progress read with `learner_report`; both are also offered to the
+# "learner_data" group (ToolSpec.setting_keys_any).
 # ──────────────────────────────────────────────────────────────────────────
 
-_FIND_LEARNER_SCHEMA: Dict[str, Any] = {
-    "type": "function",
-    "function": {
-        "name": "find_learner",
-        "description": (
-            "Find ENROLLED learners/students in this institute by ONE free-text query — "
-            "matches name, email, phone number, username, or enrollment number. Use this "
-            "FIRST whenever the user names a learner and the page context does not already "
-            "identify them. If more than one learner matches, list the matches and ask "
-            "the user which one they mean — never guess. NEVER use this for leads, "
-            "enquiries, or prospects — those are different records this tool cannot see."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "query": {
-                    "type": "string",
-                    "description": "The learner's name / email / phone / enrollment number.",
-                },
-                "statuses": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "description": "Enrollment statuses to include. Default ['ACTIVE']; "
-                                   "widen to ['ACTIVE','INACTIVE','INVITED'] if nothing is found.",
-                },
-            },
-            "required": ["query"],
-        },
-    },
-}
-
-_STUDENT_360_MODULES = [
-    "attendance", "live_classes", "academics", "activity",
-    "progress", "certificates", "assignments", "doubts", "login",
-]
-
-_GET_STUDENT_360_SCHEMA: Dict[str, Any] = {
-    "type": "function",
-    "function": {
-        "name": "get_student_360",
-        "description": (
-            "Fetch a learner's data for SPECIFIC modules: attendance (live-class "
-            "presence %), live_classes (attended/missed), academics (assessment scores "
-            "vs batch — SLOW, request only when asked about tests/scores), activity "
-            "(study time & habits), progress (course completion), certificates, "
-            "assignments, doubts, login (last login & session time). Request ONLY the "
-            "modules the question needs. Requires the learner's user id — from the page "
-            "context's selected student or a prior find_learner result."
-        ),
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "target_user_id": {
-                    "type": "string",
-                    "description": "The learner's user_id (NOT their name).",
-                },
-                "modules": {
-                    "type": "array",
-                    "items": {"type": "string", "enum": _STUDENT_360_MODULES},
-                    "description": "Only the modules the question actually needs (1-3 usually).",
-                },
-                "batch_id": {
-                    "type": "string",
-                    "description": "Optional package_session_id to scope attendance/progress "
-                                   "(from page context or the find_learner result).",
-                },
-                "start_date": {"type": "string", "description": "YYYY-MM-DD. Default: 30 days ago."},
-                "end_date": {"type": "string", "description": "YYYY-MM-DD. Default: today."},
-            },
-            "required": ["target_user_id", "modules"],
-        },
-    },
-}
+#: How the in-product tools that take ``target_user_id`` are told where it comes from.
+_LEARNER_TARGET = ("The learner's user_id: the learner_id from learners(action='find'), or the selected "
+                   "student's user_id from the page context.")
 
 
 def _mask_mobile(mobile: Optional[str]) -> Optional[str]:
@@ -551,74 +483,6 @@ def _mask_mobile(mobile: Optional[str]) -> Optional[str]:
         return None
     digits = str(mobile)
     return ("*" * max(0, len(digits) - 4)) + digits[-4:]
-
-
-async def _execute_find_learner(args: Dict[str, Any], ctx: ToolContext) -> str:
-    """Search learners within the pinned institute via the students-list endpoint.
-
-    Calls the normal admin endpoint WITH THE CALLER'S OWN JWT — the caller can
-    only see what they could already see in the portal. institute_ids is forced
-    from the pinned principal; the response is reduced to a compact projection
-    (never the full row: no address, parent contacts, or custom fields).
-    """
-    import httpx
-    from ..config import get_settings
-
-    query = str((args or {}).get("query") or "").strip()
-    if not query:
-        return json.dumps({"matches": [], "note": "No search query was provided."})
-    if not ctx.bearer_token:
-        return json.dumps({"error": "no_auth", "message": "Learner search is unavailable right now."})
-
-    statuses = args.get("statuses") or ["ACTIVE"]
-    settings = get_settings()
-    url = (
-        f"{settings.admin_core_service_base_url}"
-        "/admin-core-service/institute/institute_learner/get/v2/all"
-    )
-    body = {
-        "name": query,
-        "institute_ids": [ctx.principal.institute_id],  # forced — never model-supplied
-        "statuses": [str(s) for s in statuses][:6],
-        "package_session_ids": [],
-        "group_ids": [],
-        "gender": [],
-        "sort_columns": {},
-    }
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            resp = await client.post(
-                url,
-                params={"pageNo": 0, "pageSize": 10},
-                json=body,
-                headers=_jwt_headers(ctx),
-            )
-        if resp.status_code != 200:
-            logger.warning("find_learner: %s from students-list (%s)", resp.status_code, resp.text[:200])
-            return json.dumps({"error": "search_failed", "status": resp.status_code})
-        data = resp.json() or {}
-    except Exception as e:
-        logger.warning("find_learner failed: %s", e)
-        return json.dumps({"error": "search_failed"})
-
-    matches = []
-    for row in (data.get("content") or [])[:10]:
-        matches.append({
-            "user_id": row.get("user_id"),
-            "full_name": row.get("full_name"),
-            "email": row.get("email"),
-            "mobile": _mask_mobile(row.get("mobile_number")),
-            "enrollment_no": row.get("institute_enrollment_number"),
-            "status": row.get("status"),
-            "payment_status": row.get("payment_status"),
-            "package_session_id": row.get("package_session_id"),
-            "expiry_date": row.get("expiry_date"),
-        })
-    return json.dumps({
-        "matches": matches,
-        "total_matches": data.get("total_elements", len(matches)),
-        "note": "If more than one match, ask the user which learner they mean." if len(matches) > 1 else None,
-    })
 
 
 _FIND_BATCH_SCHEMA: Dict[str, Any] = {
@@ -722,58 +586,6 @@ def _prune_nulls(obj: Any) -> Any:
     if isinstance(obj, list):
         return [_prune_nulls(v) for v in obj if v is not None]
     return obj
-
-
-async def _execute_get_student_360(args: Dict[str, Any], ctx: ToolContext) -> str:
-    """Synchronous Layer-1 student report (selected modules) via the internal endpoint.
-
-    The internal endpoint verifies the target learner belongs to the pinned
-    institute (404 otherwise), so a session pinned to institute A can never read
-    institute B's learners even though the call carries service-level trust.
-    """
-    import httpx
-    from ..config import get_settings
-    from .internal_auth import internal_auth_headers
-
-    target_user_id = str((args or {}).get("target_user_id") or "").strip()
-    if not target_user_id:
-        return json.dumps({"error": "missing_target", "message": "target_user_id is required."})
-
-    modules = [m for m in (args.get("modules") or []) if m in _STUDENT_360_MODULES]
-    if not modules:
-        return json.dumps({"error": "missing_modules",
-                           "message": f"Pick 1-3 modules from: {', '.join(_STUDENT_360_MODULES)}."})
-
-    settings = get_settings()
-    params: Dict[str, Any] = {
-        "userId": target_user_id,
-        "instituteId": ctx.principal.institute_id,  # forced — never model-supplied
-        "modules": ",".join(modules),
-    }
-    if args.get("batch_id"):
-        params["batchId"] = str(args["batch_id"])
-    if args.get("start_date"):
-        params["startDate"] = str(args["start_date"])
-    if args.get("end_date"):
-        params["endDate"] = str(args["end_date"])
-
-    url = f"{settings.admin_core_service_base_url}/admin-core-service/internal/student-analysis/student-360"
-    try:
-        headers = await internal_auth_headers()
-        async with httpx.AsyncClient(timeout=65.0) as client:
-            resp = await client.get(url, params=params, headers=headers)
-        if resp.status_code == 404:
-            return json.dumps({"error": "not_found",
-                               "message": "This learner has no enrollment in your institute."})
-        if resp.status_code != 200:
-            logger.warning("get_student_360: %s (%s)", resp.status_code, resp.text[:200])
-            return json.dumps({"error": "fetch_failed", "status": resp.status_code})
-        report = resp.json() or {}
-    except Exception as e:
-        logger.warning("get_student_360 failed: %s", e)
-        return json.dumps({"error": "fetch_failed"})
-
-    return json.dumps(_prune_nulls(report))
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -886,7 +698,7 @@ _GET_PAYMENT_HISTORY_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
                 "payment_statuses": {
                     "type": "array", "items": {"type": "string"},
                     "description": "Optional filter, e.g. ['PAID','FAILED','PENDING'].",
@@ -943,7 +755,7 @@ _GET_FEE_DUES_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
                 "status": {
                     "type": "string",
                     "description": "Optional: 'OVERDUE' to list only overdue installments.",
@@ -999,7 +811,7 @@ _GET_SUBSCRIPTION_PLANS_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
             },
             "required": ["target_user_id"],
         },
@@ -1042,7 +854,7 @@ _LIST_BATCH_LEARNERS_SCHEMA: Dict[str, Any] = {
         "description": (
             "The learners enrolled in one batch (roster + total count). Use for 'who is "
             "in batch X / how many active learners'. Needs the batch's "
-            "package_session_id (from page context or a find_learner result)."
+            "package_session_id (from page context or find_batch)."
         ),
         "parameters": {
             "type": "object",
@@ -1275,7 +1087,7 @@ _TRIGGER_FULL_REPORT_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
                 "batch_id": {"type": "string", "description": "Optional package_session_id."},
                 "start_date": {"type": "string", "description": "YYYY-MM-DD. Default: 30 days ago."},
                 "end_date": {"type": "string", "description": "YYYY-MM-DD. Default: today."},
@@ -1988,7 +1800,7 @@ _UPDATE_LEARNER_PROFILE_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
                 **{f: {"type": "string"} for f in _PROFILE_EDITABLE_FIELDS},
             },
             "required": ["target_user_id"],
@@ -2054,7 +1866,7 @@ _MANAGE_ENROLLMENT_SCHEMA: Dict[str, Any] = {
         "parameters": {
             "type": "object",
             "properties": {
-                "target_user_id": {"type": "string", "description": "The learner's user_id."},
+                "target_user_id": {"type": "string", "description": _LEARNER_TARGET},
                 "operation": {"type": "string", "enum": sorted(_ENROLLMENT_OPERATIONS.keys())},
                 "new_state": {
                     "type": "string",
@@ -2062,7 +1874,8 @@ _MANAGE_ENROLLMENT_SCHEMA: Dict[str, Any] = {
                 },
                 "current_package_session_id": {
                     "type": "string",
-                    "description": "The learner's current batch id (from context or find_learner).",
+                    "description": ("The learner's current batch id: a batch_id from learners(action='find'), or the "
+                                    "selected student's package_session_id from the page context."),
                 },
             },
             "required": ["target_user_id", "operation", "current_package_session_id"],
@@ -2203,7 +2016,7 @@ _SEND_ANNOUNCEMENT_SCHEMA: Dict[str, Any] = {
                 },
                 "target_user_ids": {
                     "type": "array", "items": {"type": "string"},
-                    "description": "Specific user_ids (from find_learner).",
+                    "description": "Specific learners: learner_id values from learners(action='find').",
                 },
                 "push": {"type": "boolean",
                          "description": "Also send a push notification. Default false."},
@@ -2515,33 +2328,6 @@ ASSISTANT_TOOLS: Dict[str, ToolSpec] = {
         required_permission=None,   # Phase-1 help is available to all non-learner roles
         default_enabled=True,       # on out-of-the-box until an institute configures the setting
         phase=1,
-        mode="READ",
-    ),
-    # Phase 2a learner-data tools. One settings key ("learner_data") controls both —
-    # the resolver is useless without the data tool and vice versa. RBAC leg is None
-    # for now: the ASSISTANT_* permission catalog isn't seeded/grantable in the roles
-    # UI yet, so the per-role Settings leg (deny-by-default, ADMIN-only default) is
-    # the founder's grant mechanism; the permission backstop lands with the catalog.
-    "find_learner": ToolSpec(
-        name="find_learner",
-        schema=_FIND_LEARNER_SCHEMA,
-        executor=_execute_find_learner,
-        required_permission=None,
-        setting_key="learner_data",
-        default_enabled=False,
-        default_roles=["ADMIN"],    # founder decision 2026-07-02: reads on for ADMIN only
-        phase=2,
-        mode="READ",
-    ),
-    "get_student_360": ToolSpec(
-        name="get_student_360",
-        schema=_GET_STUDENT_360_SCHEMA,
-        executor=_execute_get_student_360,
-        required_permission=None,
-        setting_key="learner_data",
-        default_enabled=False,
-        default_roles=["ADMIN"],
-        phase=2,
         mode="READ",
     ),
     # Name→id resolver shared by several groups: available when ANY of them is on.
@@ -2911,6 +2697,44 @@ def is_tool_allowed(
     return any(k in enabled for k in spec.keys_any(via_mcp=via_mcp))
 
 
+def only_through_other_groups(ctx: ToolContext, tool_name: str) -> bool:
+    """
+    True when the in-product assistant offers ``tool_name`` to this caller only
+    through one of its other groups (``setting_keys_any``), not through its own
+    group: e.g. ``learners`` reached with "learner_data" alone. Such a tool then
+    does no more than that group allows (see the tool). Never on MCP, whose
+    groups are the tool's own, and only for a call execute_tool has gated.
+    """
+    spec = ASSISTANT_TOOLS.get(tool_name)
+    if spec is None or ctx.via_mcp or not ctx.gate_checked or spec.always_allowed:
+        return False
+    return spec.key() not in _effective_enabled_tools(ctx.gate_setting, ctx.principal.roles)
+
+
+def capability_groups(
+    principal: PinnedPrincipal,
+    setting: Optional[Dict[str, Any]],
+    usable_specs: List[ToolSpec],
+) -> Dict[str, List[str]]:
+    """
+    The caller's in-product groups, each with the tools it gives them (for the
+    panel's capabilities and the prompt's capability list). A group is listed
+    when one of its own tools is usable; a tool offered through several groups
+    (``setting_keys_any``) is also listed under each of those the caller has
+    listed, so e.g. ``learners`` shows under "learner_data".
+    """
+    enabled = _effective_enabled_tools(setting, principal.roles)
+    groups: Dict[str, List[str]] = {}
+    for spec in usable_specs:
+        if spec.always_allowed or spec.key() in enabled:
+            groups.setdefault(spec.key(), []).append(spec.name)
+    for spec in usable_specs:
+        for key in spec.keys_any():
+            if key in groups and spec.name not in groups[key]:
+                groups[key].append(spec.name)
+    return groups
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # The module leg: features the institute's plan includes (V567 entitlements).
 # Checked after the AND-gate, only for tools tied to a module, and only when a
@@ -3135,6 +2959,8 @@ __all__ = [
     "ToolSpec",
     "ToolContext",
     "is_tool_allowed",
+    "only_through_other_groups",
+    "capability_groups",
     "build_offered_tools",
     "in_product_specs",
     "ASSISTANT_TOPICS",

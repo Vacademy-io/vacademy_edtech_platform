@@ -29,7 +29,7 @@ export interface LaunchBarStarter {
  */
 export const STARTERS: readonly LaunchBarStarter[] = [
     { key: 'overview', group: 'institute_overview', tool: 'get_institute_overview', Icon: Money },
-    { key: 'learner', group: 'learner_data', tool: 'find_learner', Icon: MagnifyingGlass },
+    { key: 'learner', group: 'learner_data', tool: 'learners', Icon: MagnifyingGlass },
     {
         key: 'assessments',
         group: 'assessments',
@@ -57,7 +57,7 @@ export const STARTERS: readonly LaunchBarStarter[] = [
 export const STARTER_FEATURES: Readonly<Record<string, readonly string[]>> = {
     // get_institute_overview(sections=['outstanding_fees'])
     overview: ['finance.fees'],
-    // find_learner searches ENROLLED learners only (never leads/contacts)
+    // learners(action='find') searches ENROLLED learners only (never leads/contacts)
     learner: ['lms.batches'],
     // get_assessment_results — "pending evaluations"
     assessments: ['assessments.tests'],

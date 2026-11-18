@@ -23,7 +23,7 @@ const groups: AssistantCapabilities['groups'] = [
     { key: 'announcements', mode: 'WRITE', tools: ['list_announcements', 'send_announcement'] },
     { key: 'assessments', mode: 'READ', tools: ['get_assessment_results'] },
     { key: 'institute_overview', mode: 'READ', tools: ['get_institute_overview'] },
-    { key: 'learner_data', mode: 'READ', tools: ['find_learner'] },
+    { key: 'learner_data', mode: 'READ', tools: ['find_batch', 'learners', 'learner_report'] },
     { key: 'schedule', mode: 'READ', tools: ['get_class_schedule'] },
 ];
 

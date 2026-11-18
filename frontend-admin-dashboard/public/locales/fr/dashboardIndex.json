@@ -139,7 +139,22 @@
             "crm_messages": "Messages des prospects",
             "crm_reports": "Rapports CRM",
             "crm_collections": "Admissions, sommes dues et encaissements",
-            "admissionsNoFeePlan": "Admissions du mois sans plan de frais"
+            "admissionsNoFeePlan": "Admissions du mois sans plan de frais",
+            "crm_lead_activity": "Noter les appels, les notes et les relances des prospects — vous confirmez chaque changement sur une carte",
+            "crm_lead_edits": "Changer le statut, le niveau, les détails et les tags d’un prospect — vous confirmez sur une carte",
+            "crm_team_edits": "Attribuer des prospects et suspendre ou reprendre la répartition — vous confirmez sur une carte",
+            "crm_lead_intake": "Ajouter ou importer des prospects — vous confirmez sur une carte",
+            "crm_lead_merges": "Fusionner les prospects en double — vous confirmez sur une carte",
+            "crm_meeting_edits": "Noter l’issue des rendez-vous — vous confirmez sur une carte",
+            "examples": {
+                "leadFollowUp": "Ajoutez une relance sur le prospect d’Asha demain à 11 h",
+                "leadStatus": "Passez le prospect d’Asha à Intéressé",
+                "assignLeads": "Attribuez les nouveaux prospects Meta à Ravi",
+                "pauseRouting": "Suspendez la répartition des prospects pour Ravi cette semaine",
+                "addLead": "Ajoutez Priya Shah comme nouveau prospect du séminaire d’aujourd’hui",
+                "mergeLeads": "Fusionnez les deux prospects d’Asha Verma",
+                "meetingOutcome": "Marquez le rendez-vous d’aujourd’hui avec Asha comme terminé et notez qu’elle veut le groupe du week-end"
+            }
         }
     },
     "quickActions": {

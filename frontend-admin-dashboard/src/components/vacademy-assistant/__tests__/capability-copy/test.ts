@@ -57,6 +57,28 @@ describe('assistant panel copy for the CRM groups', () => {
         expect(suggestions.join(' ')).not.toMatch(/lead|owes|admission/i);
     });
 
+    it('describes each CRM edit group, saying changes are confirmed on a card', () => {
+        const editGroups = [
+            'crm_lead_activity',
+            'crm_lead_edits',
+            'crm_lead_intake',
+            'crm_lead_merges',
+            'crm_meeting_edits',
+            'crm_team_edits',
+        ];
+        editGroups.forEach((key) => {
+            const { capabilityBlurbs, suggestions } = capabilityCopyFor([key], t);
+            expect(capabilityBlurbs, key).toHaveLength(1);
+            expect(capabilityBlurbs[0], key).toMatch(/confirm( each change)? on a card/);
+            expect(suggestions.length, key).toBeGreaterThanOrEqual(1);
+            expect(suggestions.length, key).toBeLessThanOrEqual(2);
+            suggestions.forEach((s) => expect(s, key).not.toMatch(/^assistant\./));
+        });
+        expect(capabilityCopyFor(['crm_team_edits'], t).suggestions).toContain(
+            'Assign the new Meta leads to Ravi'
+        );
+    });
+
     it('keeps at most five example prompts', () => {
         const { suggestions } = capabilityCopyFor(
             ['search_help_knowledge', 'learner_data', 'crm_reports', 'crm_collections'],

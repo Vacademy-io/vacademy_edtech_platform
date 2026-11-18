@@ -139,7 +139,22 @@
             "crm_messages": "Lead messages",
             "crm_reports": "CRM reports",
             "crm_collections": "Admissions, dues and collections",
-            "admissionsNoFeePlan": "Admissions this month missing a fee plan"
+            "admissionsNoFeePlan": "Admissions this month missing a fee plan",
+            "crm_lead_activity": "Log calls, notes and follow-ups on leads — you confirm each change on a card",
+            "crm_lead_edits": "Change a lead’s status, tier, details and tags — you confirm on a card",
+            "crm_team_edits": "Assign leads and pause or resume routing — you confirm on a card",
+            "crm_lead_intake": "Add or import leads — you confirm on a card",
+            "crm_lead_merges": "Merge duplicate leads — you confirm on a card",
+            "crm_meeting_edits": "Log meeting outcomes — you confirm on a card",
+            "examples": {
+                "leadFollowUp": "Add a follow-up on Asha’s lead for tomorrow at 11am",
+                "leadStatus": "Move Asha’s lead to Interested",
+                "assignLeads": "Assign the new Meta leads to Ravi",
+                "pauseRouting": "Pause lead routing for Ravi this week",
+                "addLead": "Add Priya Shah as a new lead from today’s seminar",
+                "mergeLeads": "Merge the two leads for Asha Verma",
+                "meetingOutcome": "Mark today’s meeting with Asha as done and note she wants the weekend batch"
+            }
         }
     },
     "quickActions": {

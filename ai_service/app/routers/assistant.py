@@ -94,7 +94,7 @@ async def stream_session(
     authorization: Optional[str] = Header(None),
 ):
     # The caller's own JWT is replayed on data tools that hit normal admin
-    # endpoints (find_learner), so the real user identity reaches Java.
+    # endpoints (e.g. the learner list), so the real user identity reaches Java.
     bearer_token = (
         authorization[len("Bearer "):] if authorization and authorization.startswith("Bearer ") else None
     )
