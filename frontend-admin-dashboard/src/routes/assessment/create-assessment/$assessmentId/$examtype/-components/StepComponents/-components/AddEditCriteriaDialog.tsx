@@ -2,7 +2,7 @@ import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sparkle, PencilSimple, FileText, Plus, Minus } from '@phosphor-icons/react';
-import { useState } from 'react';
+import { useLayoutEffect, useRef, useState, type ComponentProps } from 'react';
 import { useForm } from 'react-hook-form';
 import { useTranslation } from 'react-i18next';
 import {
@@ -18,10 +18,42 @@ import {
 } from '../../../-services/criteria-services';
 import { FormControl, FormField, FormItem, FormLabel } from '@/components/ui/form';
 import { MyInput } from '@/components/design-system/input';
+import { MyLabel } from '@/components/design-system/my-label';
+import { Textarea } from '@/components/ui/textarea';
+import { cn } from '@/lib/utils';
 import SelectField from '@/components/design-system/select-field';
 import { toast } from 'sonner';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { DashboardLoader } from '@/components/core/dashboard-loader';
+
+/** A textarea as tall as its text, so a long criterion description reads in full without scrolling. */
+const AutoGrowTextarea = ({ value, className, ...props }: ComponentProps<typeof Textarea>) => {
+    const ref = useRef<HTMLTextAreaElement>(null);
+    useLayoutEffect(() => {
+        const fit = () => {
+            const el = ref.current;
+            if (!el) return;
+            el.style.height = 'auto';
+            // Not laid out (hidden): keep the rows height rather than collapse to nothing.
+            if (!el.scrollHeight) return;
+            // scrollHeight leaves out the border, which the border-box height includes.
+            el.style.height = `${el.scrollHeight + el.offsetHeight - el.clientHeight}px`;
+        };
+        fit();
+        // A narrower box (a phone turned upright) wraps into more lines.
+        window.addEventListener('resize', fit);
+        return () => window.removeEventListener('resize', fit);
+    }, [value]);
+    return (
+        <Textarea
+            rows={2}
+            {...props}
+            ref={ref}
+            value={value}
+            className={cn('resize-none overflow-hidden leading-relaxed', className)}
+        />
+    );
+};
 
 interface QuestionData {
     id?: string;
@@ -220,16 +252,20 @@ export const AddEditCriteriaDialog = ({
                 className="flex flex-1 flex-col overflow-hidden"
             >
                 <TabsList className="grid w-full grid-cols-3 bg-neutral-100">
-                    <TabsTrigger value="manual" className="flex items-center gap-2">
-                        <PencilSimple size={16} weight="bold" />
+                    <TabsTrigger value="manual" className="flex items-center gap-2 px-2 sm:px-3">
+                        <PencilSimple
+                            size={16}
+                            weight="bold"
+                            className="hidden shrink-0 sm:block"
+                        />
                         {t('tabs.manual')}
                     </TabsTrigger>
-                    <TabsTrigger value="ai" className="flex items-center gap-2">
-                        <Sparkle size={16} weight="fill" />
+                    <TabsTrigger value="ai" className="flex items-center gap-2 px-2 sm:px-3">
+                        <Sparkle size={16} weight="fill" className="hidden shrink-0 sm:block" />
                         {t('tabs.ai')}
                     </TabsTrigger>
-                    <TabsTrigger value="template" className="flex items-center gap-2">
-                        <FileText size={16} weight="fill" />
+                    <TabsTrigger value="template" className="flex items-center gap-2 px-2 sm:px-3">
+                        <FileText size={16} weight="fill" className="hidden shrink-0 sm:block" />
                         {t('tabs.template')}
                     </TabsTrigger>
                 </TabsList>
@@ -248,46 +284,63 @@ export const AddEditCriteriaDialog = ({
                                     </h4>
                                     {manualCriteria.length > 1 && (
                                         <button
+                                            type="button"
                                             onClick={() => removeManualCriteriaRow(index)}
-                                            className="text-red-500 hover:text-red-700"
+                                            className="rounded-md p-1 text-danger-500 hover:bg-danger-50 hover:text-danger-700"
                                         >
                                             <Minus size={20} />
                                         </button>
                                     )}
                                 </div>
-                                <MyInput
-                                    inputType="text"
-                                    inputPlaceholder={t('manual.namePlaceholder')}
-                                    label={t('manual.nameLabel')}
-                                    input={item.name}
-                                    onChangeFunction={(e) =>
-                                        updateManualCriteria(index, 'name', e.target.value)
-                                    }
-                                    required
-                                />
-                                <MyInput
-                                    inputType="text"
-                                    inputPlaceholder={t('manual.descriptionPlaceholder')}
-                                    label={t('manual.descriptionLabel')}
-                                    input={item.description}
-                                    onChangeFunction={(e) =>
-                                        updateManualCriteria(index, 'description', e.target.value)
-                                    }
-                                />
-                                <MyInput
-                                    inputType="number"
-                                    inputPlaceholder={t('manual.maxMarksPlaceholder')}
-                                    label={t('manual.maxMarksLabel')}
-                                    input={String(item.max_marks)}
-                                    onChangeFunction={(e) =>
-                                        updateManualCriteria(
-                                            index,
-                                            'max_marks',
-                                            Number(e.target.value)
-                                        )
-                                    }
-                                    required
-                                />
+                                {/* Name and marks share a row from sm up; the description gets the full width. */}
+                                <div className="grid gap-3 sm:grid-cols-4">
+                                    <div className="sm:col-span-3">
+                                        <MyInput
+                                            inputType="text"
+                                            inputPlaceholder={t('manual.namePlaceholder')}
+                                            label={t('manual.nameLabel')}
+                                            input={item.name}
+                                            onChangeFunction={(e) =>
+                                                updateManualCriteria(index, 'name', e.target.value)
+                                            }
+                                            // MyInput caps itself at sm:w-60; only a same-breakpoint class lifts it.
+                                            className="sm:w-full"
+                                            required
+                                        />
+                                    </div>
+                                    <MyInput
+                                        inputType="number"
+                                        inputPlaceholder={t('manual.maxMarksPlaceholder')}
+                                        label={t('manual.maxMarksLabel')}
+                                        input={String(item.max_marks)}
+                                        onChangeFunction={(e) =>
+                                            updateManualCriteria(
+                                                index,
+                                                'max_marks',
+                                                Number(e.target.value)
+                                            )
+                                        }
+                                        className="sm:w-full"
+                                        required
+                                    />
+                                </div>
+                                <div className="flex flex-col gap-1">
+                                    <MyLabel htmlFor={`criteria-description-${index}`}>
+                                        {t('manual.descriptionLabel')}
+                                    </MyLabel>
+                                    <AutoGrowTextarea
+                                        id={`criteria-description-${index}`}
+                                        placeholder={t('manual.descriptionPlaceholder')}
+                                        value={item.description ?? ''}
+                                        onChange={(e) =>
+                                            updateManualCriteria(
+                                                index,
+                                                'description',
+                                                e.target.value
+                                            )
+                                        }
+                                    />
+                                </div>
                             </div>
                         ))}
                     </div>
