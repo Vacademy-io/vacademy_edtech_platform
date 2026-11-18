@@ -44,14 +44,23 @@ public interface InstituteDomainRoutingRepository extends CrudRepository<Institu
    * the wildcard. resolveMapping prefers the wildcard row, so an admin host such
    * as admin.example.com read the learner wildcard row (its signup flag, theme,
    * redirect) instead of its own ADMIN row. Falls back to resolveMapping order.
+   * The role column is a comma-separated list of roles allowed to log in, so the
+   * asked role is matched as one of its entries rather than the whole value.
+   * Two such rows on one host would otherwise tie; the one that is exactly the
+   * asked role, then the oldest, wins, so a host never flips between them.
    */
   @Query(value = """
       SELECT *
       FROM institute_domain_routing
       WHERE LOWER(domain) = LOWER(:domain)
         AND (LOWER(subdomain) = LOWER(:subdomain) OR subdomain = '*')
-      ORDER BY CASE WHEN LOWER(subdomain) = LOWER(:subdomain) AND UPPER(role) = UPPER(:role) THEN 0 ELSE 1 END,
-               CASE WHEN subdomain = '*' THEN 1 ELSE 0 END DESC
+      ORDER BY CASE WHEN LOWER(subdomain) = LOWER(:subdomain)
+                     AND EXISTS (SELECT 1 FROM unnest(string_to_array(role, ',')) AS t(token)
+                                 WHERE UPPER(BTRIM(t.token)) = UPPER(:role))
+                THEN 0 ELSE 1 END,
+               CASE WHEN subdomain = '*' THEN 1 ELSE 0 END DESC,
+               CASE WHEN UPPER(role) = UPPER(:role) THEN 0 ELSE 1 END,
+               created_at, id
       LIMIT 1
       """, nativeQuery = true)
   Optional<InstituteDomainRouting> resolveMappingForRole(@Param("domain") String domain,
