@@ -281,7 +281,7 @@ class AiReportHtmlBuilderV2Test {
         return n;
     }
 
-    private static AiReportModel model(String name, String enrollment, JsonNode ai) {
+    static AiReportModel model(String name, String enrollment, JsonNode ai) {
         // Physics: 5 questions x 2 marks; Maths: 10 questions x 2 marks. Max 30.
         List<QuestionRow> qs = new ArrayList<>();
         Outcome[] phy = {Outcome.CORRECT, Outcome.CORRECT, Outcome.WRONG, Outcome.CORRECT, Outcome.SKIPPED};
@@ -335,7 +335,7 @@ class AiReportHtmlBuilderV2Test {
                 70.0, 22.0, "Sample question " + n);
     }
 
-    private static JsonNode ai() {
+    static JsonNode ai() {
         try {
             return OM.readTree("""
                     {"performance_analysis":"Riya, your maths is strong. Physics question 3 was answered in 4 seconds.",

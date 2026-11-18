@@ -848,6 +848,30 @@ public class LearnerReportService {
      */
     public ResponseEntity<Map<String, String>> getAiReportWebHtml(CustomUserDetails user, String assessmentId,
                                                                   String attemptId, String instituteId) {
+        String html = onScreenAiReport(user, assessmentId, attemptId, (resolvedAttemptId, processedJson) ->
+                aiReportPdfService.renderWebHtml(user.getUserId(), assessmentId, resolvedAttemptId, instituteId,
+                        reviewDetailOrNull(assessmentId, resolvedAttemptId, instituteId), processedJson));
+        return ResponseEntity.ok(Map.of("html", html));
+    }
+
+    /**
+     * The AI report as data for the learner app's screen, which lays it out as cards and charts.
+     * Same data and report options as the {@link #getAiReportPdf} download.
+     */
+    public ResponseEntity<vacademy.io.assessment_service.features.assessment.service.aireport.AiReportWebData> getAiReportWebData(CustomUserDetails user, String assessmentId,
+                                                              String attemptId, String instituteId) {
+        return ResponseEntity.ok(onScreenAiReport(user, assessmentId, attemptId, (resolvedAttemptId, processedJson) ->
+                aiReportPdfService.renderWebData(user.getUserId(), assessmentId, resolvedAttemptId, instituteId,
+                        reviewDetailOrNull(assessmentId, resolvedAttemptId, instituteId), processedJson)));
+    }
+
+    @FunctionalInterface
+    private interface OnScreenRender<T> {
+        T render(String resolvedAttemptId, String processedJson) throws Exception;
+    }
+
+    /** The checks every on-screen AI report goes through: report exists, attempt is the learner's own and released. */
+    private <T> T onScreenAiReport(CustomUserDetails user, String assessmentId, String attemptId, OnScreenRender<T> render) {
         try {
             String processedJson = adminCoreServiceClient.getProcessedAIReport(user.getUserId(), assessmentId);
             if (processedJson == null || processedJson.isEmpty()) {
@@ -860,9 +884,7 @@ public class LearnerReportService {
             if (!aiReportPdfService.isEnabled()) {
                 throw new VacademyException("The on-screen AI report is not available");
             }
-            String html = aiReportPdfService.renderWebHtml(user.getUserId(), assessmentId, resolvedAttemptId, instituteId,
-                    reviewDetailOrNull(assessmentId, resolvedAttemptId, instituteId), processedJson);
-            return ResponseEntity.ok(Map.of("html", html));
+            return render.render(resolvedAttemptId, processedJson);
         } catch (VacademyException e) {
             throw e;
         } catch (Exception e) {
