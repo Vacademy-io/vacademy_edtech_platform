@@ -45,6 +45,7 @@ import { UploadAnswerSheetDialog } from '@/routes/evaluation/evaluate/$assessmen
 import { ProctoringReviewDialog } from './ProctoringReviewDialog';
 import { StudentAiReportDialog } from './StudentAiReportDialog';
 import { useAiGradableQuestionCount } from '../../-utils/ai-gradable-questions';
+import { AttemptAnswersDialog } from './AttemptAnswersDialog';
 
 const isEvaluatedStatus = (status?: string | null) => {
     const s = (status || '').toUpperCase();
@@ -489,12 +490,15 @@ const StudentRevaluateForEntireAssessmentComponent = ({
 
 const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStudentInterface }) => {
     const { t } = useTranslation('assessmentStudentAttemptDropdown');
+    const { t: tAnswers } = useTranslation('assessmentAttemptAnswers');
     const [openDialog, setOpenDialog] = useState(false);
     const [selectedOption, setSelectedOption] = useState<string | null>(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
     const [proctoringOpen, setProctoringOpen] = useState(false);
     const [aiReportOpen, setAiReportOpen] = useState(false);
+    // Online test: "View Submission" opens every answer on screen, with marks to edit.
+    const [answersOpen, setAnswersOpen] = useState(false);
     const { assessmentId, examType } = Route.useParams();
     const instituteId = getInstituteId();
     const navigate = useNavigate();
@@ -721,7 +725,9 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
     const submissionFileQuery = useQuery({
         queryKey: ['GET_ATTEMPT_SUBMISSION_FILE', student.attempt_id],
         queryFn: async () => ((await getAttemptData(student.attempt_id)) as string | null) ?? null,
-        enabled: isManualEvaluation && menuOpen,
+        // Online tests too: offline entry / an admin upload can attach a sheet there,
+        // and "View Answer Sheet" below must keep opening it.
+        enabled: menuOpen,
         staleTime: 5 * 60 * 1000,
     });
     const reportDetailQuery = useQuery({
@@ -785,17 +791,31 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                             </DropdownMenuItem>
                         )
                     ) : (
-                        <DropdownMenuItem
-                            className="cursor-pointer"
-                            onSelect={(e) => {
-                                e.preventDefault();
-                                handleViewSubmission();
-                            }}
-                        >
-                            {viewSubmissionMutation.isPending
-                                ? t('dropdown.loadingSubmission')
-                                : t('dropdown.viewSubmission')}
-                        </DropdownMenuItem>
+                        <>
+                            {/* Online test: the answers themselves, on screen (not the
+                                report PDF), with per-question marks the admin can change. */}
+                            <DropdownMenuItem
+                                className="cursor-pointer"
+                                onClick={() => setAnswersOpen(true)}
+                            >
+                                {t('dropdown.viewSubmission')}
+                            </DropdownMenuItem>
+                            {/* A sheet attached to an online attempt (offline entry, admin
+                                upload) opens exactly as "View Submission" used to open it. */}
+                            {hasSubmissionFile && (
+                                <DropdownMenuItem
+                                    className="cursor-pointer"
+                                    onSelect={(e) => {
+                                        e.preventDefault();
+                                        handleViewSubmission();
+                                    }}
+                                >
+                                    {viewSubmissionMutation.isPending
+                                        ? t('dropdown.loadingSubmission')
+                                        : tAnswers('menu.answerSheet')}
+                                </DropdownMenuItem>
+                            )}
+                        </>
                     )}
                     <DropdownMenuItem
                         className="cursor-pointer"
@@ -923,6 +943,17 @@ const StudentAttemptDropdown = ({ student }: { student: AssessmentRevaluateStude
                     </DropdownMenuItem>
                 </DropdownMenuContent>
             </DropdownMenu>
+
+            {answersOpen && (
+                <AttemptAnswersDialog
+                    open={answersOpen}
+                    onOpenChange={setAnswersOpen}
+                    assessmentId={assessmentId}
+                    instituteId={instituteId}
+                    attemptId={student.attempt_id}
+                    studentName={student.full_name}
+                />
+            )}
 
             {/* Admin-side answer sheet upload for manual attempts that have no
                 submission file. Lives outside the dropdown so it survives the
