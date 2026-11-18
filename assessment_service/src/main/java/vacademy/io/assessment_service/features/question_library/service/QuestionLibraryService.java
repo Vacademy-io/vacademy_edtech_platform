@@ -601,7 +601,7 @@ public class QuestionLibraryService {
      * in the same table, so the list is always limited to questions placed on a topic the
      * caller was given: only those are offered to it. Null means nothing can match.
      */
-    private QuestionBankFilter readerFilter(QuestionLibraryScope.View view, QuestionBankFilter filter) {
+    QuestionBankFilter readerFilter(QuestionLibraryScope.View view, QuestionBankFilter filter) {
         if (view.empty()) return null;
         QuestionBankFilter requested = filter == null ? new QuestionBankFilter() : filter;
         List<String> allowed = view.restrict(requested.getLibraryNodeIds());
@@ -613,6 +613,7 @@ public class QuestionLibraryService {
         scoped.setQuestionTypes(requested.getQuestionTypes());
         scoped.setDifficulties(requested.getDifficulties());
         scoped.setTagIds(requested.getTagIds());
+        scoped.setTagGroups(requested.getTagGroups());
         scoped.setLibraryNodeIds(nodeIds);
         // The section holds copies, so hide the library questions those copies came from.
         List<String> inSection = requested.getExcludeQuestionIds();
