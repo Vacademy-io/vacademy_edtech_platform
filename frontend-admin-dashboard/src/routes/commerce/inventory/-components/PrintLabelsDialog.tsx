@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
@@ -17,12 +17,17 @@ import {
 } from '../-shared/inventory-types';
 import {
     A4_POSITIONS,
+    chunks,
+    drawnRequestIds,
+    endLabelPrint,
     labelCount,
     MAX_LABELS_PER_PRINT,
+    MAX_MARK_IDS,
     printLabels,
     printProblem,
     readLabelChoice,
     rememberLabelChoice,
+    splitByPrice,
 } from '../-shared/label-print';
 import { ChoiceGroup, InventoryErrorNotice, TOUCH } from './inventory-ui';
 import { LabelPrintView } from './LabelPrintView';
@@ -41,7 +46,9 @@ const nextFrame = () => new Promise<void>((resolve) => setTimeout(resolve, 50));
  * labels print correctly?": only Yes marks them printed; No keeps them waiting.
  *
  * Either the chosen queue rows (`rows`) or a whole receipt (`receiptId`:
- * its waiting rows).
+ * all its waiting rows, drawn by the server). Rows of an item without a price
+ * are not drawn: they are listed and stay waiting. "Yes" marks exactly the
+ * rows that were drawn, in batches the server takes.
  */
 export function PrintLabelsDialog({
     open,
@@ -75,15 +82,21 @@ export function PrintLabelsDialog({
         page: 0,
         size: 100,
     });
-    const chosen: LabelRow[] = receiptId ? (receiptRows.data?.rows ?? []) : (rows ?? []);
+    const loaded: LabelRow[] = receiptId ? (receiptRows.data?.rows ?? []) : (rows ?? []);
+    const { priced: chosen, unpriced } = splitByPrice(loaded);
     const count = labelCount(chosen);
+    // A receipt with more waiting rows than one page: the server counts them (and refuses above the cap).
+    const allLoaded = !receiptId || (receiptRows.data ? receiptRows.data.total <= loaded.length : false);
     const a4 = choice.template === 'A4_65';
+
+    // The print screen closed before the browser said the print was over: end it now.
+    useEffect(() => () => endLabelPrint(), []);
 
     const print = async () => {
         setProblem(null);
         setError(null);
         const current = { ...choice, startPosition: Number(startText) };
-        const blocked = printProblem(count, current);
+        const blocked = printProblem(allLoaded ? count : Math.max(1, count), current);
         if (blocked) {
             setProblem(t(`inventory.labels.problems.${blocked}`, { max: MAX_LABELS_PER_PRINT, positions: A4_POSITIONS }));
             return;
@@ -109,21 +122,26 @@ export function PrintLabelsDialog({
 
     const markPrinted = async () => {
         setError(null);
-        const ids = chosen.map((r) => r.id);
+        if (!data) return;
+        // Exactly what was drawn (a receipt can hold more than one page of rows), in batches of ≤ 200;
+        // each batch has its own request id, so pressing Yes again after a failure resends the same ones.
+        const batches = chunks(drawnRequestIds(data), MAX_MARK_IDS);
         try {
-            await write.run({
-                scope: 'mark-printed',
-                body: { request_ids: ids },
-                send: (id) => markLabelsPrinted({ client_request_id: id, request_ids: ids }),
-                onDone: () => {
-                    toast.success(t('inventory.labels.markedPrinted'));
-                    void invalidate();
-                    onPrinted?.();
-                    onOpenChange(false);
-                },
-            });
+            for (const ids of batches) {
+                await write.run({
+                    scope: `mark-printed:${ids[0]}:${ids.length}`,
+                    body: { request_ids: ids },
+                    send: (id) => markLabelsPrinted({ client_request_id: id, request_ids: ids }),
+                    onDone: () => undefined,
+                });
+            }
+            toast.success(t('inventory.labels.markedPrinted'));
+            onPrinted?.();
+            onOpenChange(false);
         } catch (e) {
             setError(e);
+        } finally {
+            void invalidate();
         }
     };
 
@@ -175,6 +193,12 @@ export function PrintLabelsDialog({
             >
                 {phase === 'ask' ? (
                     <div className="flex flex-col gap-3">
+                        {data && (
+                            <p className="text-body text-foreground" data-testid="labels-drawn">
+                                {t('inventory.labels.drawn', { count: data.total_copies })}
+                            </p>
+                        )}
+                        <SkippedNote skus={(data?.skipped ?? []).map((x) => x.sku ?? x.request_id)} />
                         <p className="text-subtitle text-foreground">{t('inventory.labels.cameOutWell')}</p>
                         <p className="text-body text-muted-foreground">{t('inventory.labels.cameOutWellHelp')}</p>
                         <InventoryErrorNotice error={error} />
@@ -185,9 +209,10 @@ export function PrintLabelsDialog({
                             <CommerceLoadingRows rows={1} />
                         ) : (
                             <p className="text-body text-foreground" data-testid="labels-count">
-                                {t('inventory.labels.count', { count })}
+                                {allLoaded ? t('inventory.labels.count', { count }) : t('inventory.labels.countReceipt')}
                             </p>
                         )}
+                        <SkippedNote skus={unpriced.map((r) => r.sku ?? r.item_name ?? r.id)} />
                         <ChoiceGroup<LabelTemplate>
                             name="label-template"
                             label={t('inventory.labels.template')}
@@ -238,5 +263,16 @@ export function PrintLabelsDialog({
                 />
             )}
         </>
+    );
+}
+
+/** "N labels wait for a price: SKU-1, SKU-2" — they are not printed and stay in the queue. */
+function SkippedNote({ skus }: { skus: string[] }) {
+    const { t } = useTranslation('commerce');
+    if (skus.length === 0) return null;
+    return (
+        <p className="text-caption text-warning-600" data-testid="labels-skipped">
+            {t('inventory.labels.skippedNoPrice', { count: skus.length, items: Array.from(new Set(skus)).join(', ') })}
+        </p>
     );
 }

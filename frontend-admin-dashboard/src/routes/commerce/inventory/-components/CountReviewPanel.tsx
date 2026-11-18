@@ -1,24 +1,53 @@
+import type { TFunction } from 'i18next';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
 import { MoneyCell } from '@/components/design-system/money-cell';
 import { formatDateTime } from '@/lib/formatters';
 import { SectionCard } from '@/routes/commerce/-components/CatalogueBits';
 import { CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
-import { groupReview, type ReviewGroup } from '../-shared/count-sheet';
+import { groupReview, needsRecount, type ReviewGroup } from '../-shared/count-sheet';
+import { acceptCountLine } from '../-shared/inventory-api';
 import { useCountReview, useInventoryAccess } from '../-shared/inventory-hooks';
-import { InventoryErrorNotice, ItemCell, Qty, TOUCH } from './inventory-ui';
+import type { ReviewLine } from '../-shared/inventory-types';
+import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
+import { InventoryErrorNotice, ItemCell, Qty, qtyUnit, TOUCH } from './inventory-ui';
 
 /**
  * Review differences (contract §3.6, §7.3): per counted line the count, the
  * stock now, what was sold or moved since it was counted, what was expected
  * then and the difference (value for managers); then the groups of items and
  * pieces that need a look. Read only when asked: never while counting blind.
+ *
+ * A line whose stock moved while it was being counted (scans spread over
+ * time) is flagged: count it again (type the shelf total) or, for a manager,
+ * accept it as counted. Units packed in parcels are not on the shelf and are
+ * shown, not counted.
  */
-export function CountReviewPanel({ countId, onClose }: { countId: string; onClose: () => void }) {
+export function CountReviewPanel({
+    countId,
+    onClose,
+    canAccept = false,
+}: {
+    countId: string;
+    onClose: () => void;
+    /** The server offers `ACCEPT` (a manager or admin at the place). */
+    canAccept?: boolean;
+}) {
     const { t } = useTranslation('commerce');
     const access = useInventoryAccess();
     const query = useCountReview(countId, true);
     const review = query.data;
+    const [acceptError, setAcceptError] = useState<unknown>(null);
+    const accept = async (line: ReviewLine) => {
+        setAcceptError(null);
+        try {
+            await acceptCountLine(countId, line.line_id, line.counted_qty);
+        } catch (e) {
+            setAcceptError(e);
+        }
+        await query.refetch();
+    };
     return (
         <SectionCard
             title={t('inventory.counts.review')}
@@ -46,8 +75,22 @@ export function CountReviewPanel({ countId, onClose }: { countId: string; onClos
                         })}
                     </p>
                     {review.needs_approval && <p className="text-caption text-warning-600">{t('inventory.review.needsApproval')}</p>}
+                    {review.needs_recount > 0 && (
+                        <p className="text-caption text-danger-600" data-testid="review-needs-recount">
+                            {t('inventory.review.needsRecount', { count: review.needs_recount })}
+                        </p>
+                    )}
+                    {review.measured_confirm && (
+                        <p className="text-caption text-warning-600">{t('inventory.review.measuredConfirm')}</p>
+                    )}
+                    <InventoryErrorNotice error={acceptError} />
                     {groupReview(review).map((group) => (
-                        <ReviewGroupBlock key={group.id} group={group} showValue={access.isManager} />
+                        <ReviewGroupBlock
+                            key={group.id}
+                            group={group}
+                            showValue={access.isManager}
+                            onAccept={canAccept ? accept : undefined}
+                        />
                     ))}
                 </>
             )}
@@ -55,7 +98,15 @@ export function CountReviewPanel({ countId, onClose }: { countId: string; onClos
     );
 }
 
-function ReviewGroupBlock({ group, showValue }: { group: ReviewGroup; showValue: boolean }) {
+function ReviewGroupBlock({
+    group,
+    showValue,
+    onAccept,
+}: {
+    group: ReviewGroup;
+    showValue: boolean;
+    onAccept?: (line: ReviewLine) => Promise<void>;
+}) {
     const { t } = useTranslation('commerce');
     const title = t(`inventory.review.groups.${group.id}`);
     if ('lines' in group) {
@@ -79,7 +130,8 @@ function ReviewGroupBlock({ group, showValue }: { group: ReviewGroup; showValue:
                             {group.lines.map((line) => (
                                 <tr key={line.line_id}>
                                     <td className="p-2">
-                                        <ItemCell name={line.item_name} sku={line.sku} code={line.piece_code} />
+                                        <ItemCell name={line.item_name} variant={line.variant_name} sku={line.sku} code={line.piece_code} />
+                                        <LineFlags line={line} onAccept={onAccept} />
                                     </td>
                                     <td className="p-2 text-end"><Qty qty={line.counted_qty} scale={line.qty_scale} unit={line.unit} /></td>
                                     <td className="p-2 text-end"><Qty qty={line.on_hand_now} scale={line.qty_scale} unit={line.unit} /></td>
@@ -108,8 +160,8 @@ function ReviewGroupBlock({ group, showValue }: { group: ReviewGroup; showValue:
                 <ul className="flex flex-col divide-y divide-border">
                     {group.items.map((item) => (
                         <li key={item.package_session_id} className="flex items-center justify-between py-2">
-                            <ItemCell name={item.item_name} sku={item.sku} />
-                            <span className="text-caption tabular-nums">{item.on_hand_now}</span>
+                            <ItemCell name={item.item_name} variant={item.variant_name} sku={item.sku} />
+                            <Qty qty={item.on_hand_now} scale={item.qty_scale} unit={item.unit} className="text-caption" />
                         </li>
                     ))}
                 </ul>
@@ -133,3 +185,46 @@ function ReviewGroupBlock({ group, showValue }: { group: ReviewGroup; showValue:
         </div>
     );
 }
+
+/** Under an item: changed while counted (with Accept for a manager), accepted, a large measured difference, parcels. */
+function LineFlags({ line, onAccept }: { line: ReviewLine; onAccept?: (line: ReviewLine) => Promise<void> }) {
+    const { t } = useTranslation('commerce');
+    const flagged = needsRecount(line);
+    return (
+        <div className="flex flex-col items-start gap-1 text-caption">
+            {flagged && (
+                <span className="text-danger-600" data-testid={`review-flag-${line.line_id}`}>
+                    {t('inventory.review.movedWhileCounting', {
+                        qty: formatQty(line.moved_while_counting, line, t),
+                    })}
+                </span>
+            )}
+            {flagged && onAccept && (
+                <MyButton
+                    type="button"
+                    buttonType="secondary"
+                    scale="small"
+                    className="h-12 md:h-8"
+                    onAsyncClick={() => onAccept(line)}
+                    data-testid={`review-accept-${line.line_id}`}
+                >
+                    {t('inventory.review.accept')}
+                </MyButton>
+            )}
+            {line.flags.includes('RECOUNT_ACCEPTED') && (
+                <span className="text-muted-foreground">{t('inventory.review.accepted')}</span>
+            )}
+            {line.flags.includes('MEASURED_CONFIRM') && (
+                <span className="text-warning-600">{t('inventory.review.measuredLine')}</span>
+            )}
+            {line.packed_unshipped > 0 && (
+                <span className="text-muted-foreground">
+                    {t('inventory.review.packed', { qty: formatQty(line.packed_unshipped, line, t) })}
+                </span>
+            )}
+        </div>
+    );
+}
+
+const formatQty = (qty: number, line: Pick<ReviewLine, 'qty_scale' | 'unit'>, t: TFunction) =>
+    formatQuantity(Math.abs(qty), line.qty_scale, qtyUnit(line.unit), t);

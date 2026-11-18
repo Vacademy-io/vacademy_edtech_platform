@@ -2788,13 +2788,15 @@
             "noRecent": "No receipts yet",
             "refusals": {
                 "untracked": "This item's stock is not counted; it cannot be received.",
-                "quantityRange": "That quantity is too large."
+                "quantityRange": "That quantity is too large.",
+                "typeLength": "Type the length of {{item}} in its box."
             },
             "problems": {
                 "source": "Choose where the goods came from.",
                 "sourcePlace": "Choose the place it came from.",
                 "note": "Write a note for Other.",
-                "lines": "Add at least one item."
+                "lines": "Add at least one item.",
+                "quantities": "Type the quantity or length of every item."
             }
         },
         "quickAdd": {
@@ -2846,7 +2848,8 @@
             "unitCost": "Cost per unit (₹)",
             "costHint": "Cost per base unit, tax not included.",
             "costProblem": "Type a cost like 120 or 120.50.",
-            "costSaved": "Cost saved"
+            "costSaved": "Cost saved",
+            "unknownItem": "Item"
         },
         "transfers": {
             "title": "Transfer",
@@ -2988,7 +2991,8 @@
             },
             "missing": "Pieces not found",
             "found": "Pieces found again",
-            "misplaced": "Pieces from another place"
+            "misplaced": "Pieces from another place",
+            "confirmMeasured": "I checked the large differences of measured items; post them."
         },
         "countSheet": {
             "title": "Count here",
@@ -3001,7 +3005,12 @@
             "scanPieceLabels": "Scan the piece labels of this item",
             "untracked": "This item's stock is not counted.",
             "notFound": "Code not found",
-            "waitForSaves": "Some lines are not saved yet. Wait, or tap retry on a line."
+            "waitForSaves": "Some lines are not saved yet. Wait, or tap retry on a line.",
+            "typeLength": "Type the length of {{item}}.",
+            "lengthTitle": "Length of {{item}}",
+            "lengthLabel": "Length ({{unit}})",
+            "lengthHint": "Measure this roll or piece. It is added to what is already counted for this item.",
+            "lengthAdd": "Add length"
         },
         "review": {
             "asOf": "As of {{time}}",
@@ -3026,7 +3035,14 @@
                 "not_in_stock_pieces": "Scanned, but sold or gone",
                 "reserved_not_counted": "Packed for orders, not counted",
                 "arrived_during_count": "Arrived during the count"
-            }
+            },
+            "needsRecount": "{{count}} lines changed while they were being counted. Count them again (type the shelf total) or a manager accepts them.",
+            "measuredConfirm": "A measured item differs by more than the shop's limit: a manager confirms it on Post.",
+            "movedWhileCounting": "{{qty}} sold or moved while this was counted: count it again",
+            "accept": "Accept as counted",
+            "accepted": "Accepted by a manager",
+            "measuredLine": "Large difference: a manager confirms",
+            "packed": "{{qty}} packed in parcels: not on the shelf, not counted"
         },
         "low": {
             "show": "Show",
@@ -3060,7 +3076,7 @@
             },
             "startAt": "Start at label number",
             "startAtHint": "On a used sheet: the first free label, 1 to {{positions}}, counted across then down.",
-            "printHint": "In the print window choose the label printer, scale 100% (actual size) and no margins.",
+            "printHint": "In the print window choose the label printer, scale 100% (actual size) and no margins. Use Chrome or Edge: Safari prints each sticker on a full page.",
             "cameOutWell": "Did the labels print correctly?",
             "cameOutWellHelp": "Yes marks them printed. If not, they stay in the queue to print again.",
             "markPrinted": "Yes, mark printed",
@@ -3101,7 +3117,15 @@
                 "startPosition": "Start at a number from 1 to {{positions}}."
             },
             "mrp": "MRP {{price}}",
-            "inclTaxes": "incl. of all taxes"
+            "inclTaxes": "incl. of all taxes",
+            "waitForPrice": "{{count}} ticked labels wait for a price and are not printed.",
+            "replaceCount": "{{count}} labels",
+            "replaceUnpriced": "Not queued, no price yet: {{items}}. A manager sets the price first.",
+            "replaceCapped": "At most {{max}} labels per item were queued for: {{items}}.",
+            "replacePartly": "{{done}} of {{total}} batches were queued. Press Queue labels again to send the rest.",
+            "drawn": "{{count}} labels were sent to the printer.",
+            "countReceipt": "All labels waiting for this receipt",
+            "skippedNoPrice": "{{count}} labels wait for a price and are not printed: {{items}}"
         },
         "reprint": {
             "queue": "Queue for printing",
@@ -3173,7 +3197,16 @@
             "SERIES_PREFIX_IN_USE": "This prefix is already used. Choose another.",
             "RECEIPT_BILLED": "This receipt is billed and cannot be reversed.",
             "PROBABLY_SAVED": "This was probably saved already. Refresh the page and check before trying again.",
-            "uncertain": "No clear answer from the server. Try again: it will not be saved twice."
+            "uncertain": "No clear answer from the server. Try again: it will not be saved twice.",
+            "QTY_REQUIRED": "Type the length of this item; a scan does not count measured goods.",
+            "COUNT_NEEDS_RECOUNT": "Some lines changed while they were being counted. Count them again or a manager accepts them.",
+            "COUNT_LINE_CHANGED": "This line changed after you looked. Refresh the review.",
+            "COUNT_LINE_NOT_FOUND": "This counted line was not found. Refresh the review.",
+            "MEASURED_CONFIRM_REQUIRED": "A measured item differs a lot. A manager confirms it before posting.",
+            "RECOUNT_OTHER_PERSON": "Only the person who started this blind recount can count or finish it.",
+            "STOCK_EXISTS": "Stock has moved for this item: its unit and how it is counted cannot change.",
+            "TRANSFER_CHANGED": "The transfer changed while it was being sent. Check it and send again.",
+            "LOCATION_NOT_FOUND": "This place was not found."
         }
     }
 }

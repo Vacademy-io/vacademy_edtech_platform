@@ -7,7 +7,7 @@ import { CommerceLoadingRows } from '@/routes/commerce/-components/CommerceState
 import { DialogButtons } from '@/routes/commerce/orders/-components/order-ui';
 import { canPost } from '../-shared/count-sheet';
 import { postCount } from '../-shared/inventory-api';
-import { useCountReview, useInvalidateInventory } from '../-shared/inventory-hooks';
+import { useCountReview, useInvalidateInventory, useInventoryAccess } from '../-shared/inventory-hooks';
 import { type CountView, UNCOUNTED_CHOICES, type UncountedChoice } from '../-shared/inventory-types';
 import { ChoiceGroup, InventoryErrorNotice, TOUCH } from './inventory-ui';
 import { useInventoryWrite } from './use-inventory-write';
@@ -17,7 +17,10 @@ import { useInventoryWrite } from './use-inventory-write';
  * required choice with no default (leave as is / set to zero); the totals of
  * the review; a difference above the shop's limit asks for a manager's PIN
  * (approvers of the count's place) and the same body goes again with
- * `approval`, under the same request id.
+ * `approval`, under the same request id. Lines that changed while they were
+ * counted block Post until counted again or accepted. A large difference on a
+ * measured item needs a manager's explicit yes (`confirm_measured`; staff get
+ * the PIN dialog, and the PIN is that yes).
  */
 export function PostCountDialog({
     open,
@@ -31,21 +34,29 @@ export function PostCountDialog({
     const { t } = useTranslation('commerce');
     const invalidate = useInvalidateInventory();
     const write = useInventoryWrite('cnt');
+    const access = useInventoryAccess();
     const review = useCountReview(view.id, open);
     const [choice, setChoice] = useState<UncountedChoice | null>(null);
+    const [measuredOk, setMeasuredOk] = useState(false);
+    const blockedByRecount = (review.data?.needs_recount ?? 0) > 0;
+    const askMeasured = !!review.data?.measured_confirm && access.isManager;
+    const ready = canPost(choice) && !blockedByRecount && (!askMeasured || measuredOk);
     const [error, setError] = useState<unknown>(null);
 
     const post = async () => {
         setError(null);
-        if (!canPost(choice)) return;
+        if (!canPost(choice) || !ready) return;
+        // `confirm_measured` stays out of the body the request id follows (the server leaves it out of its hash).
         const body = { uncounted: choice };
+        const confirm = askMeasured && measuredOk ? { confirm_measured: true } : {};
         try {
             await write.run({
                 scope: `post:${view.id}`,
                 body,
                 approvalAt: view.location?.id ?? null,
                 approvalText: t('inventory.approval.count'),
-                send: (id, approval) => postCount(view.id, { ...body, client_request_id: id, ...(approval ? { approval } : {}) }),
+                send: (id, approval) =>
+                    postCount(view.id, { ...body, ...confirm, client_request_id: id, ...(approval ? { approval } : {}) }),
                 onDone: () => {
                     toast.success(t('inventory.counts.postedDone'));
                     void invalidate();
@@ -72,7 +83,7 @@ export function PostCountDialog({
                             buttonType="primary"
                             scale="medium"
                             className={TOUCH}
-                            disable={canPost(choice) ? undefined : true}
+                            disable={ready ? undefined : true}
                             onAsyncClick={post}
                             data-testid="count-post"
                         >
@@ -96,6 +107,23 @@ export function PostCountDialog({
                         <p className="text-caption text-warning-600">
                             {t('inventory.counts.uncountedCount', { count: review.data.uncounted.length })}
                         </p>
+                    )}
+                    {blockedByRecount && (
+                        <p role="alert" className="text-caption text-danger-600" data-testid="post-needs-recount">
+                            {t('inventory.review.needsRecount', { count: review.data?.needs_recount ?? 0 })}
+                        </p>
+                    )}
+                    {askMeasured && (
+                        <label className="flex min-h-12 cursor-pointer items-center gap-3 text-body">
+                            <input
+                                type="checkbox"
+                                checked={measuredOk}
+                                onChange={(event) => setMeasuredOk(event.target.checked)}
+                                className="size-5 shrink-0 accent-primary-500"
+                                data-testid="post-confirm-measured"
+                            />
+                            {t('inventory.counts.confirmMeasured')}
+                        </label>
                     )}
                     <ChoiceGroup<UncountedChoice>
                         name="uncounted"

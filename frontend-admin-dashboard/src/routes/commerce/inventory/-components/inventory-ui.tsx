@@ -9,6 +9,7 @@ import { DialogButtons, OrderNotice } from '@/routes/commerce/orders/-components
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { type InventoryError, inventoryErrorKey, readInventoryError } from '../-shared/inventory-errors';
 import type { InventoryLocation } from '../-shared/inventory-types';
+import { unitSign } from '../-shared/label-print';
 
 /**
  * Small pieces the inventory screens share: the error sentence, an item cell,
@@ -83,10 +84,19 @@ export function Qty({
     const { t } = useTranslation('commerce');
     return (
         <span className={cn('tabular-nums', className)}>
-            {qty === null || qty === undefined ? '—' : formatQuantity(qty, scale, unit, t)}
+            {qty === null || qty === undefined ? '—' : formatQuantity(qty, scale, qtyUnit(unit), t)}
         </span>
     );
 }
+
+/**
+ * The unit after a measured quantity: metres in the admin's words ("m" /
+ * "मीटर"), any other code as its short sign ("kg"), never a raw code ("MTR").
+ */
+export const qtyUnit = (unit: string | null | undefined): string | null => {
+    const u = (unit ?? '').trim().toUpperCase();
+    return u === 'MTR' || u === 'M' ? null : unitSign(unit);
+};
 
 /** A tab that works at one place, when "All my locations" is chosen. */
 export function NeedOneLocation({

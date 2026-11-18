@@ -5,7 +5,15 @@ import { QRCodeSVG } from 'qrcode.react';
 import { formatMoney } from '@/components/design-system/money-cell';
 import { code128Bars, isCode128B } from '../-shared/code128';
 import type { LabelLanguage, LabelTemplate, PrintLabel } from '../-shared/inventory-types';
-import { a4Sheets, expandCopies, labelText } from '../-shared/label-print';
+import {
+    a4Sheets,
+    codeLine,
+    expandCopies,
+    labelQrValue,
+    labelText,
+    labelWordsLanguage,
+    perUnit,
+} from '../-shared/label-print';
 import './label-print.css';
 
 /** The code as a Code 128 (set B) barcode, drawn in module units and stretched to the CSS size. */
@@ -29,20 +37,15 @@ export function Code128Svg({ code }: { code: string }) {
     );
 }
 
-/** A unit after the price for measured goods ("/ m"). */
-const perUnit = (unit: string | null): string => {
-    const u = (unit ?? '').toUpperCase();
-    if (!u || u === 'PCS' || u === 'NOS') return '';
-    return u === 'MTR' ? ' / m' : ` / ${unit}`;
-};
-
 function LabelFace({ label, language, cell }: { label: PrintLabel; language: LabelLanguage; cell: boolean }) {
-    const { t } = useTranslation('commerce');
+    const { t, i18n } = useTranslation('commerce');
+    // The label's own words (MRP, incl. of all taxes) follow the label's language, not the admin's screen.
+    const labelT = i18n?.getFixedT?.(labelWordsLanguage(language), 'commerce') ?? t;
     const name = labelText(label.product_name, language);
     const variant = labelText(label.variant_name, language === 'both' ? 'hi' : language).main;
     return (
         <div className={cell ? 'inv-cell' : 'inv-sticker'} data-testid="print-label">
-            <QRCodeSVG value={label.qr_value} level="M" marginSize={1} size={64} className="inv-label-qr" />
+            <QRCodeSVG value={labelQrValue(label, cell)} level="M" marginSize={1} size={64} className="inv-label-qr" />
             <div className="inv-label-text">
                 <span className="inv-label-name">{name.main}</span>
                 {name.small && <span className="inv-label-small">{name.small}</span>}
@@ -50,17 +53,18 @@ function LabelFace({ label, language, cell }: { label: PrintLabel; language: Lab
                 {label.price !== null && (
                     <>
                         <span className="inv-label-price">
-                            {t('inventory.labels.mrp', { price: formatMoney(label.price, label.currency) })}
+                            {labelT('inventory.labels.mrp', { price: formatMoney(label.price, label.currency) })}
                             {perUnit(label.unit)}
                         </span>
-                        <span className="inv-label-small">{t('inventory.labels.inclTaxes')}</span>
+                        <span className="inv-label-small">{labelT('inventory.labels.inclTaxes')}</span>
                     </>
                 )}
-                {label.sku && <span className="inv-label-small">{label.sku}</span>}
             </div>
             <div className="inv-label-bar">
                 <Code128Svg code={label.code} />
-                <span className="inv-label-code">{label.code}</span>
+                <span className="inv-label-code" data-testid="label-code-line">
+                    {codeLine(label)}
+                </span>
             </div>
         </div>
     );

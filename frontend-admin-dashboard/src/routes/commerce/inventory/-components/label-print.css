@@ -8,6 +8,16 @@
  * Sizes are millimetres so the print is exact: a sticker is 50 x 25 mm; an
  * A4 sheet holds 5 x 13 labels of 38.1 x 21.2 mm, 4.7 mm from the left edge,
  * 10.7 mm from the top, 40.6 mm apart across and 21.2 mm down.
+ *
+ * Hindi vowel marks below the letter (the u of दु, the stacked ट्ट, the nukta
+ * of ड़) and English descenders reach below the line box: the text lines clip
+ * only across (for the ellipsis), never up or down, and have line-height 1.3.
+ * Row budget (5 lines of text at most; the SKU sits on the code line):
+ *   sticker 23 mm inside the padding = text row 15.2 mm (32 pt x 1.3 = 14.7 mm)
+ *           + barcode 5 mm + code line 2.5 mm;
+ *   A4 cell 19.6 mm = text row 12.6 mm (26 pt x 1.3 = 11.9 mm)
+ *           + barcode 4 mm + code line 2.1 mm.
+ * Proof: cc_reports/inv/fix-frontend.md (headless Chrome render).
  */
 .inv-label-print {
     display: none;
@@ -36,7 +46,7 @@
         page-break-after: always;
         display: grid;
         grid-template-columns: 14mm 1fr;
-        grid-template-rows: 14mm 1fr;
+        grid-template-rows: 15.2mm 1fr;
         column-gap: 1.5mm;
     }
     body.inv-label-printing .inv-sticker:last-child {
@@ -69,31 +79,39 @@
         overflow: hidden;
         display: grid;
         grid-template-columns: 10.5mm 1fr;
-        grid-template-rows: 10.5mm 1fr;
+        grid-template-rows: 12.6mm 1fr;
         column-gap: 1mm;
     }
     body.inv-label-printing .inv-label-qr {
         width: 100%;
-        height: 100%;
+        height: auto;
+        align-self: start;
     }
     body.inv-label-printing .inv-label-text {
         min-width: 0;
         display: flex;
         flex-direction: column;
         justify-content: flex-start;
-        line-height: 1.1;
+        line-height: 1.3;
+    }
+    /* A little room at both ends: a J's hook or a matra may reach past the line's start. */
+    body.inv-label-printing .inv-label-text > span {
+        padding-inline: 0.4mm;
+        margin-inline: -0.4mm;
     }
     body.inv-label-printing .inv-label-name {
         font-size: 7.5pt;
         font-weight: 500;
         white-space: nowrap;
-        overflow: hidden;
+        overflow-x: clip;
+        overflow-y: visible;
         text-overflow: ellipsis;
     }
     body.inv-label-printing .inv-label-small {
         font-size: 5.5pt;
         white-space: nowrap;
-        overflow: hidden;
+        overflow-x: clip;
+        overflow-y: visible;
         text-overflow: ellipsis;
     }
     body.inv-label-printing .inv-label-price {
@@ -126,9 +144,15 @@
         height: 4mm;
     }
     body.inv-label-printing .inv-label-code {
+        max-width: 100%;
         font-size: 5.5pt;
+        line-height: 1.3;
         letter-spacing: 0.3pt;
         font-family: monospace;
+        white-space: nowrap;
+        overflow-x: clip;
+        overflow-y: visible;
+        text-overflow: ellipsis;
     }
     body.inv-label-printing .inv-cell .inv-label-code {
         font-size: 4.5pt;

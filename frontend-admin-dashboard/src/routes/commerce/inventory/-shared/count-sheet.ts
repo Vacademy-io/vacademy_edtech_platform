@@ -21,7 +21,11 @@ import { REVIEW_PIECE_GROUPS, UNCOUNTED_CHOICES } from './inventory-types';
 export const COUNT_REFUSALS = ['alreadyCounted', 'scanPieceLabels', 'untracked', 'notFound'] as const;
 export type CountRefusal = (typeof COUNT_REFUSALS)[number];
 
-export type CountOp = { kind: 'SET'; quantity: number } | { kind: 'ADD'; quantity: number } | { kind: 'PIECE'; code: string };
+/** `explicit`: a typed length added to a measured item's line (L7: the server refuses a bare ADD there). */
+export type CountOp =
+    | { kind: 'SET'; quantity: number }
+    | { kind: 'ADD'; quantity: number; explicit?: true }
+    | { kind: 'PIECE'; code: string };
 
 /** `v:<package session>` for a quantity line, `p:<PIECE CODE>` for a piece. */
 export const variantKey = (packageSessionId: string) => `v:${packageSessionId}`;
@@ -34,7 +38,12 @@ export function queueOp(pending: CountOp | undefined, op: CountOp): CountOp {
     if (op.kind === 'PIECE' || !pending || pending.kind === 'PIECE') return op;
     if (op.kind === 'SET') return op;
     // ADD after a waiting SET or ADD: one change.
-    return { kind: pending.kind, quantity: pending.quantity + op.quantity };
+    if (pending.kind === 'SET') return { kind: 'SET', quantity: pending.quantity + op.quantity };
+    return {
+        kind: 'ADD',
+        quantity: pending.quantity + op.quantity,
+        ...(op.explicit || pending.explicit ? { explicit: true as const } : {}),
+    };
 }
 
 /** The quantity to show while changes are on their way. */
@@ -52,6 +61,9 @@ export function shownQuantity(saved: number | null, inFlight: CountOp | undefine
 /** The request line for a change of one line. */
 export function opBody(key: string, op: CountOp): CountLineBody {
     if (op.kind === 'PIECE') return { piece_code: op.code };
+    if (op.kind === 'ADD' && op.explicit) {
+        return { package_session_id: key.slice(2), mode: 'ADD', quantity: op.quantity, explicit_quantity: true };
+    }
     return { package_session_id: key.slice(2), mode: op.kind, quantity: op.quantity };
 }
 
@@ -75,6 +87,34 @@ export function mergeLines(lines: CountLine[], answered: CountLine[]): CountLine
     answered.forEach((line) => byKey.set(lineKey(line), line));
     return Array.from(byKey.values());
 }
+
+/** A measured item (cloth by the metre): a scan never counts it as 1; its length is typed. */
+export const isMeasured = (item: { qty_scale: number }): boolean => item.qty_scale > 1;
+
+/**
+ * What the person may do on a count: the server's `next_actions` whenever it
+ * sends them (an empty list means nothing: a main counter on someone's blind
+ * recount gets no buttons); only an answer without them falls back to the
+ * status, kind and starter.
+ */
+export function countActions(
+    view: { next_actions: string[] | null; status: string; kind: string; started_by: string | null },
+    me: string | null,
+    isManager: boolean
+): Set<string> {
+    if (view.next_actions) return new Set(view.next_actions);
+    const out = new Set<string>();
+    if (view.status !== 'OPEN') return out;
+    out.add('COUNT');
+    out.add('POST');
+    if (view.kind === 'COUNT') out.add('REVIEW');
+    if (isManager || view.started_by === me) out.add('CANCEL');
+    return out;
+}
+
+/** Review lines changed while they were counted and not yet counted again or accepted (Post refuses them). */
+export const needsRecount = (line: { flags: string[] }): boolean =>
+    line.flags.includes('NEEDS_RECOUNT') && !line.flags.includes('RECOUNT_ACCEPTED');
 
 /** Post needs the uncounted choice: there is no default. */
 export const canPost = (choice: string | null | undefined): choice is UncountedChoice =>

@@ -184,6 +184,8 @@ export const COMMERCE_STOCK_COUNT_BY_ID = (id: string) => `${COMMERCE_STOCK_COUN
 export const COMMERCE_STOCK_COUNT_LINES = (id: string) => `${COMMERCE_STOCK_COUNT_BY_ID(id)}/lines`;
 export const COMMERCE_STOCK_COUNT_LINE = (id: string, lineId: string) =>
     `${COMMERCE_STOCK_COUNT_LINES(id)}/${id$(lineId)}`;
+export const COMMERCE_STOCK_COUNT_LINE_ACCEPT = (id: string, lineId: string) =>
+    `${COMMERCE_STOCK_COUNT_LINE(id, lineId)}/accept`;
 export const COMMERCE_STOCK_COUNT_REVIEW = (id: string) => `${COMMERCE_STOCK_COUNT_BY_ID(id)}/review`;
 export const COMMERCE_STOCK_COUNT_POST = (id: string) => `${COMMERCE_STOCK_COUNT_BY_ID(id)}/post`;
 export const COMMERCE_STOCK_COUNT_CANCEL = (id: string) => `${COMMERCE_STOCK_COUNT_BY_ID(id)}/cancel`;

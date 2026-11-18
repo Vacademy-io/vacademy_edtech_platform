@@ -391,7 +391,7 @@ describe('commerce strings: every key the code asks for exists', () => {
         each('inventory.transferLines', TRANSFER_REFUSALS);
         each('inventory.countSheet', COUNT_REFUSALS);
         each('inventory.receive.refusals', RECEIVE_REFUSALS);
-        each('inventory.receive.problems', ['source', 'sourcePlace', 'note', 'lines']);
+        each('inventory.receive.problems', ['source', 'sourcePlace', 'note', 'lines', 'quantities']);
         each('inventory.reprint.problems', ['lines', 'reason', 'note']);
         each('inventory.counts.kinds', COUNT_KINDS);
         each('inventory.review.groups', ['differences', 'agreeing', 'uncounted', ...REVIEW_PIECE_GROUPS]);

@@ -1,5 +1,14 @@
 import { getInstituteId } from '@/constants/helper';
-import type { LabelLanguage, LabelRow, LabelTemplate, PrintLabel, TextPair } from './inventory-types';
+import type {
+    LabelLanguage,
+    LabelPrintData,
+    LabelRequestLine,
+    LabelRow,
+    LabelTemplate,
+    PrintLabel,
+    TextPair,
+    ToReplaceRow,
+} from './inventory-types';
 import { LABEL_LANGUAGES, LABEL_TEMPLATES } from './inventory-types';
 
 /**
@@ -25,6 +34,75 @@ export interface LabelChoice {
 export const DEFAULT_LABEL_CHOICE: LabelChoice = { template: 'STICKER_50X25', language: 'both', startPosition: 1 };
 
 export type LabelPrintProblem = 'nothing' | 'tooMany' | 'startPosition';
+
+/** Most lines and rows the server takes in one `POST /labels/requests`. */
+export const MAX_REQUEST_LINES = 100;
+export const MAX_REQUEST_ROWS = 500;
+/** Most ids the server takes in one `POST /labels/mark-printed`. */
+export const MAX_MARK_IDS = 200;
+
+/** A list in pieces of at most `size`, in order. */
+export function chunks<T>(list: readonly T[], size: number): T[][] {
+    const out: T[][] = [];
+    for (let i = 0; i < list.length; i += Math.max(1, size)) out.push(list.slice(i, i + Math.max(1, size)));
+    return out;
+}
+
+/** Every request id that was drawn, once each, in the server's order (what "Yes, mark printed" marks). */
+export const drawnRequestIds = (data: Pick<LabelPrintData, 'labels'>): string[] =>
+    Array.from(new Set(data.labels.map((l) => l.request_id).filter((id): id is string => !!id)));
+
+/** Waiting rows that can print now (the item has a price) and the ones that wait for one. */
+export function splitByPrice<T extends Pick<LabelRow, 'has_price'>>(rows: readonly T[]): { priced: T[]; unpriced: T[] } {
+    return { priced: rows.filter((r) => r.has_price), unpriced: rows.filter((r) => !r.has_price) };
+}
+
+export interface ReplacePlan {
+    /** Request bodies' lines, each batch within the server's 100 lines / 500 rows. */
+    batches: LabelRequestLine[][];
+    /** Items without a price: not queued (a manager sets the price first). */
+    unpriced: ToReplaceRow[];
+    /** Items whose label count was cut to the cap. */
+    capped: ToReplaceRow[];
+}
+
+/**
+ * "Tags to replace → Queue labels" (L9): one label per piece of a one-of-a-kind
+ * item (the server queues one row per piece here), one per roll of a measured
+ * item, one per unit of a counted item (capped by the server, with a warning);
+ * items without a price are left out and listed. Batches keep within the
+ * server's limits, so a long list never fails as a whole.
+ */
+export function planReplaceLabels(rows: readonly ToReplaceRow[]): ReplacePlan {
+    const unpriced = rows.filter((r) => !r.has_price);
+    const capped = rows.filter((r) => r.has_price && r.capped);
+    const batches: LabelRequestLine[][] = [];
+    let batch: LabelRequestLine[] = [];
+    let batchRows = 0;
+    rows.forEach((r) => {
+        if (!r.has_price || r.labels < 1) return;
+        const piece = (r.stock_mode ?? '').toUpperCase() === 'PIECE';
+        const measured = r.qty_scale > 1;
+        // A piece item becomes one server row per piece; any other line is one row.
+        const rowsOf = piece ? Math.min(r.labels, MAX_REQUEST_ROWS) : 1;
+        if (batch.length >= MAX_REQUEST_LINES || (batch.length > 0 && batchRows + rowsOf > MAX_REQUEST_ROWS)) {
+            batches.push(batch);
+            batch = [];
+            batchRows = 0;
+        }
+        batch.push(
+            piece
+                ? { package_session_id: r.package_session_id, quantity: 1 }
+                : {
+                      package_session_id: r.package_session_id,
+                      quantity: measured ? Math.min(r.labels, MAX_REQUEST_LINES) : Math.min(r.labels, MAX_LABELS_PER_PRINT),
+                  }
+        );
+        batchRows += rowsOf;
+    });
+    if (batch.length) batches.push(batch);
+    return { batches, unpriced, capped };
+}
 
 /** Labels a selection prints: a quantity row repeats its label. */
 export const labelCount = (rows: Pick<LabelRow, 'quantity'>[]): number =>
@@ -66,6 +144,51 @@ export function labelText(pair: TextPair, language: LabelLanguage): { main: stri
     return { main: hi ?? en ?? '', small: hi && en ? en : null };
 }
 
+/** The language of a label's fixed words (MRP, incl. of all taxes): English only for an English label. */
+export const labelWordsLanguage = (language: LabelLanguage): 'en' | 'hi' => (language === 'en' ? 'en' : 'hi');
+
+/** Short unit signs printed on labels and quantities ("2.5 m", "₹120 / kg"); other codes in small letters. */
+const UNIT_SIGNS: Record<string, string> = {
+    MTR: 'm',
+    M: 'm',
+    CMS: 'cm',
+    CM: 'cm',
+    KGS: 'kg',
+    KG: 'kg',
+    GMS: 'g',
+    G: 'g',
+    LTR: 'l',
+    L: 'l',
+    MLT: 'ml',
+    ML: 'ml',
+};
+
+/** The sign of a measuring unit (null for pieces). */
+export function unitSign(unit: string | null | undefined): string | null {
+    const u = (unit ?? '').trim().toUpperCase();
+    if (!u || u === 'PCS' || u === 'NOS') return null;
+    return UNIT_SIGNS[u] ?? u.toLowerCase();
+}
+
+/** A unit after the price for measured goods (" / m", " / kg"); nothing for pieces. */
+export const perUnit = (unit: string | null | undefined): string => {
+    const sign = unitSign(unit);
+    return sign ? ` / ${sign}` : '';
+};
+
+/**
+ * What the QR holds. On the A4 sheet the QR is 10.5 mm: a long shop link
+ * (about 40+ characters) makes modules too small for a 203/300 dpi printer,
+ * so it holds the bare code there (the till and pack station read both).
+ */
+export const A4_QR_MAX_LINK = 40;
+export const labelQrValue = (label: Pick<PrintLabel, 'qr_value' | 'code'>, a4: boolean): string =>
+    a4 && label.qr_value.length > A4_QR_MAX_LINK ? label.code : label.qr_value;
+
+/** The line under the barcode: the scan code, then the SKU. */
+export const codeLine = (label: Pick<PrintLabel, 'code' | 'sku'>): string =>
+    label.sku ? `${label.code} · ${label.sku}` : label.code;
+
 /** The page rule of one print: a sticker page of 50 × 25 mm, or A4; never a browser margin. */
 export const pageRule = (template: LabelTemplate): string =>
     template === 'A4_65' ? '@page { size: 210mm 297mm; margin: 0; }' : '@page { size: 50mm 25mm; margin: 0; }';
@@ -80,6 +203,18 @@ const PRINT_CLEANUP_MS = 60_000;
  * counter bill printed later keeps its own page. Resolves after the print
  * dialog closes (`afterprint`, or a fallback timer on browsers without it).
  */
+let endActivePrint: (() => void) | null = null;
+
+/**
+ * Ends the label print now (the print screen closed before `afterprint`
+ * came): its body class and its own `@page` rule go, so a packing slip or
+ * counter bill printed next keeps its page. A later print's rule is never
+ * touched by an earlier one.
+ */
+export function endLabelPrint(): void {
+    endActivePrint?.();
+}
+
 export function printLabels(template: LabelTemplate, win: Window = window): Promise<void> {
     return new Promise((resolve) => {
         const doc = win.document;
@@ -94,12 +229,17 @@ export function printLabels(template: LabelTemplate, win: Window = window): Prom
         const cleanup = () => {
             if (done) return;
             done = true;
-            doc.body.classList.remove(LABEL_PRINTING_CLASS);
+            // Only this print's own state: a newer print keeps its class and rule.
+            if (endActivePrint === cleanup) {
+                endActivePrint = null;
+                doc.body.classList.remove(LABEL_PRINTING_CLASS);
+            }
             style.remove();
             win.removeEventListener('afterprint', cleanup);
             if (timer) clearTimeout(timer);
             resolve();
         };
+        endActivePrint = cleanup;
         win.addEventListener('afterprint', cleanup);
         try {
             win.print();

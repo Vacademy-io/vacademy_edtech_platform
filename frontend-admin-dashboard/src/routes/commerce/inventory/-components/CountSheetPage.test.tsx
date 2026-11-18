@@ -62,14 +62,15 @@ vi.mock('../-shared/inventory-api', () => ({
     postCount: vi.fn(),
     cancelCount: vi.fn(),
     fetchCountReview: vi.fn(),
+    acceptCountLine: vi.fn(async () => ({ lines: [], line_count: 1 })),
     fetchStockApprovers: vi.fn(async () => [{ user_id: 'm-1', full_name: 'Test Manager' }]),
     searchVariants: vi.fn(async () => []),
 }));
 
 import * as orderApi from '@/routes/commerce/orders/-shared/order-api';
 import * as api from '../-shared/inventory-api';
-import { accessFor, countView, serverError, variantScan, WAREHOUSE } from '../-shared/inventory-test-fixtures';
-import type { CountReview, CountView } from '../-shared/inventory-types';
+import { accessFor, countView, MANAGER, serverError, variantScan, WAREHOUSE } from '../-shared/inventory-test-fixtures';
+import type { CountReview, CountView, ReviewLine } from '../-shared/inventory-types';
 import { CountSheet } from './CountSheetPage';
 
 const mocked = vi.mocked(api);
@@ -90,6 +91,8 @@ const review: CountReview = {
     },
     totals: { lines_with_difference: 0, units_up: 0, units_down: 0, value_up: null, value_down: null },
     needs_approval: true,
+    needs_recount: 0,
+    measured_confirm: false,
 };
 
 const renderSheet = (view: CountView) => {
@@ -179,5 +182,111 @@ describe('CountSheet', () => {
         renderSheet(countView({ recount: { id: 'c-2', status: 'OPEN', agreement: null } }));
         expect(screen.getByTestId('count-open-post')).toBeDisabled();
         expect(screen.getByText('inventory.counts.recountRunning')).toBeTruthy();
+    });
+});
+
+const reviewLine = (over: Partial<ReviewLine> = {}): ReviewLine => ({
+    line_id: 'cl-bag',
+    package_session_id: 'ps-bag',
+    sku: 'BAG-1',
+    item_name: 'Cloth bag',
+    variant_name: null,
+    stock_mode: 'QUANTITY',
+    piece_code: null,
+    counted_qty: 20,
+    counted_at: null,
+    on_hand_now: 18,
+    moved_since: 0,
+    expected_at_count: 18,
+    adjustment: 2,
+    value: null,
+    unit: 'PCS',
+    qty_scale: 1,
+    first_counted_at: null,
+    moved_while_counting: 2,
+    packed_unshipped: 0,
+    flags: ['NEEDS_RECOUNT'],
+    accepted_by: null,
+    ...over,
+});
+
+describe('CountSheet fix round', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        state.access = accessFor(WAREHOUSE);
+        mocked.fetchCountReview.mockResolvedValue(review);
+    });
+
+    it('L7: a scan of a measured item asks for its length and sends it as an explicit ADD, never ADD 1', async () => {
+        scanCode.mockResolvedValue(variantScan({ package_session_id: 'ps-cloth', sku: 'CLOTH-1', unit: 'MTR', qty_scale: 10 }));
+        mocked.saveCountLines.mockResolvedValue({ lines: [], line_count: 1 });
+        renderSheet(countView());
+        scan('VCLOTH0001');
+        const box = (await screen.findByTestId('count-length')) as HTMLInputElement;
+        expect(mocked.saveCountLines).not.toHaveBeenCalled();
+        fireEvent.change(box, { target: { value: '2.5' } });
+        fireEvent.click(screen.getByTestId('count-length-add'));
+        await waitFor(() => expect(mocked.saveCountLines).toHaveBeenCalledTimes(1));
+        expect(mocked.saveCountLines.mock.calls[0]?.[1].lines).toEqual([
+            { package_session_id: 'ps-cloth', mode: 'ADD', quantity: 25, explicit_quantity: true },
+        ]);
+    });
+
+    it('L3: a blind recount the server gives no actions shows no counting and no Finish', () => {
+        renderSheet(countView({ kind: 'RECOUNT', recount_of_count_id: 'c-0', next_actions: [] }));
+        expect(screen.queryByTestId('count-scan')).toBeNull();
+        expect(screen.queryByTestId('count-finish-recount')).toBeNull();
+    });
+
+    it('L4 (low): a line cannot be removed while its save is on its way', async () => {
+        scanCode.mockResolvedValue(variantScan({ package_session_id: 'ps-bag', sku: 'BAG-1' }));
+        mocked.saveCountLines.mockReturnValue(new Promise(() => undefined));
+        renderSheet(countView());
+        scan('VABCDEFGH2');
+        await waitFor(() => expect(mocked.saveCountLines).toHaveBeenCalledTimes(1));
+        expect(screen.getByTestId('count-remove-v:ps-bag')).toBeDisabled();
+    });
+
+    it('L5 (low): the search on a count sheet does not ask for the system quantity of the place', async () => {
+        renderSheet(countView());
+        const box = screen.getByTestId('count-scan') as HTMLInputElement;
+        fireEvent.change(box, { target: { value: 'bag' } });
+        await waitFor(() => expect(mocked.searchVariants).toHaveBeenCalled());
+        expect(mocked.searchVariants.mock.calls.every(([params]) => params.locationId === undefined)).toBe(true);
+    });
+
+    it('L4: a line changed while counted is flagged; a manager accepts it with the quantity seen', async () => {
+        state.access = accessFor(MANAGER);
+        mocked.fetchCountReview.mockResolvedValue({ ...review, lines: [reviewLine()], needs_recount: 1 });
+        renderSheet(countView({ next_actions: ['COUNT', 'REVIEW', 'POST', 'ACCEPT', 'CANCEL'] }));
+        fireEvent.click(screen.getByTestId('count-review'));
+        expect(await screen.findByTestId('review-flag-cl-bag')).toBeTruthy();
+        expect(screen.getByTestId('review-needs-recount')).toBeTruthy();
+        fireEvent.click(screen.getByTestId('review-accept-cl-bag'));
+        await waitFor(() => expect(mocked.acceptCountLine).toHaveBeenCalledWith('c-1', 'cl-bag', 20));
+    });
+
+    it('L4: Post stays disabled while lines need counting again', async () => {
+        mocked.fetchCountReview.mockResolvedValue({ ...review, lines: [reviewLine()], needs_recount: 1 });
+        renderSheet(countView());
+        fireEvent.click(screen.getByTestId('count-open-post'));
+        fireEvent.click(await screen.findByText('inventory.counts.uncountedSKIP'));
+        await screen.findByTestId('post-needs-recount');
+        expect(screen.getByTestId('count-post')).toBeDisabled();
+    });
+
+    it('L7: a manager confirms a large measured difference and the post carries confirm_measured, same id', async () => {
+        state.access = accessFor(MANAGER);
+        mocked.fetchCountReview.mockResolvedValue({ ...review, needs_approval: false, measured_confirm: true });
+        mocked.postCount.mockResolvedValue(countView({ status: 'POSTED' }));
+        renderSheet(countView());
+        fireEvent.click(screen.getByTestId('count-open-post'));
+        fireEvent.click(await screen.findByText('inventory.counts.uncountedSKIP'));
+        const confirm = await screen.findByTestId('post-confirm-measured');
+        expect(screen.getByTestId('count-post')).toBeDisabled();
+        fireEvent.click(confirm);
+        fireEvent.click(screen.getByTestId('count-post'));
+        await waitFor(() => expect(mocked.postCount).toHaveBeenCalledTimes(1));
+        expect(mocked.postCount.mock.calls[0]?.[1]).toMatchObject({ uncounted: 'SKIP', confirm_measured: true });
     });
 });

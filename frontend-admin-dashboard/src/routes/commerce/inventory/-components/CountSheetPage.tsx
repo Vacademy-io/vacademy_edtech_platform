@@ -4,15 +4,18 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Trash } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
+import { MyDialog } from '@/components/design-system/dialog';
 import { formatDateTime, formatNumber } from '@/lib/formatters';
 import { SectionCard, useAdminLanguage } from '@/routes/commerce/-components/CatalogueBits';
 import { CommercePage } from '@/routes/commerce/-components/CommercePage';
 import { CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
-import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
+import { DialogButtons, Field, inputClass, OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
 import { displayQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { cancelCount, deleteCountLine, postCount, saveCountLines } from '../-shared/inventory-api';
 import {
+    countActions,
     type CountOp,
+    isMeasured,
     lineKey,
     mergeLines,
     opBody,
@@ -33,6 +36,7 @@ import {
     ItemCell,
     parseDisplayQuantity,
     Qty,
+    qtyUnit,
     SaveStateMark,
     TOUCH,
     useInventoryErrorText,
@@ -63,18 +67,6 @@ const metaOf = (line: CountLine): LineMeta => ({
     unit: line.unit,
     qty_scale: line.qty_scale,
 });
-
-/** What the person may do: the server's `next_actions`, else by status, kind and who started it. */
-export function countActions(view: CountView, me: string | null, isManager: boolean): Set<string> {
-    if (view.next_actions.length > 0) return new Set(view.next_actions);
-    const out = new Set<string>();
-    if (view.status !== 'OPEN') return out;
-    out.add('COUNT');
-    out.add('POST');
-    if (view.kind === 'COUNT') out.add('REVIEW');
-    if (isManager || view.started_by === me) out.add('CANCEL');
-    return out;
-}
 
 /** I4 (contract §7.3): the count sheet — count, review, post; or a blind recount. */
 export function CountSheetPage() {
@@ -120,6 +112,10 @@ export function CountSheet({ view }: { view: CountView }) {
     const [posting, setPosting] = useState(false);
     const [cancelling, setCancelling] = useState(false);
     const [error, setError] = useState<unknown>(null);
+    // A measured item was scanned: its length is typed here (a scan never counts it as 1 base unit).
+    const [lengthFor, setLengthFor] = useState<LineMeta | null>(null);
+    const [lengthText, setLengthText] = useState('');
+    const [lengthProblem, setLengthProblem] = useState(false);
 
     const saved = useMemo(() => new Map(lines.map((l) => [lineKey(l), l])), [lines]);
 
@@ -131,7 +127,7 @@ export function CountSheet({ view }: { view: CountView }) {
             const body = { lines: [opBody(key, op)] };
             write
                 .run({
-                    scope: `line:${key}`,
+                    scope: `line:${view.id}:${key}`,
                     body,
                     send: (id) => saveCountLines(view.id, { ...body, client_request_id: id }),
                     onDone: (answer) => {
@@ -202,10 +198,14 @@ export function CountSheet({ view }: { view: CountView }) {
                 scan.refuse();
                 return setMessage({ tone: 'danger', text: t('inventory.countSheet.untracked') });
             }
-            enqueue(
-                { key: variantKey(v.package_session_id), package_session_id: v.package_session_id, name: v.product_name, variant_name: v.variant_name, sku: v.sku, piece_code: null, unit: v.unit, qty_scale: v.qty_scale },
-                { kind: 'ADD', quantity: 1 }
-            );
+            const meta: LineMeta = { key: variantKey(v.package_session_id), package_session_id: v.package_session_id, name: v.product_name, variant_name: v.variant_name, sku: v.sku, piece_code: null, unit: v.unit, qty_scale: v.qty_scale };
+            if (isMeasured(v)) {
+                setLengthText('');
+                setLengthProblem(false);
+                setLengthFor(meta);
+                return setMessage({ tone: 'info', text: t('inventory.countSheet.typeLength', { item: v.product_name ?? v.sku ?? '' }) });
+            }
+            enqueue(meta, { kind: 'ADD', quantity: 1 });
             setTyped((current) => {
                 const next = { ...current };
                 delete next[variantKey(v.package_session_id)];
@@ -219,7 +219,21 @@ export function CountSheet({ view }: { view: CountView }) {
             setMessage({ tone: 'danger', text: errorText(result.error) });
         }
     };
-    const scan = useStockScan(onScan, { paused: !open || posting || cancelling || write.pinOpen });
+    const scan = useStockScan(onScan, { paused: !open || posting || cancelling || write.pinOpen || !!lengthFor });
+
+    const addLength = () => {
+        if (!lengthFor) return;
+        const base = parseDisplayQuantity(lengthText, lengthFor.qty_scale);
+        if (base === null || base < 1 || base > 10_000_000) return setLengthProblem(true);
+        enqueue(lengthFor, { kind: 'ADD', quantity: base, explicit: true });
+        setTyped((current) => {
+            const next = { ...current };
+            delete next[lengthFor.key];
+            return next;
+        });
+        setMessage({ tone: 'success', text: t('inventory.countSheet.counted', { item: lengthFor.name ?? lengthFor.sku ?? '' }) });
+        setLengthFor(null);
+    };
 
     const commitTyped = (meta: LineMeta) => {
         const text = typed[meta.key];
@@ -297,7 +311,8 @@ export function CountSheet({ view }: { view: CountView }) {
                     <StockScanBox
                         scan={scan}
                         message={message}
-                        locationId={view.location?.id ?? null}
+                        // No place in the search: the answer would carry the system quantity (blind count).
+                        locationId={null}
                         testId="count-scan"
                         onPick={(item) => {
                             if ((item.stock_mode ?? '').toUpperCase() === 'PIECE') {
@@ -381,8 +396,11 @@ export function CountSheet({ view }: { view: CountView }) {
                                         <button
                                             type="button"
                                             aria-label={t('inventory.receive.remove')}
+                                            // Not while a save is on its way: the line would be saved after it was removed.
+                                            disabled={state === 'saving'}
                                             onClick={() => void remove(meta)}
-                                            className="flex size-12 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-100"
+                                            data-testid={`count-remove-${meta.key}`}
+                                            className="flex size-12 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-100 disabled:opacity-40"
                                         >
                                             <Trash size={18} />
                                         </button>
@@ -395,7 +413,9 @@ export function CountSheet({ view }: { view: CountView }) {
                 <InventoryErrorNotice error={saveError} />
             </SectionCard>
 
-            {reviewing && !isRecount && <CountReviewPanel countId={view.id} onClose={() => setReviewing(false)} />}
+            {reviewing && !isRecount && (
+                <CountReviewPanel countId={view.id} canAccept={actions.has('ACCEPT')} onClose={() => setReviewing(false)} />
+            )}
             <InventoryErrorNotice error={error} />
             {unsaved && <p className="text-caption text-warning-600">{t('inventory.countSheet.waitForSaves')}</p>}
 
@@ -419,17 +439,19 @@ export function CountSheet({ view }: { view: CountView }) {
                         </MyButton>
                     )}
                     {isRecount ? (
-                        <MyButton
-                            type="button"
-                            buttonType="primary"
-                            scale="large"
-                            className="h-14"
-                            disable={unsaved ? true : undefined}
-                            onAsyncClick={finishRecount}
-                            data-testid="count-finish-recount"
-                        >
-                            {t('inventory.counts.finishRecount')}
-                        </MyButton>
+                        actions.has('POST') && (
+                            <MyButton
+                                type="button"
+                                buttonType="primary"
+                                scale="large"
+                                className="h-14"
+                                disable={unsaved ? true : undefined}
+                                onAsyncClick={finishRecount}
+                                data-testid="count-finish-recount"
+                            >
+                                {t('inventory.counts.finishRecount')}
+                            </MyButton>
+                        )
                     ) : (
                         actions.has('POST') && (
                             <MyButton
@@ -448,6 +470,46 @@ export function CountSheet({ view }: { view: CountView }) {
                 </div>
             )}
             {posting && <PostCountDialog open onOpenChange={setPosting} view={view} />}
+            <MyDialog
+                heading={t('inventory.countSheet.lengthTitle', { item: lengthFor?.name ?? lengthFor?.sku ?? '' })}
+                open={!!lengthFor}
+                onOpenChange={(next) => !next && setLengthFor(null)}
+                dialogWidth="max-w-sm"
+                footer={
+                    <DialogButtons onCancel={() => setLengthFor(null)}>
+                        <MyButton type="button" buttonType="primary" scale="medium" className={TOUCH} onClick={addLength} data-testid="count-length-add">
+                            {t('inventory.countSheet.lengthAdd')}
+                        </MyButton>
+                    </DialogButtons>
+                }
+            >
+                <Field
+                    label={t('inventory.countSheet.lengthLabel', { unit: qtyUnit(lengthFor?.unit) ?? t('orders.units.metre') })}
+                    htmlFor="count-length"
+                    hint={t('inventory.countSheet.lengthHint')}
+                >
+                    <input
+                        id="count-length"
+                        data-testid="count-length"
+                        inputMode="decimal"
+                        autoFocus
+                        value={lengthText}
+                        onChange={(event) => setLengthText(event.target.value)}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter') {
+                                event.preventDefault();
+                                addLength();
+                            }
+                        }}
+                        className={inputClass}
+                    />
+                </Field>
+                {lengthProblem && (
+                    <p role="alert" className="text-caption text-danger-600">
+                        {t('inventory.transferLines.quantityRange')}
+                    </p>
+                )}
+            </MyDialog>
             <ConfirmDialog
                 open={cancelling}
                 onOpenChange={setCancelling}

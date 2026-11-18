@@ -421,14 +421,21 @@ export interface CountView extends CountRow {
     uncounted_choice: string | null;
     summary: Record<string, unknown> | null;
     lines: CountLine[];
-    next_actions: string[];
+    /** What the caller may do, from the server; null only when an older server leaves it out. */
+    next_actions: string[] | null;
 }
+
+/** Review line flags: changed while counted (L4), accepted by a manager, a large measured difference (L7). */
+export const REVIEW_LINE_FLAGS = ['NEEDS_RECOUNT', 'RECOUNT_ACCEPTED', 'MEASURED_CONFIRM'] as const;
+export type ReviewLineFlag = (typeof REVIEW_LINE_FLAGS)[number];
 
 export interface ReviewLine {
     line_id: string;
     package_session_id: string;
     sku: string | null;
     item_name: string | null;
+    variant_name: string | null;
+    stock_mode: string | null;
     piece_code: string | null;
     counted_qty: number;
     counted_at: string | null;
@@ -439,6 +446,23 @@ export interface ReviewLine {
     value: number | null;
     unit: string | null;
     qty_scale: number;
+    first_counted_at: string | null;
+    /** Units that moved here between the first and the last save of the line. */
+    moved_while_counting: number;
+    /** Units packed in parcels (not on the shelf) when the line was counted. */
+    packed_unshipped: number;
+    flags: string[];
+    accepted_by: string | null;
+}
+
+export interface UncountedItem {
+    package_session_id: string;
+    sku: string | null;
+    item_name: string | null;
+    variant_name: string | null;
+    unit: string | null;
+    qty_scale: number;
+    on_hand_now: number;
 }
 
 export interface ReviewPiece {
@@ -464,7 +488,7 @@ export interface CountReview {
     count_id: string;
     as_of: string | null;
     lines: ReviewLine[];
-    uncounted: { package_session_id: string; sku: string | null; item_name: string | null; on_hand_now: number }[];
+    uncounted: UncountedItem[];
     pieces: Record<ReviewPieceGroup, ReviewPiece[]>;
     totals: {
         lines_with_difference: number;
@@ -474,11 +498,15 @@ export interface CountReview {
         value_down: number | null;
     };
     needs_approval: boolean;
+    /** Lines changed while they were counted, not yet counted again or accepted: Post is refused. */
+    needs_recount: number;
+    /** A measured item differs by more than the shop's limit: a manager confirms on Post. */
+    measured_confirm: boolean;
 }
 
 /** A line change the count sheet sends (`PUT …/lines`). */
 export type CountLineBody =
-    | { package_session_id: string; mode: 'SET' | 'ADD'; quantity: number }
+    | { package_session_id: string; mode: 'SET' | 'ADD'; quantity: number; explicit_quantity?: true }
     | { piece_code: string }
     | { piece_id: string };
 
@@ -505,6 +533,9 @@ export interface LabelRow {
     created_at: string | null;
     printed_at: string | null;
     has_price: boolean;
+    stock_mode: string | null;
+    unit: string | null;
+    qty_scale: number;
 }
 
 export interface ToReplaceRow {
@@ -514,6 +545,14 @@ export interface ToReplaceRow {
     printed_mrp: number | null;
     current_mrp: number | null;
     on_hand: number;
+    stock_mode: string | null;
+    unit: string | null;
+    qty_scale: number;
+    has_price: boolean;
+    /** Labels to queue: pieces here (PIECE), 1 per roll (measured), on hand capped at 500 (quantity). */
+    labels: number;
+    /** `labels` was cut to the cap. */
+    capped: boolean;
 }
 
 /** `POST /labels/print-data`: what the browser draws (owner decision 2026-11-18, labels printed from the browser). */
@@ -543,9 +582,18 @@ export interface PrintLabel {
     copies: number;
 }
 
+export interface SkippedLabel {
+    request_id: string;
+    sku: string | null;
+    reason: string;
+}
+
 export interface LabelPrintData {
     shop_name: string | null;
     labels: PrintLabel[];
+    /** Rows not drawn (an item without a price): they stay waiting. */
+    skipped: SkippedLabel[];
+    total_copies: number;
 }
 
 export type LabelRequestLine = { package_session_id: string; quantity: number } | { piece_id: string } | { piece_code: string };

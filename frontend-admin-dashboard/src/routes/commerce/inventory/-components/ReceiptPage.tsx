@@ -8,7 +8,7 @@ import { SectionCard } from '@/routes/commerce/-components/CatalogueBits';
 import { CommercePage } from '@/routes/commerce/-components/CommercePage';
 import { CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
 import { useInventoryAccess, useInventoryLocations, useLabels, useReceipt } from '../-shared/inventory-hooks';
-import type { LabelRow, ReceiptView } from '../-shared/inventory-types';
+import type { ReceiptView } from '../-shared/inventory-types';
 import { InventoryErrorNotice, ItemCell, placeLabel, Qty, TOUCH } from './inventory-ui';
 import { PrintLabelsDialog } from './PrintLabelsDialog';
 import { ReprintDialog } from './ReprintDialog';
@@ -95,7 +95,7 @@ function ReceiptBody({ receipt }: { receipt: ReceiptView }) {
                         <li key={line.id} className="flex flex-col gap-2 py-3">
                             <div className="flex items-start justify-between gap-3">
                                 <ItemCell
-                                    name={line.product_name ?? line.package_session_id}
+                                    name={line.product_name ?? line.sku ?? t('inventory.receipt.unknownItem')}
                                     variant={line.variant_name}
                                     sku={line.sku}
                                 />
@@ -135,7 +135,7 @@ function ReceiptBody({ receipt }: { receipt: ReceiptView }) {
 function ReceiptLabelsCard({ receipt }: { receipt: ReceiptView }) {
     const { t } = useTranslation('commerce');
     const labels = useLabels({ sourceType: 'STOCK_RECEIPT', sourceId: receipt.id, page: 0, size: 100 });
-    const [printing, setPrinting] = useState<LabelRow[] | null>(null);
+    const [printing, setPrinting] = useState(false);
     const [reprint, setReprint] = useState(false);
     const rows = labels.data?.rows ?? [];
     const pending = rows.filter((r) => r.status === 'PENDING');
@@ -145,7 +145,7 @@ function ReceiptLabelsCard({ receipt }: { receipt: ReceiptView }) {
             actions={
                 <>
                     {pending.length > 0 && (
-                        <MyButton type="button" buttonType="primary" scale="medium" className={TOUCH} onClick={() => setPrinting(pending)}>
+                        <MyButton type="button" buttonType="primary" scale="medium" className={TOUCH} onClick={() => setPrinting(true)}>
                             {t('inventory.labels.print')}
                         </MyButton>
                     )}
@@ -171,13 +171,9 @@ function ReceiptLabelsCard({ receipt }: { receipt: ReceiptView }) {
                     </li>
                 ))}
             </ul>
+            {/* The whole receipt's waiting rows (every page), drawn and marked by the server's list. */}
             {printing && (
-                <PrintLabelsDialog
-                    open
-                    onOpenChange={(open) => !open && setPrinting(null)}
-                    rows={printing}
-                    locationId={receipt.location_id}
-                />
+                <PrintLabelsDialog open onOpenChange={setPrinting} receiptId={receipt.id} locationId={receipt.location_id} />
             )}
             {reprint && receipt.location_id && (
                 <ReprintDialog open onOpenChange={setReprint} locationId={receipt.location_id} />

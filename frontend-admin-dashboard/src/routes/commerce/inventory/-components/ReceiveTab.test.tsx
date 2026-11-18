@@ -141,3 +141,52 @@ describe('ReceiveTab', () => {
         expect(JSON.stringify(mocked.createReceipt.mock.calls[0]?.[0])).not.toContain('cost');
     });
 });
+
+describe('ReceiveTab fix round', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        try {
+            sessionStorage.clear();
+        } catch {
+            // No storage here.
+        }
+        state.access = accessFor(WAREHOUSE);
+    });
+
+    it('L9 (low): a scan of a measured roll adds no 0.1 m; the length must be typed before Save', async () => {
+        scanCode.mockResolvedValue(variantScan({ package_session_id: 'ps-cloth', sku: 'CLOTH-1', product_name: 'Cotton cloth', unit: 'MTR', qty_scale: 10 }));
+        mocked.createReceipt.mockResolvedValue(receipt);
+        renderTab();
+        fireEvent.click(screen.getByText('inventory.receive.sourceOpening'));
+        scan('VCLOTH0001');
+        await waitFor(() => expect(screen.getByTestId('receive-lines').textContent).toContain('Cotton cloth'));
+        fireEvent.click(screen.getByTestId('receive-save'));
+        expect(await screen.findByText('inventory.receive.problems.quantities')).toBeTruthy();
+        expect(mocked.createReceipt).not.toHaveBeenCalled();
+        fireEvent.change(screen.getByLabelText('inventory.receive.quantity'), { target: { value: '12.5' } });
+        fireEvent.click(screen.getByTestId('receive-save'));
+        await waitFor(() => expect(mocked.createReceipt).toHaveBeenCalledTimes(1));
+        expect(mocked.createReceipt.mock.calls[0]?.[0].lines).toEqual([{ package_session_id: 'ps-cloth', quantity: 125 }]);
+    });
+
+    it('M4: a save with no answer keeps its request id when the tab is left and opened again', async () => {
+        scanCode.mockResolvedValue(variantScan());
+        mocked.createReceipt.mockRejectedValueOnce(networkError()).mockResolvedValueOnce(receipt);
+        const first = renderTab();
+        fireEvent.click(screen.getByText('inventory.receive.sourceOpening'));
+        scan('VABCDEFGH2');
+        await waitFor(() => screen.getByTestId('receive-lines'));
+        fireEvent.click(screen.getByTestId('receive-save'));
+        await waitFor(() => expect(mocked.createReceipt).toHaveBeenCalledTimes(1));
+        await waitFor(() => expect(screen.getByTestId('receive-save')).not.toBeDisabled());
+        first.unmount();
+        renderTab();
+        fireEvent.click(screen.getByText('inventory.receive.sourceOpening'));
+        scan('VABCDEFGH2');
+        await waitFor(() => screen.getByTestId('receive-lines'));
+        fireEvent.click(screen.getByTestId('receive-save'));
+        await waitFor(() => expect(mocked.createReceipt).toHaveBeenCalledTimes(2));
+        const [a, b] = mocked.createReceipt.mock.calls.map((call) => call[0]);
+        expect(b?.client_request_id).toBe(a?.client_request_id);
+    });
+});

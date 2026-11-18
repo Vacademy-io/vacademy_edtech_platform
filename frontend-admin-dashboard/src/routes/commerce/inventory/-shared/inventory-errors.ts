@@ -36,6 +36,16 @@ export const INVENTORY_ERROR_CODES = [
     'LABELS_TOO_MANY',
     'EXPORT_TOO_LARGE',
     'CODE_NOT_FOUND',
+    // Fix round (reviews of WP-40/41).
+    'QTY_REQUIRED',
+    'COUNT_NEEDS_RECOUNT',
+    'COUNT_LINE_CHANGED',
+    'COUNT_LINE_NOT_FOUND',
+    'MEASURED_CONFIRM_REQUIRED',
+    'RECOUNT_OTHER_PERSON',
+    'STOCK_EXISTS',
+    'TRANSFER_CHANGED',
+    'LOCATION_NOT_FOUND',
     // Reused codes the inventory screens meet, worded for them.
     'APPROVAL_REQUIRED',
     'PIN_INVALID',
@@ -65,6 +75,9 @@ const SHOW_SENTENCE = new Set<string>([
     'ITEM_UNTRACKED',
     'ITEM_ARCHIVED',
     'RECEIPT_BILLED',
+    'QTY_REQUIRED',
+    'COUNT_NEEDS_RECOUNT',
+    'MEASURED_CONFIRM_REQUIRED',
 ]);
 
 export interface InventoryError extends OrderError {

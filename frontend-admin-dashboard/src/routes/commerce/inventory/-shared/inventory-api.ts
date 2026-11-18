@@ -15,6 +15,7 @@ import {
     COMMERCE_STOCK_COUNT_BY_ID,
     COMMERCE_STOCK_COUNT_CANCEL,
     COMMERCE_STOCK_COUNT_LINE,
+    COMMERCE_STOCK_COUNT_LINE_ACCEPT,
     COMMERCE_STOCK_COUNT_LINES,
     COMMERCE_STOCK_COUNT_POST,
     COMMERCE_STOCK_COUNT_REVIEW,
@@ -633,7 +634,7 @@ export function normalizeCount(data: unknown): CountView {
         uncounted_choice: str(r.uncounted_choice),
         summary: asRecord(r.summary) ?? asRecord(r.summary_json),
         lines,
-        next_actions: strings(r.next_actions),
+        next_actions: Array.isArray(r.next_actions) ? strings(r.next_actions) : null,
     };
 }
 
@@ -710,7 +711,9 @@ export function normalizeReview(data: unknown): CountReview {
                     line_id: lineId,
                     package_session_id: str(l.package_session_id) ?? '',
                     sku: str(l.sku),
-                    item_name: str(l.item_name),
+                    item_name: str(l.item_name) ?? str(l.product_name),
+                    variant_name: str(l.variant_name),
+                    stock_mode: str(l.stock_mode),
                     piece_code: str(l.piece_code),
                     counted_qty: int(l.counted_qty),
                     counted_at: utcTime(l.counted_at),
@@ -721,13 +724,21 @@ export function normalizeReview(data: unknown): CountReview {
                     value: num(l.value),
                     unit: str(l.unit),
                     qty_scale: scale(l.qty_scale),
+                    first_counted_at: utcTime(l.first_counted_at),
+                    moved_while_counting: int(l.moved_while_counting),
+                    packed_unshipped: int(l.packed_unshipped),
+                    flags: strings(l.flags),
+                    accepted_by: str(l.accepted_by),
                 },
             ];
         }),
         uncounted: records(r.uncounted).map((u) => ({
             package_session_id: str(u.package_session_id) ?? '',
             sku: str(u.sku),
-            item_name: str(u.item_name),
+            item_name: str(u.item_name) ?? str(u.product_name),
+            variant_name: str(u.variant_name),
+            unit: str(u.unit),
+            qty_scale: scale(u.qty_scale),
             on_hand_now: int(u.on_hand_now),
         })),
         pieces,
@@ -739,14 +750,35 @@ export function normalizeReview(data: unknown): CountReview {
             value_down: num(totals.value_down),
         },
         needs_approval: r.needs_approval === true,
+        needs_recount: int(r.needs_recount),
+        measured_confirm: r.measured_confirm === true,
     };
 }
 
 export const fetchCountReview = async (id: string) => normalizeReview(await get(COMMERCE_STOCK_COUNT_REVIEW(id)));
 export const postCount = async (
     id: string,
-    body: { client_request_id: string; uncounted?: UncountedChoice; approval?: ManagerApproval }
+    body: {
+        client_request_id: string;
+        uncounted?: UncountedChoice;
+        approval?: ManagerApproval;
+        /** A manager's explicit yes to a large measured difference (left out of the request hash). */
+        confirm_measured?: boolean;
+    }
 ) => normalizeCount(await post(COMMERCE_STOCK_COUNT_POST(id), body));
+
+/** A manager accepts a line that changed while it was counted (`counted_qty` = what the manager saw). */
+export async function acceptCountLine(
+    id: string,
+    lineId: string,
+    countedQty: number
+): Promise<{ lines: CountLine[]; line_count: number }> {
+    const r = rec(await post(COMMERCE_STOCK_COUNT_LINE_ACCEPT(id, lineId), { counted_qty: countedQty }));
+    const lines = records(r.lines)
+        .map(normalizeCountLine)
+        .filter((l): l is CountLine => l !== null);
+    return { lines, line_count: num(r.line_count) ?? lines.length };
+}
 export const cancelCount = async (id: string, body: { client_request_id: string; reason?: string }) =>
     normalizeCount(await post(COMMERCE_STOCK_COUNT_CANCEL(id), body));
 
@@ -776,6 +808,9 @@ function normalizeLabel(r: Rec): LabelRow | null {
         created_at: utcTime(r.created_at),
         printed_at: utcTime(r.printed_at),
         has_price: r.has_price !== false,
+        stock_mode: str(r.stock_mode),
+        unit: str(r.unit),
+        qty_scale: scale(r.qty_scale),
     };
 }
 
@@ -800,8 +835,12 @@ export async function cancelLabels(body: { client_request_id: string; request_id
     return int(rec(await post(COMMERCE_LABELS_CANCEL, body)).cancelled);
 }
 
-export async function markLabelsPrinted(body: { client_request_id: string; request_ids: string[] }): Promise<number> {
-    return int(rec(await post(COMMERCE_LABELS_MARK_PRINTED, body)).printed);
+export async function markLabelsPrinted(body: {
+    client_request_id: string;
+    request_ids: string[];
+}): Promise<{ printed: number; skipped: string[] }> {
+    const r = rec(await post(COMMERCE_LABELS_MARK_PRINTED, body));
+    return { printed: int(r.printed), skipped: strings(r.skipped) };
 }
 
 const textPair = (value: unknown): TextPair => {
@@ -832,11 +871,18 @@ function normalizePrintLabel(r: Rec): PrintLabel | null {
 export async function fetchLabelPrintData(body: LabelPrintDataBody): Promise<LabelPrintData> {
     const r = rec(await post(COMMERCE_LABELS_PRINT_DATA, body));
     const shop = textPair(r.shop_name);
+
+    const labels = records(r.labels ?? r.items)
+        .map(normalizePrintLabel)
+        .filter((l): l is PrintLabel => l !== null);
     return {
         shop_name: shop.en ?? shop.hi,
-        labels: records(r.labels ?? r.items)
-            .map(normalizePrintLabel)
-            .filter((l): l is PrintLabel => l !== null),
+        labels,
+        skipped: records(r.skipped).flatMap((x) => {
+            const requestId = str(x.request_id);
+            return requestId ? [{ request_id: requestId, sku: str(x.sku), reason: str(x.reason) ?? 'NO_PRICE' }] : [];
+        }),
+        total_copies: num(r.total_copies) ?? labels.reduce((sum, l) => sum + l.copies, 0),
     };
 }
 
@@ -852,6 +898,12 @@ export async function fetchLabelsToReplace(locationId: string): Promise<ToReplac
                 printed_mrp: num(r.printed_mrp),
                 current_mrp: num(r.current_mrp),
                 on_hand: int(r.on_hand),
+                stock_mode: str(r.stock_mode),
+                unit: str(r.unit),
+                qty_scale: scale(r.qty_scale),
+                has_price: r.has_price !== false,
+                labels: Math.max(0, int(r.labels, int(r.on_hand))),
+                capped: r.capped === true,
             },
         ];
     });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Trash } from '@phosphor-icons/react';
@@ -51,7 +51,13 @@ export function ReprintDialog({
     const errorText = useInventoryErrorText();
     const invalidate = useInvalidateInventory();
     const write = useInventoryWrite('rpr');
-    const [lines, setLines] = useState<ReprintLine[]>([]);
+    const [lines, setLinesState] = useState<ReprintLine[]>([]);
+    // The latest lines, read and written at once: two scans answered in the same moment both land.
+    const linesRef = useRef<ReprintLine[]>([]);
+    const setLines = (next: ReprintLine[]) => {
+        linesRef.current = next;
+        setLinesState(next);
+    };
     const [reason, setReason] = useState<ReprintReason | ''>('');
     const [note, setNote] = useState('');
     const [message, setMessage] = useState<ScanMessage | null>(null);
@@ -59,11 +65,12 @@ export function ReprintDialog({
     const [error, setError] = useState<unknown>(null);
 
     const add = (line: ReprintLine) => {
-        if (lines.some((l) => l.key === line.key)) {
+        const current = linesRef.current;
+        if (current.some((l) => l.key === line.key)) {
             if (line.piece_id) return setMessage({ tone: 'danger', text: t('inventory.reprint.alreadyOn') });
-            setLines(lines.map((l) => (l.key === line.key ? { ...l, quantity: l.quantity + 1 } : l)));
+            setLines(current.map((l) => (l.key === line.key ? { ...l, quantity: l.quantity + 1 } : l)));
         } else {
-            setLines([...lines, line]);
+            setLines([...current, line]);
         }
         setMessage({ tone: 'success', text: t('inventory.receive.added', { item: line.name ?? line.sku ?? '' }) });
     };
@@ -174,7 +181,7 @@ export function ReprintDialog({
                                             value={String(line.quantity)}
                                             onChange={(event) => {
                                                 const n = Math.max(1, Math.min(10000, Number(event.target.value) || 1));
-                                                setLines(lines.map((l) => (l.key === line.key ? { ...l, quantity: n } : l)));
+                                                setLines(linesRef.current.map((l) => (l.key === line.key ? { ...l, quantity: n } : l)));
                                             }}
                                             className="h-12 w-20 rounded-md border border-neutral-300 px-2 text-end text-body tabular-nums"
                                         />
@@ -182,7 +189,7 @@ export function ReprintDialog({
                                     <button
                                         type="button"
                                         aria-label={t('inventory.receive.remove')}
-                                        onClick={() => setLines(lines.filter((l) => l.key !== line.key))}
+                                        onClick={() => setLines(linesRef.current.filter((l) => l.key !== line.key))}
                                         className="flex size-12 items-center justify-center rounded-md text-neutral-500 hover:bg-neutral-100"
                                     >
                                         <Trash size={18} />

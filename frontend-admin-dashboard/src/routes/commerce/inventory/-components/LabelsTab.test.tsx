@@ -59,7 +59,7 @@ vi.mock('@tanstack/react-router', () => ({
 vi.mock('../-shared/inventory-api', () => ({
     fetchLabels: vi.fn(),
     fetchLabelPrintData: vi.fn(),
-    markLabelsPrinted: vi.fn(async () => 2),
+    markLabelsPrinted: vi.fn(async () => ({ printed: 2, skipped: [] })),
     cancelLabels: vi.fn(),
     requestLabels: vi.fn(),
     fetchLabelsToReplace: vi.fn(async () => []),
@@ -71,6 +71,7 @@ import * as orderApi from '@/routes/commerce/orders/-shared/order-api';
 import * as api from '../-shared/inventory-api';
 import { accessFor, labelRow, place, variantScan, WAREHOUSE } from '../-shared/inventory-test-fixtures';
 import { LabelsTab } from './LabelsTab';
+import { PrintLabelsDialog } from './PrintLabelsDialog';
 
 const mocked = vi.mocked(api);
 
@@ -112,6 +113,8 @@ const printData = {
             copies: 1,
         },
     ],
+    skipped: [],
+    total_copies: 3,
 };
 
 /** The Print button, once the queue has loaded (it is disabled with nothing chosen). */
@@ -182,5 +185,128 @@ describe('LabelsTab', () => {
         fireEvent.click(screen.getByTestId('reprint-save'));
         expect(await screen.findByText('inventory.reprint.problems.reason')).toBeTruthy();
         expect(mocked.requestLabels).not.toHaveBeenCalled();
+    });
+});
+
+describe('LabelsTab fix round', () => {
+    let print: MockInstance<[], void>;
+    beforeEach(() => {
+        vi.clearAllMocks();
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+        } catch {
+            // No storage here.
+        }
+        state.access = accessFor(WAREHOUSE);
+        mocked.fetchLabelPrintData.mockResolvedValue(printData);
+        mocked.markLabelsPrinted.mockResolvedValue({ printed: 1, skipped: [] });
+        print = vi.spyOn(window, 'print').mockImplementation(() => {
+            window.dispatchEvent(new Event('afterprint'));
+        });
+    });
+    afterEach(() => print.mockRestore());
+
+    it('M2: a row without a price starts unticked and is not sent to print', async () => {
+        mocked.fetchLabels.mockResolvedValue({
+            rows: [labelRow('lr-1'), labelRow('lr-3', { has_price: false, sku: 'NEW-1' })],
+            page: 0,
+            size: 100,
+            total: 2,
+        });
+        renderTab();
+        fireEvent.click(await openPrintButton());
+        fireEvent.click(await screen.findByTestId('labels-print'));
+        await waitFor(() => expect(mocked.fetchLabelPrintData).toHaveBeenCalledTimes(1));
+        expect(mocked.fetchLabelPrintData).toHaveBeenCalledWith({ request_ids: ['lr-1'], size: 'STICKER_50X25' });
+    });
+
+    it('M1: a receipt print marks every drawn label (not the first page), in batches of 200', async () => {
+        mocked.fetchLabels.mockResolvedValue({
+            rows: Array.from({ length: 100 }, (_, i) => labelRow(`r${i}`, { quantity: 1 })),
+            page: 0,
+            size: 100,
+            total: 210,
+        });
+        const first = printData.labels[0] as (typeof printData.labels)[number];
+        const drawn = Array.from({ length: 210 }, (_, i) => ({ ...first, request_id: `r${i}`, copies: 1 }));
+        mocked.fetchLabelPrintData.mockResolvedValue({ ...printData, labels: drawn, total_copies: 210 });
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={client}>
+                <PrintLabelsDialog open onOpenChange={() => undefined} receiptId="rc-1" locationId="L1" />
+            </QueryClientProvider>
+        );
+        await screen.findByText('inventory.labels.countReceipt');
+        fireEvent.click(screen.getByTestId('labels-print'));
+        await waitFor(() => expect(mocked.fetchLabelPrintData).toHaveBeenCalledWith({ receipt_id: 'rc-1', size: 'STICKER_50X25' }));
+        fireEvent.click(await screen.findByTestId('labels-mark-printed'));
+        await waitFor(() => expect(mocked.markLabelsPrinted).toHaveBeenCalledTimes(2));
+        const sent = mocked.markLabelsPrinted.mock.calls.map((call) => call[0].request_ids);
+        expect(sent.map((ids) => ids.length)).toEqual([200, 10]);
+        expect(new Set(sent.flat()).size).toBe(210);
+        expect(sent[0]?.[0]).toBe('r0');
+    }, 20_000);
+
+    it('M2: labels the server skipped for no price are listed after the print', async () => {
+        mocked.fetchLabels.mockResolvedValue({ rows: [labelRow('lr-1')], page: 0, size: 100, total: 1 });
+        mocked.fetchLabelPrintData.mockResolvedValue({
+            ...printData,
+            skipped: [{ request_id: 'lr-9', sku: 'NEW-9', reason: 'NO_PRICE' }],
+        });
+        renderTab();
+        fireEvent.click(await openPrintButton());
+        fireEvent.click(await screen.findByTestId('labels-print'));
+        expect((await screen.findByTestId('labels-skipped')).textContent).toBe('inventory.labels.skippedNoPrice');
+    });
+
+    it('H2: tags to replace queue per piece / per roll / per unit in batches, and leave unpriced items out', async () => {
+        mocked.fetchLabels.mockResolvedValue({ rows: [], page: 0, size: 100, total: 0 });
+        const base = { item_name: null, printed_mrp: 100, current_mrp: 120, unit: 'PCS', qty_scale: 1, has_price: true, capped: false };
+        mocked.fetchLabelsToReplace.mockResolvedValue([
+            { ...base, package_session_id: 'saree', sku: 'SAREE', on_hand: 2, stock_mode: 'PIECE', labels: 2 },
+            { ...base, package_session_id: 'cloth', sku: 'CLOTH', on_hand: 200, stock_mode: 'QUANTITY', unit: 'MTR', qty_scale: 10, labels: 1 },
+            { ...base, package_session_id: 'new', sku: 'NEW', on_hand: 3, stock_mode: 'QUANTITY', has_price: false, labels: 3 },
+            ...Array.from({ length: 120 }, (_, i) => ({
+                ...base,
+                package_session_id: `cup${i}`,
+                sku: `CUP${i}`,
+                on_hand: 5,
+                stock_mode: 'QUANTITY',
+                labels: 5,
+            })),
+        ]);
+        mocked.requestLabels.mockResolvedValue([]);
+        renderTab();
+        fireEvent.click(await screen.findByText('inventory.labels.toReplace'));
+        fireEvent.click(await screen.findByTestId('labels-queue-replace'));
+        await waitFor(() => expect(mocked.requestLabels).toHaveBeenCalledTimes(2));
+        const [first, second] = mocked.requestLabels.mock.calls.map((call) => call[0]);
+        expect(first?.lines).toHaveLength(100);
+        expect(second?.lines).toHaveLength(22);
+        expect(first?.lines.slice(0, 3)).toEqual([
+            { package_session_id: 'saree', quantity: 1 },
+            { package_session_id: 'cloth', quantity: 1 },
+            { package_session_id: 'cup0', quantity: 5 },
+        ]);
+        expect(first?.client_request_id).not.toBe(second?.client_request_id);
+        expect(screen.getByTestId('replace-unpriced').textContent).toBe('inventory.labels.replaceUnpriced');
+    });
+
+    it('L7 (low): two reprint scans answered at once both land', async () => {
+        mocked.fetchLabels.mockResolvedValue({ rows: [], page: 0, size: 100, total: 0 });
+        vi.mocked(orderApi.scanCode)
+            .mockResolvedValueOnce(variantScan({ package_session_id: 'ps-a', sku: 'A-1' }))
+            .mockResolvedValueOnce(variantScan({ package_session_id: 'ps-b', sku: 'B-1' }));
+        renderTab();
+        fireEvent.click(await screen.findByText('inventory.labels.reprint'));
+        const box = (await screen.findByTestId('reprint-scan')) as HTMLInputElement;
+        fireEvent.change(box, { target: { value: 'VAAAAAAAA1' } });
+        fireEvent.keyDown(box, { key: 'Enter' });
+        fireEvent.change(box, { target: { value: 'VBBBBBBBB2' } });
+        fireEvent.keyDown(box, { key: 'Enter' });
+        await waitFor(() => expect(vi.mocked(orderApi.scanCode)).toHaveBeenCalledTimes(2));
+        await waitFor(() => expect(screen.getByText('B-1')).toBeTruthy());
+        expect(screen.getByText('A-1')).toBeTruthy();
     });
 });

@@ -147,7 +147,7 @@ export const countView = (overrides: Partial<CountView> = {}): CountView => ({
             counted_by: 'u-me',
         },
     ],
-    next_actions: [],
+    next_actions: null,
     ...overrides,
 });
 
@@ -172,5 +172,8 @@ export const labelRow = (id: string, overrides: Partial<LabelRow> = {}): LabelRo
     created_at: '2026-11-18T05:00:00Z',
     printed_at: null,
     has_price: true,
+    stock_mode: 'QUANTITY',
+    unit: 'PCS',
+    qty_scale: 1,
     ...overrides,
 });

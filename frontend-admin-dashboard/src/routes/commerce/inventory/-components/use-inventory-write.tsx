@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { getInstituteId } from '@/constants/helper';
 import { ManagerPinDialog } from '@/routes/commerce/-components/ManagerPinDialog';
 import type { ManagerApproval } from '@/routes/commerce/-shared/commerce-types';
 import { useAttemptStore } from '@/routes/commerce/pos/-shared/pos-session-store';
@@ -40,13 +41,16 @@ export interface InventoryWrite<R> {
  *  - when an unanswered id turns out to be saved under another body
  *    (`IDEMPOTENCY_MISMATCH` after a carried id), the person is told it was
  *    probably saved instead of being asked to send again.
+ *  - an attempt with no answer yet is kept in this tab's sessionStorage (the
+ *    counter's pattern), per institute and form: a tab switch that unmounts
+ *    the form, or a reload, sends the next try under the same id.
  * Failures other than the PIN step are thrown as an `InventoryError`; a
  * failed resend from the PIN dialog throws the server's error to the dialog,
  * which shows its sentence and stays open.
  */
 export function useInventoryWrite(prefix = 'inv') {
     const { t } = useTranslation('commerce');
-    const store = useAttemptStore('', null, prefix);
+    const store = useAttemptStore(getInstituteId() ?? 'none', `inventory-${prefix}`, prefix);
     const [pin, setPin] = useState<PendingPin | null>(null);
     const approvers = useStockApprovers(pin?.locationId ?? null, !!pin);
 

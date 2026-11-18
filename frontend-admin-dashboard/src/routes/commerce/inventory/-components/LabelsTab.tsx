@@ -9,8 +9,8 @@ import { PlainSelect, SectionCard } from '@/routes/commerce/-components/Catalogu
 import { CommerceEmptyState, CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
 import { cancelLabels, requestLabels } from '../-shared/inventory-api';
 import { useInvalidateInventory, useLabels, useLabelsToReplace } from '../-shared/inventory-hooks';
-import { LABEL_STATUSES, type LabelRow, type ToReplaceRow } from '../-shared/inventory-types';
-import { labelCount } from '../-shared/label-print';
+import { LABEL_STATUSES, type LabelRow } from '../-shared/inventory-types';
+import { labelCount, MAX_LABELS_PER_PRINT, planReplaceLabels } from '../-shared/label-print';
 import type { TabProps } from './InventoryPage';
 import { ConfirmDialog, InventoryErrorNotice, ItemCell, TOUCH } from './inventory-ui';
 import { PrintLabelsDialog } from './PrintLabelsDialog';
@@ -50,7 +50,8 @@ export function LabelsTab({ locationId }: TabProps) {
     const write = useInventoryWrite('lbl');
     const place = locationId as string;
     const [status, setStatus] = useState<string>('PENDING');
-    const [unchecked, setUnchecked] = useState<Set<string>>(new Set());
+    // Rows the person ticked or unticked; a row with a price starts ticked, one without starts unticked.
+    const [toggled, setToggled] = useState<Set<string>>(new Set());
     const [printing, setPrinting] = useState<LabelRow[] | null>(null);
     const [reprint, setReprint] = useState(false);
     const [cancelling, setCancelling] = useState(false);
@@ -58,13 +59,17 @@ export function LabelsTab({ locationId }: TabProps) {
     const query = useLabels({ locationId: place, status, page: 0, size: 100 });
     const rows = query.data?.rows ?? [];
     const pending = status === 'PENDING';
-    const selected = pending ? rows.filter((r) => !unchecked.has(r.id)) : [];
+    const isTicked = (row: LabelRow) => row.has_price !== toggled.has(row.id);
+    const selected = pending ? rows.filter(isTicked) : [];
+    // Print draws only rows with a price; ticked rows without one stay waiting (they can be cancelled).
+    const printable = selected.filter((r) => r.has_price);
+    const waitingForPrice = selected.length - printable.length;
 
     const toggle = (id: string) => {
-        const next = new Set(unchecked);
+        const next = new Set(toggled);
         if (next.has(id)) next.delete(id);
         else next.add(id);
-        setUnchecked(next);
+        setToggled(next);
     };
 
     const cancelSelected = async () => {
@@ -89,7 +94,7 @@ export function LabelsTab({ locationId }: TabProps) {
                     value={status}
                     onChange={(value) => {
                         setStatus(value || 'PENDING');
-                        setUnchecked(new Set());
+                        setToggled(new Set());
                     }}
                     options={LABEL_STATUSES.map((value) => ({ value, label: t(`status.labelRequest.${value}`) }))}
                 />
@@ -106,15 +111,20 @@ export function LabelsTab({ locationId }: TabProps) {
                             buttonType="primary"
                             scale="medium"
                             className={TOUCH}
-                            disable={selected.length === 0}
-                            onClick={() => setPrinting(selected)}
+                            disable={printable.length === 0}
+                            onClick={() => setPrinting(printable)}
                             data-testid="labels-open-print"
                         >
-                            {t('inventory.labels.printCount', { count: labelCount(selected) })}
+                            {t('inventory.labels.printCount', { count: labelCount(printable) })}
                         </MyButton>
                     )}
                 </div>
             </div>
+            {waitingForPrice > 0 && (
+                <p className="text-caption text-warning-600" data-testid="labels-wait-price">
+                    {t('inventory.labels.waitForPrice', { count: waitingForPrice })}
+                </p>
+            )}
             {showReplace && <ToReplaceCard locationId={place} />}
             <SectionCard title={pending ? t('inventory.labels.queue') : t('inventory.labels.history')}>
                 {query.isLoading && <CommerceLoadingRows rows={3} />}
@@ -129,7 +139,7 @@ export function LabelsTab({ locationId }: TabProps) {
                                 {pending && (
                                     <input
                                         type="checkbox"
-                                        checked={!unchecked.has(row.id)}
+                                        checked={isTicked(row)}
                                         onChange={() => toggle(row.id)}
                                         className="size-5 shrink-0 accent-primary-500"
                                         aria-label={row.sku ?? row.id}
@@ -162,7 +172,7 @@ export function LabelsTab({ locationId }: TabProps) {
                     onOpenChange={(open) => !open && setPrinting(null)}
                     rows={printing}
                     locationId={place}
-                    onPrinted={() => setUnchecked(new Set())}
+                    onPrinted={() => setToggled(new Set())}
                 />
             )}
             {reprint && <ReprintDialog open onOpenChange={setReprint} locationId={place} />}
@@ -187,27 +197,30 @@ function ToReplaceCard({ locationId }: { locationId: string }) {
     const write = useInventoryWrite('ptag');
     const query = useLabelsToReplace(locationId, true);
     const [error, setError] = useState<unknown>(null);
+    const [queuedBatches, setQueuedBatches] = useState(0);
     const rows = (query.data ?? []).filter((r) => r.on_hand > 0);
+    const plan = planReplaceLabels(rows);
 
-    const queue = async (items: ToReplaceRow[]) => {
+    // One request per batch (≤ 100 lines, ≤ 500 rows), each with its own request id: a failed batch
+    // stops the rest, and pressing again resends it under the same id (the batches before it are replays).
+    const queue = async () => {
         setError(null);
-        const body = {
-            location_id: locationId,
-            reason: 'PRICE_CHANGE' as const,
-            lines: items.map((r) => ({ package_session_id: r.package_session_id, quantity: Math.min(10000, r.on_hand) })),
-        };
+        setQueuedBatches(0);
         try {
-            await write.run({
-                scope: 'price-change',
-                body,
-                send: (id) => requestLabels({ ...body, client_request_id: id }),
-                onDone: () => {
-                    toast.success(t('inventory.labels.queued'));
-                    void invalidate();
-                },
-            });
+            for (const [index, lines] of plan.batches.entries()) {
+                const body = { location_id: locationId, reason: 'PRICE_CHANGE' as const, lines };
+                await write.run({
+                    scope: `price-change:${locationId}:${index}`,
+                    body,
+                    send: (id) => requestLabels({ ...body, client_request_id: id }),
+                    onDone: () => setQueuedBatches(index + 1),
+                });
+            }
+            toast.success(t('inventory.labels.queued'));
         } catch (e) {
             setError(e);
+        } finally {
+            void invalidate();
         }
     };
 
@@ -216,8 +229,15 @@ function ToReplaceCard({ locationId }: { locationId: string }) {
             title={t('inventory.labels.toReplace')}
             description={t('inventory.labels.toReplaceHelp')}
             actions={
-                rows.length > 0 ? (
-                    <MyButton type="button" buttonType="primary" scale="medium" className={TOUCH} onAsyncClick={() => queue(rows)}>
+                plan.batches.length > 0 ? (
+                    <MyButton
+                        type="button"
+                        buttonType="primary"
+                        scale="medium"
+                        className={TOUCH}
+                        onAsyncClick={queue}
+                        data-testid="labels-queue-replace"
+                    >
                         {t('inventory.labels.queueLabels')}
                     </MyButton>
                 ) : undefined
@@ -230,15 +250,36 @@ function ToReplaceCard({ locationId }: { locationId: string }) {
                 {rows.map((row) => (
                     <li key={row.package_session_id} className="flex items-center justify-between gap-3 py-2">
                         <ItemCell name={row.item_name} sku={row.sku} />
-                        <span className="flex items-center gap-2 text-caption">
+                        <span className="flex flex-wrap items-center justify-end gap-2 text-caption">
                             {row.printed_mrp !== null && <MoneyCell value={row.printed_mrp} />}→
                             {row.current_mrp !== null && <MoneyCell value={row.current_mrp} />}
-                            <span className="text-muted-foreground">×{row.on_hand}</span>
+                            <span className="text-muted-foreground">{t('inventory.labels.replaceCount', { count: row.labels })}</span>
+                            {!row.has_price && <span className="text-danger-600">{t('inventory.labels.noPrice')}</span>}
                         </span>
                     </li>
                 ))}
             </ul>
+            {plan.unpriced.length > 0 && (
+                <p className="text-caption text-warning-600" data-testid="replace-unpriced">
+                    {t('inventory.labels.replaceUnpriced', { items: skuList(plan.unpriced) })}
+                </p>
+            )}
+            {plan.capped.length > 0 && (
+                <p className="text-caption text-warning-600" data-testid="replace-capped">
+                    {t('inventory.labels.replaceCapped', { items: skuList(plan.capped), max: MAX_LABELS_PER_PRINT })}
+                </p>
+            )}
+            {error !== null && plan.batches.length > 1 && (
+                <p className="text-caption text-muted-foreground">
+                    {t('inventory.labels.replacePartly', { done: queuedBatches, total: plan.batches.length })}
+                </p>
+            )}
             <InventoryErrorNotice error={error} />
+            {write.dialog}
         </SectionCard>
     );
 }
+
+/** "SKU-1, SKU-2" (an item without a SKU by its name). */
+const skuList = (rows: { sku: string | null; item_name: string | null }[]): string =>
+    rows.map((r) => r.sku ?? r.item_name ?? '—').join(', ');

@@ -26,19 +26,30 @@ export interface ReceiptLineDraft extends ReceiveItem {
     quantity: number;
 }
 
-export const RECEIVE_REFUSALS = ['untracked', 'quantityRange'] as const;
+export const RECEIVE_REFUSALS = ['untracked', 'quantityRange', 'typeLength'] as const;
 export type ReceiveRefusal = (typeof RECEIVE_REFUSALS)[number];
 
 const stepOf = (item: ReceiveItem) =>
     (item.stock_mode ?? '').toUpperCase() === 'PIECE' ? 1 : Math.max(1, Math.floor(item.qty_step || 1));
 
+/**
+ * Adds an item. A scanned measured item (cloth by the metre) never adds its
+ * step (one base unit, 0.1 m): a new line starts empty and its length must be
+ * typed (`typeLength`); a scan of a line already there only asks for it.
+ */
 export function addReceiveItem(
     lines: ReceiptLineDraft[],
-    item: ReceiveItem
+    item: ReceiveItem,
+    options: { scanned?: boolean } = {}
 ): { lines: ReceiptLineDraft[]; refusal: ReceiveRefusal | null } {
     if ((item.stock_policy ?? '').toUpperCase() === 'UNTRACKED') return { lines, refusal: 'untracked' };
     const step = stepOf(item);
     const existing = lines.find((l) => l.package_session_id === item.package_session_id);
+    const measured = item.qty_scale > 1 && (item.stock_mode ?? '').toUpperCase() !== 'PIECE';
+    if (options.scanned && measured) {
+        if (existing) return { lines, refusal: 'typeLength' };
+        return { lines: [...lines, { ...item, qty_step: step, quantity: 0 }], refusal: 'typeLength' };
+    }
     if (existing) {
         const quantity = existing.quantity + step;
         if (quantity > MAX_BASE_UNITS) return { lines, refusal: 'quantityRange' };
@@ -67,7 +78,7 @@ export function setReceiveQuantity(
     };
 }
 
-export type ReceiveProblem = 'source' | 'sourcePlace' | 'note' | 'lines';
+export type ReceiveProblem = 'source' | 'sourcePlace' | 'note' | 'lines' | 'quantities';
 
 /** What still stops Save receipt (null = ready). */
 export function receiveProblem(input: {
@@ -80,5 +91,6 @@ export function receiveProblem(input: {
     if (input.source === 'OWN_SOURCE' && !input.sourceLocationId) return 'sourcePlace';
     if (input.source === 'OTHER' && !input.note.trim()) return 'note';
     if (input.lines.length === 0) return 'lines';
+    if (input.lines.some((l) => l.quantity < 1)) return 'quantities';
     return null;
 }
