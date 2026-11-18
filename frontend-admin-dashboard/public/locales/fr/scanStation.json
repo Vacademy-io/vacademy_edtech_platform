@@ -54,6 +54,71 @@
         "full": "Cette session a atteint le nombre maximal de lots ({{max}}).",
         "title": "Ajouter le lot {{load}}"
     },
+    "guided": {
+        "title": "Numériser avec le scanner",
+        "useFolders": "Utiliser plutôt des dossiers",
+        "useScanner": "Utiliser plutôt le scanner",
+        "device": {
+            "feeder": "chargeur",
+            "oneSide": "numérise un côté",
+            "bothSides": "numérise les deux côtés",
+            "printsTwoSided": "imprime en recto verso",
+            "printsOneSided": "imprime un seul côté"
+        },
+        "detect": {
+            "checking": "Recherche de Vacademy Scan Helper…",
+            "install": {
+                "title": "Installer Vacademy Scan Helper",
+                "body": "Une petite application pour ce Mac qui permet à cette page de piloter votre scanner : vous cliquez sur Démarrer et les pages arrivent directement, dans l'ordre. Mac uniquement pour l'instant.",
+                "download": "Télécharger pour Mac",
+                "hint": "Déjà installée ? Ouvrez-la depuis Applications. Cette page la trouve en quelques secondes."
+            },
+            "lost": "Contact perdu avec Vacademy Scan Helper. Vérifiez qu'elle est toujours ouverte.",
+            "noScanner": "Allumez le scanner ou connectez-le.",
+            "otherApp": "Fermez Transfert d'images (ou l'application du scanner), puis réessayez.",
+            "busy": "Le scanner est occupé par une autre numérisation. Attendez qu'elle se termine.",
+            "glassOnly": "Ce scanner n'a pas de chargeur ; utilisez la méthode des dossiers."
+        },
+        "side": {
+            "first": "premier côté",
+            "second": "second côté",
+            "both": "les deux côtés"
+        },
+        "loadSide": "Lot {{load}} · {{side}}",
+        "stepA": "Placez jusqu'à {{max}} feuilles dans le chargeur, écriture vers le haut, bord supérieur en premier.",
+        "stepB": "Prenez la pile dans le bac, retournez-la comme une page de livre et remettez-la.",
+        "start": "Démarrer la numérisation",
+        "cancel": "Annuler",
+        "cancelled": "Numérisation annulée. Ces pages ont été supprimées.",
+        "scanning_one": "Numérisation… {{count}} page pour l'instant",
+        "scanning_other": "Numérisation… {{count}} pages pour l'instant",
+        "sideDone_one": "{{count}} page numérisée.",
+        "sideDone_other": "{{count}} pages numérisées.",
+        "pageAlt": "Page numérisée {{n}}",
+        "mismatch": "Le premier côté a {{a}} pages, le second {{b}}. Une feuille a été entraînée deux fois ou sautée. Remettez cette pile et numérisez ce côté à nouveau.",
+        "mismatchDuplex": "{{count}} pages sont arrivées, un nombre impair : une feuille a été entraînée deux fois ou sautée. Remettez toute la pile et numérisez ce lot à nouveau.",
+        "rescanSide": "Numériser ce côté à nouveau",
+        "restartLoad": "Recommencer ce lot",
+        "downloading": "Récupération des pages du scanner… {{done}} sur {{total}}",
+        "retry": "Réessayer",
+        "sent": "Lot {{load}} envoyé. Placez la pile suivante, ou cliquez sur Terminer.",
+        "finish": "Terminer",
+        "finished": "Numérisation terminée. Les lots sont en cours de lecture.",
+        "scanAnother": "Numériser un autre lot",
+        "errors": {
+            "SCANNER_BUSY": "Le scanner est occupé. Fermez Transfert d'images ou attendez l'autre numérisation, puis réessayez.",
+            "SCANNER_NOT_FOUND": "Le scanner n'est plus visible. Allumez-le ou connectez-le, puis réessayez.",
+            "NO_PAPER": "Pas de papier dans le chargeur. Placez la pile, puis réessayez.",
+            "UNSUPPORTED": "Ce scanner ne peut pas faire cela. Utilisez la méthode des dossiers.",
+            "PAPER_JAM": "Bourrage papier. Dégagez-le, remettez toute la pile de ce côté, puis numérisez ce côté à nouveau.",
+            "DEVICE_GONE": "Le scanner a été déconnecté. Reconnectez-le, remettez la pile de ce côté, puis réessayez.",
+            "UNREACHABLE": "Vacademy Scan Helper ne répond pas. Vérifiez qu'elle est ouverte, puis réessayez.",
+            "ORIGIN_NOT_ALLOWED": "Vacademy Scan Helper n'a pas autorisé cette page. Cliquez sur Autoriser dans son message sur le Mac, puis réessayez.",
+            "NOTHING_SCANNED": "Aucune page n'est arrivée. Vérifiez que la pile est dans le chargeur, puis réessayez.",
+            "DOWNLOAD": "Impossible de récupérer les pages depuis Vacademy Scan Helper ; rien n'a été envoyé. Réessayez.",
+            "UNKNOWN": "La numérisation n'a pas abouti. Remettez la pile de ce côté et réessayez."
+        }
+    },
     "loads": {
         "title": "Lots"
     },

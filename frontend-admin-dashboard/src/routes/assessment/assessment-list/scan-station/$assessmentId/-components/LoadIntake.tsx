@@ -8,151 +8,15 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
 import { TokenKey } from '@/constants/auth/tokens';
 import { cn } from '@/lib/utils';
-import {
-    addScanLoad,
-    replaceScanLoad,
-    type ScanClientWarning,
-    type ScanFileKind,
-    type ScanIntakeMode,
-    type ScanOrderSource,
-    type ScanSession,
-} from '../-services/scan-station-services';
-import { orderScanFiles, type OrderedFiles } from '../-lib/order-files';
-import { deinterleaveDuplex, splitOneFolder, type SplitRefusal } from '../-lib/split-passes';
-import { MAX_PAGES_PER_PASS, precheckLoad, type PrecheckResult } from '../-lib/pass-precheck';
-import { ScanUploadError, uploadScanFiles } from '../-lib/upload-scan-file';
-import { buildLoadBody, type UploadedPassFile } from '../-lib/load-body';
-import { rememberLocalFile } from '../-lib/local-files';
+import type { ScanIntakeMode, ScanSession } from '../-services/scan-station-services';
+import { MAX_PAGES_PER_PASS } from '../-lib/pass-precheck';
+import { ScanUploadError } from '../-lib/upload-scan-file';
+import { newestLoadNo, prepareLoad, sendLoad, type PreparedLoad } from '../-lib/submit-load';
 import { apiErrorMessage } from '../-lib/api-error';
 import { useOnScanNotFound } from '../-hooks/useScanActions';
 import { PassDropZone } from './PassDropZone';
 
 const MODES: ScanIntakeMode[] = ['TWO_PASSES', 'ONE_FOLDER', 'DUPLEX'];
-
-type Message = { key: string; params?: Record<string, string | number> };
-
-interface Prepared {
-    passes: [File[], File[]] | null;
-    precheck: PrecheckResult | null;
-    orderSource: ScanOrderSource;
-    warnings: ScanClientWarning[];
-    errors: Message[];
-    notes: Message[];
-    /** One-folder mode: the split the clerk must confirm. */
-    split: { first: number; second: number; name: string } | null;
-}
-
-const listNames = (names: string[]) =>
-    names.length > 3 ? `${names.slice(0, 3).join(', ')} +${names.length - 3}` : names.join(', ');
-
-const orderMessages = (o: OrderedFiles<File>, pass: string): Message[] => {
-    const out: Message[] = [];
-    if (o.errors.includes('INDEX_GAP')) {
-        out.push({
-            key: 'intake.errors.INDEX_GAP',
-            params: { pass, name: o.gapAfter ?? '', index: o.missingIndex ?? '' },
-        });
-    }
-    if (o.errors.includes('DUPLICATE_INDEX')) {
-        out.push({
-            key: 'intake.errors.DUPLICATE_INDEX',
-            params: { pass, names: listNames(o.duplicateNames ?? []) },
-        });
-    }
-    if (o.errors.includes('MIXED_STEMS'))
-        out.push({ key: 'intake.errors.MIXED_STEMS', params: { pass } });
-    return out;
-};
-
-const precheckMessages = (r: PrecheckResult, maxPages: number): Message[] =>
-    r.errors.map((code): Message => {
-        switch (code) {
-            case 'COUNT_MISMATCH':
-                return {
-                    key: 'intake.errors.COUNT_MISMATCH',
-                    params: { a: r.pageCounts[0], b: r.pageCounts[1] },
-                };
-            case 'UNSUPPORTED_FILE':
-                return {
-                    key: 'intake.errors.UNSUPPORTED_FILE',
-                    params: { names: listNames(r.unsupported) },
-                };
-            case 'PDF_UNREADABLE':
-                return {
-                    key: 'intake.errors.PDF_UNREADABLE',
-                    params: { names: listNames(r.unreadable) },
-                };
-            case 'DUPLICATE_FILE':
-                return {
-                    key: 'intake.errors.DUPLICATE_FILE',
-                    params: { names: listNames(r.duplicates) },
-                };
-            case 'TOO_MANY_PAGES':
-                return { key: 'intake.errors.TOO_MANY_PAGES', params: { max: maxPages } };
-            default:
-                return { key: `intake.errors.${code}` };
-        }
-    });
-
-const splitMessage = (reason: SplitRefusal, count: number): Message => ({
-    key: `intake.errors.${reason}`,
-    params: { count },
-});
-
-const prepare = async (
-    mode: ScanIntakeMode,
-    first: File[],
-    second: File[],
-    one: File[],
-    maxPages: number,
-    passLabels: { first: string; second: string; one: string }
-): Promise<Prepared | null> => {
-    const errors: Message[] = [];
-    const notes: Message[] = [];
-    let passes: [File[], File[]] | null = null;
-    let orderSource: ScanOrderSource = 'NAME';
-    const warnings: ScanClientWarning[] = [];
-    let split: Prepared['split'] = null;
-
-    const ordered = (files: File[], label: string) => {
-        const o = orderScanFiles(files);
-        errors.push(...orderMessages(o, label));
-        if (o.warnings.includes('MTIME_DISAGREES')) {
-            warnings.push('MTIME_DISAGREES');
-            notes.push({ key: 'intake.warnings.MTIME_DISAGREES', params: { pass: label } });
-        }
-        return o;
-    };
-
-    if (mode === 'TWO_PASSES') {
-        if (first.length === 0 && second.length === 0) return null;
-        const a = ordered(first, passLabels.first);
-        const b = ordered(second, passLabels.second);
-        orderSource = a.ordered.length > 0 ? a.source : b.source;
-        passes = [a.ordered, b.ordered];
-    } else {
-        if (one.length === 0) return null;
-        const o = ordered(one, passLabels.one);
-        orderSource = o.source;
-        if (mode === 'ONE_FOLDER') {
-            const s = splitOneFolder(o.ordered);
-            if (s.ok) {
-                passes = [s.first, s.second];
-                split = { first: s.first.length, second: s.second.length, name: s.splitAfterName };
-            } else {
-                errors.push(splitMessage(s.reason, one.length));
-            }
-        } else {
-            const d = deinterleaveDuplex(o.ordered);
-            passes = [d.first, d.second];
-            notes.push({ key: 'intake.duplexUntested' });
-        }
-    }
-
-    const precheck = passes ? await precheckLoad(passes[0], passes[1], maxPages) : null;
-    if (precheck) errors.push(...precheckMessages(precheck, maxPages));
-    return { passes, precheck, orderSource, warnings, errors, notes, split };
-};
 
 /**
  * Add one load (or replace one, "Rescan this load"): pick the passes, see the
@@ -179,7 +43,7 @@ export const LoadIntake = ({
     const [first, setFirst] = useState<File[]>([]);
     const [second, setSecond] = useState<File[]>([]);
     const [one, setOne] = useState<File[]>([]);
-    const [prepared, setPrepared] = useState<Prepared | null>(null);
+    const [prepared, setPrepared] = useState<PreparedLoad | null>(null);
     const [checking, setChecking] = useState(false);
     const [splitConfirmed, setSplitConfirmed] = useState(false);
     const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -194,7 +58,7 @@ export const LoadIntake = ({
         let cancelled = false;
         setSplitConfirmed(false);
         setChecking(true);
-        prepare(mode, first, second, one, maxPagesPerPass, passLabels)
+        prepareLoad(mode, first, second, one, maxPagesPerPass, passLabels)
             .then((p) => {
                 if (!cancelled) setPrepared(p);
             })
@@ -219,36 +83,19 @@ export const LoadIntake = ({
 
     const send = useMutation({
         mutationFn: async () => {
-            if (!prepared?.passes || !prepared.precheck) throw new Error('not ready');
-            const [p1, p2] = prepared.passes;
-            const { precheck } = prepared;
-            const all = [...p1, ...p2];
-            setProgress({ done: 0, total: all.length });
-            const ids = await uploadScanFiles(all, { userId, instituteId }, (done, total) =>
-                setProgress({ done, total })
-            );
-            const describe = (files: File[], pass: 0 | 1, offset: number): UploadedPassFile[] =>
-                files.map((file, i) => ({
-                    file,
-                    fileId: ids[offset + i]!,
-                    kind: (precheck.fileKinds[pass][i] === 'PDF' ? 'PDF' : 'IMAGE') as ScanFileKind,
-                    pageCount: precheck.filePages[pass][i] ?? 1,
-                }));
-            const body = buildLoadBody(
-                [describe(p1, 0, 0), describe(p2, 1, p1.length)],
+            if (!prepared) throw new Error('not ready');
+            return sendLoad({
+                prepared,
                 mode,
-                prepared.orderSource,
-                prepared.warnings
-            );
-            const session =
-                replaceLoadNo !== null
-                    ? await replaceScanLoad(sessionId, replaceLoadNo, instituteId, body)
-                    : await addScanLoad(sessionId, instituteId, body);
-            all.forEach((file, i) => rememberLocalFile(ids[i]!, file));
-            return session;
+                sessionId,
+                instituteId,
+                userId,
+                replaceLoadNo,
+                onProgress: (done, total) => setProgress({ done, total }),
+            });
         },
         onSuccess: (session) => {
-            const loadNo = replaceLoadNo ?? Math.max(0, ...session.loads.map((l) => l.load_no));
+            const loadNo = replaceLoadNo ?? newestLoadNo(session);
             toast.success(
                 t(replaceLoadNo !== null ? 'intake.replaced' : 'intake.added', { load: loadNo })
             );

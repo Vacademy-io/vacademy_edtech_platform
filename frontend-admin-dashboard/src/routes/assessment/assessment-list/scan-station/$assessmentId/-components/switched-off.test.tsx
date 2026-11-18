@@ -23,6 +23,7 @@ vi.mock('..', () => ({
     },
 }));
 vi.mock('./LoadIntake', () => ({ LoadIntake: () => null }));
+vi.mock('./GuidedScan', () => ({ GuidedScan: () => null }));
 vi.mock('./StartCheckingDialog', () => ({ StartCheckingDialog: () => null }));
 vi.mock('./StartedBatchPanel', () => ({ StartedBatchPanel: () => null }));
 vi.mock('../-lib/thumb-source', () => ({ thumbUrl: () => Promise.resolve('blob:thumb') }));

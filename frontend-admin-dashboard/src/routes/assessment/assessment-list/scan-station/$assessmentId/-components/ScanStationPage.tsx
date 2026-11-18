@@ -32,6 +32,7 @@ import {
     useScanActions,
 } from '../-hooks/useScanActions';
 import { LoadIntake } from './LoadIntake';
+import { GuidedScan } from './GuidedScan';
 import { LoadSummaryCard } from './LoadSummaryCard';
 import { CopyReviewList } from './CopyReviewList';
 import { FrontsDirectionPrompt } from './FrontsDirectionPrompt';
@@ -42,6 +43,24 @@ import { ScanSessionsPanel } from './ScanSessionsPanel';
 import { StartedBatchPanel } from './StartedBatchPanel';
 
 const POLL_MS = 4000;
+const USE_FOLDERS_KEY = 'scanStation.useFolders';
+
+/** The clerk's choice of folders over the scanner helper, kept in this browser. */
+const readUseFolders = () => {
+    try {
+        return window.localStorage.getItem(USE_FOLDERS_KEY) === '1';
+    } catch {
+        return false;
+    }
+};
+const saveUseFolders = (on: boolean) => {
+    try {
+        if (on) window.localStorage.setItem(USE_FOLDERS_KEY, '1');
+        else window.localStorage.removeItem(USE_FOLDERS_KEY);
+    } catch {
+        // Storage blocked: the choice lasts until the page is left.
+    }
+};
 
 /**
  * Scan station: turn a scanned pile (two passes per load) into one copy per
@@ -276,6 +295,11 @@ const SessionView = ({
     const [startOpen, setStartOpen] = useState(false);
     const [addOpen, setAddOpen] = useState(false);
     const [removeLoad, setRemoveLoad] = useState<number | null>(null);
+    const [useFolders, setUseFolders] = useState(readUseFolders);
+    const chooseFolders = (on: boolean) => {
+        setUseFolders(on);
+        saveUseFolders(on);
+    };
 
     const onNotFound = useOnScanNotFound(instituteId);
     const configChecking = useIsFetching({ queryKey: scanConfigKey(instituteId) }) > 0;
@@ -367,6 +391,22 @@ const SessionView = ({
                 />
             )}
 
+            {canEdit(session) && !useFolders && (
+                <GuidedScan
+                    sessionId={sessionId}
+                    instituteId={instituteId}
+                    nextLoadNo={session.loads.length + 1}
+                    maxPagesPerPass={config.max_pages_per_pass}
+                    loadsFull={loadsFull}
+                    maxLoads={config.max_loads}
+                    onLoadSent={apply}
+                    onUseFolders={() => {
+                        chooseFolders(true);
+                        if (!loadsFull) setAddOpen(true);
+                    }}
+                />
+            )}
+
             {canEdit(session) && (
                 <div className="flex flex-wrap items-center gap-2">
                     <MyButton
@@ -385,6 +425,18 @@ const SessionView = ({
                             ? t('addLoad.full', { max: config.max_loads })
                             : t('addLoad.hint')}
                     </span>
+                    {useFolders && (
+                        <MyButton
+                            type="button"
+                            buttonType="text"
+                            scale="small"
+                            className="ms-auto gap-1"
+                            onClick={() => chooseFolders(false)}
+                        >
+                            <Scan size={14} />
+                            {t('guided.useScanner')}
+                        </MyButton>
+                    )}
                 </div>
             )}
             {!canEdit(session) && session.status !== 'STARTED' && (

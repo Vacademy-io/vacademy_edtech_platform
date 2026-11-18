@@ -54,6 +54,71 @@
         "full": "This session has the most loads it can take ({{max}}).",
         "title": "Add load {{load}}"
     },
+    "guided": {
+        "title": "Scan with the scanner",
+        "useFolders": "Use folders instead",
+        "useScanner": "Use the scanner instead",
+        "device": {
+            "feeder": "feeder",
+            "oneSide": "scans one side",
+            "bothSides": "scans both sides",
+            "printsTwoSided": "prints two-sided",
+            "printsOneSided": "prints one side"
+        },
+        "detect": {
+            "checking": "Looking for Vacademy Scan Helper…",
+            "install": {
+                "title": "Install Vacademy Scan Helper",
+                "body": "A small app for this Mac that lets this page run your scanner: you click Start and the pages come straight in, in order. Mac only for now.",
+                "download": "Download for Mac",
+                "hint": "Already installed? Open it from Applications. This page finds it within a few seconds."
+            },
+            "lost": "Lost contact with Vacademy Scan Helper. Check that it is still running.",
+            "noScanner": "Turn the scanner on or connect it.",
+            "otherApp": "Close Image Capture (or the scanner's own app), then try again.",
+            "busy": "The scanner is busy with another scan. Wait for it to finish.",
+            "glassOnly": "This scanner has no feeder; use the folders method."
+        },
+        "side": {
+            "first": "first side",
+            "second": "second side",
+            "both": "both sides"
+        },
+        "loadSide": "Load {{load}} · {{side}}",
+        "stepA": "Put up to {{max}} sheets in the feeder, writing facing up, top edge first.",
+        "stepB": "Take the pile from the tray, turn it over like a book page, put it back.",
+        "start": "Start scanning",
+        "cancel": "Cancel",
+        "cancelled": "Scan cancelled. Those pages were thrown away.",
+        "scanning_one": "Scanning… {{count}} page so far",
+        "scanning_other": "Scanning… {{count}} pages so far",
+        "sideDone_one": "{{count}} page scanned.",
+        "sideDone_other": "{{count}} pages scanned.",
+        "pageAlt": "Scanned page {{n}}",
+        "mismatch": "First side has {{a}} pages, second side has {{b}}. One sheet was pulled in twice or skipped. Put this pile back and scan this side again.",
+        "mismatchDuplex": "{{count}} pages came through, an odd number, so one sheet was pulled in twice or skipped. Put the whole pile back and scan this load again.",
+        "rescanSide": "Scan this side again",
+        "restartLoad": "Start this load again",
+        "downloading": "Getting the pages from the scanner… {{done}} of {{total}}",
+        "retry": "Try again",
+        "sent": "Load {{load}} sent. Put the next pile in, or Finish.",
+        "finish": "Finish",
+        "finished": "Scanning finished. The loads are being read.",
+        "scanAnother": "Scan another load",
+        "errors": {
+            "SCANNER_BUSY": "The scanner is busy. Close Image Capture or wait for the other scan, then try again.",
+            "SCANNER_NOT_FOUND": "The scanner went away. Turn it on or connect it, then try again.",
+            "NO_PAPER": "No paper in the feeder. Put the pile in, then try again.",
+            "UNSUPPORTED": "This scanner can't do that. Use the folders method.",
+            "PAPER_JAM": "Paper jam. Clear it, put the whole pile for this side back, then scan this side again.",
+            "DEVICE_GONE": "The scanner was disconnected. Reconnect it, put the pile for this side back, then try again.",
+            "UNREACHABLE": "Vacademy Scan Helper is not answering. Check that it is running, then try again.",
+            "ORIGIN_NOT_ALLOWED": "Vacademy Scan Helper did not allow this page. Click Allow in the helper's message on the Mac, then try again.",
+            "NOTHING_SCANNED": "No pages came through. Check the pile is in the feeder, then try again.",
+            "DOWNLOAD": "Could not get the scanned pages from Vacademy Scan Helper, so nothing was sent. Try again.",
+            "UNKNOWN": "The scan did not finish. Put the pile for this side back and try again."
+        }
+    },
     "loads": {
         "title": "Loads"
     },

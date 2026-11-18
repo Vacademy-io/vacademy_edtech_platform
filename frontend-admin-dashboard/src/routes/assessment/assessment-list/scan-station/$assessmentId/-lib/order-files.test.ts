@@ -98,3 +98,45 @@ describe('orderScanFiles — modified-time cross-check', () => {
         expect(r.warnings).toEqual([]);
     });
 });
+
+describe('orderScanFiles — files built from the scan helper', () => {
+    const helperPass = (prefix: string, n: number) =>
+        Array.from({ length: n }, (_, i) =>
+            f(`${prefix}-${String(i + 1).padStart(3, '0')}.jpg`, T0 + i * 1000)
+        );
+
+    it('orders pass1-001.jpg … pass1-012.jpg by their number, whatever the listing order', () => {
+        const files = helperPass('pass1', 12);
+        const shuffled = [
+            files[7]!,
+            files[0]!,
+            files[11]!,
+            ...files.slice(1, 7),
+            ...files.slice(8, 11),
+        ];
+        const r = orderScanFiles(shuffled);
+        expect(r.source).toBe('NUMERIC_SUFFIX');
+        expect(r.errors).toEqual([]);
+        expect(r.warnings).toEqual([]);
+        expect(names(r.ordered)).toEqual(names(files));
+    });
+
+    it('reads pass2- and scan- names the same way, past 99 pages too', () => {
+        const pass2 = orderScanFiles([...helperPass('pass2', 120)].reverse());
+        expect(pass2.errors).toEqual([]);
+        expect(pass2.ordered[0]!.name).toBe('pass2-001.jpg');
+        expect(pass2.ordered[99]!.name).toBe('pass2-100.jpg');
+        expect(pass2.ordered.at(-1)!.name).toBe('pass2-120.jpg');
+
+        const one = orderScanFiles(helperPass('scan', 1));
+        expect(one.errors).toEqual([]);
+        expect(names(one.ordered)).toEqual(['scan-001.jpg']);
+    });
+
+    it('still blocks a helper pass with a page missing', () => {
+        const files = helperPass('pass1', 5).filter((x) => x.name !== 'pass1-003.jpg');
+        const r = orderScanFiles(files);
+        expect(r.errors).toContain('INDEX_GAP');
+        expect(r.gapAfter).toBe('pass1-002.jpg');
+    });
+});
