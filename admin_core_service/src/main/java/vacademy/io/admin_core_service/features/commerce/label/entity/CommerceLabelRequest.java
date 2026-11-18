@@ -12,7 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * One row of the label print queue and reprint log (V725). Status changes are conditional
+ * One row of the label print queue and reprint log (V730). Status changes are conditional
  * UPDATEs of {@code CommerceLabelRequestRepository}; nothing updates a row through the entity.
  */
 @Getter

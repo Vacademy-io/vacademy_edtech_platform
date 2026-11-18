@@ -461,18 +461,29 @@ public class StockTransferService {
             }
         }
         String documentNumber = externalNumber;
-        return answer(requestGuard.run(guardKey, () -> dispatchLocked(instituteId, caller, transferId, checked.fromGstin(),
-                checked.toGstin(), checked.fyStartMonth(), differs, documentNumber, ewayBill, confirm), current));
+        return answer(requestGuard.run(guardKey, () -> dispatchLocked(instituteId, caller, transferId,
+                checked.transfer().getToLocationId(), checked.fromGstin(), checked.toGstin(), checked.fyStartMonth(),
+                differs, documentNumber, ewayBill, confirm), current));
     }
 
-    private TransferView dispatchLocked(String instituteId, Caller caller, String transferId, String fromGstin,
-                                        String toGstin, int fyStartMonth, boolean external, String externalNumber,
-                                        String ewayBill, boolean confirm) {
+    private TransferView dispatchLocked(String instituteId, Caller caller, String transferId, String checkedTo,
+                                        String checkedFromGstin, String checkedToGstin, int fyStartMonth,
+                                        boolean external, String externalNumber, String ewayBill, boolean confirm) {
         StockTransfer transfer = transferRepository.lockForUpdate(instituteId, transferId)
                 .orElseThrow(StockTransferService::notFound);
         requireDraft(transfer);
         String from = transfer.getFromLocationId();
         String to = transfer.getToLocationId();
+        // The GSTIN rule was decided before the lock: under it, the destination and both GSTINs must
+        // still be the ones it was decided for (an edit of the draft may have committed in between).
+        CommerceTaxContext lockedTax = taxSettingService.context(instituteId);
+        String fromGstin = gstinOf(instituteId, from, lockedTax);
+        String toGstin = gstinOf(instituteId, to, lockedTax);
+        if (!to.equals(checkedTo) || !Objects.equals(fromGstin, checkedFromGstin)
+                || !Objects.equals(toGstin, checkedToGstin)) {
+            throw new ConflictException("TRANSFER_CHANGED: the transfer changed while it was being sent; check it and "
+                    + "send again");
+        }
         // Shared row locks: a deactivation of either place waits for this dispatch, and then sees it.
         LocationFacts toFacts = locationRepository.lockForPosting(instituteId, to)
                 .orElseThrow(() -> new InvalidRequestException("LOCATION_NOT_FOUND: to_location_id"));

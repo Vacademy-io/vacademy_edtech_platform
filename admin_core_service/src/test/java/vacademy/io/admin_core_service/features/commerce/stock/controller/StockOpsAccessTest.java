@@ -255,7 +255,7 @@ class StockOpsAccessTest {
         assertEquals("LOCATION_NOT_ALLOWED", code(() -> counts.lines(w2, INST, "c-1",
                 new StockOpsDtos.CountLinesRequest("key-12345678", List.of()))));
         assertEquals("LOCATION_NOT_ALLOWED", code(() -> counts.post(w2, INST, "c-1",
-                new StockOpsDtos.CountPostRequest("key-12345678", "SKIP", null))));
+                new StockOpsDtos.CountPostRequest("key-12345678", "SKIP", null, null, null))));
         assertEquals("LOCATION_NOT_ALLOWED", code(() -> counts.review(w2, INST, "c-1")));
         assertEquals("LOCATION_NOT_ALLOWED", code(() -> counts.get(w2, INST, "c-1")));
         assertEquals("LOCATION_NOT_ALLOWED", code(() -> labels.request(w2, INST, reprint(L1))));

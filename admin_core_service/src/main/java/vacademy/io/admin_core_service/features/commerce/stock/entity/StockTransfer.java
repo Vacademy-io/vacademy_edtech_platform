@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * A move of stock between two own locations (V725). Its state changes only under
+ * A move of stock between two own locations (V730). Its state changes only under
  * {@code StockTransferRepository.lockForUpdate}; the stock itself moves through the ledger.
  */
 @Getter

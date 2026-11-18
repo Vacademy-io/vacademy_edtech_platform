@@ -11,7 +11,7 @@ import vacademy.io.admin_core_service.features.commerce.catalogue.entity.Commerc
 import java.math.BigDecimal;
 
 /**
- * One item of a transfer (V725): a quantity of one variant, or one piece. unit_value, hsn_code,
+ * One item of a transfer (V730): a quantity of one variant, or one piece. unit_value, hsn_code,
  * sku and item_name are copied at dispatch so the challan reads the same whenever it is printed.
  */
 @Getter

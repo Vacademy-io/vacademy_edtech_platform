@@ -69,6 +69,24 @@ public class CommerceStockSettings {
         return new AdjustmentLimits(quantity, value);
     }
 
+    /**
+     * {@code limits.countMeasuredDifference}: the difference of a measured item on a count, in
+     * display units (1 = one metre), above which a manager confirms it. 1 when it is not set, cannot
+     * be read or is not a positive number.
+     */
+    public BigDecimal countMeasuredDifference(String instituteId) {
+        try {
+            BigDecimal units = number(read(instituteId).path("limits").path("countMeasuredDifference"));
+            if (units != null && units.signum() > 0) {
+                return units;
+            }
+        } catch (RuntimeException e) {
+            log.warn("Could not read limits.countMeasuredDifference of institute {}: {}", instituteId,
+                    e.getMessage());
+        }
+        return BigDecimal.ONE;
+    }
+
     /** {@code commerce.holdMinutes}; 15 when it is not set, cannot be read or is out of range. */
     public int holdMinutes(String instituteId) {
         try {

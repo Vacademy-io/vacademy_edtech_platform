@@ -13,7 +13,8 @@ import java.util.Optional;
 /**
  * Count lines. Written by native upserts only: a new or changed line takes
  * {@code counted_at = CURRENT_TIMESTAMP}, the database time the posting formula compares with
- * {@code stock_movement.created_at}.
+ * {@code stock_movement.created_at}. {@code first_counted_at} is set on insert and by a SET, kept
+ * by an ADD; any save clears a manager's acceptance.
  */
 public interface StockCountLineRepository extends JpaRepository<StockCountLine, String> {
 
@@ -23,6 +24,8 @@ public interface StockCountLineRepository extends JpaRepository<StockCountLine, 
 
     Optional<StockCountLine> findByInstituteIdAndCountIdAndPackageSessionIdAndPieceIdIsNull(
             String instituteId, String countId, String packageSessionId);
+
+    Optional<StockCountLine> findByInstituteIdAndCountIdAndId(String instituteId, String countId, String id);
 
     Optional<StockCountLine> findByInstituteIdAndCountIdAndPieceId(String instituteId, String countId,
                                                                     String pieceId);
@@ -43,11 +46,13 @@ public interface StockCountLineRepository extends JpaRepository<StockCountLine, 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
             INSERT INTO stock_count_line (id, institute_id, count_id, package_session_id, piece_id, counted_qty,
-                                          counted_at, counted_by)
-            VALUES (:id, :instituteId, :countId, :packageSessionId, NULL, :quantity, CURRENT_TIMESTAMP, :countedBy)
+                                          counted_at, first_counted_at, counted_by)
+            VALUES (:id, :instituteId, :countId, :packageSessionId, NULL, :quantity, CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP, :countedBy)
             ON CONFLICT (count_id, package_session_id) WHERE piece_id IS NULL
             DO UPDATE SET counted_qty = EXCLUDED.counted_qty, counted_at = CURRENT_TIMESTAMP,
-                          counted_by = EXCLUDED.counted_by, updated_at = CURRENT_TIMESTAMP
+                          first_counted_at = CURRENT_TIMESTAMP, counted_by = EXCLUDED.counted_by,
+                          accepted_by = NULL, accepted_at = NULL, updated_at = CURRENT_TIMESTAMP
             """, nativeQuery = true)
     int upsertSet(@Param("id") String id, @Param("instituteId") String instituteId, @Param("countId") String countId,
                   @Param("packageSessionId") String packageSessionId, @Param("quantity") int quantity,
@@ -57,11 +62,14 @@ public interface StockCountLineRepository extends JpaRepository<StockCountLine, 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
             INSERT INTO stock_count_line (id, institute_id, count_id, package_session_id, piece_id, counted_qty,
-                                          counted_at, counted_by)
-            VALUES (:id, :instituteId, :countId, :packageSessionId, NULL, :quantity, CURRENT_TIMESTAMP, :countedBy)
+                                          counted_at, first_counted_at, counted_by)
+            VALUES (:id, :instituteId, :countId, :packageSessionId, NULL, :quantity, CURRENT_TIMESTAMP,
+                    CURRENT_TIMESTAMP, :countedBy)
             ON CONFLICT (count_id, package_session_id) WHERE piece_id IS NULL
             DO UPDATE SET counted_qty = stock_count_line.counted_qty + EXCLUDED.counted_qty,
-                          counted_at = CURRENT_TIMESTAMP, counted_by = EXCLUDED.counted_by,
+                          counted_at = GREATEST(stock_count_line.counted_at, CURRENT_TIMESTAMP),
+                          first_counted_at = LEAST(stock_count_line.first_counted_at, CURRENT_TIMESTAMP),
+                          counted_by = EXCLUDED.counted_by, accepted_by = NULL, accepted_at = NULL,
                           updated_at = CURRENT_TIMESTAMP
             """, nativeQuery = true)
     int upsertAdd(@Param("id") String id, @Param("instituteId") String instituteId, @Param("countId") String countId,
@@ -72,8 +80,9 @@ public interface StockCountLineRepository extends JpaRepository<StockCountLine, 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
             INSERT INTO stock_count_line (id, institute_id, count_id, package_session_id, piece_id, counted_qty,
-                                          counted_at, counted_by)
-            VALUES (:id, :instituteId, :countId, :packageSessionId, :pieceId, 1, CURRENT_TIMESTAMP, :countedBy)
+                                          counted_at, first_counted_at, counted_by)
+            VALUES (:id, :instituteId, :countId, :packageSessionId, :pieceId, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
+                    :countedBy)
             ON CONFLICT (count_id, piece_id) WHERE piece_id IS NOT NULL DO NOTHING
             """, nativeQuery = true)
     int insertPiece(@Param("id") String id, @Param("instituteId") String instituteId, @Param("countId") String countId,
@@ -89,11 +98,33 @@ public interface StockCountLineRepository extends JpaRepository<StockCountLine, 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = """
             UPDATE stock_count_line
-            SET on_hand_at_post = :onHand, moved_since = :movedSince, adjustment = :adjustment,
+            SET on_hand_at_post = :onHand, moved_since = :movedSince,
+                packed_unshipped = CAST(:packed AS integer), adjustment = :adjustment,
                 movement_id = CAST(:movementId AS varchar), updated_at = CURRENT_TIMESTAMP
             WHERE institute_id = :instituteId AND id = :id
             """, nativeQuery = true)
     int stampPost(@Param("instituteId") String instituteId, @Param("id") String id, @Param("onHand") int onHand,
-                  @Param("movedSince") int movedSince, @Param("adjustment") int adjustment,
-                  @Param("movementId") String movementId);
+                  @Param("movedSince") int movedSince, @Param("packed") Integer packed,
+                  @Param("adjustment") int adjustment, @Param("movementId") String movementId);
+
+    /**
+     * A manager accepts a line whose stock moved while it was counted, as it is now: only while
+     * its counted quantity is still {@code :countedQty} (0 rows: it changed, or there is no such line).
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = """
+            UPDATE stock_count_line SET accepted_by = :acceptedBy, accepted_at = CURRENT_TIMESTAMP,
+                                        updated_at = CURRENT_TIMESTAMP
+            WHERE institute_id = :instituteId AND count_id = :countId AND id = :id AND piece_id IS NULL
+              AND counted_qty = :countedQty
+            """, nativeQuery = true)
+    int accept(@Param("instituteId") String instituteId, @Param("countId") String countId, @Param("id") String id,
+               @Param("countedQty") int countedQty, @Param("acceptedBy") String acceptedBy);
+
+    /** Who is on the lines of a count (the last person who saved each line). */
+    @Query(value = """
+            SELECT DISTINCT l.counted_by FROM stock_count_line l
+            WHERE l.institute_id = :instituteId AND l.count_id = :countId AND l.counted_by IS NOT NULL
+            """, nativeQuery = true)
+    List<String> countedBy(@Param("instituteId") String instituteId, @Param("countId") String countId);
 }

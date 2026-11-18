@@ -16,6 +16,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import vacademy.io.admin_core_service.features.capabilities.service.CapabilityResolver;
 import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditService;
 import vacademy.io.admin_core_service.features.commerce.label.service.LabelQueueService;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository.ItemFacts;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.ProductStatus;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockMode;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockPolicy;
@@ -127,6 +129,14 @@ public class StockReceiptService {
     @Autowired(required = false)
     public void setLabelQueue(ObjectProvider<LabelQueueService> labelQueue) {
         this.labelQueue = labelQueue;
+    }
+
+    /** Item names and measure for the receipt view (WP-40); absent in tests built by hand. */
+    private StockOpsReadRepository opsReadRepository;
+
+    @Autowired(required = false)
+    public void setOpsReadRepository(StockOpsReadRepository opsReadRepository) {
+        this.opsReadRepository = opsReadRepository;
     }
 
     public StockReceiptService(StockReceiptRepository receiptRepository,
@@ -595,11 +605,22 @@ public class StockReceiptService {
             return out;
         }
         List<Map<String, Object>> lines = new ArrayList<>();
-        for (StockReceiptLine line : lineRepository
-                .findByInstituteIdAndReceiptIdOrderByPackageSessionIdAscIdAsc(instituteId, receipt.getId())) {
+        List<StockReceiptLine> receiptLines = lineRepository
+                .findByInstituteIdAndReceiptIdOrderByPackageSessionIdAscIdAsc(instituteId, receipt.getId());
+        Map<String, ItemFacts> items = opsReadRepository == null || receiptLines.isEmpty() ? Map.of()
+                : opsReadRepository.itemFacts(instituteId,
+                receiptLines.stream().map(StockReceiptLine::getPackageSessionId).toList());
+        for (StockReceiptLine line : receiptLines) {
             Map<String, Object> row = new LinkedHashMap<>();
             row.put("id", line.getId());
             row.put("package_session_id", line.getPackageSessionId());
+            ItemFacts item = items.get(line.getPackageSessionId());
+            row.put("sku", item == null ? null : item.sku());
+            row.put("product_name", item == null ? null : item.productName());
+            row.put("variant_name", item == null ? null : item.variantName());
+            row.put("stock_mode", item == null ? null : item.stockMode());
+            row.put("unit", item == null ? null : item.unit());
+            row.put("qty_scale", item == null ? null : item.qtyScale());
             row.put("qty_received", line.getQtyReceived());
             row.put("qty_billed", line.getQtyBilled() == null ? 0 : line.getQtyBilled());
             row.put("note", line.getNote());

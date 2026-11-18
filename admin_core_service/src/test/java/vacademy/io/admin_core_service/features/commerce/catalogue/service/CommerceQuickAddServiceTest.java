@@ -13,10 +13,14 @@ import vacademy.io.admin_core_service.features.commerce.catalogue.entity.Commerc
 import vacademy.io.admin_core_service.features.commerce.catalogue.repository.CommerceProductRepository;
 import vacademy.io.admin_core_service.features.commerce.catalogue.service.CommerceQuickAddService.QuickAddAnswer;
 import vacademy.io.admin_core_service.features.commerce.catalogue.service.CommerceQuickAddService.QuickAddRequest;
+import vacademy.io.admin_core_service.features.commerce.common.request.CommerceRequest;
+import vacademy.io.admin_core_service.features.commerce.common.request.CommerceRequestGuard;
+import vacademy.io.admin_core_service.features.commerce.common.request.CommerceRequestRepository;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceCounterService;
 import vacademy.io.admin_core_service.features.commerce.tax.enums.TaxMode;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxContext;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxSettingService;
+import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.util.List;
@@ -37,8 +41,9 @@ import static org.mockito.Mockito.when;
 
 /**
  * Quick add: a DRAFT product with one TRACKED variant and no price; a tax class only in the
- * REGULAR mode; a SKU from the QA counter when none is given; a repeat of the same request
- * updates the same product with the same SKU and never takes a second number.
+ * REGULAR mode; a SKU from the QA counter when none is given. A repeat of the same request
+ * answers the stored product and writes nothing (a manager may have priced or published it); the
+ * same key with another body is refused (L2).
  */
 class CommerceQuickAddServiceTest {
 
@@ -50,12 +55,14 @@ class CommerceQuickAddServiceTest {
     private final CommerceTaxSettingService taxSettings = mock(CommerceTaxSettingService.class);
     private final CommerceCounterService counters = mock(CommerceCounterService.class);
     private final CommerceAuditService audit = mock(CommerceAuditService.class);
+    private final CommerceRequestRepository requests = mock(CommerceRequestRepository.class);
     private CommerceQuickAddService service;
 
     @BeforeEach
     void setUp() {
         service = new CommerceQuickAddService(productService, productRepository, taxSettings, counters, audit,
-                mock(PlatformTransactionManager.class));
+                new CommerceRequestGuard(requests, mock(PlatformTransactionManager.class)));
+        when(requests.findByInstituteIdAndClientRequestId(anyString(), anyString())).thenReturn(Optional.empty());
         mode(TaxMode.REGULAR);
         when(productRepository.findByInstituteIdAndExternalRef(anyString(), anyString())).thenReturn(Optional.empty());
         when(counters.nextNumber(INST, CommerceCounterService.SCOPE_QUICK_ADD)).thenReturn("QA-000007");
@@ -153,21 +160,63 @@ class CommerceQuickAddServiceTest {
         verify(counters, never()).nextNumber(anyString(), anyString());
     }
 
+    /** The guard row a finished quick add left, with the hash of {@code body}. */
+    private void finished(QuickAddRequest body) {
+        CommerceRequest row = new CommerceRequest();
+        row.setInstituteId(INST);
+        row.setClientRequestId(KEY);
+        row.setAction(CommerceQuickAddService.ACTION_QUICK_ADD);
+        row.setRequestHash(CommerceRequestGuard.hash(CommerceQuickAddService.ACTION_QUICK_ADD, body));
+        when(requests.findByInstituteIdAndClientRequestId(INST, KEY)).thenReturn(Optional.of(row));
+        CommerceProduct earlier = new CommerceProduct();
+        earlier.setPackageId("pkg-1");
+        when(productRepository.findByInstituteIdAndExternalRef(INST, "QA:" + KEY)).thenReturn(Optional.of(earlier));
+        // Since the first call a manager priced and published it.
+        when(productService.get(INST, "pkg-1")).thenReturn(ProductResponse.builder().packageId("pkg-1")
+                .status("ACTIVE").stockMode("QUANTITY").unit("PCS").qtyScale(1)
+                .variants(List.of(VariantResponse.builder().packageSessionId("ps-1").sku("QA-000003")
+                        .externalRef("QA:" + KEY).build()))
+                .build());
+    }
+
     @Test
-    void aRepeatUpdatesTheSameProductWithItsFirstSku() {
+    void aRepeatAnswersTheStoredProductAndChangesNothing() {
+        QuickAddRequest body = ask(Map.of("en", "Jute mat"), "tc-1", null, null, null, null);
+        finished(body);
+        QuickAddAnswer answer = service.quickAdd(INST, "wh-1", body);
+        assertEquals(Boolean.TRUE, answer.replayed());
+        assertEquals("pkg-1", answer.productId());
+        assertEquals("QA-000003", answer.sku());
+        assertEquals("ACTIVE", answer.status(), "the product as it is now");
+        verify(productService, never()).save(anyString(), anyString(), any());
+        verify(counters, never()).nextNumber(anyString(), anyString());
+        verify(audit, never()).record(anyString(), anyString(), any(), anyString(), anyString(), anyString(), any(),
+                any(), any());
+    }
+
+    @Test
+    void theSameKeyWithAnotherBodyIsRefusedAndChangesNothing() {
+        finished(ask(Map.of("en", "Jute mat"), "tc-1", null, null, null, null));
+        // Warehouse staff try to rename, re-tax and re-code a live product through the replay path.
+        ConflictException refused = assertThrows(ConflictException.class, () -> service.quickAdd(INST, "wh-1",
+                ask(Map.of("en", "anything"), "tc-0", null, "PIECE", null, "X-1")));
+        assertTrue(refused.getMessage().startsWith("IDEMPOTENCY_MISMATCH"), refused.getMessage());
+        verify(productService, never()).save(anyString(), anyString(), any());
+    }
+
+    @Test
+    void aProductMadeUnderTheKeyBeforeTheGuardRowIsAnsweredNotRewritten() {
         CommerceProduct earlier = new CommerceProduct();
         earlier.setPackageId("pkg-1");
         when(productRepository.findByInstituteIdAndExternalRef(INST, "QA:" + KEY)).thenReturn(Optional.of(earlier));
         when(productService.get(INST, "pkg-1")).thenReturn(ProductResponse.builder().packageId("pkg-1")
-                .variants(List.of(VariantResponse.builder().packageSessionId("ps-1").sku("QA-000003").build()))
-                .build());
-        QuickAddAnswer answer = service.quickAdd(INST, "wh-1", ask(Map.of("en", "Jute mat"), "tc-1", null, null, null,
-                null));
-        ProductRequest request = saved();
-        assertNull(request.getStatus(), "a repeat leaves the status as it is");
-        assertEquals("QA-000003", request.getVariants().get(0).getSku());
-        assertEquals("QA:" + KEY, request.getExternalRef());
+                .status("DRAFT").variants(List.of(VariantResponse.builder().packageSessionId("ps-1").sku("QA-000003")
+                        .build())).build());
+        QuickAddAnswer answer = service.quickAdd(INST, "wh-1", ask(Map.of("en", "Other name"), "tc-1", null, null,
+                null, null));
         assertEquals(Boolean.TRUE, answer.replayed());
+        assertEquals("QA-000003", answer.sku());
+        verify(productService, never()).save(anyString(), anyString(), any());
         verify(counters, never()).nextNumber(anyString(), anyString());
     }
 }

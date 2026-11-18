@@ -1,4 +1,4 @@
--- V725: Commerce stock operations (WP-40): transfers with delivery challan, stock counts, label requests.
+-- V730: Commerce stock operations (WP-40): transfers with delivery challan, stock counts, label requests.
 -- New tables only; nothing existing is altered. Foreign keys to stock_location lock it briefly. Re-runnable.
 SET LOCAL lock_timeout = '5s';
 
@@ -122,7 +122,10 @@ CREATE UNIQUE INDEX IF NOT EXISTS uq_stock_count_open_recount
 CREATE INDEX IF NOT EXISTS idx_stock_count_location ON stock_count (institute_id, location_id, started_at);
 
 -- What was counted. counted_at is the database time of the last change of the line (the posting formula of
--- ARCHITECTURE 4.8 compares it with stock_movement.created_at, also database time).
+-- ARCHITECTURE 4.8 compares it with stock_movement.created_at, also database time). first_counted_at is the time
+-- of its first save (a SET starts it again): when stock moved between the two, a line built by ADD scans cannot
+-- be placed in time and needs a recount or a manager's acceptance (accepted_by/at, cleared by any later save).
+-- packed_unshipped: units in PACKED parcels at the location when the line was counted (not on the shelf).
 CREATE TABLE IF NOT EXISTS stock_count_line (
     id                  VARCHAR(36)  PRIMARY KEY,
     institute_id        VARCHAR(36)  NOT NULL,
@@ -131,9 +134,13 @@ CREATE TABLE IF NOT EXISTS stock_count_line (
     piece_id            VARCHAR(36),
     counted_qty         INTEGER      NOT NULL,
     counted_at          TIMESTAMP    NOT NULL,
+    first_counted_at    TIMESTAMP    NOT NULL,
     counted_by          VARCHAR(36),
+    accepted_by         VARCHAR(36),
+    accepted_at         TIMESTAMP,
     on_hand_at_post     INTEGER,
     moved_since         INTEGER,
+    packed_unshipped    INTEGER,
     adjustment          INTEGER,
     movement_id         VARCHAR(36),
     created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,

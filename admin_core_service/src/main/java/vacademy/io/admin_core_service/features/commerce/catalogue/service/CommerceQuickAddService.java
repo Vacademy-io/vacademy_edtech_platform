@@ -6,8 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.support.TransactionTemplate;
 import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditService;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductRequest;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductResponse;
@@ -36,13 +34,16 @@ import java.util.regex.Pattern;
  * "Quick add item" on the Receive screen (WP-41): stock staff create a DRAFT product with one
  * TRACKED variant and no price, through {@link CommerceProductService#save}, so the goods in hand
  * can be received. A manager sets the price before it is labelled or sold. The product carries
- * {@code external_ref = "QA:" + client_request_id}: a repeat of the request updates the same
- * product, never creates a second.
+ * {@code external_ref = "QA:" + client_request_id}. The request runs once under
+ * {@link CommerceRequestGuard}: a repeat with the same body answers the stored product and changes
+ * nothing (a manager may have priced, described or published it since); the same key with another
+ * body is refused with 409 {@code IDEMPOTENCY_MISMATCH}.
  */
 @Service
 public class CommerceQuickAddService {
 
     public static final String EXTERNAL_REF_PREFIX = "QA:";
+    public static final String ACTION_QUICK_ADD = "PRODUCT_QUICK_ADD";
     static final int MAX_NAME = 120;
     private static final Pattern SKU = Pattern.compile("^[A-Za-z0-9_-]{1,64}$");
     private static final Pattern UNIT = Pattern.compile("^[A-Z]{1,32}$");
@@ -65,17 +66,17 @@ public class CommerceQuickAddService {
     private final CommerceTaxSettingService taxSettingService;
     private final CommerceCounterService counters;
     private final CommerceAuditService auditService;
-    private final TransactionTemplate transaction;
+    private final CommerceRequestGuard requestGuard;
 
     public CommerceQuickAddService(CommerceProductService productService, CommerceProductRepository productRepository,
                                    CommerceTaxSettingService taxSettingService, CommerceCounterService counters,
-                                   CommerceAuditService auditService, PlatformTransactionManager transactionManager) {
+                                   CommerceAuditService auditService, CommerceRequestGuard requestGuard) {
         this.productService = productService;
         this.productRepository = productRepository;
         this.taxSettingService = taxSettingService;
         this.counters = counters;
         this.auditService = auditService;
-        this.transaction = new TransactionTemplate(transactionManager);
+        this.requestGuard = requestGuard;
     }
 
     public QuickAddAnswer quickAdd(String instituteId, String actorUserId, QuickAddRequest request) {
@@ -123,57 +124,68 @@ public class CommerceQuickAddService {
             throw new InvalidRequestException("VALIDATION: barcode is at most 100 characters");
         }
         String externalRef = EXTERNAL_REF_PREFIX + key;
-        CommerceProduct earlier = transaction.execute(status -> productRepository
-                .findByInstituteIdAndExternalRef(instituteId, externalRef).orElse(null));
-        if (sku == null) {
-            sku = earlier == null
-                    ? counters.nextNumber(instituteId, CommerceCounterService.SCOPE_QUICK_ADD)
-                    : skuOf(instituteId, earlier.getPackageId());
-        }
-        ProductRequest product = new ProductRequest();
-        product.setExternalRef(externalRef);
-        product.setStockMode(stockMode);
-        product.setTaxClassId(taxClassId == null ? null : taxClassId);
-        product.setUnit(unit);
-        product.setQtyScale(qtyScale);
-        product.setQtyStep(1);
-        if (earlier == null) {
+        CommerceRequestGuard.Key guardKey = new CommerceRequestGuard.Key(instituteId, key, ACTION_QUICK_ADD, "PRODUCT",
+                null, CommerceRequestGuard.hash(ACTION_QUICK_ADD, request), actorUserId);
+        String givenSku = sku;
+        CommerceRequestGuard.Outcome<QuickAddAnswer> outcome = requestGuard.run(guardKey, () -> {
+            // A product made under this key before the guard row existed is answered, never rewritten.
+            CommerceProduct earlier = productRepository.findByInstituteIdAndExternalRef(instituteId, externalRef)
+                    .orElse(null);
+            if (earlier != null) {
+                return stored(instituteId, earlier.getPackageId(), externalRef, names);
+            }
+            String finalSku = givenSku != null ? givenSku
+                    : counters.nextNumber(instituteId, CommerceCounterService.SCOPE_QUICK_ADD);
+            ProductRequest product = new ProductRequest();
+            product.setExternalRef(externalRef);
+            product.setStockMode(stockMode);
+            product.setTaxClassId(taxClassId);
+            product.setUnit(unit);
+            product.setQtyScale(qtyScale);
+            product.setQtyStep(1);
             product.setStatus(ProductStatus.DRAFT.name());
-        }
-        List<ProductTranslationDTO> translations = new ArrayList<>();
-        names.forEach((locale, value) -> translations.add(ProductTranslationDTO.builder().locale(locale).name(value)
-                .build()));
-        product.setTranslations(translations);
-        product.setVariants(List.of(VariantRequest.builder()
-                .externalRef(externalRef)
-                .sku(sku)
-                .barcode(barcode)
-                .stockPolicy(StockPolicy.TRACKED.name())
-                .build()));
-        String finalSku = sku;
-        ProductResponse saved = transaction.execute(status -> {
-            ProductResponse response = productService.save(instituteId, actorUserId, product);
+            List<ProductTranslationDTO> translations = new ArrayList<>();
+            names.forEach((locale, value) -> translations.add(ProductTranslationDTO.builder().locale(locale)
+                    .name(value).build()));
+            product.setTranslations(translations);
+            product.setVariants(List.of(VariantRequest.builder()
+                    .externalRef(externalRef)
+                    .sku(finalSku)
+                    .barcode(barcode)
+                    .stockPolicy(StockPolicy.TRACKED.name())
+                    .build()));
+            ProductResponse saved = productService.save(instituteId, actorUserId, product);
             Map<String, Object> audit = new LinkedHashMap<>();
             audit.put("sku", finalSku);
             audit.put("stock_mode", stockMode);
             audit.put("unit", unit);
-            audit.put("repeat", earlier != null);
             auditService.record(instituteId, actorUserId, null, "PRODUCT_QUICK_ADDED", "PRODUCT",
-                    response.getPackageId(), null, json(audit), null);
-            return response;
-        });
-        VariantResponse variant = saved.getVariants() == null || saved.getVariants().isEmpty() ? null
-                : saved.getVariants().stream().filter(v -> externalRef.equals(v.getExternalRef())).findFirst()
-                .orElse(saved.getVariants().get(0));
-        return new QuickAddAnswer(saved.getPackageId(), variant == null ? null : variant.getPackageSessionId(),
-                variant == null ? finalSku : variant.getSku(), names, saved.getStockMode(), saved.getUnit(),
-                saved.getQtyScale(), saved.getStatus(), earlier != null ? Boolean.TRUE : null);
+                    saved.getPackageId(), null, json(audit), null);
+            return answer(saved, externalRef, names, finalSku, null);
+        }, () -> productRepository.findByInstituteIdAndExternalRef(instituteId, externalRef)
+                .map(found -> stored(instituteId, found.getPackageId(), externalRef, names))
+                .orElseThrow(() -> new IllegalStateException("quick add " + key + " finished without a product")));
+        return outcome.replayed() ? withReplayed(outcome.value()) : outcome.value();
     }
 
-    private String skuOf(String instituteId, String packageId) {
-        ProductResponse existing = productService.get(instituteId, packageId);
-        return existing.getVariants() == null || existing.getVariants().isEmpty() ? null
-                : existing.getVariants().get(0).getSku();
+    /** The product a quick add made, as it is now; nothing is written. */
+    private QuickAddAnswer stored(String instituteId, String packageId, String externalRef, Map<String, String> names) {
+        return withReplayed(answer(productService.get(instituteId, packageId), externalRef, names, null, null));
+    }
+
+    private static QuickAddAnswer answer(ProductResponse product, String externalRef, Map<String, String> names,
+                                         String sku, Boolean replayed) {
+        VariantResponse variant = product.getVariants() == null || product.getVariants().isEmpty() ? null
+                : product.getVariants().stream().filter(v -> externalRef.equals(v.getExternalRef())).findFirst()
+                .orElse(product.getVariants().get(0));
+        return new QuickAddAnswer(product.getPackageId(), variant == null ? null : variant.getPackageSessionId(),
+                variant == null ? sku : variant.getSku(), names, product.getStockMode(), product.getUnit(),
+                product.getQtyScale(), product.getStatus(), replayed);
+    }
+
+    private static QuickAddAnswer withReplayed(QuickAddAnswer a) {
+        return new QuickAddAnswer(a.productId(), a.packageSessionId(), a.sku(), a.name(), a.stockMode(), a.unit(),
+                a.qtyScale(), a.status(), Boolean.TRUE);
     }
 
     private static String trim(String value) {

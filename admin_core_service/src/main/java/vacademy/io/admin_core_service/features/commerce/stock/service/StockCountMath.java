@@ -6,6 +6,7 @@ import vacademy.io.admin_core_service.features.commerce.stock.enums.UncountedCho
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -19,9 +20,11 @@ import java.util.Set;
  * each quantity line remembers when it was counted, and the post adds what moved at the
  * location since then (ARCHITECTURE 4.8, gate 20):
  * <pre>
- * adjustment = counted + moved_since - on_hand_now
+ * adjustment = counted + moved_since + packed_unshipped - on_hand_now
  * </pre>
- * so a sale after the count is not undone, and one before it was already off the shelf.
+ * so a sale after the count is not undone, and one before it was already off the shelf. Units
+ * packed in a parcel that has not been shipped are still on hand but not on the shelf (as a
+ * RESERVED piece is never written off), so the counter does not count them and the post adds them.
  * Pieces are compared as sets; the result never writes off a piece that arrived during the count
  * or one that is packed for an order.
  */
@@ -41,13 +44,80 @@ public final class StockCountMath {
      * impossible negative quantity.
      */
     public static int adjustment(int counted, int movedSince, int onHandNow) {
-        int adjustment = counted + movedSince - onHandNow;
+        return adjustment(counted, movedSince, 0, onHandNow);
+    }
+
+    /** As {@link #adjustment(int, int, int)}, with the units packed in parcels at the count time. */
+    public static int adjustment(int counted, int movedSince, int packedUnshipped, int onHandNow) {
+        int adjustment = counted + movedSince + packedUnshipped - onHandNow;
         return Math.max(adjustment, -Math.max(onHandNow, 0));
     }
 
     /** What the ledger said was on the shelf at the moment the line was counted. */
     public static int expectedAtCount(int onHandNow, int movedSince) {
-        return onHandNow - movedSince;
+        return expectedAtCount(onHandNow, movedSince, 0);
+    }
+
+    /** As {@link #expectedAtCount(int, int)}, less the units packed in parcels then (not on the shelf). */
+    public static int expectedAtCount(int onHandNow, int movedSince, int packedUnshipped) {
+        return onHandNow - movedSince - packedUnshipped;
+    }
+
+    /**
+     * One packed line of a parcel at the counted location: {@code units} of a variant, packed at
+     * {@code packedAt} (the shipment row's database time), with the SALE movements its ship and
+     * undo-ship posted ({@code sales}: database time and delta), and, for an unpacked parcel, the
+     * time it was unpacked ({@code cancelledAt}).
+     */
+    public record Parcel(String packageSessionId, int units, LocalDateTime packedAt, String status,
+                         LocalDateTime cancelledAt, List<Sale> sales) {
+    }
+
+    /** A SALE movement of a parcel line (negative when shipped, positive when the ship was undone). */
+    public record Sale(LocalDateTime at, int delta) {
+    }
+
+    /**
+     * Units of the variant that sat in packed, unshipped parcels at {@code at}: packed by then, not
+     * unpacked by then, less what their SALE movements up to then took out. Such units are on hand
+     * but not on the shelf.
+     */
+    public static int packedAt(Collection<Parcel> parcels, String packageSessionId, LocalDateTime at) {
+        if (parcels == null || at == null) {
+            return 0;
+        }
+        int units = 0;
+        for (Parcel parcel : parcels) {
+            if (!parcel.packageSessionId().equals(packageSessionId) || parcel.packedAt() == null
+                    || parcel.packedAt().isAfter(at)) {
+                continue;
+            }
+            if ("CANCELLED".equals(parcel.status()) && parcel.cancelledAt() != null
+                    && !parcel.cancelledAt().isAfter(at)) {
+                continue;
+            }
+            int shipped = 0;
+            for (Sale sale : parcel.sales() == null ? List.<Sale>of() : parcel.sales()) {
+                if (sale.at() != null && !sale.at().isAfter(at)) {
+                    shipped -= sale.delta();
+                }
+            }
+            units += Math.max(parcel.units() - shipped, 0);
+        }
+        return units;
+    }
+
+    /**
+     * A measured item (more than one base unit to its display unit) whose difference is more
+     * than {@code thresholdDisplayUnits} display units needs a manager's explicit confirm.
+     */
+    public static boolean largeMeasuredDifference(int adjustment, int qtyScale, BigDecimal thresholdDisplayUnits) {
+        if (qtyScale <= 1 || adjustment == 0) {
+            return false;
+        }
+        BigDecimal threshold = thresholdDisplayUnits == null ? BigDecimal.ONE : thresholdDisplayUnits;
+        return BigDecimal.valueOf(Math.abs((long) adjustment))
+                .compareTo(threshold.multiply(BigDecimal.valueOf(qtyScale))) > 0;
     }
 
     /** In-scope variants with stock and no line: what the uncounted choice decides about. */

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.AcceptLineRequest;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CancelRequest;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountCreateRequest;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountLinesAnswer;
@@ -93,7 +94,20 @@ public class StockCountController {
                                                       @PathVariable("countId") String countId,
                                                       @PathVariable("lineId") String lineId) {
         StockCount count = guarded(user, instituteId, countId, StockOpsAccess.STOCK_STAFF);
-        return ResponseEntity.ok(countService.deleteLine(instituteId, count.getId(), lineId));
+        return ResponseEntity.ok(countService.deleteLine(instituteId, access.caller(user, instituteId), count.getId(),
+                lineId));
+    }
+
+    /** A manager accepts a line whose stock moved while it was being counted (409 COUNT_NEEDS_RECOUNT otherwise). */
+    @PostMapping("/{countId}/lines/{lineId}/accept")
+    public ResponseEntity<CountLinesAnswer> acceptLine(@RequestAttribute("user") CustomUserDetails user,
+                                                       @RequestParam("instituteId") String instituteId,
+                                                       @PathVariable("countId") String countId,
+                                                       @PathVariable("lineId") String lineId,
+                                                       @RequestBody AcceptLineRequest request) {
+        StockCount count = guarded(user, instituteId, countId, StockOpsAccess.STOCK_STAFF);
+        return ResponseEntity.ok(countService.accept(instituteId, access.caller(user, instituteId), count.getId(),
+                lineId, request));
     }
 
     @GetMapping("/{countId}/review")

@@ -7,6 +7,7 @@ import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditServi
 import vacademy.io.admin_core_service.features.commerce.document.service.DocumentClock;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockLocation;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLocationRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockMovementRepository;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxClassService;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductRequest;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductResponse;
@@ -47,6 +48,7 @@ import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentO
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentPlan;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentOptionRepository;
 import vacademy.io.admin_core_service.features.user_subscription.repository.PaymentPlanRepository;
+import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.ResourceNotFoundException;
 import vacademy.io.common.institute.entity.Institute;
@@ -496,6 +498,41 @@ class CommerceProductServiceTest {
         ProductRequest clear = new ProductRequest();
         clear.setTaxClassId("");
         assertThrows(InvalidRequestException.class, () -> service.update(INSTITUTE, ACTOR, packageId, clear));
+    }
+
+    @Test
+    void theMeasureOfAnItemWithStockIsLockedEvenAsADraft() {
+        StockMovementRepository movements = mock(StockMovementRepository.class);
+        service.setMovementRepository(movements);
+        service.save(INSTITUTE, ACTOR, sariRequest("DRAFT"));
+        String packageId = products.get(0).getPackageId();
+        // No stock yet: a draft may still change its unit.
+        when(movements.existsForPackage(INSTITUTE, packageId)).thenReturn(false);
+        ProductRequest metres = new ProductRequest();
+        metres.setUnit("MTR");
+        metres.setQtyScale(10);
+        service.update(INSTITUTE, ACTOR, packageId, metres);
+        assertEquals("MTR", products.get(0).getUnit());
+        // Stock received (a quick add, then a receipt): unit, scale and stock mode are fixed.
+        when(movements.existsForPackage(INSTITUTE, packageId)).thenReturn(true);
+        for (ProductRequest change : List.of(measure("PCS", null, null), measure(null, 1, null),
+                measure(null, null, "PIECE"))) {
+            ConflictException refused = assertThrows(ConflictException.class,
+                    () -> service.update(INSTITUTE, ACTOR, packageId, change));
+            assertTrue(refused.getMessage().startsWith("STOCK_EXISTS"), refused.getMessage());
+        }
+        assertEquals("MTR", products.get(0).getUnit());
+        assertEquals(10, products.get(0).getQtyScale());
+        // The same values again are not a change.
+        service.update(INSTITUTE, ACTOR, packageId, measure("MTR", 10, null));
+    }
+
+    private static ProductRequest measure(String unit, Integer qtyScale, String stockMode) {
+        ProductRequest request = new ProductRequest();
+        request.setUnit(unit);
+        request.setQtyScale(qtyScale);
+        request.setStockMode(stockMode);
+        return request;
     }
 
     @Test

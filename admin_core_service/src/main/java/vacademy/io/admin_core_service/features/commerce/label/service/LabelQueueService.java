@@ -25,6 +25,7 @@ import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.Prin
 import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.PrintedAnswer;
 import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.ReplaceAnswer;
 import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.ReplaceRow;
+import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.SkippedLabel;
 import vacademy.io.admin_core_service.features.commerce.label.entity.CommerceLabelRequest;
 import vacademy.io.admin_core_service.features.commerce.label.enums.LabelReason;
 import vacademy.io.admin_core_service.features.commerce.label.enums.LabelStatus;
@@ -92,6 +93,10 @@ public class LabelQueueService {
     static final int MAX_REQUEST_LINES = 100;
     static final int MAX_IDS = 200;
     static final int MAX_COPIES = 500;
+    /** Labels of a measured item for a price change: one per roll or shelf. */
+    static final int MAX_MEASURED_LABELS = 100;
+    /** Rows one label request may queue (a PIECE item queues one row per piece on the shelf). */
+    static final int MAX_REQUEST_ROWS = 500;
     static final int MAX_QR_LENGTH = 64;
     private static final int MAX_PAGE_SIZE = 100;
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -178,7 +183,11 @@ public class LabelQueueService {
         });
     }
 
-    /** Variants whose last printed label at the location shows another MRP than today's (and are on hand). */
+    /**
+     * Variants whose last printed label at the location shows another MRP than today's (and are on
+     * hand), each with how many labels to queue: one per piece on the shelf, one per roll of a
+     * measured item, or one per unit (at most 500) of a quantity item.
+     */
     public ReplaceAnswer toReplace(String instituteId, String locationId) {
         return readOnly.execute(tx -> {
             List<CommerceLabelRequestRepository.LastPrinted> last = repository.lastPrinted(instituteId, locationId);
@@ -190,6 +199,8 @@ public class LabelQueueService {
             Map<String, CartVariant> prices = snapshotLoader.cartVariants(instituteId, variants, List.of());
             Map<String, ItemFacts> facts = readRepository.itemFacts(instituteId, variants);
             Map<String, Integer> onHand = readRepository.onHandAt(instituteId, locationId, variants);
+            Map<String, List<String>> shelf = readRepository.piecesOnShelf(instituteId, locationId,
+                    facts.values().stream().filter(ItemFacts::piece).map(ItemFacts::packageSessionId).toList());
             List<ReplaceRow> out = new ArrayList<>();
             for (CommerceLabelRequestRepository.LastPrinted row : last) {
                 CartVariant price = prices.get(row.getPackageSessionId());
@@ -200,8 +211,20 @@ public class LabelQueueService {
                     continue;
                 }
                 ItemFacts item = facts.get(row.getPackageSessionId());
+                int labels;
+                boolean capped = false;
+                if (item != null && item.piece()) {
+                    labels = shelf.getOrDefault(row.getPackageSessionId(), List.of()).size();
+                } else if (item != null && item.qtyScale() > 1) {
+                    labels = 1;
+                } else {
+                    labels = Math.min(here, MAX_COPIES);
+                    capped = here > MAX_COPIES;
+                }
                 out.add(new ReplaceRow(row.getPackageSessionId(), item == null ? null : item.sku(),
-                        item == null ? null : item.productName(), printed, current, here));
+                        item == null ? null : item.productName(), item == null ? null : item.stockMode(),
+                        item == null ? null : item.unit(), item == null ? null : item.qtyScale(), printed, current,
+                        here, labels, capped, price.price() != null && price.price().signum() > 0));
             }
             out.sort(Comparator.comparing(r -> r.sku() == null ? "" : r.sku()));
             return new ReplaceAnswer(out);
@@ -254,6 +277,9 @@ public class LabelQueueService {
                 repository.findByInstituteIdAndSourceTypeAndSourceIdOrderByCreatedAtAscIdAsc(instituteId,
                         SOURCE_MANUAL, groupId)), null, null, null, Boolean.TRUE);
         CommerceRequestGuard.Outcome<LabelsAnswer> outcome = requestGuard.run(guardKey, () -> {
+            if (!readRepository.locationOfInstitute(instituteId, locationId)) {
+                throw new InvalidRequestException("LOCATION_NOT_FOUND: location_id does not belong to this institute");
+            }
             List<CommerceLabelRequest> rows = new ArrayList<>();
             Set<String> variants = new HashSet<>();
             List<Object> resolved = new ArrayList<>();
@@ -280,16 +306,11 @@ public class LabelQueueService {
                 }
             }
             Map<String, ItemFacts> facts = readRepository.itemFacts(instituteId, variants);
+            boolean priceChange = LabelReason.PRICE_CHANGE.name().equals(reason);
+            Map<String, List<String>> shelf = !priceChange ? Map.of() : readRepository.piecesOnShelf(instituteId,
+                    locationId, facts.values().stream().filter(f -> f.piece() && f.tracked())
+                            .map(ItemFacts::packageSessionId).toList());
             for (int i = 0; i < lines.size(); i++) {
-                CommerceLabelRequest row = new CommerceLabelRequest();
-                row.setInstituteId(instituteId);
-                row.setReason(reason);
-                row.setReprintReason(reprintReason);
-                row.setNote(note);
-                row.setSourceType(SOURCE_MANUAL);
-                row.setSourceId(groupId);
-                row.setStatus(LabelStatus.PENDING.name());
-                row.setRequestedBy(caller.userId());
                 if (resolved.get(i) instanceof PieceRow piece) {
                     boolean onShelf = PieceStatus.IN_STOCK.name().equals(piece.getStatus())
                             || PieceStatus.RESERVED.name().equals(piece.getStatus());
@@ -301,31 +322,48 @@ public class LabelQueueService {
                         throw new CommerceAccessDeniedException(CommerceAccessDeniedException.LOCATION_NOT_ALLOWED,
                                 "piece " + piece.getCode() + " is at a location you are not assigned to");
                     }
-                    row.setLocationId(piece.getLocationId());
-                    row.setPackageSessionId(piece.getPackageSessionId());
-                    row.setPieceId(piece.getId());
-                    row.setQuantity(1);
-                } else {
-                    String variant = (String) resolved.get(i);
-                    ItemFacts item = facts.get(variant);
-                    if (item == null) {
-                        throw new InvalidRequestException("ITEM_NOT_FOUND: an item does not belong to this institute");
-                    }
-                    if (item.archived()) {
-                        throw new InvalidRequestException("ITEM_ARCHIVED: " + item.sku() + " is retired");
-                    }
-                    if (item.piece() && item.tracked()) {
+                    rows.add(newRow(instituteId, caller, reason, reprintReason, note, groupId, piece.getLocationId(),
+                            piece.getPackageSessionId(), piece.getId(), 1));
+                    continue;
+                }
+                String variant = (String) resolved.get(i);
+                ItemFacts item = facts.get(variant);
+                if (item == null) {
+                    throw new InvalidRequestException("ITEM_NOT_FOUND: an item does not belong to this institute");
+                }
+                if (item.archived()) {
+                    throw new InvalidRequestException("ITEM_ARCHIVED: " + item.sku() + " is retired");
+                }
+                if (item.piece() && item.tracked()) {
+                    if (!priceChange) {
                         throw new InvalidRequestException("PIECE_SCAN_REQUIRED: scan the piece labels of " + item.sku());
                     }
-                    Integer quantity = lines.get(i).quantity();
-                    if (quantity == null || quantity < 1 || quantity > MAX_QUANTITY) {
-                        throw new InvalidRequestException("VALIDATION: quantity is 1 to " + MAX_QUANTITY + " labels");
+                    // A price change relabels every piece on the shelf here, one label each.
+                    List<String> onShelf = shelf.getOrDefault(variant, List.of());
+                    if (onShelf.isEmpty()) {
+                        throw new ConflictException("PIECE_NOT_HERE: no piece of " + item.sku() + " is on the shelf "
+                                + "here");
                     }
-                    row.setLocationId(locationId);
-                    row.setPackageSessionId(variant);
-                    row.setQuantity(quantity);
+                    for (String pieceId : onShelf) {
+                        rows.add(newRow(instituteId, caller, reason, reprintReason, note, groupId, locationId, variant,
+                                pieceId, 1));
+                    }
+                    continue;
                 }
-                rows.add(row);
+                Integer quantity = lines.get(i).quantity();
+                if (quantity == null || quantity < 1 || quantity > MAX_QUANTITY) {
+                    throw new InvalidRequestException("VALIDATION: quantity is 1 to " + MAX_QUANTITY + " labels");
+                }
+                if (item.qtyScale() > 1 && quantity > MAX_MEASURED_LABELS) {
+                    throw new InvalidRequestException("VALIDATION: " + item.sku() + " is sold by length; it gets one "
+                            + "label per roll or shelf (1 to " + MAX_MEASURED_LABELS + ")");
+                }
+                rows.add(newRow(instituteId, caller, reason, reprintReason, note, groupId, locationId, variant, null,
+                        quantity));
+            }
+            if (rows.size() > MAX_REQUEST_ROWS) {
+                throw new InvalidRequestException("LABELS_TOO_MANY: at most " + MAX_REQUEST_ROWS + " label rows at "
+                        + "once; send fewer items");
             }
             rows = repository.saveAllAndFlush(rows);
             if (LabelReason.REPRINT.name().equals(reason)) {
@@ -342,6 +380,25 @@ public class LabelQueueService {
             return new LabelsAnswer(rows(instituteId, rows), null, null, null, null);
         }, current);
         return outcome.value();
+    }
+
+    private static CommerceLabelRequest newRow(String instituteId, Caller caller, String reason, String reprintReason,
+                                               String note, String groupId, String locationId, String variant,
+                                               String pieceId, int quantity) {
+        CommerceLabelRequest row = new CommerceLabelRequest();
+        row.setInstituteId(instituteId);
+        row.setReason(reason);
+        row.setReprintReason(reprintReason);
+        row.setNote(note);
+        row.setSourceType(SOURCE_MANUAL);
+        row.setSourceId(groupId);
+        row.setStatus(LabelStatus.PENDING.name());
+        row.setRequestedBy(caller.userId());
+        row.setLocationId(locationId);
+        row.setPackageSessionId(variant);
+        row.setPieceId(pieceId);
+        row.setQuantity(quantity);
+        return row;
     }
 
     public CancelAnswer cancel(String instituteId, Caller caller, LabelIdsRequest request) {
@@ -385,12 +442,18 @@ public class LabelQueueService {
             Map<String, CartVariant> prices = snapshotLoader.cartVariants(instituteId, variants, List.of());
             LocalDateTime now = LocalDateTime.now();
             int printed = 0;
+            // A chunk may name rows an earlier chunk (or another screen) already marked: skipped, not refused.
+            List<String> skipped = new ArrayList<>(ids);
             for (CommerceLabelRequest row : rows) {
                 CartVariant price = prices.get(row.getPackageSessionId());
-                printed += repository.markPrinted(instituteId, row.getId(), now, caller.userId(),
+                int marked = repository.markPrinted(instituteId, row.getId(), now, caller.userId(),
                         price == null ? null : price.price(), mrpOf(price));
+                printed += marked;
+                if (marked > 0) {
+                    skipped.remove(row.getId());
+                }
             }
-            return new PrintedAnswer(printed, null);
+            return new PrintedAnswer(printed, skipped.isEmpty() ? null : skipped, null);
         }, () -> {
             int printed = 0;
             for (CommerceLabelRequest row : repository.findByInstituteIdAndIdIn(instituteId, ids)) {
@@ -398,7 +461,7 @@ public class LabelQueueService {
                     printed++;
                 }
             }
-            return new PrintedAnswer(printed, Boolean.TRUE);
+            return new PrintedAnswer(printed, null, Boolean.TRUE);
         }).value();
     }
 
@@ -441,10 +504,6 @@ public class LabelQueueService {
                     requireActsAt(caller, row);
                 }
             }
-            int copies = found.stream().mapToInt(CommerceLabelRequest::getQuantity).sum();
-            if (copies > MAX_COPIES) {
-                throw new InvalidRequestException("LABELS_TOO_MANY: at most " + MAX_COPIES + " labels at once");
-            }
             Set<String> variants = new HashSet<>();
             found.forEach(row -> variants.add(row.getPackageSessionId()));
             Map<String, ItemFacts> facts = readRepository.itemFacts(instituteId, variants);
@@ -484,13 +543,16 @@ public class LabelQueueService {
                         : nullToEmpty(facts.get(r.getPackageSessionId()).sku()))
                 .thenComparing(r -> r.getPieceId() == null ? "" : nullToEmpty(codes.get(r.getPieceId()))));
         List<PrintLabel> out = new ArrayList<>();
+        List<SkippedLabel> skipped = new ArrayList<>();
         int copies = 0;
         for (CommerceLabelRequest row : sorted) {
             ItemFacts item = facts.get(row.getPackageSessionId());
             CartVariant price = prices.get(row.getPackageSessionId());
             String sku = item == null ? null : item.sku();
             if (price == null || price.price() == null || price.price().signum() <= 0) {
-                throw new ConflictException("LABEL_NO_PRICE: " + sku + " has no price yet; a manager sets it first");
+                // An item with no price yet (a quick add) waits; the other labels print.
+                skipped.add(new SkippedLabel(row.getId(), sku, "NO_PRICE"));
+                continue;
             }
             String code = row.getPieceId() != null ? codes.get(row.getPieceId()) : item == null ? null : item.labelCode();
             int scale = item == null ? 1 : Math.max(item.qtyScale(), 1);
@@ -503,8 +565,16 @@ public class LabelQueueService {
                     row.getQuantity(), row.getPieceId()));
             copies += row.getQuantity();
         }
+        if (out.isEmpty() && !skipped.isEmpty()) {
+            throw new ConflictException("LABEL_NO_PRICE: " + skipped.get(0).sku() + " has no price yet; a manager "
+                    + "sets it first");
+        }
+        if (copies > MAX_COPIES) {
+            throw new InvalidRequestException("LABELS_TOO_MANY: at most " + MAX_COPIES + " labels at once");
+        }
         Map<String, String> shopName = shop.shopName() == null ? Map.of() : shop.shopName();
-        return new PrintDataAnswer(size, new Names(shopName.get("en"), shopName.get("hi")), out, copies);
+        return new PrintDataAnswer(size, new Names(shopName.get("en"), shopName.get("hi")), out, copies,
+                skipped.isEmpty() ? null : skipped);
     }
 
     private String linkBase(String instituteId, CommerceNotificationShopSettings.Shop shop) {
@@ -594,7 +664,9 @@ public class LabelQueueService {
             CartVariant price = prices.get(row.getPackageSessionId());
             out.add(new LabelRow(row.getId(), row.getLocationId(), row.getPackageSessionId(),
                     item == null ? null : item.sku(), item == null ? null : item.productName(),
-                    item == null ? null : item.variantName(), row.getPieceId(), piece == null ? null : piece.label(),
+                    item == null ? null : item.variantName(), item == null ? null : item.stockMode(),
+                    item == null ? null : item.unit(), item == null ? null : item.qtyScale(), row.getPieceId(),
+                    piece == null ? null : piece.label(),
                     item == null ? null : item.labelCode(), row.getQuantity(), row.getReason(), row.getReprintReason(),
                     row.getNote(), row.getSourceType(), row.getSourceId(), source == null ? null : source.label(),
                     row.getStatus(), row.getRequestedBy(), text(row.getCreatedAt()), text(row.getPrintedAt()),

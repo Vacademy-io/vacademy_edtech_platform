@@ -19,6 +19,8 @@ import vacademy.io.admin_core_service.features.commerce.common.request.CommerceR
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceStockShortFlagger;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessDeniedException;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceApprovalService;
+import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos;
+import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.AcceptLineRequest;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.Agreement;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.Approval;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CancelRequest;
@@ -59,8 +61,10 @@ import vacademy.io.admin_core_service.features.commerce.stock.repository.StockMo
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository.ItemFacts;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository.PieceState;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOpsReadRepository.StockCountParcel;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceStockSettings.AdjustmentLimits;
 import vacademy.io.admin_core_service.features.commerce.stock.service.StockCountMath.CountedLine;
+import vacademy.io.admin_core_service.features.commerce.stock.service.StockCountMath.Parcel;
 import vacademy.io.admin_core_service.features.commerce.stock.service.StockCountMath.PieceHere;
 import vacademy.io.admin_core_service.features.commerce.stock.service.StockCountMath.PieceSets;
 import vacademy.io.admin_core_service.features.commerce.stock.service.StockCountMath.ScannedOutcome;
@@ -69,9 +73,13 @@ import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HexFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -91,7 +99,15 @@ import java.util.function.Supplier;
  * another person posts no movement; it is compared with the count it rechecks.
  *
  * <p>No answer here shows a system quantity while a count is open, except the review (to the
- * stock staff of the location, never to the person doing the blind recount).
+ * stock staff of the location, never to the person doing the blind recount). The people who
+ * started or saved lines of a count ("main counters") never open, see, change or post its blind
+ * recount, and the recounter never sees or changes the count while the recount is open.
+ *
+ * <p>A line built by several ADD scans has a first and a last save; when stock of the item moved
+ * at the location between the two, which part of the shelf it moved from cannot be known, so the
+ * line is flagged {@code NEEDS_RECOUNT} and the post refuses it until it is counted again (SET)
+ * or a manager accepts it. Units packed in parcels and not shipped are on hand but not on the
+ * shelf (ARCHITECTURE 4.8, as a RESERVED piece): the post adds them back.
  */
 @Slf4j
 @Service
@@ -105,6 +121,7 @@ public class StockCountService {
     public static final String APPROVAL_POST = "STOCK_COUNT_POST";
     public static final String REASON_DIFFERENCE = "COUNT_DIFFERENCE";
     public static final String REASON_FOUND = "FOUND";
+    public static final String RECOUNT_OTHER_PERSON = "RECOUNT_OTHER_PERSON";
 
     static final int MAX_LINES = 5_000;
     static final int MAX_LINES_PER_SAVE = 200;
@@ -183,10 +200,51 @@ public class StockCountService {
         }
     }
 
+    /** The main count's starter and everyone on its lines: they never do or see its blind recount. */
+    Set<String> mainCounters(String instituteId, StockCount main) {
+        Set<String> out = new HashSet<>(lineRepository.countedBy(instituteId, main.getId()));
+        out.add(main.getStartedBy());
+        return out;
+    }
+
+    /** The recount's starter, or a manager or ADMIN who is not a main counter. */
+    private static boolean mayWorkOnRecount(StockCount recount, Caller caller, Set<String> mainCounters) {
+        if (caller == null || mainCounters.contains(caller.userId())) {
+            return false;
+        }
+        return caller.userId().equals(recount.getStartedBy()) || caller.manager();
+    }
+
+    /** 403 RECOUNT_OTHER_PERSON unless the caller may count, change or post this recount. */
+    void requireRecountWorker(String instituteId, StockCount recount, Caller caller) {
+        StockCount main = get(instituteId, recount.getRecountOfCountId());
+        if (!mayWorkOnRecount(recount, caller, mainCounters(instituteId, main))) {
+            throw new CommerceAccessDeniedException(RECOUNT_OTHER_PERSON, "only the person doing this blind recount "
+                    + "(or a manager who did not count the first count) works on it");
+        }
+    }
+
+    /** Lines and posts: the recount rules on a RECOUNT, blindness on a COUNT. */
+    private void requireMayWork(String instituteId, StockCount count, Caller caller) {
+        if (StockCountKind.RECOUNT.name().equals(count.getKind())) {
+            requireRecountWorker(instituteId, count, caller);
+        } else {
+            requireNotBlind(instituteId, count, caller);
+        }
+    }
+
     public CountView view(String instituteId, String countId, Caller caller) {
         return readOnly.execute(status -> {
             StockCount count = get(instituteId, countId);
             requireNotBlind(instituteId, count, caller);
+            if (StockCountKind.RECOUNT.name().equals(count.getKind())
+                    && StockCountStatus.OPEN.name().equals(count.getStatus())) {
+                StockCount main = get(instituteId, count.getRecountOfCountId());
+                if (mainCounters(instituteId, main).contains(caller.userId())) {
+                    throw new CommerceAccessDeniedException(RECOUNT_OTHER_PERSON, "you counted the count this blind "
+                            + "recount checks; you see it once it is finished");
+                }
+            }
             return view(instituteId, count, caller);
         });
     }
@@ -274,8 +332,9 @@ public class StockCountService {
                 throw new ConflictException("COUNT_NOT_OPEN: count " + main.getCountNumber() + " is "
                         + main.getStatus());
             }
-            if (caller.userId().equals(main.getStartedBy())) {
-                throw new ConflictException("RECOUNT_SAME_PERSON: a recount must be done by another person");
+            if (mainCounters(instituteId, main).contains(caller.userId())) {
+                throw new ConflictException("RECOUNT_SAME_PERSON: a recount must be done by someone who did not "
+                        + "count this count");
             }
             for (StockCount recount : countRepository.findRecountsOf(instituteId, mainId)) {
                 if (StockCountStatus.OPEN.name().equals(recount.getStatus())) {
@@ -356,6 +415,7 @@ public class StockCountService {
             throw new InvalidRequestException("VALIDATION: at most " + MAX_LINES_PER_SAVE + " lines at once");
         }
         String key = CommerceRequestGuard.requireClientKey(request.clientRequestId());
+        readOnly.executeWithoutResult(tx -> requireMayWork(instituteId, get(instituteId, countId), caller));
         CommerceRequestGuard.Key guardKey = new CommerceRequestGuard.Key(instituteId, key, ACTION_LINES,
                 REFERENCE_COUNT, countId, CommerceRequestGuard.hash(ACTION_LINES, request, countId), caller.userId());
         List<LineWrite> written = new ArrayList<>();
@@ -467,6 +527,12 @@ public class StockCountService {
             requireInScope(instituteId, count, item, inScope);
             String mode = input.mode() == null ? "SET" : input.mode().trim().toUpperCase(Locale.ROOT);
             Integer quantity = input.quantity();
+            if ("ADD".equals(mode) && item.qtyScale() > 1
+                    && (quantity == null || !Boolean.TRUE.equals(input.explicitQuantity()))) {
+                // A scan of a roll or shelf label is not one base unit (0.1 m): the length is typed.
+                throw new InvalidRequestException("QTY_REQUIRED: type the length of " + item.sku() + " (in "
+                        + item.unit() + ")");
+            }
             if ("ADD".equals(mode)) {
                 if (quantity == null || quantity < 1 || quantity > MAX_ADD) {
                     throw new InvalidRequestException("VALIDATION: an ADD is 1 to " + MAX_ADD + " base units");
@@ -510,15 +576,64 @@ public class StockCountService {
         return new CountLinesAnswer(lineViews(instituteId, lines), total, replayed);
     }
 
-    public LineCountAnswer deleteLine(String instituteId, String countId, String lineId) {
+    public LineCountAnswer deleteLine(String instituteId, Caller caller, String countId, String lineId) {
         return transaction.execute(tx -> {
             String status = countRepository.lockStatusShared(instituteId, countId)
                     .orElseThrow(StockCountService::notFound);
             if (!StockCountStatus.OPEN.name().equals(status)) {
                 throw new ConflictException("COUNT_NOT_OPEN: this count is " + status);
             }
+            requireMayWork(instituteId, get(instituteId, countId), caller);
             lineRepository.deleteLine(instituteId, countId, lineId);
             return new LineCountAnswer(lineRepository.countByInstituteIdAndCountId(instituteId, countId));
+        });
+    }
+
+    /**
+     * A manager accepts a line whose stock moved while it was being counted, as it stands: it then
+     * posts with its last save as its count time. Only while its counted quantity is still the one
+     * the manager looked at; any later save of the line clears the acceptance.
+     */
+    public CountLinesAnswer accept(String instituteId, Caller caller, String countId, String lineId,
+                                   AcceptLineRequest request) {
+        if (!caller.manager()) {
+            throw new CommerceAccessDeniedException(CommerceAccessDeniedException.ROLE_NOT_ALLOWED,
+                    "only a manager accepts a line that changed while it was being counted");
+        }
+        if (request == null || request.countedQty() == null) {
+            throw new InvalidRequestException("VALIDATION: counted_qty is required");
+        }
+        return transaction.execute(tx -> {
+            String status = countRepository.lockStatusShared(instituteId, countId)
+                    .orElseThrow(StockCountService::notFound);
+            if (!StockCountStatus.OPEN.name().equals(status)) {
+                throw new ConflictException("COUNT_NOT_OPEN: this count is " + status);
+            }
+            StockCount count = get(instituteId, countId);
+            if (!StockCountKind.COUNT.name().equals(count.getKind())) {
+                throw new InvalidRequestException("VALIDATION: a recount posts nothing; there is nothing to accept");
+            }
+            requireNotBlind(instituteId, count, caller);
+            String id = lineId == null ? "" : lineId.trim();
+            StockCountLine line = lineRepository.findByInstituteIdAndCountIdAndId(instituteId, countId, id)
+                    .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND,
+                            "COUNT_LINE_NOT_FOUND: no such line on this count"));
+            if (line.getPieceId() != null) {
+                throw new InvalidRequestException("VALIDATION: a scanned piece has nothing to accept");
+            }
+            if (lineRepository.accept(instituteId, countId, id, request.countedQty(), caller.userId()) == 0) {
+                throw new ConflictException("COUNT_LINE_CHANGED: this line changed meanwhile; look at it again");
+            }
+            Map<String, Object> audit = new LinkedHashMap<>();
+            audit.put("line_id", id);
+            audit.put("package_session_id", line.getPackageSessionId());
+            audit.put("counted_qty", request.countedQty());
+            auditService.record(instituteId, caller.userId(), count.getLocationId(), "STOCK_COUNT_LINE_ACCEPTED",
+                    REFERENCE_COUNT, countId, null, json(audit), null);
+            StockCountLine fresh = lineRepository.findByInstituteIdAndCountIdAndId(instituteId, countId, id)
+                    .orElseThrow(StockCountService::notFound);
+            return new CountLinesAnswer(lineViews(instituteId, List.of(fresh)),
+                    lineRepository.countByInstituteIdAndCountId(instituteId, countId), null);
         });
     }
 
@@ -543,8 +658,13 @@ public class StockCountService {
     }
 
     /** The review, the movements it posts and the line results; the same code with or without locks. */
-    private record Model(CountReview review, List<StockPosting> postings, Map<String, int[]> lineResults,
-                         BigDecimal absoluteValue, boolean overLimit, Map<String, Object> summary) {
+    private record Model(CountReview review, List<StockPosting> postings, Map<String, LineResult> lineResults,
+                         BigDecimal absoluteValue, boolean overLimit, Map<String, Object> summary,
+                         List<String> needsRecount, List<String> measured, String fingerprint) {
+    }
+
+    /** What the post stamps on a line. */
+    private record LineResult(int onHand, int moved, Integer packed, int adjustment) {
     }
 
     private Model build(String instituteId, StockCount count, UncountedChoice choice, boolean lock, boolean withValue) {
@@ -574,9 +694,23 @@ public class StockCountService {
         facts.putAll(readRepository.itemFacts(instituteId, more));
         Map<String, StockLocation> places = locations(instituteId);
         AdjustmentLimits limits = settings.adjustmentLimits(instituteId);
+        BigDecimal measuredThreshold = settings.countMeasuredDifference(instituteId);
+        List<Parcel> parcels = new ArrayList<>();
+        boolean anyQuantityLine = lines.stream().anyMatch(line -> line.getPieceId() == null);
+        if (anyQuantityLine) {
+            for (StockCountParcel p : readRepository.parcelsSince(instituteId, locationId, count.getStartedAt())) {
+                List<StockCountMath.Sale> sales = new ArrayList<>();
+                p.sales().forEach(sale -> sales.add(new StockCountMath.Sale(sale.at(), sale.delta())));
+                parcels.add(new Parcel(p.packageSessionId(), p.units(), p.packedAt(), p.status(), p.cancelledAt(),
+                        sales));
+            }
+        }
 
         List<StockPosting> postings = new ArrayList<>();
-        Map<String, int[]> results = new LinkedHashMap<>();
+        Map<String, LineResult> results = new LinkedHashMap<>();
+        List<String> needsRecount = new ArrayList<>();
+        List<String> measured = new ArrayList<>();
+        StringBuilder fingerprint = new StringBuilder();
         List<ReviewLine> reviewLines = new ArrayList<>();
         boolean over = false;
         BigDecimal absolute = BigDecimal.ZERO;
@@ -589,6 +723,8 @@ public class StockCountService {
         Set<String> scannedVariants = new HashSet<>();
 
         for (StockCountLine line : lines) {
+            fingerprint.append(line.getId()).append(':').append(line.getCountedQty()).append(':')
+                    .append(line.getAcceptedBy() == null ? "" : "A").append(';');
             ItemFacts item = facts.get(line.getPackageSessionId());
             String countedAt = text(line.getCountedAt());
             if (line.getPieceId() != null) {
@@ -598,16 +734,49 @@ public class StockCountService {
             }
             if (item == null || !item.tracked()) {
                 reviewLines.add(new ReviewLine(line.getId(), line.getPackageSessionId(), item == null ? null : item.sku(),
-                        item == null ? null : item.productName(), null, line.getCountedQty(), countedAt, null, null,
-                        null, 0, null));
+                        item == null ? null : item.productName(), item == null ? null : item.variantName(),
+                        item == null ? null : item.stockMode(), item == null ? null : item.unit(),
+                        item == null ? null : item.qtyScale(), null, line.getCountedQty(), countedAt,
+                        text(line.getFirstCountedAt()), null, null, null, null, 0, null, null, null, null));
                 continue;
             }
-            int onHand = levels.getOrDefault(line.getPackageSessionId(), 0);
-            int moved = movementRepository.sumMovedSince(instituteId, locationId, line.getPackageSessionId(),
-                    line.getCountedAt());
-            int adjustment = StockCountMath.adjustment(line.getCountedQty(), moved, onHand);
+            String variant = line.getPackageSessionId();
+            int onHand = levels.getOrDefault(variant, 0);
+            boolean accepted = line.getAcceptedBy() != null;
+            LocalDateTime last = line.getCountedAt();
+            LocalDateTime first = line.getFirstCountedAt() == null || line.getFirstCountedAt().isAfter(last) ? last
+                    : line.getFirstCountedAt();
+            // Did stock of the item move here between the first and the last save of the line?
+            int movedWhile = 0;
+            boolean changedWhileCounting = false;
+            if (first.isBefore(last)) {
+                int[] between = readRepository.movementsBetween(instituteId, locationId, variant, first, last);
+                int packedChange = Math.abs(StockCountMath.packedAt(parcels, variant, last)
+                        - StockCountMath.packedAt(parcels, variant, first));
+                movedWhile = between[1] + packedChange;
+                changedWhileCounting = between[0] > 0 || packedChange != 0;
+            }
+            // The line's count time: its first save (identical to the last when nothing moved in
+            // between), or the last save once a manager accepted a line that changed.
+            LocalDateTime at = accepted ? last : first;
+            int moved = movementRepository.sumMovedSince(instituteId, locationId, variant, at);
+            int packed = StockCountMath.packedAt(parcels, variant, at);
+            int adjustment = StockCountMath.adjustment(line.getCountedQty(), moved, packed, onHand);
             BigDecimal value = StockCountMath.value(adjustment, item.costPrice());
-            results.put(line.getId(), new int[]{onHand, moved, adjustment});
+            results.put(line.getId(), new LineResult(onHand, moved, packed, adjustment));
+            List<String> flags = new ArrayList<>();
+            if (accepted) {
+                flags.add(StockOpsDtos.FLAG_RECOUNT_ACCEPTED);
+            } else if (changedWhileCounting) {
+                flags.add(StockOpsDtos.FLAG_NEEDS_RECOUNT);
+                needsRecount.add(item.sku());
+            }
+            if (StockCountMath.largeMeasuredDifference(adjustment, item.qtyScale(), measuredThreshold)) {
+                flags.add(StockOpsDtos.FLAG_MEASURED_CONFIRM);
+                measured.add(item.sku());
+                // Staff need a manager for it (the PIN is the manager's confirm).
+                over = true;
+            }
             if (adjustment != 0) {
                 linesWithDifference++;
                 over |= StockCountMath.overLimit(adjustment, value, limits.quantity(), limits.value());
@@ -622,9 +791,11 @@ public class StockCountService {
                 postings.add(adjustmentPosting(instituteId, count, line.getPackageSessionId(), null, adjustment,
                         REASON_DIFFERENCE, "COUNT:" + line.getId()));
             }
-            reviewLines.add(new ReviewLine(line.getId(), line.getPackageSessionId(), item.sku(), item.productName(),
-                    null, line.getCountedQty(), countedAt, onHand, moved,
-                    StockCountMath.expectedAtCount(onHand, moved), adjustment, withValue ? value : null));
+            reviewLines.add(new ReviewLine(line.getId(), variant, item.sku(), item.productName(), item.variantName(),
+                    item.stockMode(), item.unit(), item.qtyScale(), null, line.getCountedQty(), countedAt,
+                    text(first), onHand, moved, packed, StockCountMath.expectedAtCount(onHand, moved, packed),
+                    adjustment, withValue ? value : null, movedWhile, flags.isEmpty() ? null : flags,
+                    line.getAcceptedBy()));
         }
 
         // Pieces that were scanned.
@@ -654,10 +825,13 @@ public class StockCountService {
                 }
             }
             ItemFacts item = facts.get(piece.packageSessionId());
-            results.put(lineId, new int[]{levels.getOrDefault(piece.packageSessionId(), 0), 0, adjustment});
+            results.put(lineId, new LineResult(levels.getOrDefault(piece.packageSessionId(), 0), 0, null, adjustment));
             reviewLines.add(new ReviewLine(lineId, piece.packageSessionId(), item == null ? null : item.sku(),
-                    item == null ? null : item.productName(), piece.code(), 1, null, null, null, null, adjustment,
-                    withValue && adjustment != 0 ? StockCountMath.value(1, piece.unitCost()) : null));
+                    item == null ? null : item.productName(), item == null ? null : item.variantName(),
+                    item == null ? null : item.stockMode(), item == null ? null : item.unit(),
+                    item == null ? null : item.qtyScale(), piece.code(), 1, null, null, null, null, null, null,
+                    adjustment, withValue && adjustment != 0 ? StockCountMath.value(1, piece.unitCost()) : null,
+                    null, null, null));
         }
 
         // Pieces here that nobody scanned.
@@ -693,7 +867,9 @@ public class StockCountService {
             ItemFacts item = facts.get(variant);
             int onHand = levels.get(variant);
             uncounted.add(new UncountedItem(variant, item == null ? null : item.sku(),
-                    item == null ? null : item.productName(), onHand));
+                    item == null ? null : item.productName(), item == null ? null : item.variantName(),
+                    item == null ? null : item.stockMode(), item == null ? null : item.unit(),
+                    item == null ? null : item.qtyScale(), onHand));
             if (choice == UncountedChoice.ZERO && item != null && !item.piece()) {
                 BigDecimal value = StockCountMath.value(-onHand, item.costPrice());
                 over |= StockCountMath.overLimit(onHand, value, limits.quantity(), limits.value());
@@ -707,8 +883,10 @@ public class StockCountService {
 
         ReviewTotals totals = new ReviewTotals(linesWithDifference, unitsUp, unitsDown,
                 withValue ? valueUp : null, withValue ? valueDown : null);
+        String print = sha256(fingerprint.toString());
         CountReview review = new CountReview(count.getId(), LocalDateTime.now().toString(), reviewLines, uncounted,
-                missing, found, misplaced, notInStock, reserved, arrived, totals, over);
+                missing, found, misplaced, notInStock, reserved, arrived, totals, over, needsRecount.size(),
+                !measured.isEmpty(), print);
 
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("lines", lines.size());
@@ -730,7 +908,16 @@ public class StockCountService {
         detail.put("reserved_not_counted", reserved);
         detail.put("arrived_during_count", arrived);
         summary.put("detail", detail);
-        return new Model(review, postings, results, absolute, over, summary);
+        return new Model(review, postings, results, absolute, over, summary, needsRecount, measured, print);
+    }
+
+    private static String sha256(String text) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(text.getBytes(StandardCharsets.UTF_8)));
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 is not available", e);
+        }
     }
 
     private StockPosting adjustmentPosting(String instituteId, StockCount count, String packageSessionId,
@@ -772,13 +959,20 @@ public class StockCountService {
             boolean piece = line.getPieceId() != null;
             Integer onHand = piece ? null : line.getOnHandAtPost();
             Integer moved = piece ? null : line.getMovedSince();
+            Integer packed = piece ? null : line.getPackedUnshipped();
             BigDecimal cost = line.getMovementId() == null ? null : movementCost.get(line.getMovementId());
             int adjustment = line.getAdjustment() == null ? 0 : line.getAdjustment();
             out.add(new ReviewLine(line.getId(), line.getPackageSessionId(), item == null ? null : item.sku(),
-                    item == null ? null : item.productName(), piece ? codes.get(line.getPieceId()) : null,
-                    line.getCountedQty(), piece ? null : text(line.getCountedAt()), onHand, moved,
-                    onHand == null || moved == null ? null : StockCountMath.expectedAtCount(onHand, moved),
-                    line.getAdjustment(), withValue && cost != null ? StockCountMath.value(adjustment, cost) : null));
+                    item == null ? null : item.productName(), item == null ? null : item.variantName(),
+                    item == null ? null : item.stockMode(), item == null ? null : item.unit(),
+                    item == null ? null : item.qtyScale(), piece ? codes.get(line.getPieceId()) : null,
+                    line.getCountedQty(), piece ? null : text(line.getCountedAt()),
+                    piece ? null : text(line.getFirstCountedAt()), onHand, moved, packed,
+                    onHand == null || moved == null ? null
+                            : StockCountMath.expectedAtCount(onHand, moved, packed == null ? 0 : packed),
+                    line.getAdjustment(), withValue && cost != null ? StockCountMath.value(adjustment, cost) : null,
+                    null, line.getAcceptedBy() == null ? null : List.of(StockOpsDtos.FLAG_RECOUNT_ACCEPTED),
+                    line.getAcceptedBy()));
         }
         JsonNode summary = summaryNode(count);
         JsonNode detail = summary.path("detail");
@@ -794,7 +988,7 @@ public class StockCountService {
                         summary.path("units_down").asInt(0),
                         withValue && summary.hasNonNull("value_up") ? summary.get("value_up").decimalValue() : null,
                         withValue && summary.hasNonNull("value_down") ? summary.get("value_down").decimalValue() : null),
-                false);
+                false, 0, false, null);
     }
 
     // ================================================================== post
@@ -818,8 +1012,10 @@ public class StockCountService {
             throw new ConflictException("COUNT_NOT_OPEN: this count is " + count.getStatus());
         }
         if (StockCountKind.RECOUNT.name().equals(count.getKind())) {
+            readOnly.executeWithoutResult(tx -> requireRecountWorker(instituteId, count, caller));
             return answer(requestGuard.run(guardKey, () -> finishRecount(instituteId, caller, countId), current));
         }
+        readOnly.executeWithoutResult(tx -> requireNotBlind(instituteId, count, caller));
         String choiceName = StockTransferService.blankToNull(request.uncounted()) == null ? null
                 : StockTransferService.enumName(UncountedChoice.class, request.uncounted(), "uncounted");
         if (choiceName == null) {
@@ -831,6 +1027,10 @@ public class StockCountService {
             return build(instituteId, count, choice, false, true);
         });
         boolean manager = caller.manager();
+        boolean confirmMeasured = Boolean.TRUE.equals(request.confirmMeasured());
+        String reviewed = StockTransferService.blankToNull(request.reviewFingerprint());
+        requireReviewed(before, reviewed);
+        requirePostable(before, manager, confirmMeasured);
         Approval approval = request.approval();
         boolean approvalGiven = approval != null && StockTransferService.blankToNull(approval.approverUserId()) != null
                 && StockTransferService.blankToNull(approval.pin()) != null;
@@ -857,9 +1057,16 @@ public class StockCountService {
             locationRepository.lockForPosting(instituteId, locked.getLocationId())
                     .orElseThrow(() -> new InvalidRequestException("LOCATION_NOT_FOUND: the count's location"));
             Model model = build(instituteId, locked, choice, true, true);
+            requireReviewed(model, reviewed);
+            requirePostable(model, manager, confirmMeasured);
             if (model.overLimit() && !manager && approvedBy == null) {
                 throw new CommerceAccessDeniedException(StockTransferService.APPROVAL_REQUIRED,
                         "this count has differences above your limit and needs a manager");
+            }
+            if (approvedBy != null && !model.fingerprint().equals(before.fingerprint())) {
+                // The manager approved the lines as they were; lines saved since were not approved.
+                throw new CommerceAccessDeniedException(StockTransferService.APPROVAL_REQUIRED,
+                        "the count changed after the manager approved it; review it and approve again");
             }
             List<StockPosting> postings = new ArrayList<>();
             for (StockPosting posting : model.postings()) {
@@ -872,8 +1079,9 @@ public class StockCountService {
                     movementByKey.put(result.movement().getIdempotencyKey(), result.movement().getId());
                 }
             }
-            model.lineResults().forEach((lineId, values) -> lineRepository.stampPost(instituteId, lineId, values[0],
-                    values[1], values[2], movementByKey.get("COUNT:" + lineId)));
+            model.lineResults().forEach((lineId, result) -> lineRepository.stampPost(instituteId, lineId,
+                    result.onHand(), result.moved(), result.packed(), result.adjustment(),
+                    movementByKey.get("COUNT:" + lineId)));
             Map<String, Object> summary = new LinkedHashMap<>(model.summary());
             summary.put("approved_by", approvedBy);
             locked.setStatus(StockCountStatus.POSTED.name());
@@ -902,11 +1110,34 @@ public class StockCountService {
         }, current));
     }
 
+    /** 409 COUNT_CHANGED when the post names the review it was approved on and the lines changed since. */
+    private static void requireReviewed(Model model, String reviewed) {
+        if (reviewed != null && !reviewed.equals(model.fingerprint())) {
+            throw new ConflictException("COUNT_CHANGED: lines of this count changed since it was reviewed; review it "
+                    + "again");
+        }
+    }
+
+    /** 409 when a line needs a recount, or a large measured difference has no manager's confirm. */
+    private static void requirePostable(Model model, boolean manager, boolean confirmMeasured) {
+        if (!model.needsRecount().isEmpty()) {
+            throw new ConflictException("COUNT_NEEDS_RECOUNT: " + model.needsRecount().size() + " line(s) changed while "
+                    + "they were being counted (" + String.join(", ", model.needsRecount().stream().limit(5).toList())
+                    + "); count them again or a manager accepts them");
+        }
+        if (manager && !model.measured().isEmpty() && !confirmMeasured) {
+            throw new ConflictException("MEASURED_CONFIRM_REQUIRED: " + String.join(", ",
+                    model.measured().stream().limit(5).toList()) + " differ(s) by more than the measured limit; a "
+                    + "manager confirms it");
+        }
+    }
+
     private CountView finishRecount(String instituteId, Caller caller, String countId) {
         StockCount locked = countRepository.lockForUpdate(instituteId, countId).orElseThrow(StockCountService::notFound);
         if (!StockCountStatus.OPEN.name().equals(locked.getStatus())) {
             throw new ConflictException("COUNT_NOT_OPEN: this count is " + locked.getStatus());
         }
+        requireRecountWorker(instituteId, locked, caller);
         Agreement agreement = StockCountMath.agreement(
                 counted(lineRepository.findByInstituteIdAndCountIdOrderByCreatedAtAscIdAsc(instituteId,
                         locked.getRecountOfCountId())),
@@ -1014,19 +1245,27 @@ public class StockCountService {
         }
         List<String> actions = new ArrayList<>();
         if (open && caller != null && caller.actsAt(count.getLocationId())) {
-            actions.add("COUNT");
             if (isCount) {
+                actions.add("COUNT");
                 actions.add("REVIEW");
                 if (!recountOpen) {
                     actions.add("POST");
                 }
+                if (caller.manager()) {
+                    actions.add("ACCEPT");
+                }
             } else {
-                actions.add("POST");
+                StockCount main = countRepository.findByInstituteIdAndId(instituteId, count.getRecountOfCountId())
+                        .orElse(null);
+                if (main != null && mayWorkOnRecount(count, caller, mainCounters(instituteId, main))) {
+                    actions.add("COUNT");
+                    actions.add("POST");
+                }
             }
             if (caller.userId().equals(count.getStartedBy()) || caller.manager()) {
                 actions.add("CANCEL");
             }
-            if (isCount && !recountOpen && !caller.userId().equals(count.getStartedBy())) {
+            if (isCount && !recountOpen && !mainCounters(instituteId, count).contains(caller.userId())) {
                 actions.add("RECOUNT");
             }
         } else if (StockCountStatus.POSTED.name().equals(count.getStatus()) && isCount && caller != null

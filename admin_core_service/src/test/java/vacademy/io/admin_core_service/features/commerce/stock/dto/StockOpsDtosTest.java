@@ -85,16 +85,24 @@ class StockOpsDtosTest {
 
     @Test
     void theReviewCarriesValueOnlyWhenFilled() {
-        ReviewLine staff = new ReviewLine("line-1", "ps-1", "CLOTH-1", "Cotton cloth", null, 150,
-                "2026-11-18T10:15:30", 200, 0, 200, -50, null);
+        ReviewLine staff = new ReviewLine("line-1", "ps-1", "CLOTH-1", "Cotton cloth", null, "QUANTITY", "MTR", 10,
+                null, 150, "2026-11-18T10:15:30", "2026-11-18T10:14:00", 200, 0, 0, 200, -50, null, 3,
+                List.of(StockOpsDtos.FLAG_NEEDS_RECOUNT, StockOpsDtos.FLAG_MEASURED_CONFIRM), null);
         CountReview review = new CountReview("c-1", "now", List.of(staff), List.of(), List.of(), List.of(), List.of(),
-                List.of(), List.of(), List.of(), new ReviewTotals(1, 0, 50, null, null), true);
+                List.of(), List.of(), List.of(), new ReviewTotals(1, 0, 50, null, null), true, 1, true, "f-1");
         String wire = json.valueToTree(review).toString();
         assertFalse(wire.contains("\"value"), wire);
         assertTrue(wire.contains("\"expected_at_count\":200"), wire);
         assertTrue(wire.contains("\"needs_approval\":true"), wire);
-        ReviewLine manager = new ReviewLine("line-1", "ps-1", "CLOTH-1", "Cotton cloth", null, 150, null, 200, 0, 200,
-                -50, new BigDecimal("-500.00"));
+        // The measure and the timing flags the screen shows (F-M3, L4, L7).
+        for (String field : List.of("\"unit\":\"MTR\"", "\"qty_scale\":10", "\"stock_mode\":\"QUANTITY\"",
+                "\"first_counted_at\":", "\"packed_unshipped\":0", "\"moved_while_counting\":3",
+                "\"flags\":[\"NEEDS_RECOUNT\",\"MEASURED_CONFIRM\"]", "\"needs_recount\":1",
+                "\"measured_confirm\":true")) {
+            assertTrue(wire.contains(field), field + " in " + wire);
+        }
+        ReviewLine manager = new ReviewLine("line-1", "ps-1", "CLOTH-1", "Cotton cloth", null, null, null, null, null,
+                150, null, null, 200, 0, null, 200, -50, new BigDecimal("-500.00"), null, null, null);
         assertTrue(json.valueToTree(manager).has("value"));
     }
 
@@ -109,9 +117,12 @@ class StockOpsDtosTest {
                 List.of(), null, approval);
         assertFalse(receive.toString().contains("482917"), receive.toString());
         assertEquals(null, receive.withoutApproval().approval());
-        StockOpsDtos.CountPostRequest post = new StockOpsDtos.CountPostRequest("key-12345678", "SKIP", approval);
+        StockOpsDtos.CountPostRequest post = new StockOpsDtos.CountPostRequest("key-12345678", "SKIP", approval, null, null);
         assertEquals(null, post.withoutApproval().approval());
         assertEquals("SKIP", post.withoutApproval().uncounted());
+        // The measured confirm is resent under the same key, like the PIN.
+        assertEquals(null, new StockOpsDtos.CountPostRequest("key-12345678", "SKIP", null, Boolean.TRUE, null)
+                .withoutApproval().confirmMeasured());
     }
 
     @Test

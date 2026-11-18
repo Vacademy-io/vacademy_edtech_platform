@@ -43,10 +43,11 @@ public final class LabelDtos {
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record LabelRow(String id, String locationId, String packageSessionId, String sku, String itemName,
-                           String variantName, String pieceId, String pieceCode, String labelCode, int quantity,
-                           String reason, String reprintReason, String note, String sourceType, String sourceId,
-                           String sourceLabel, String status, String requestedBy, String createdAt, String printedAt,
-                           String printedBy, boolean hasPrice) {
+                           String variantName, String stockMode, String unit, Integer qtyScale, String pieceId,
+                           String pieceCode, String labelCode, int quantity, String reason, String reprintReason,
+                           String note, String sourceType, String sourceId, String sourceLabel, String status,
+                           String requestedBy, String createdAt, String printedAt, String printedBy,
+                           boolean hasPrice) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -61,13 +62,19 @@ public final class LabelDtos {
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record PrintedAnswer(int printed, Boolean replayed) {
+    public record PrintedAnswer(int printed, List<String> skipped, Boolean replayed) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record ReplaceRow(String packageSessionId, String sku, String itemName, BigDecimal printedMrp,
-                             BigDecimal currentMrp, int onHand) {
+    /**
+     * A variant whose shelf labels show an old MRP. {@code labels}: how many to queue (PIECE: the
+     * pieces on the shelf, one each; measured: one per roll, 1; quantity: on hand, at most 500, then
+     * {@code capped}).
+     */
+    public record ReplaceRow(String packageSessionId, String sku, String itemName, String stockMode, String unit,
+                             Integer qtyScale, BigDecimal printedMrp, BigDecimal currentMrp, int onHand, int labels,
+                             boolean capped, boolean hasPrice) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -94,8 +101,15 @@ public final class LabelDtos {
                              int qtyScale, int copies, String pieceId) {
     }
 
+    /** A row that was not drawn, and why ({@code NO_PRICE}: a manager sets the price first). */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record PrintDataAnswer(String size, Names shopName, List<PrintLabel> labels, int totalCopies) {
+    public record SkippedLabel(String requestId, String sku, String reason) {
+    }
+
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record PrintDataAnswer(String size, Names shopName, List<PrintLabel> labels, int totalCopies,
+                                  List<SkippedLabel> skipped) {
     }
 }

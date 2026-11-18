@@ -256,6 +256,36 @@ class StockTransferServiceTest {
     }
 
     @Test
+    void aDestinationChangedBetweenTheCheckAndTheLockIsRefused() {
+        // Checked: L2 -> L1, one GSTIN, a delivery challan. Then an edit of the draft moved it to L3
+        // (another GSTIN) before the dispatch took the row lock.
+        gstins("09AAACH7409R1ZZ", "27AAACH7409R1ZZ");
+        transfer("DRAFT", L2, L1);
+        StockTransfer edited = new StockTransfer();
+        edited.setId("t-1");
+        edited.setInstituteId(INST);
+        edited.setTransferNumber("TRF-000001");
+        edited.setFromLocationId(L2);
+        edited.setToLocationId(L3);
+        edited.setStatus("DRAFT");
+        when(transfers.lockForUpdate(INST, "t-1")).thenReturn(Optional.of(edited));
+        assertEquals("TRANSFER_CHANGED", code(() -> service.dispatch(INST, staffAtL2, "t-1", send(null, null))));
+        verify(ledger, never()).postAll(any());
+        verify(numbers, never()).allocate(any(), any(), any(), any(), any(), any(), any());
+
+        // Same destination, but its GSTIN changed meanwhile: refused the same way.
+        StockTransfer same = transfer("DRAFT", L2, L1);
+        when(transfers.lockForUpdate(INST, "t-1")).thenAnswer(call -> {
+            when(sellers.resolve(eq(INST), eq(L1), any())).thenReturn(CommerceSellerLookup.Seller.builder()
+                    .gstin("27AAACH7409R1ZZ").build());
+            return Optional.of(same);
+        });
+        assertEquals("TRANSFER_CHANGED", code(() -> service.dispatch(INST, staffAtL2, "t-1",
+                new TransferDispatchRequest("transfer-0002", null, null, null, null))));
+        verify(ledger, never()).postAll(any());
+    }
+
+    @Test
     void oneGstinTravelsWithAChallanOnly() {
         transfer("DRAFT", L2, L1);
         gstins("09AAACH7409R1ZZ", "09AAACH7409R1ZZ");

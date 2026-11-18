@@ -65,6 +65,7 @@ class LabelQueueServiceTest {
     private final StorefrontSnapshotLoader snapshots = mock(StorefrontSnapshotLoader.class);
     private final CommerceAuditService audit = mock(CommerceAuditService.class);
     private final CommerceRequestRepository requests = mock(CommerceRequestRepository.class);
+    private final CommerceNotificationShopSettings shopSettings = mock(CommerceNotificationShopSettings.class);
     private LabelQueueService service;
 
     private final Caller staffAtL1 = new Caller("wh-1", false, false, true, false, Set.of(L1));
@@ -73,9 +74,12 @@ class LabelQueueServiceTest {
     void setUp() {
         PlatformTransactionManager tx = mock(PlatformTransactionManager.class);
         service = new LabelQueueService(repository, pieces, mock(StockVariantRepository.class), reads,
-                mock(ScanCodeGenerator.class), snapshots, mock(CommerceNotificationShopSettings.class),
+                mock(ScanCodeGenerator.class), snapshots, shopSettings,
                 new CommerceRequestGuard(requests, tx), audit, tx);
         when(requests.findByInstituteIdAndClientRequestId(anyString(), anyString())).thenReturn(Optional.empty());
+        when(reads.locationOfInstitute(INST, L1)).thenReturn(true);
+        when(reads.locationOfInstitute(INST, L2)).thenReturn(true);
+        when(shopSettings.read(INST)).thenReturn(new CommerceNotificationShopSettings.Shop(null, 0, Map.of()));
         when(repository.saveAllAndFlush(anyList())).thenAnswer(call -> {
             List<CommerceLabelRequest> rows = call.getArgument(0);
             int n = 0;
@@ -110,8 +114,35 @@ class LabelQueueServiceTest {
     }
 
     private static ItemFacts item(String variant, String stockMode, String policy, String productStatus) {
-        return new ItemFacts(variant, "pkg", "SKU-1", "Cotton scarf", Map.of("en", "Cotton scarf"), "One size",
-                stockMode, policy, "ACTIVE", productStatus, "PCS", 1, 1, null, null, null, "0000", null);
+        return item(variant, stockMode, policy, productStatus, "PCS", 1);
+    }
+
+    private static ItemFacts item(String variant, String stockMode, String policy, String productStatus, String unit,
+                                  int qtyScale) {
+        return new ItemFacts(variant, "pkg", "SKU-" + variant, "Cotton scarf", Map.of("en", "Cotton scarf"),
+                "One size", stockMode, policy, "ACTIVE", productStatus, unit, qtyScale, 1, "VLABEL0001", null, null,
+                "0000", null);
+    }
+
+    private static CartVariant priced(String price) {
+        CartVariant variant = mock(CartVariant.class);
+        when(variant.price()).thenReturn(price == null ? null : new BigDecimal(price));
+        when(variant.names()).thenReturn(Map.of("en", "Item"));
+        when(variant.options()).thenReturn(List.of());
+        return variant;
+    }
+
+    private static CommerceLabelRequest pending(String id, String variant, int quantity) {
+        CommerceLabelRequest row = new CommerceLabelRequest();
+        row.setId(id);
+        row.setInstituteId(INST);
+        row.setLocationId(L1);
+        row.setPackageSessionId(variant);
+        row.setStatus("PENDING");
+        row.setQuantity(quantity);
+        row.setSourceType("MANUAL");
+        row.setSourceId("group-1");
+        return row;
     }
 
     private static LabelDtos.LabelRequestsRequest ask(String reason, String reprintReason, String note,
@@ -188,13 +219,134 @@ class LabelQueueServiceTest {
                 new LabelDtos.LabelLineInput(null, null, "p-l1", null)));
         assertEquals("p-l1", answer.requests().get(0).pieceId());
         assertEquals(1, answer.requests().get(0).quantity());
-        // A tracked PIECE item never takes a quantity label.
+        // A tracked PIECE item never takes a quantity label: a reprint scans the piece.
         when(reads.itemFacts(eq(INST), anyCollection())).thenReturn(Map.of("ps-scarf",
                 item("ps-scarf", "PIECE", "TRACKED", "ACTIVE")));
         InvalidRequestException quantity = assertThrows(InvalidRequestException.class, () -> service.request(INST,
-                staffAtL1, new LabelDtos.LabelRequestsRequest("labels-0002", L1, "PRICE_CHANGE", null, null,
+                staffAtL1, new LabelDtos.LabelRequestsRequest("labels-0002", L1, "REPRINT", "TORN", null,
                         List.of(new LabelDtos.LabelLineInput("ps-scarf", 1, null, null)))));
         assertTrue(quantity.getMessage().startsWith("PIECE_SCAN_REQUIRED"), quantity.getMessage());
+    }
+
+    @Test
+    void aPriceChangeLabelsEveryPieceOnTheShelfAndOneLabelPerRoll() {
+        when(reads.itemFacts(eq(INST), anyCollection())).thenReturn(Map.of(
+                "ps-scarf", item("ps-scarf", "PIECE", "TRACKED", "ACTIVE"),
+                "ps-cloth", item("ps-cloth", "QUANTITY", "TRACKED", "ACTIVE", "MTR", 10)));
+        // No piece on the shelf here: nothing to relabel.
+        when(reads.piecesOnShelf(eq(INST), eq(L1), anyCollection())).thenReturn(Map.of());
+        ConflictException none = assertThrows(ConflictException.class, () -> service.request(INST, staffAtL1,
+                new LabelDtos.LabelRequestsRequest("labels-0003", L1, "PRICE_CHANGE", null, null,
+                        List.of(new LabelDtos.LabelLineInput("ps-scarf", null, null, null)))));
+        assertTrue(none.getMessage().startsWith("PIECE_NOT_HERE"), none.getMessage());
+        // A measured item gets one label per roll, never one per base unit.
+        InvalidRequestException perUnit = assertThrows(InvalidRequestException.class, () -> service.request(INST,
+                staffAtL1, new LabelDtos.LabelRequestsRequest("labels-0004", L1, "PRICE_CHANGE", null, null,
+                        List.of(new LabelDtos.LabelLineInput("ps-cloth", 200, null, null)))));
+        assertTrue(perUnit.getMessage().contains("one label per roll"), perUnit.getMessage());
+
+        when(reads.piecesOnShelf(eq(INST), eq(L1), anyCollection())).thenReturn(Map.of("ps-scarf",
+                List.of("p-1", "p-2", "p-3")));
+        LabelDtos.LabelsAnswer answer = service.request(INST, staffAtL1, new LabelDtos.LabelRequestsRequest(
+                "labels-0005", L1, "PRICE_CHANGE", null, null, List.of(
+                new LabelDtos.LabelLineInput("ps-scarf", 1, null, null),
+                new LabelDtos.LabelLineInput("ps-cloth", 2, null, null))));
+        assertEquals(4, answer.requests().size(), "3 pieces + 1 cloth row");
+        assertEquals(List.of("p-1", "p-2", "p-3"), answer.requests().stream()
+                .filter(r -> r.pieceId() != null).map(LabelDtos.LabelRow::pieceId).toList());
+        LabelDtos.LabelRow cloth = answer.requests().stream().filter(r -> "ps-cloth".equals(r.packageSessionId()))
+                .findFirst().orElseThrow();
+        assertEquals(2, cloth.quantity());
+        assertEquals("MTR", cloth.unit());
+        assertEquals(10, cloth.qtyScale());
+        assertEquals("QUANTITY", cloth.stockMode());
+    }
+
+    @Test
+    void aLocationOfAnotherInstituteIsRefused() {
+        when(reads.itemFacts(eq(INST), anyCollection())).thenReturn(Map.of("ps-bottle",
+                item("ps-bottle", "QUANTITY", "TRACKED", "ACTIVE")));
+        InvalidRequestException refused = assertThrows(InvalidRequestException.class, () -> service.request(INST,
+                new Caller("ad-1", true, true, true, true, null), new LabelDtos.LabelRequestsRequest("labels-0006",
+                        "loc-foreign", "REPRINT", "TORN", null,
+                        List.of(new LabelDtos.LabelLineInput("ps-bottle", 1, null, null)))));
+        assertTrue(refused.getMessage().startsWith("LOCATION_NOT_FOUND"), refused.getMessage());
+        verify(repository, never()).saveAllAndFlush(anyList());
+    }
+
+    @Test
+    void printDataSkipsItemsWithoutAPriceAndMarkPrintedSkipsWhatIsDone() {
+        CommerceLabelRequest bottle = pending("row-1", "ps-bottle", 3);
+        CommerceLabelRequest quick = pending("row-2", "ps-quick", 2);
+        when(repository.findByInstituteIdAndIdIn(INST, List.of("row-1", "row-2"))).thenReturn(List.of(bottle, quick));
+        when(reads.itemFacts(eq(INST), anyCollection())).thenReturn(Map.of(
+                "ps-bottle", item("ps-bottle", "QUANTITY", "TRACKED", "ACTIVE"),
+                "ps-quick", item("ps-quick", "QUANTITY", "TRACKED", "DRAFT")));
+        CartVariant bottlePrice = priced("450.00");
+        CartVariant noPrice = priced(null);
+        when(snapshots.cartVariants(eq(INST), anyCollection(), anyList())).thenReturn(Map.of("ps-bottle", bottlePrice,
+                "ps-quick", noPrice));
+        LabelDtos.PrintDataAnswer data = service.printData(INST, staffAtL1,
+                new LabelDtos.PrintDataRequest(List.of("row-1", "row-2"), null, null));
+        assertEquals(1, data.labels().size());
+        assertEquals(3, data.totalCopies());
+        assertEquals(1, data.skipped().size());
+        assertEquals("row-2", data.skipped().get(0).requestId());
+        assertEquals("NO_PRICE", data.skipped().get(0).reason());
+        // Only unpriced rows: nothing to print.
+        when(repository.findByInstituteIdAndIdIn(INST, List.of("row-2"))).thenReturn(List.of(quick));
+        ConflictException nothing = assertThrows(ConflictException.class, () -> service.printData(INST, staffAtL1,
+                new LabelDtos.PrintDataRequest(List.of("row-2"), null, null)));
+        assertTrue(nothing.getMessage().startsWith("LABEL_NO_PRICE"), nothing.getMessage());
+
+        // A second chunk naming a row already printed: skipped, not refused.
+        when(repository.findByInstituteIdAndIdIn(INST, List.of("row-1", "row-2", "row-gone")))
+                .thenReturn(List.of(bottle, quick));
+        when(repository.markPrinted(eq(INST), eq("row-1"), any(LocalDateTime.class), eq("wh-1"), any(), any()))
+                .thenReturn(0);
+        when(repository.markPrinted(eq(INST), eq("row-2"), any(LocalDateTime.class), eq("wh-1"), any(), any()))
+                .thenReturn(1);
+        LabelDtos.PrintedAnswer printed = service.markPrinted(INST, staffAtL1,
+                new LabelDtos.LabelIdsRequest("printed-0009", List.of("row-1", "row-2", "row-gone")));
+        assertEquals(1, printed.printed());
+        assertEquals(List.of("row-1", "row-gone"), printed.skipped());
+    }
+
+    @Test
+    void tagsToReplaceSayHowManyLabelsEachItemNeeds() {
+        CommerceLabelRequestRepository.LastPrinted scarf = last("ps-scarf");
+        CommerceLabelRequestRepository.LastPrinted cloth = last("ps-cloth");
+        CommerceLabelRequestRepository.LastPrinted spoon = last("ps-spoon");
+        when(repository.lastPrinted(INST, L1)).thenReturn(List.of(scarf, cloth, spoon));
+        CartVariant scarfPrice = priced("1300.00");
+        CartVariant clothPrice = priced("30.00");
+        CartVariant spoonPrice = priced("60.00");
+        when(snapshots.cartVariants(eq(INST), anyCollection(), anyList())).thenReturn(Map.of(
+                "ps-scarf", scarfPrice, "ps-cloth", clothPrice, "ps-spoon", spoonPrice));
+        when(reads.itemFacts(eq(INST), anyCollection())).thenReturn(Map.of(
+                "ps-scarf", item("ps-scarf", "PIECE", "TRACKED", "ACTIVE"),
+                "ps-cloth", item("ps-cloth", "QUANTITY", "TRACKED", "ACTIVE", "MTR", 10),
+                "ps-spoon", item("ps-spoon", "QUANTITY", "TRACKED", "ACTIVE")));
+        when(reads.onHandAt(eq(INST), eq(L1), anyCollection())).thenReturn(Map.of("ps-scarf", 2, "ps-cloth", 200,
+                "ps-spoon", 900));
+        when(reads.piecesOnShelf(eq(INST), eq(L1), anyCollection())).thenReturn(Map.of("ps-scarf",
+                List.of("p-1", "p-2")));
+        Map<String, LabelDtos.ReplaceRow> rows = new java.util.HashMap<>();
+        service.toReplace(INST, L1).rows().forEach(r -> rows.put(r.packageSessionId(), r));
+        assertEquals(2, rows.get("ps-scarf").labels(), "one per piece on the shelf");
+        assertEquals("PIECE", rows.get("ps-scarf").stockMode());
+        assertEquals(1, rows.get("ps-cloth").labels(), "one per roll, not 200");
+        assertEquals(10, rows.get("ps-cloth").qtyScale());
+        assertEquals(500, rows.get("ps-spoon").labels());
+        assertTrue(rows.get("ps-spoon").capped());
+        assertTrue(rows.get("ps-spoon").hasPrice());
+    }
+
+    private static CommerceLabelRequestRepository.LastPrinted last(String variant) {
+        CommerceLabelRequestRepository.LastPrinted row = mock(CommerceLabelRequestRepository.LastPrinted.class);
+        when(row.getPackageSessionId()).thenReturn(variant);
+        when(row.getPrintedPrice()).thenReturn(new BigDecimal("1.00"));
+        return row;
     }
 
     @Test

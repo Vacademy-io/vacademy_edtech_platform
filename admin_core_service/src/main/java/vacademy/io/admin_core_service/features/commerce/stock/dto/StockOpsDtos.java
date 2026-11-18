@@ -190,11 +190,14 @@ public final class StockOpsDtos {
                                      String scopeCollectionId, String recountOfCountId, String note) {
     }
 
-    /** {@code {package_session_id, mode: SET|ADD, quantity}}, or {@code {piece_code}} / {@code {piece_id}}. */
+    /**
+     * {@code {package_session_id, mode: SET|ADD, quantity}}, or {@code {piece_code}} / {@code {piece_id}}.
+     * {@code explicit_quantity}: the person typed the quantity (an ADD of a measured item needs it).
+     */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record CountLineInput(String packageSessionId, String mode, Integer quantity, String pieceCode,
-                                 String pieceId) {
+                                 String pieceId, Boolean explicitQuantity) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -204,11 +207,23 @@ public final class StockOpsDtos {
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record CountPostRequest(String clientRequestId, String uncounted, Approval approval) {
+    /**
+     * {@code review_fingerprint}: the {@code fingerprint} of the review the person (and the manager
+     * giving a PIN) looked at; when sent, a count whose lines changed since is refused.
+     */
+    public record CountPostRequest(String clientRequestId, String uncounted, Approval approval,
+                                   Boolean confirmMeasured, String reviewFingerprint) {
 
+        /** The body the request hash is taken over: the PIN and the confirm are resent under the same key. */
         public CountPostRequest withoutApproval() {
-            return new CountPostRequest(clientRequestId, uncounted, null);
+            return new CountPostRequest(clientRequestId, uncounted, null, null, reviewFingerprint);
         }
+    }
+
+    /** {@code POST /counts/{id}/lines/{lineId}/accept}: the counted quantity the manager looked at. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record AcceptLineRequest(Integer countedQty) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -268,14 +283,22 @@ public final class StockOpsDtos {
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record ReviewLine(String lineId, String packageSessionId, String sku, String itemName, String pieceCode,
-                             Integer countedQty, String countedAt, Integer onHandNow, Integer movedSince,
-                             Integer expectedAtCount, Integer adjustment, BigDecimal value) {
+    public record ReviewLine(String lineId, String packageSessionId, String sku, String itemName, String variantName,
+                             String stockMode, String unit, Integer qtyScale, String pieceCode, Integer countedQty,
+                             String countedAt, String firstCountedAt, Integer onHandNow, Integer movedSince,
+                             Integer packedUnshipped, Integer expectedAtCount, Integer adjustment, BigDecimal value,
+                             Integer movedWhileCounting, List<String> flags, String acceptedBy) {
     }
+
+    /** Review flags of a line. */
+    public static final String FLAG_NEEDS_RECOUNT = "NEEDS_RECOUNT";
+    public static final String FLAG_RECOUNT_ACCEPTED = "RECOUNT_ACCEPTED";
+    public static final String FLAG_MEASURED_CONFIRM = "MEASURED_CONFIRM";
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record UncountedItem(String packageSessionId, String sku, String itemName, int onHandNow) {
+    public record UncountedItem(String packageSessionId, String sku, String itemName, String variantName,
+                                String stockMode, String unit, Integer qtyScale, int onHandNow) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -296,7 +319,8 @@ public final class StockOpsDtos {
                               List<ReviewPiece> missingPieces, List<ReviewPiece> foundPieces,
                               List<ReviewPiece> misplacedPieces, List<ReviewPiece> notInStockPieces,
                               List<ReviewPiece> reservedNotCounted, List<ReviewPiece> arrivedDuringCount,
-                              ReviewTotals totals, boolean needsApproval) {
+                              ReviewTotals totals, boolean needsApproval, int needsRecount,
+                              boolean measuredConfirm, String fingerprint) {
     }
 
     // ================================================================== reads

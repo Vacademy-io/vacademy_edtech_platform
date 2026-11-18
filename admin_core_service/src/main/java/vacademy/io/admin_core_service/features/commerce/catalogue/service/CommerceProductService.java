@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.commerce.catalogue.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -40,6 +41,7 @@ import vacademy.io.admin_core_service.features.commerce.common.CommercePackageTy
 import vacademy.io.admin_core_service.features.commerce.document.service.DocumentClock;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockLocation;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLocationRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockMovementRepository;
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxClassService;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.EnrollInvite;
 import vacademy.io.admin_core_service.features.enroll_invite.entity.PackageSessionLearnerInvitationToPaymentOption;
@@ -154,6 +156,14 @@ public class CommerceProductService {
     private final CommerceTaxClassService taxClassService;
     private final DocumentClock documentClock;
     private final StockLocationRepository locationRepository;
+
+    /** The stock ledger, to lock the measure of an item with stock (WP-40); absent in tests built by hand. */
+    private StockMovementRepository movementRepository;
+
+    @Autowired(required = false)
+    public void setMovementRepository(StockMovementRepository movementRepository) {
+        this.movementRepository = movementRepository;
+    }
 
     // ------------------------------------------------------------------ writes
 
@@ -577,6 +587,13 @@ public class CommerceProductService {
                 || (qtyScale != null && !qtyScale.equals(product.getQtyScale()));
         require(!measureChanges || product.getPublishedAt() == null,
                 "stock_mode, unit and qty_scale cannot change after the product has been published");
+        // Stock already counted in the old measure would mean something else (40 PCS read as 4 m), and a
+        // quantity item turned PIECE could never receive a transfer in transit. DRAFT or not.
+        if (measureChanges && !created && movementRepository != null
+                && movementRepository.existsForPackage(instituteId, product.getPackageId())) {
+            throw new ConflictException("STOCK_EXISTS: unit, qty_scale and stock mode cannot change once stock has "
+                    + "moved for this item");
+        }
         if (stockMode != null) {
             product.setStockMode(stockMode);
         }

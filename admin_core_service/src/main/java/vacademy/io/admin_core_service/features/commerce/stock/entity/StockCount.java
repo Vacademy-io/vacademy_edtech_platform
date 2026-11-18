@@ -16,7 +16,7 @@ import vacademy.io.admin_core_service.features.commerce.catalogue.entity.Commerc
 import java.time.LocalDateTime;
 
 /**
- * A physical count of one location, or of one collection there (V725). kind RECOUNT is a blind
+ * A physical count of one location, or of one collection there (V730). kind RECOUNT is a blind
  * second count by another person; it posts no movement and is compared with the count it rechecks.
  */
 @Getter

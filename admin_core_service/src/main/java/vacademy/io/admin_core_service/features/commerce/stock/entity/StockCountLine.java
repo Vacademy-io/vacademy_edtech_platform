@@ -11,7 +11,7 @@ import vacademy.io.admin_core_service.features.commerce.catalogue.entity.Commerc
 import java.time.LocalDateTime;
 
 /**
- * What was counted (V725). Written by the native upserts of {@code StockCountLineRepository} only;
+ * What was counted (V730). Written by the native upserts of {@code StockCountLineRepository} only;
  * {@code counted_at} is database time, compared with {@code stock_movement.created_at} at post.
  */
 @Getter
@@ -36,14 +36,28 @@ public class StockCountLine extends CommerceCatalogueEntity {
     @Column(name = "counted_at", nullable = false, updatable = false)
     private LocalDateTime countedAt;
 
+    /** Database time of the first save of the line; a SET starts it again, an ADD keeps it. */
+    @Column(name = "first_counted_at", nullable = false, updatable = false)
+    private LocalDateTime firstCountedAt;
+
     @Column(name = "counted_by", updatable = false, length = 36)
     private String countedBy;
+
+    /** A manager accepted a line whose stock moved while it was counted; cleared by any later save. */
+    @Column(name = "accepted_by", updatable = false, length = 36)
+    private String acceptedBy;
+
+    @Column(name = "accepted_at", updatable = false)
+    private LocalDateTime acceptedAt;
 
     @Column(name = "on_hand_at_post", updatable = false)
     private Integer onHandAtPost;
 
     @Column(name = "moved_since", updatable = false)
     private Integer movedSince;
+
+    @Column(name = "packed_unshipped", updatable = false)
+    private Integer packedUnshipped;
 
     @Column(name = "adjustment", updatable = false)
     private Integer adjustment;

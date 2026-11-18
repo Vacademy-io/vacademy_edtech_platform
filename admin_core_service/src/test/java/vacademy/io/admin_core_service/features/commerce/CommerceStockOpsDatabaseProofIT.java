@@ -51,6 +51,8 @@ import vacademy.io.admin_core_service.features.commerce.pos.service.PosSaleServi
 import vacademy.io.admin_core_service.features.commerce.pos.service.PosSessionService;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessDeniedException;
 import vacademy.io.admin_core_service.features.commerce.security.CommercePinService;
+import vacademy.io.admin_core_service.features.commerce.shipment.dto.ShipmentDtos;
+import vacademy.io.admin_core_service.features.commerce.shipment.service.CommerceShipmentService;
 import vacademy.io.admin_core_service.features.commerce.stock.controller.StockCountController;
 import vacademy.io.admin_core_service.features.commerce.stock.controller.StockLevelController;
 import vacademy.io.admin_core_service.features.commerce.stock.controller.StockOverviewController;
@@ -94,12 +96,14 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
@@ -179,6 +183,7 @@ class CommerceStockOpsDatabaseProofIT {
     @Autowired private PosCatalogueService posCatalogue;
     @Autowired private StockChallanPdfService challanPdf;
     @Autowired private StockTransferService transferService;
+    @Autowired private CommerceShipmentService shipments;
     // The routes, called as a request would call them (guard first, then the service).
     @Autowired private StockTransferController transfers;
     @Autowired private StockCountController counts;
@@ -521,15 +526,20 @@ class CommerceStockOpsDatabaseProofIT {
     }
 
     private static CountLineInput set(String variant, int quantity) {
-        return new CountLineInput(variant, "SET", quantity, null, null);
+        return new CountLineInput(variant, "SET", quantity, null, null, null);
     }
 
     private static CountLineInput add(String variant, int quantity) {
-        return new CountLineInput(variant, "ADD", quantity, null, null);
+        return new CountLineInput(variant, "ADD", quantity, null, null, null);
+    }
+
+    /** An ADD the person typed (a measured item needs it). */
+    private static CountLineInput typed(String variant, int quantity) {
+        return new CountLineInput(variant, "ADD", quantity, null, null, true);
     }
 
     private static CountLineInput scanned(String pieceCode) {
-        return new CountLineInput(null, null, null, pieceCode, null);
+        return new CountLineInput(null, null, null, pieceCode, null, null);
     }
 
     private String pieceCode(String pieceId) {
@@ -565,9 +575,11 @@ class CommerceStockOpsDatabaseProofIT {
     @Test
     @Order(1)
     void migrationAppliedAndShopSeeded() throws Exception {
-        assertEquals(1, count("SELECT count(*) FROM flyway_schema_history WHERE success AND version = '725'"));
-        assertEquals("725", text("SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC "
-                + "LIMIT 1"), "Flyway target 725");
+        assertEquals(1, count("SELECT count(*) FROM flyway_schema_history WHERE success AND version = '730'"));
+        assertEquals("730", text("SELECT version FROM flyway_schema_history WHERE success ORDER BY installed_rank DESC "
+                + "LIMIT 1"), "Flyway target 730");
+        assertNotNull(text("SELECT column_name FROM information_schema.columns WHERE table_name = 'stock_count_line' "
+                + "AND column_name = 'first_counted_at'"), "first_counted_at (L4)");
         for (String table : List.of("stock_transfer", "stock_transfer_line", "stock_count", "stock_count_line",
                 "commerce_label_request")) {
             assertNotNull(text("SELECT to_regclass(?)::text", "public." + table), table);
@@ -1161,10 +1173,12 @@ class CommerceStockOpsDatabaseProofIT {
 
         // Cloth: 150 base units on the shelf against 200 (SET, then a SET + ADD gives the same).
         countLines(manager, open.id(), set(cloth, 100));
-        StockOpsDtos.CountLinesAnswer clothLine = countLines(manager, open.id(), add(cloth, 50));
+        // L7: a scan of the roll label is not 1 base unit (0.1 m); the length is typed.
+        assertEquals("QTY_REQUIRED", code(() -> countLines(manager, open.id(), add(cloth, 1))));
+        StockOpsDtos.CountLinesAnswer clothLine = countLines(manager, open.id(), typed(cloth, 50));
         assertEquals(150, clothLine.lines().get(0).countedQty());
         assertEquals("PIECE_SCAN_REQUIRED", code(() -> countLines(manager, open.id(), set(scarf, 1))));
-        assertEquals("VALIDATION", code(() -> countLines(manager, open.id(), add(cloth, 0))));
+        assertEquals("VALIDATION", code(() -> countLines(manager, open.id(), typed(cloth, 0))));
 
         // Scarves at L1: all but one IN_STOCK scanned, the one written off on the way scanned (found),
         // and one received during the count left on the shelf unscanned.
@@ -1198,6 +1212,13 @@ class CommerceStockOpsDatabaseProofIT {
         StockOpsDtos.ReviewLine clothRow = review.lines().stream().filter(l -> cloth.equals(l.packageSessionId()))
                 .findFirst().orElseThrow();
         assertEquals(-50, clothRow.adjustment());
+        // F-M3 / L7: the measure is on the row, and 5 m short is above the 1 m confirm limit.
+        assertEquals("MTR", clothRow.unit());
+        assertEquals(10, clothRow.qtyScale());
+        assertTrue(clothRow.flags().contains(StockOpsDtos.FLAG_MEASURED_CONFIRM), String.valueOf(clothRow.flags()));
+        assertTrue(review.measuredConfirm());
+        assertEquals(0, review.needsRecount());
+        assertNull(bagRow.flags(), "a line saved once is never flagged");
         assertEquals(List.of(missing), review.missingPieces().stream().map(StockOpsDtos.ReviewPiece::pieceId).toList());
         assertEquals(List.of(writtenOff), review.foundPieces().stream().map(StockOpsDtos.ReviewPiece::pieceId).toList());
         assertEquals(List.of(arrived), review.arrivedDuringCount().stream().map(StockOpsDtos.ReviewPiece::pieceId)
@@ -1210,11 +1231,16 @@ class CommerceStockOpsDatabaseProofIT {
         noCost(body(counts.get(w1, inst, open.id())), "the count for warehouse staff");
 
         assertEquals("VALIDATION", code(() -> counts.post(manager, inst, open.id(),
-                new StockOpsDtos.CountPostRequest(key(), null, null))), "the uncounted choice is required");
+                new StockOpsDtos.CountPostRequest(key(), null, null, null, null))), "the uncounted choice is required");
         int bottleBefore = onHand(l1, bottle);
         String postKey = key();
+        long beforePost = movements();
+        assertEquals("MEASURED_CONFIRM_REQUIRED", code(() -> counts.post(manager, inst, open.id(),
+                new StockOpsDtos.CountPostRequest(postKey, "SKIP", null, null, null))));
+        assertEquals(beforePost, movements(), "nothing posted without the confirm");
+        // The same key with the manager's confirm (left out of the request hash, like a PIN).
         CountView posted = body(counts.post(manager, inst, open.id(),
-                new StockOpsDtos.CountPostRequest(postKey, "SKIP", null)));
+                new StockOpsDtos.CountPostRequest(postKey, "SKIP", null, true, null)));
         assertEquals("POSTED", posted.status());
         assertEquals("POSTED", text("SELECT status FROM stock_count WHERE id = ?", open.id()),
                 "header saved after the line stamps");
@@ -1241,9 +1267,9 @@ class CommerceStockOpsDatabaseProofIT {
                 + "AND piece_id IS NULL", open.id(), cloth));
         assertNotNull(posted.summary());
         assertEquals("COUNT_NOT_OPEN", code(() -> counts.post(manager, inst, open.id(),
-                new StockOpsDtos.CountPostRequest(key(), "SKIP", null))));
+                new StockOpsDtos.CountPostRequest(key(), "SKIP", null, null, null))));
         CountView replay = body(counts.post(manager, inst, open.id(),
-                new StockOpsDtos.CountPostRequest(postKey, "SKIP", null)));
+                new StockOpsDtos.CountPostRequest(postKey, "SKIP", null, null, null)));
         assertEquals(Boolean.TRUE, replay.replayed());
         // The stored review once posted.
         StockOpsDtos.CountReview stored = body(counts.review(manager, inst, open.id()));
@@ -1275,7 +1301,7 @@ class CommerceStockOpsDatabaseProofIT {
                 header(inst);
                 start.await(10, TimeUnit.SECONDS);
                 return body(counts.post(manager, inst, open.id(), new StockOpsDtos.CountPostRequest(key(), "SKIP",
-                        null))).status();
+                        null, null, null))).status();
             });
             String order = sale.get(60, TimeUnit.SECONDS);
             String status = post.get(60, TimeUnit.SECONDS);
@@ -1306,7 +1332,7 @@ class CommerceStockOpsDatabaseProofIT {
         assertEquals("LOCATION_NOT_ALLOWED", code(() -> counts.get(w2, inst, main.id())));
         assertEquals("LOCATION_NOT_ALLOWED", code(() -> countLines(w2, main.id(), set(plate, 1))));
         assertEquals("LOCATION_NOT_ALLOWED", code(() -> counts.post(w2, inst, main.id(),
-                new StockOpsDtos.CountPostRequest(key(), "SKIP", null))));
+                new StockOpsDtos.CountPostRequest(key(), "SKIP", null, null, null))));
         assertEquals("LOCATION_NOT_ALLOWED", code(() -> openCount(w2, l1, null, null, null)));
 
         // The blind recount.
@@ -1322,11 +1348,29 @@ class CommerceStockOpsDatabaseProofIT {
             assertFalse(linesWire.contains(hidden), "the recounter sees no " + hidden + ": " + linesWire);
         }
         assertEquals("RECOUNT_NOT_FINISHED", code(() -> counts.review(manager, inst, recount.id())));
+        // L3: the main counter neither sees, counts, deletes in nor posts the recount; the recounter
+        // does not change the main count while the recount is open.
+        String recountLine = recounted.lines().get(0).id();
+        assertEquals("RECOUNT_OTHER_PERSON", code(() -> counts.get(w1, inst, recount.id())));
+        assertEquals("RECOUNT_OTHER_PERSON", code(() -> countLines(w1, recount.id(), set(plate, plates - 1))));
+        assertEquals("RECOUNT_OTHER_PERSON", code(() -> counts.deleteLine(w1, inst, recount.id(), recountLine)));
+        assertEquals("RECOUNT_OTHER_PERSON", code(() -> counts.post(w1, inst, recount.id(),
+                new StockOpsDtos.CountPostRequest(key(), null, null, null, null))));
+        String mainLine = text("SELECT id FROM stock_count_line WHERE count_id = ? LIMIT 1", main.id());
+        assertEquals("RECOUNT_BLIND", code(() -> countLines(manager, main.id(), set(plate, 0))));
+        assertEquals("RECOUNT_BLIND", code(() -> counts.deleteLine(manager, inst, main.id(), mainLine)));
+        assertEquals(1, count("SELECT count(*) FROM stock_count_line WHERE count_id = ?", recount.id()));
+        assertEquals(plates - 1, count("SELECT counted_qty FROM stock_count_line WHERE id = ?", mainLine));
+        // next_actions: the recount's own starter counts and posts it; ADMIN (not a main counter) may too.
+        assertTrue(body(counts.get(manager, inst, recount.id())).nextActions().containsAll(List.of("COUNT", "POST")));
+        assertTrue(body(counts.get(admin, inst, recount.id())).nextActions().containsAll(List.of("COUNT", "POST")));
+        assertFalse(body(counts.get(w1, inst, main.id())).nextActions().contains("RECOUNT"),
+                "the main counter is never offered the recount");
         assertEquals("RECOUNT_OPEN", code(() -> counts.post(w1, inst, main.id(),
-                new StockOpsDtos.CountPostRequest(key(), "ZERO", pin(managerId, PIN)))));
+                new StockOpsDtos.CountPostRequest(key(), "ZERO", pin(managerId, PIN), null, null))));
         assertEquals("COUNT_ALREADY_OPEN", code(() -> openCount(admin, l1, "RECOUNT", null, main.id())));
         CountView finished = body(counts.post(manager, inst, recount.id(), new StockOpsDtos.CountPostRequest(key(),
-                null, null)));
+                null, null, null, null)));
         assertEquals("POSTED", finished.status());
         Map<String, Object> agreement = (Map<String, Object>) finished.summary().get("agreement");
         note("recount agreement (agrees): " + agreement);
@@ -1340,7 +1384,7 @@ class CommerceStockOpsDatabaseProofIT {
         CountView second = openCount(admin, l1, "RECOUNT", null, main.id());
         countLines(admin, second.id(), set(plate, plates + 3));
         Map<String, Object> disagree = (Map<String, Object>) body(counts.post(admin, inst, second.id(),
-                new StockOpsDtos.CountPostRequest(key(), null, null))).summary().get("agreement");
+                new StockOpsDtos.CountPostRequest(key(), null, null, null, null))).summary().get("agreement");
         note("recount agreement (disagrees): " + disagree);
         assertEquals(Boolean.FALSE, disagree.get("passes"));
         assertTrue(new BigDecimal(String.valueOf(disagree.get("percent"))).compareTo(new BigDecimal("98")) < 0);
@@ -1349,13 +1393,13 @@ class CommerceStockOpsDatabaseProofIT {
         long before = movements();
         String postKey = key();
         assertEquals("APPROVAL_REQUIRED", code(() -> counts.post(w1, inst, main.id(),
-                new StockOpsDtos.CountPostRequest(postKey, "ZERO", null))));
+                new StockOpsDtos.CountPostRequest(postKey, "ZERO", null, null, null))));
         assertEquals("PIN_INVALID", code(() -> counts.post(w1, inst, main.id(),
-                new StockOpsDtos.CountPostRequest(postKey, "ZERO", pin(managerId, WRONG_PIN)))));
+                new StockOpsDtos.CountPostRequest(postKey, "ZERO", pin(managerId, WRONG_PIN), null, null))));
         assertEquals(before, movements());
         assertEquals("OPEN", text("SELECT status FROM stock_count WHERE id = ?", main.id()));
         CountView posted = body(counts.post(w1, inst, main.id(),
-                new StockOpsDtos.CountPostRequest(postKey, "ZERO", pin(managerId, PIN))));
+                new StockOpsDtos.CountPostRequest(postKey, "ZERO", pin(managerId, PIN), null, null)));
         assertEquals("POSTED", posted.status());
         assertEquals(1, count("SELECT count(*) FROM commerce_approval WHERE institute_id = ? AND action = "
                 + "'STOCK_COUNT_POST' AND reference_id = ?", inst, main.id()));
@@ -1378,7 +1422,7 @@ class CommerceStockOpsDatabaseProofIT {
                 header(inst);
                 start.await(10, TimeUnit.SECONDS);
                 CountView v = body(counts.post(manager, inst, tap.id(),
-                        new StockOpsDtos.CountPostRequest(tapKey, "SKIP", null)));
+                        new StockOpsDtos.CountPostRequest(tapKey, "SKIP", null, null, null)));
                 return v.status() + (Boolean.TRUE.equals(v.replayed()) ? ":REPLAYED" : ":FIRST");
             }));
         }
@@ -1527,7 +1571,7 @@ class CommerceStockOpsDatabaseProofIT {
         assertEquals("LOCATION_NOT_ALLOWED", code(() -> labels.request(w2, inst, new LabelDtos.LabelRequestsRequest(
                 key(), l1, "REPRINT", "TORN", null, List.of(new LabelDtos.LabelLineInput(null, null, reprinted, null))))));
         assertEquals("PIECE_SCAN_REQUIRED", code(() -> labels.request(w1, inst, new LabelDtos.LabelRequestsRequest(
-                key(), l1, "PRICE_CHANGE", null, null, List.of(new LabelDtos.LabelLineInput(scarf, 1, null, null))))));
+                key(), l1, "REPRINT", "TORN", null, List.of(new LabelDtos.LabelLineInput(scarf, 1, null, null))))));
         // More than 500 labels at once.
         LabelDtos.LabelsAnswer many = body(labels.request(w1, inst, new LabelDtos.LabelRequestsRequest(key(), l1,
                 "PRICE_CHANGE", null, null, List.of(new LabelDtos.LabelLineInput(bottle, 501, null, null)))));
@@ -1662,8 +1706,9 @@ class CommerceStockOpsDatabaseProofIT {
         assertTrue(made.sku().matches("QA-\\d{6}"), made.sku());
         assertEquals("PCS", made.unit());
         CommerceQuickAddService.QuickAddAnswer repeat = body(quickAdd.quickAdd(w2, inst, ask));
-        assertEquals(made.productId(), repeat.productId(), "a repeat updates the same product");
+        assertEquals(made.productId(), repeat.productId(), "a repeat answers the same product");
         assertEquals(made.sku(), repeat.sku());
+        assertEquals(Boolean.TRUE, repeat.replayed());
         assertEquals(1, count("SELECT count(*) FROM commerce_variant WHERE institute_id = ? AND sku = ?", inst,
                 made.sku()));
         String mat = made.packageSessionId();
@@ -1679,6 +1724,29 @@ class CommerceStockOpsDatabaseProofIT {
         productService.updateVariant(inst, managerId, mat, VariantRequest.builder().price(new BigDecimal("150.00"))
                 .build());
         snapshotLoader.evict(inst);
+        // L2: once a manager priced it, a repeat of the quick add changes nothing, and the same key with
+        // another body (a new name, another tax class, a SKU) is refused.
+        String taxBefore = text("SELECT tax_class_id FROM commerce_product WHERE package_id = ?", made.productId());
+        CommerceQuickAddService.QuickAddAnswer again = body(quickAdd.quickAdd(w2, inst, ask));
+        assertEquals(Boolean.TRUE, again.replayed());
+        assertEquals("IDEMPOTENCY_MISMATCH", code(() -> quickAdd.quickAdd(w2, inst,
+                new CommerceQuickAddService.QuickAddRequest(quickKey, Map.of("en", "anything"), taxClass, "pcs",
+                        "PIECE", null, "X-" + run.substring(0, 6), "8901234567890"))));
+        assertEquals("Jute mat", text("SELECT name FROM commerce_product_translation WHERE package_id = ? AND locale = "
+                + "'en'", made.productId()));
+        assertEquals(taxBefore, text("SELECT tax_class_id FROM commerce_product WHERE package_id = ?",
+                made.productId()));
+        assertEquals(made.sku(), text("SELECT sku FROM commerce_variant WHERE package_session_id = ?", mat));
+        snapshotLoader.evict(inst);
+        same("150.00", snapshotLoader.cartVariants(inst, Set.of(mat), List.of()).get(mat).price(),
+                "the manager's price stays");
+        // L8: with stock received, unit, scale and stock mode are fixed although the item is a DRAFT.
+        assertEquals("DRAFT", text("SELECT status FROM commerce_product WHERE package_id = ?", made.productId()));
+        assertEquals("STOCK_EXISTS", code(() -> productService.update(inst, managerId, made.productId(),
+                ProductRequest.builder().unit("MTR").qtyScale(10).build())));
+        assertEquals("STOCK_EXISTS", code(() -> productService.update(inst, managerId, made.productId(),
+                ProductRequest.builder().stockMode("PIECE").build())));
+        assertEquals("PCS", text("SELECT unit FROM commerce_product WHERE package_id = ?", made.productId()));
         LabelDtos.PrintDataAnswer print = body(labels.printData(w2, inst,
                 new LabelDtos.PrintDataRequest(null, matReceipt, null)));
         assertEquals(4, print.totalCopies());
@@ -1725,7 +1793,7 @@ class CommerceStockOpsDatabaseProofIT {
                             null, null)),
                     () -> openCount(who, l2, null, null, null),
                     () -> countLines(who, open.id(), set(spoon, 1)),
-                    () -> counts.post(who, inst, open.id(), new StockOpsDtos.CountPostRequest(key(), "SKIP", null)),
+                    () -> counts.post(who, inst, open.id(), new StockOpsDtos.CountPostRequest(key(), "SKIP", null, null, null)),
                     () -> counts.cancel(who, inst, open.id(), new StockOpsDtos.CancelRequest(key(), null)),
                     () -> counts.deleteLine(who, inst, open.id(), "x"),
                     () -> counts.review(who, inst, open.id()),
@@ -1736,7 +1804,8 @@ class CommerceStockOpsDatabaseProofIT {
                     () -> labels.cancel(who, inst, new LabelDtos.LabelIdsRequest(key(), List.of(anyLabel))),
                     () -> labels.list(who, inst, null, null, null, null, null, 0, 50),
                     () -> labels.toReplace(who, inst, l2),
-                    () -> overview.approvers(who, inst, l2));
+                    () -> overview.approvers(who, inst, l2),
+                    () -> counts.acceptLine(who, inst, open.id(), "x", new StockOpsDtos.AcceptLineRequest(1)));
             String expected = who == shopper || who == otherAdmin ? "ACCESS_DENIED" : "ROLE_NOT_ALLOWED";
             // Another institute's admin arrives with their own institute in the header.
             header(who == otherAdmin ? otherInst : inst);
@@ -1794,5 +1863,351 @@ class CommerceStockOpsDatabaseProofIT {
         assertEquals("OPEN", text("SELECT status FROM stock_count WHERE id = ?", open.id()));
         body(transfers.cancel(manager, inst, l1l3.id(), new StockOpsDtos.CancelRequest(key(), null)));
         body(counts.cancel(manager, inst, open.id(), new StockOpsDtos.CancelRequest(key(), null)));
+    }
+
+    // ================================================================== 14-18. the review fixes (WP-40 fix round)
+
+    private StockOpsDtos.ReviewLine reviewLine(CustomUserDetails who, String countId, String variant) {
+        return body(counts.review(who, inst, countId)).lines().stream()
+                .filter(l -> variant.equals(l.packageSessionId()) && l.pieceCode() == null).findFirst()
+                .orElseThrow(() -> new AssertionError("no review line of " + variant));
+    }
+
+    /** A staff order (on credit) of one item, CONFIRMED with its stock held SOLD. */
+    private String staffOrder(String variant, int quantity) {
+        return staffOrders.create(admin, inst, StaffOrderRequest.builder().clientRequestId(key())
+                .customer(StaffOrderRequest.Customer.builder().phone("98765" + String.format("%05d",
+                        phones.incrementAndGet())).name("Phone Buyer").build())
+                .shippingAddress(CheckoutRequest.Address.builder().line1("2 Test Lane").city("Test City").stateCode("09")
+                        .pincode("100001").build())
+                .restOnCredit(true)
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId(variant).quantity(quantity).build()))
+                .build()).detail().getOrder().getId();
+    }
+
+    private void packOrder(String orderId) {
+        List<ShipmentDtos.PackLine> lines = new ArrayList<>();
+        for (Map<String, Object> row : db.queryForList("SELECT id, quantity - qty_cancelled - qty_shipped AS open "
+                + "FROM commerce_order_line WHERE order_id = ? AND line_type = 'ITEM' ORDER BY line_no", orderId)) {
+            lines.add(ShipmentDtos.PackLine.builder().orderLineId(String.valueOf(row.get("id")))
+                    .quantity(((Number) row.get("open")).intValue()).build());
+        }
+        shipments.pack(admin, inst, ShipmentDtos.PackRequest.builder().clientRequestId(key()).orderId(orderId)
+                .fromStatus("CONFIRMED").lines(lines).build());
+    }
+
+    private void shipOrder(String orderId) {
+        String shipment = text("SELECT id FROM commerce_shipment WHERE order_id = ? AND status <> 'CANCELLED'", orderId);
+        shipments.ship(admin, inst, shipment, ShipmentDtos.ShipRequest.builder().clientRequestId(key())
+                .carrierName("Test Courier").trackingNumber("TC" + run).notifyCustomer(false).build());
+    }
+
+    /** H1: a scoped count reads a counted item at its real on hand after it left the collection. */
+    @Test
+    @Order(14)
+    void scopedCountReadsACountedItemThatLeftTheCollection() throws Exception {
+        int plates = onHand(l1, plate);
+        assertTrue(plates > 0, "plates at L1: " + plates);
+        CountView scoped = openCount(manager, l1, "COUNT", corner, null);
+        countLines(manager, scoped.id(), set(plate, plates));
+        // A manager takes the plate out of the collection while the count is open.
+        String platePackage = text("SELECT package_id FROM commerce_variant WHERE package_session_id = ?", plate);
+        Map<String, Object> membership = db.queryForMap("SELECT id, position FROM commerce_product_collection WHERE "
+                + "collection_id = ? AND package_id = ?", corner, platePackage);
+        db.update("DELETE FROM commerce_product_collection WHERE collection_id = ? AND package_id = ?", corner,
+                platePackage);
+        try {
+            StockOpsDtos.ReviewLine row = reviewLine(manager, scoped.id(), plate);
+            assertEquals(plates, row.onHandNow(), "read at its real on hand, never as 0");
+            assertEquals(0, row.adjustment());
+            CountView posted = body(counts.post(manager, inst, scoped.id(),
+                    new StockOpsDtos.CountPostRequest(key(), "SKIP", null, null, null)));
+            assertEquals("POSTED", posted.status());
+            assertEquals(plates, onHand(l1, plate), "no phantom gain of the whole count");
+            assertEquals(0, count("SELECT count(*) FROM stock_movement WHERE reference_id = ? AND package_session_id = ?",
+                    scoped.id(), plate));
+            assertEquals(plates, count("SELECT on_hand_at_post FROM stock_count_line WHERE count_id = ?", scoped.id()));
+        } finally {
+            db.update("INSERT INTO commerce_product_collection (id, institute_id, collection_id, package_id, position) "
+                    + "VALUES (?, ?, ?, ?, ?)", membership.get("id"), inst, corner, platePackage, membership.get("position"));
+        }
+    }
+
+    /** H2 / L4: ADD scans across a sale (8, sale 2, the rest) are flagged; a recount or a manager clears them. */
+    @Test
+    @Order(15)
+    void addScansAcrossASaleNeedARecountOrAManager() throws Exception {
+        String session = openSession();
+        int bags = onHand(l1, bag);
+        assertTrue(bags >= 10, "bags at L1: " + bags);
+        CountView open = openCount(w1, l1, null, null, null);
+        // The front shelf is scanned (8), the till sells 2 front-shelf bags, then the back shelf is scanned.
+        countLines(w1, open.id(), add(bag, 8));
+        Thread.sleep(5);
+        sell(session, bag, 2, "600.00");
+        Thread.sleep(5);
+        StockOpsDtos.CountLinesAnswer saved = countLines(manager, open.id(), add(bag, bags - 8));
+        String lineId = saved.lines().get(0).id();
+        assertEquals(bags, saved.lines().get(0).countedQty());
+        // L3: the manager saved a line of this count, so is a main counter and cannot recount it.
+        assertEquals("RECOUNT_SAME_PERSON", code(() -> openCount(manager, l1, "RECOUNT", null, open.id())));
+
+        StockOpsDtos.CountReview review = body(counts.review(manager, inst, open.id()));
+        StockOpsDtos.ReviewLine row = review.lines().stream().filter(l -> bag.equals(l.packageSessionId()))
+                .findFirst().orElseThrow();
+        note("ADD across a sale: flags " + row.flags() + ", moved while counting " + row.movedWhileCounting()
+                + ", adjustment " + row.adjustment());
+        assertTrue(row.flags() != null && row.flags().contains(StockOpsDtos.FLAG_NEEDS_RECOUNT), String.valueOf(row));
+        assertEquals(2, row.movedWhileCounting());
+        assertEquals(1, review.needsRecount());
+        assertTrue(LocalDateTime.parse(row.firstCountedAt()).isBefore(LocalDateTime.parse(row.countedAt())));
+        long before = movements();
+        assertEquals("COUNT_NEEDS_RECOUNT", code(() -> counts.post(manager, inst, open.id(),
+                new StockOpsDtos.CountPostRequest(key(), "SKIP", null, null, null))));
+        assertEquals(before, movements(), "nothing posted");
+
+        // Only a manager accepts it, and only as the manager saw it.
+        assertEquals("ROLE_NOT_ALLOWED", code(() -> counts.acceptLine(w1, inst, open.id(), lineId,
+                new StockOpsDtos.AcceptLineRequest(bags))));
+        assertEquals("COUNT_LINE_CHANGED", code(() -> counts.acceptLine(manager, inst, open.id(), lineId,
+                new StockOpsDtos.AcceptLineRequest(bags + 1))));
+        body(counts.acceptLine(manager, inst, open.id(), lineId, new StockOpsDtos.AcceptLineRequest(bags)));
+        assertEquals(managerId, text("SELECT accepted_by FROM stock_count_line WHERE id = ?", lineId));
+        StockOpsDtos.ReviewLine accepted = reviewLine(manager, open.id(), bag);
+        assertTrue(accepted.flags().contains(StockOpsDtos.FLAG_RECOUNT_ACCEPTED), String.valueOf(accepted.flags()));
+        assertEquals(2, accepted.adjustment(), "accepted: the last save is the count time (" + bags + " against "
+                + (bags - 2) + ")");
+        assertEquals(0, body(counts.review(manager, inst, open.id())).needsRecount());
+
+        // Counting it again (SET, the whole shelf) clears the flag and the acceptance.
+        countLines(w1, open.id(), set(bag, bags - 2));
+        assertNull(text("SELECT accepted_by FROM stock_count_line WHERE id = ?", lineId));
+        StockOpsDtos.ReviewLine recounted = reviewLine(manager, open.id(), bag);
+        assertNull(recounted.flags());
+        assertEquals(0, recounted.adjustment());
+
+        // A measured item 0.5 m short posts without a confirm (the limit is 1 m).
+        int clothNow = onHand(l1, cloth);
+        countLines(w1, open.id(), set(cloth, clothNow - 5));
+        assertNull(reviewLine(manager, open.id(), cloth).flags());
+        CountView posted = body(counts.post(manager, inst, open.id(),
+                new StockOpsDtos.CountPostRequest(key(), "SKIP", null, null, null)));
+        assertEquals("POSTED", posted.status());
+        assertEquals(bags - 2, onHand(l1, bag));
+        assertEquals(0, count("SELECT count(*) FROM stock_movement WHERE reference_id = ? AND package_session_id = ?",
+                open.id(), bag), "no bag adjustment");
+        assertEquals(clothNow - 5, onHand(l1, cloth));
+        closeSession(session);
+    }
+
+    /** L6: units in packed parcels are not on the shelf; a parcel shipped after the line was counted too. */
+    @Test
+    @Order(16)
+    void packedParcelsAreNotOnTheShelf() throws Exception {
+        String first = staffOrder(bottle, 2);
+        String second = staffOrder(bottle, 1);
+        packOrder(first);
+        packOrder(second);
+        int onHandNow = onHand(l1, bottle);
+        CountView open = openCount(manager, l1, null, null, null);
+        // The shelf: on hand less the 3 units in two parcels (counters do not count parcels).
+        countLines(manager, open.id(), set(bottle, onHandNow - 3));
+        Thread.sleep(5);
+        shipOrder(first);  // the courier takes the first parcel after the line was counted: SALE −2
+        assertEquals(onHandNow - 2, onHand(l1, bottle));
+        StockOpsDtos.ReviewLine row = reviewLine(manager, open.id(), bottle);
+        note("packed parcels: packed " + row.packedUnshipped() + ", moved " + row.movedSince() + ", expected "
+                + row.expectedAtCount() + ", adjustment " + row.adjustment());
+        assertEquals(3, row.packedUnshipped(), "both parcels were packed when the line was counted");
+        assertEquals(-2, row.movedSince());
+        assertEquals(onHandNow - 3, row.expectedAtCount());
+        assertEquals(0, row.adjustment());
+        body(counts.post(manager, inst, open.id(), new StockOpsDtos.CountPostRequest(key(), "SKIP", null, null, null)));
+        assertEquals(onHandNow - 2, onHand(l1, bottle), "the parcels are not written off");
+        assertEquals(0, count("SELECT count(*) FROM stock_movement WHERE reference_id = ?", open.id()));
+        assertEquals(3, count("SELECT packed_unshipped FROM stock_count_line WHERE count_id = ?", open.id()));
+        assertEquals(onHandNow - 3, body(counts.review(manager, inst, open.id())).lines().get(0).expectedAtCount(),
+                "the stored review reads the same");
+        shipOrder(second);
+        assertEquals(onHandNow - 3, onHand(l1, bottle));
+    }
+
+    /** L9, S-m5: labels for pieces and rolls, unpriced items skipped, mark printed in chunks. */
+    @Test
+    @Order(17)
+    void labelsForPiecesRollsAndPriceChanges() throws Exception {
+        int scarvesHere = pieces(scarf, l1, "IN_STOCK").size() + pieces(scarf, l1, "RESERVED").size();
+        assertTrue(scarvesHere > 0, "scarves at L1");
+        LabelDtos.LabelsAnswer perPiece = body(labels.request(w1, inst, new LabelDtos.LabelRequestsRequest(key(), l1,
+                "PRICE_CHANGE", null, null, List.of(new LabelDtos.LabelLineInput(scarf, 1, null, null),
+                new LabelDtos.LabelLineInput(cloth, 1, null, null)))));
+        List<LabelDtos.LabelRow> scarfRows = perPiece.requests().stream().filter(r -> scarf.equals(r.packageSessionId()))
+                .toList();
+        assertEquals(scarvesHere, scarfRows.size(), "one label per piece on the shelf");
+        assertTrue(scarfRows.stream().allMatch(r -> r.pieceId() != null && r.quantity() == 1
+                && "PIECE".equals(r.stockMode())));
+        LabelDtos.LabelRow clothRow = perPiece.requests().stream().filter(r -> cloth.equals(r.packageSessionId()))
+                .findFirst().orElseThrow();
+        assertEquals(1, clothRow.quantity());
+        assertEquals("MTR", clothRow.unit());
+        assertEquals(10, clothRow.qtyScale());
+        assertEquals("VALIDATION", code(() -> labels.request(w1, inst, new LabelDtos.LabelRequestsRequest(key(), l1,
+                "PRICE_CHANGE", null, null, List.of(new LabelDtos.LabelLineInput(cloth, 200, null, null))))),
+                "a roll, not 200 base units");
+        // An ADMIN naming a location of another institute.
+        String foreign = UUID.randomUUID().toString();
+        db.update("INSERT INTO stock_location (id, institute_id, code, name) VALUES (?, ?, ?, ?)", foreign, otherInst,
+                "FX-" + run, "Foreign " + run);
+        long rowsBefore = count("SELECT count(*) FROM commerce_label_request WHERE institute_id = ?", inst);
+        assertEquals("LOCATION_NOT_FOUND", code(() -> labels.request(admin, inst, new LabelDtos.LabelRequestsRequest(
+                key(), foreign, "REPRINT", "TORN", null, List.of(new LabelDtos.LabelLineInput(bottle, 1, null, null))))));
+        assertEquals(rowsBefore, count("SELECT count(*) FROM commerce_label_request WHERE institute_id = ?", inst));
+
+        // Print data: an item with no price yet is skipped and listed; the rest prints.
+        CommerceQuickAddService.QuickAddAnswer unpriced = body(quickAdd.quickAdd(w1, inst,
+                new CommerceQuickAddService.QuickAddRequest(key(), Map.of("en", "Clay lamp"), taxClass, "pcs",
+                        "QUANTITY", null, null, null)));
+        String lampReceipt = receive(w1Id, l1, unpriced.packageSessionId(), 2, null);
+        String lampRow = labelRows(w1, lampReceipt).get(0).id();
+        LabelDtos.PrintDataAnswer data = body(labels.printData(w1, inst, new LabelDtos.PrintDataRequest(
+                List.of(clothRow.id(), lampRow), null, null)));
+        assertEquals(1, data.labels().size());
+        assertEquals(clothRow.id(), data.labels().get(0).requestId());
+        assertEquals(1, data.skipped().size());
+        assertEquals(lampRow, data.skipped().get(0).requestId());
+        assertEquals("NO_PRICE", data.skipped().get(0).reason());
+
+        // Mark printed in chunks: a later chunk naming a row an earlier one printed skips it.
+        assertEquals(1, body(labels.markPrinted(w1, inst, new LabelDtos.LabelIdsRequest(key(),
+                List.of(clothRow.id())))).printed());
+        LabelDtos.PrintedAnswer second = body(labels.markPrinted(w1, inst, new LabelDtos.LabelIdsRequest(key(),
+                List.of(clothRow.id(), scarfRows.get(0).id()))));
+        assertEquals(1, second.printed());
+        assertEquals(List.of(clothRow.id()), second.skipped());
+        List<String> rest = new ArrayList<>(scarfRows.stream().skip(1).map(LabelDtos.LabelRow::id).toList());
+        rest.add(lampRow);
+        body(labels.cancel(w1, inst, new LabelDtos.LabelIdsRequest(key(), rest)));
+
+        // Tags to replace: how many labels each item needs.
+        productService.updateVariant(inst, adminId, scarf, VariantRequest.builder().price(new BigDecimal("1300.00"))
+                .build());
+        productService.updateVariant(inst, adminId, cloth, VariantRequest.builder().price(new BigDecimal("30.00"))
+                .build());
+        snapshotLoader.evict(inst);
+        Map<String, LabelDtos.ReplaceRow> replace = new HashMap<>();
+        body(labels.toReplace(w1, inst, l1)).rows().forEach(r -> replace.put(r.packageSessionId(), r));
+        note("tags to replace: " + replace.values());
+        assertEquals(scarvesHere, replace.get(scarf).labels(), "one label per piece on the shelf");
+        assertEquals("PIECE", replace.get(scarf).stockMode());
+        assertEquals(1, replace.get(cloth).labels(), "one label per roll");
+        assertEquals(10, replace.get(cloth).qtyScale());
+        assertEquals(Math.min(onHand(l1, bottle), 500), replace.get(bottle).labels());
+        assertFalse(replace.get(bottle).capped());
+        assertTrue(replace.get(bottle).hasPrice());
+    }
+
+    /** S-m2 / K-L1: an edit of the destination racing a dispatch never sends a challan across two GSTINs. */
+    @Test
+    @Order(18)
+    void dispatchRacingAnEditOfTheDestination() throws Exception {
+        Map<String, Integer> outcomes = new TreeMap<>();
+        for (int round = 0; round < 8; round++) {
+            TransferView d = draft(manager, l2, l1, List.of(qty(bottle, 1)));
+            long delay = (round % 4) * 5L;
+            boolean editFirst = round % 2 == 0;
+            ExecutorService pool = Executors.newFixedThreadPool(2);
+            CyclicBarrier start = new CyclicBarrier(2);
+            Future<String> edit = pool.submit(() -> {
+                header(inst);
+                start.await(10, TimeUnit.SECONDS);
+                if (!editFirst) {
+                    Thread.sleep(delay);
+                }
+                try {
+                    transfers.update(manager, inst, d.id(), new StockOpsDtos.TransferUpdateRequest(key(), l3, null,
+                            null));
+                    return "EDITED";
+                } catch (RuntimeException e) {
+                    return refusal(e);
+                }
+            });
+            Future<String> send = pool.submit(() -> {
+                header(inst);
+                start.await(10, TimeUnit.SECONDS);
+                if (editFirst) {
+                    Thread.sleep(delay);
+                }
+                try {
+                    dispatch(manager, d.id());
+                    return "DISPATCHED";
+                } catch (RuntimeException e) {
+                    return refusal(e);
+                }
+            });
+            String edited = edit.get(60, TimeUnit.SECONDS);
+            String sent = send.get(60, TimeUnit.SECONDS);
+            pool.shutdownNow();
+            outcomes.merge(edited + "/" + sent, 1, Integer::sum);
+            Map<String, Object> row = db.queryForMap("SELECT status, to_location_id, document_type, to_gstin FROM "
+                    + "stock_transfer WHERE id = ?", d.id());
+            if ("DISPATCHED".equals(row.get("status"))) {
+                assertEquals("DISPATCHED", sent, "round " + round);
+                assertEquals(l1, row.get("to_location_id"), "round " + round + ": sent where it was checked");
+                assertEquals("DELIVERY_CHALLAN", row.get("document_type"));
+                assertEquals(SELLER_GSTIN, row.get("to_gstin"), "round " + round + ": the GSTIN of the real destination");
+                assertEquals("TRANSFER_NOT_DRAFT", edited, "round " + round);
+                receiveAll(manager, body(transfers.get(manager, inst, d.id())));
+            } else {
+                assertEquals("DRAFT", row.get("status"));
+                assertEquals(l3, row.get("to_location_id"));
+                assertTrue(Set.of("TRANSFER_NEEDS_DOCUMENT", "TRANSFER_CHANGED").contains(sent),
+                        "round " + round + ": " + sent);
+                body(transfers.cancel(manager, inst, d.id(), new StockOpsDtos.CancelRequest(key(), null)));
+            }
+            noDrift("GSTIN race round " + round);
+        }
+        note("dispatch vs destination edit, 8 rounds: " + outcomes);
+        assertEquals(0, count("SELECT count(*) FROM stock_transfer WHERE institute_id = ? AND to_location_id = ? AND "
+                + "document_type = 'DELIVERY_CHALLAN'", inst, l3), "never a challan to the other GSTIN");
+    }
+
+    /** S-m3: a manager's PIN covers the lines that were reviewed; a line saved meanwhile is not approved. */
+    @Test
+    @Order(19)
+    void anApprovalCoversOnlyTheLinesThatWereReviewed() throws Exception {
+        CountView open = openCount(w1, l1, null, null, null);
+        countLines(w1, open.id(), set(spoon, onHand(l1, spoon) - 1));
+        StockOpsDtos.CountReview seen = body(counts.review(w1, inst, open.id()));
+        assertNotNull(seen.fingerprint());
+        String postKey = key();
+        assertEquals("APPROVAL_REQUIRED", code(() -> counts.post(w1, inst, open.id(),
+                new StockOpsDtos.CountPostRequest(postKey, "SKIP", null, null, seen.fingerprint()))));
+        // While the manager types the PIN, another line is saved on a second device.
+        int plates = onHand(l1, plate);
+        countLines(w1, open.id(), set(plate, 0));
+        long before = movements();
+        assertEquals("COUNT_CHANGED", code(() -> counts.post(w1, inst, open.id(),
+                new StockOpsDtos.CountPostRequest(postKey, "SKIP", pin(managerId, PIN), null, seen.fingerprint()))));
+        assertEquals(before, movements(), "nothing posted");
+        assertEquals(0, count("SELECT count(*) FROM commerce_approval WHERE reference_id = ?", open.id()),
+                "no approval recorded for lines the manager did not see");
+        assertEquals(plates, onHand(l1, plate));
+        // Reviewed again (a new fingerprint, so a new key), the manager's PIN posts it.
+        StockOpsDtos.CountReview again = body(counts.review(w1, inst, open.id()));
+        assertFalse(seen.fingerprint().equals(again.fingerprint()));
+        CountView posted = body(counts.post(w1, inst, open.id(), new StockOpsDtos.CountPostRequest(key(), "SKIP",
+                pin(managerId, PIN), null, again.fingerprint())));
+        assertEquals("POSTED", posted.status());
+        assertEquals(1, count("SELECT count(*) FROM commerce_approval WHERE reference_id = ?", open.id()));
+        assertEquals(0, onHand(l1, plate));
+    }
+
+    private static String refusal(RuntimeException e) {
+        if (e instanceof CommerceAccessDeniedException denied) {
+            return denied.getCode();
+        }
+        String message = String.valueOf(e.getMessage());
+        int colon = message.indexOf(':');
+        return colon > 0 ? message.substring(0, colon) : message;
     }
 }

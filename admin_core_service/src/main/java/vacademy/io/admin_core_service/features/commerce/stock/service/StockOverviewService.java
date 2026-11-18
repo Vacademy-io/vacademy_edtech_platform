@@ -419,10 +419,16 @@ public class StockOverviewService {
         return out.toString();
     }
 
+    /**
+     * What a spreadsheet may read as the start of a formula (OWASP CSV injection): = + - @, tab and
+     * carriage return, and their full-width forms.
+     */
+    private static final String FORMULA_LEADERS = "=+-@\t\r\uFF1D\uFF0B\uFF0D\uFF20";
+
     /** A CSV cell: a text that starts like a formula gets a leading quote; quotes doubled. */
     static String cell(String value, boolean text) {
         String v = value == null ? "" : value;
-        if (text && !v.isEmpty() && "=+-@".indexOf(v.charAt(0)) >= 0) {
+        if (text && !v.isEmpty() && FORMULA_LEADERS.indexOf(v.charAt(0)) >= 0) {
             v = "'" + v;
         }
         if (v.contains(",") || v.contains("\"") || v.contains("\n") || v.contains("\r")) {

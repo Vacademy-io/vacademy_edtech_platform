@@ -493,8 +493,10 @@ public class StockOpsReadRepository {
 
     /**
      * The level rows of a count's scope at its location, locked FOR UPDATE in package-session
-     * order: TRACKED variants of the scope with stock there, and the counted ones (whose rows the
-     * caller inserted first). The caller holds the location's shared lock already.
+     * order: TRACKED variants of the scope with stock there, and every counted one whether or not
+     * it is still in the scope (whose rows the caller inserted first): a counted item that left the
+     * collection is read at its real on hand, never as 0. The caller holds the location's shared
+     * lock already.
      */
     public Map<String, Integer> lockScopeLevels(String instituteId, String locationId, String collectionId,
                                                 Collection<String> countedPackageSessionIds) {
@@ -517,16 +519,124 @@ public class StockOpsReadRepository {
                                                 AND cv.institute_id = sl.institute_id
                         WHERE sl.institute_id = :instituteId AND sl.location_id = :locationId
                           AND cv.stock_policy = 'TRACKED'
-                          AND (sl.on_hand > 0 OR sl.package_session_id IN (:counted))
-                          AND (CAST(:collectionId AS varchar) IS NULL OR EXISTS (
-                               SELECT 1 FROM commerce_product_collection pc WHERE pc.institute_id = sl.institute_id
-                                 AND pc.collection_id = CAST(:collectionId AS varchar)
-                                 AND pc.package_id = cv.package_id))
+                          AND (sl.package_session_id IN (:counted)
+                               OR (sl.on_hand > 0 AND (CAST(:collectionId AS varchar) IS NULL OR EXISTS (
+                                   SELECT 1 FROM commerce_product_collection pc
+                                   WHERE pc.institute_id = sl.institute_id
+                                     AND pc.collection_id = CAST(:collectionId AS varchar)
+                                     AND pc.package_id = cv.package_id))))
                         ORDER BY sl.package_session_id
                         """ + (lock ? " FOR UPDATE OF sl" : ""))
                 .setParameter("instituteId", instituteId).setParameter("locationId", locationId)
                 .setParameter("counted", ids.isEmpty() ? NONE : ids).setParameter("collectionId", collectionId))) {
             out.put(text(r[0]), intOr(r[1], 0));
+        }
+        return out;
+    }
+
+    /**
+     * Movements of a variant at a location in {@code (from, to]} (database time): how many, and
+     * how many units in or out in all. A line whose stock moved while it was being scanned.
+     */
+    public int[] movementsBetween(String instituteId, String locationId, String packageSessionId,
+                                  LocalDateTime from, LocalDateTime to) {
+        Object[] r = (Object[]) entityManager.createNativeQuery("""
+                        SELECT COUNT(*), COALESCE(SUM(ABS(m.quantity_delta)), 0) FROM stock_movement m
+                        WHERE m.institute_id = :instituteId AND m.location_id = :locationId
+                          AND m.package_session_id = :packageSessionId
+                          AND m.created_at > :fromTime AND m.created_at <= :toTime
+                        """)
+                .setParameter("instituteId", instituteId).setParameter("locationId", locationId)
+                .setParameter("packageSessionId", packageSessionId).setParameter("fromTime", from)
+                .setParameter("toTime", to).getSingleResult();
+        return new int[]{intOr(r[0], 0), intOr(r[1], 0)};
+    }
+
+    /**
+     * Packed parcel lines at the location that may have been packed at some moment since
+     * {@code since}: PACKED now, unpacked after it, or with a SALE movement (ship or undo) after
+     * it. Quantity units by variant (a one-of-a-kind piece is RESERVED and counted as a piece). The
+     * pack time is the shipment row's database time and the ship times are the SALE movements', so
+     * they compare with {@code counted_at}. ARCHITECTURE 4.8: units in a packed parcel are not on
+     * the shelf.
+     */
+    public List<StockCountParcel> parcelsSince(String instituteId, String locationId, LocalDateTime since) {
+        Map<String, StockCountParcel> lines = new LinkedHashMap<>();
+        for (Object[] r : rows(entityManager.createNativeQuery("""
+                        SELECT sl.id, ol.package_session_id, sl.quantity, s.created_at, s.status, s.cancelled_at
+                        FROM commerce_shipment s
+                        JOIN commerce_shipment_line sl ON sl.shipment_id = s.id AND sl.institute_id = s.institute_id
+                        JOIN commerce_order_line ol ON ol.id = sl.order_line_id AND ol.institute_id = s.institute_id
+                        WHERE s.institute_id = :instituteId AND s.location_id = :locationId
+                          AND ol.package_session_id IS NOT NULL
+                          AND (s.status = 'PACKED'
+                               OR (s.status = 'CANCELLED' AND s.cancelled_at > :since)
+                               OR EXISTS (SELECT 1 FROM stock_movement m
+                                          WHERE m.institute_id = s.institute_id AND m.location_id = s.location_id
+                                            AND m.package_session_id = ol.package_session_id
+                                            AND m.reference_type = 'SHIPMENT_LINE' AND m.reference_id = sl.id
+                                            AND m.type = 'SALE' AND m.created_at > :since))
+                        """)
+                .setParameter("instituteId", instituteId).setParameter("locationId", locationId)
+                .setParameter("since", since))) {
+            lines.put(text(r[0]), new StockCountParcel(text(r[1]), intOr(r[2], 0), time(r[3]), text(r[4]), time(r[5]),
+                    new ArrayList<>()));
+        }
+        if (lines.isEmpty()) {
+            return List.of();
+        }
+        for (Object[] r : rows(entityManager.createNativeQuery("""
+                        SELECT m.reference_id, m.quantity_delta, m.created_at FROM stock_movement m
+                        WHERE m.institute_id = :instituteId AND m.location_id = :locationId
+                          AND m.reference_type = 'SHIPMENT_LINE' AND m.type = 'SALE' AND m.reference_id IN (:lineIds)
+                        """)
+                .setParameter("instituteId", instituteId).setParameter("locationId", locationId)
+                .setParameter("lineIds", new ArrayList<>(lines.keySet())))) {
+            StockCountParcel parcel = lines.get(text(r[0]));
+            if (parcel != null) {
+                parcel.sales().add(new ParcelSale(time(r[2]), intOr(r[1], 0)));
+            }
+        }
+        return new ArrayList<>(lines.values());
+    }
+
+    /** A parcel line as {@code StockCountMath.Parcel} reads it. */
+    public record StockCountParcel(String packageSessionId, int units, LocalDateTime packedAt, String status,
+                                   LocalDateTime cancelledAt, List<ParcelSale> sales) {
+    }
+
+    /** A SALE movement of a parcel line: its database time and delta. */
+    public record ParcelSale(LocalDateTime at, int delta) {
+    }
+
+    /** Whether the location is one of this institute's. */
+    public boolean locationOfInstitute(String instituteId, String locationId) {
+        if (locationId == null) {
+            return false;
+        }
+        return !entityManager.createNativeQuery(
+                        "SELECT 1 FROM stock_location WHERE institute_id = :instituteId AND id = :locationId")
+                .setParameter("instituteId", instituteId).setParameter("locationId", locationId)
+                .setMaxResults(1).getResultList().isEmpty();
+    }
+
+    /** Pieces IN_STOCK or RESERVED at the location, by variant, in code order (labels for a price change). */
+    public Map<String, List<String>> piecesOnShelf(String instituteId, String locationId,
+                                                   Collection<String> packageSessionIds) {
+        List<String> ids = clean(packageSessionIds);
+        Map<String, List<String>> out = new LinkedHashMap<>();
+        if (ids.isEmpty()) {
+            return out;
+        }
+        for (Object[] r : rows(entityManager.createNativeQuery("""
+                        SELECT pc.package_session_id, pc.id FROM commerce_piece pc
+                        WHERE pc.institute_id = :instituteId AND pc.location_id = :locationId
+                          AND pc.status IN ('IN_STOCK', 'RESERVED') AND pc.package_session_id IN (:ids)
+                        ORDER BY pc.package_session_id, pc.code
+                        """)
+                .setParameter("instituteId", instituteId).setParameter("locationId", locationId)
+                .setParameter("ids", ids))) {
+            out.computeIfAbsent(text(r[0]), k -> new ArrayList<>()).add(text(r[1]));
         }
         return out;
     }

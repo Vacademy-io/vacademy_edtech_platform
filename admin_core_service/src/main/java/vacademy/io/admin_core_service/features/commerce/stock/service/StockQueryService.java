@@ -126,7 +126,8 @@ public class StockQueryService {
     /**
      * Adds what the ledger rows do not carry, by two batch reads per page: the item ({@code sku},
      * {@code product_name}, {@code variant_name}) and the piece code and reference
-     * ({@code reference {type, id, label, order_id?}}). The movement fields stay as they are.
+     * ({@code reference {type, id, label, order_id?}}), and the item's {@code stock_mode},
+     * {@code unit} and {@code qty_scale}. The movement fields stay as they are.
      */
     private Page<Map<String, Object>> enrich(String instituteId, Page<Map<String, Object>> page) {
         if (opsReadRepository == null || page.isEmpty()) {
@@ -152,6 +153,9 @@ public class StockQueryService {
             row.put("sku", item == null ? null : item.sku());
             row.put("product_name", item == null ? null : item.productName());
             row.put("variant_name", item == null ? null : item.variantName());
+            row.put("stock_mode", item == null ? null : item.stockMode());
+            row.put("unit", item == null ? null : item.unit());
+            row.put("qty_scale", item == null ? null : item.qtyScale());
             ReferenceLabel piece = row.get("piece_id") == null ? null : labels.get("PIECE:" + row.get("piece_id"));
             row.put("piece_code", piece == null ? null : piece.label());
             if (row.get("reference_type") != null) {
