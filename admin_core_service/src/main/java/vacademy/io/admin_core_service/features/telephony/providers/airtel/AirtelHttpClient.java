@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.airtel;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,7 @@ public class AirtelHttpClient {
 
     static final String DEFAULT_BASE_URL = "https://api.vonage.com/t/vbc.prod";
 
-    private final RestTemplate rest = new RestTemplate();
+    private final RestTemplate rest = ExternalCallLog.attach(new RestTemplate());
     @Autowired private AirtelVbcTokenService tokenService;
 
     /**

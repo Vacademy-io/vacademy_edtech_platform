@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.core;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -127,6 +128,6 @@ public class CallExportAiEnricher {
         SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
         f.setConnectTimeout(3_000);
         f.setReadTimeout(15_000);
-        return new RestTemplate(f);
+        return ExternalCallLog.attach(new RestTemplate(f));
     }
 }

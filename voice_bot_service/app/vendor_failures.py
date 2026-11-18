@@ -1,0 +1,176 @@
+"""Every failed call the voice bot makes to an outside vendor, kept briefly for admin-core.
+
+The voice bot has no database. admin-core polls /voice-bot-service/health every 30 s; the
+health body carries `vendorFailures`, the most recent failures here, and admin-core copies
+each one (once, by its id) into external_api_call_log, where the platform portal lists every
+failed vendor call. Without this, Sarvam's "Credits exhausted", a Smallest 401 or an LLM 429
+on a live call left no record outside the pod log.
+
+What is caught:
+- every aiohttp request (Sarvam/Smallest/Navana REST, and the sessions pipecat services open,
+  including websocket handshakes) that answers >= 400 or fails to connect: a trace hook added
+  to every ClientSession;
+- every httpx request (the OpenAI-compatible LLM clients) that answers >= 400 or raises;
+- failures that arrive after a socket opened (Sarvam's 1003 refusal, pipecat switching to the
+  fallback vendor), recorded by the code that sees them through `record()`.
+
+Only host, method, the first two path segments, status and a short reason are kept: never a
+header, query string, body or key. Our own hosts are skipped. Nothing here can fail a call.
+"""
+from __future__ import annotations
+
+import collections
+import ipaddress
+import itertools
+import logging
+import threading
+import time
+import uuid
+from typing import Any, Deque, Dict, List, Optional
+from urllib.parse import urlsplit
+
+logger = logging.getLogger(__name__)
+
+MAX_KEPT = 200
+OWN_SUFFIXES = (".vacademy.io", ".svc", ".svc.cluster.local", ".internal", ".local")
+
+_lock = threading.Lock()
+_kept: Deque[Dict[str, Any]] = collections.deque(maxlen=MAX_KEPT)
+_seq = itertools.count(1)
+_boot = uuid.uuid4().hex[:8]
+_installed = False
+
+
+def _external(host: str) -> bool:
+    host = (host or "").strip().lower().rstrip(".")
+    if not host or host == "localhost" or "." not in host:
+        return False  # a bare name is a cluster service
+    if host == "vacademy.io" or host.endswith(OWN_SUFFIXES):
+        return False
+    try:
+        ip = ipaddress.ip_address(host)
+        return not (ip.is_private or ip.is_loopback or ip.is_link_local)
+    except ValueError:
+        return True
+
+
+def _operation(method: str, path: str) -> str:
+    segments = [s for s in (path or "").split("/") if s][:2]
+    return f"{(method or 'GET').upper()} /{'/'.join(segments)}"[:64]
+
+
+def record(vendor: str, operation: str, *, http_status: Optional[int] = None,
+           reason: Optional[str] = None) -> None:
+    """Keep one failure. `vendor` is the host ("api.sarvam.ai"); `reason` must hold no secret."""
+    try:
+        entry = {
+            # Unique across restarts: admin-core keys its insert on this id.
+            "id": f"vb-{_boot}-{next(_seq)}",
+            "at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "vendor": (vendor or "unknown")[:255],
+            "operation": (operation or "call")[:64],
+            "httpStatus": http_status,
+            "reason": (reason or "")[:300] or None,
+        }
+        with _lock:
+            _kept.append(entry)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+_SERVICE_HOSTS = (("sarvam", "api.sarvam.ai"), ("smallest", "waves-api.smallest.ai"), ("navana", "navana"),
+                  ("deepgram", "api.deepgram.com"), ("google", "google cloud speech"), ("openai", "openai"))
+
+
+def vendor_of(service: Any) -> str:
+    """A pipecat service object as the vendor's host where known, else its class name."""
+    name = type(service).__name__.lower()
+    for key, host in _SERVICE_HOSTS:
+        if key in name:
+            return host
+    return type(service).__name__
+
+
+def recent(limit: int = 100) -> List[Dict[str, Any]]:
+    """The newest failures, oldest first, for /health."""
+    with _lock:
+        items = list(_kept)
+    return items[-limit:]
+
+
+def _record_url(method: str, url: Any, status: Optional[int], error: Optional[BaseException]) -> None:
+    try:
+        parts = urlsplit(str(url))
+        if not _external(parts.hostname or ""):
+            return
+        reason = None if error is None else type(error).__name__
+        record(parts.hostname or "", _operation(method, parts.path), http_status=status, reason=reason)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _install_aiohttp() -> None:
+    import aiohttp
+
+    async def on_end(session, ctx, params):  # noqa: ANN001
+        if params.response.status >= 400:
+            _record_url(params.method, params.url, params.response.status, None)
+
+    async def on_exception(session, ctx, params):  # noqa: ANN001
+        _record_url(params.method, params.url, None, params.exception)
+
+    trace = aiohttp.TraceConfig()
+    trace.on_request_end.append(on_end)
+    trace.on_request_exception.append(on_exception)
+    trace.freeze()
+    original = aiohttp.ClientSession.__init__
+
+    def init(self, *args, **kwargs):  # noqa: ANN001
+        configs = list(kwargs.get("trace_configs") or [])
+        if trace not in configs:
+            configs.append(trace)
+        kwargs["trace_configs"] = configs
+        original(self, *args, **kwargs)
+
+    aiohttp.ClientSession.__init__ = init
+
+
+def _install_httpx() -> None:
+    import httpx
+
+    sync_send, async_send = httpx.Client.send, httpx.AsyncClient.send
+
+    def send(self, request, *args, **kwargs):  # noqa: ANN001
+        try:
+            response = sync_send(self, request, *args, **kwargs)
+        except Exception as exc:
+            _record_url(request.method, request.url, None, exc)
+            raise
+        if response.status_code >= 400:
+            _record_url(request.method, request.url, response.status_code, None)
+        return response
+
+    async def asend(self, request, *args, **kwargs):  # noqa: ANN001
+        try:
+            response = await async_send(self, request, *args, **kwargs)
+        except Exception as exc:
+            _record_url(request.method, request.url, None, exc)
+            raise
+        if response.status_code >= 400:
+            _record_url(request.method, request.url, response.status_code, None)
+        return response
+
+    httpx.Client.send, httpx.AsyncClient.send = send, asend
+
+
+def install() -> None:
+    """Hook aiohttp and httpx once per process. A library that is missing is skipped."""
+    global _installed
+    if _installed:
+        return
+    _installed = True
+    for hook in (_install_aiohttp, _install_httpx):
+        try:
+            hook()
+        except Exception:  # noqa: BLE001
+            logger.warning("vendor-failures: %s not installed", hook.__name__, exc_info=True)

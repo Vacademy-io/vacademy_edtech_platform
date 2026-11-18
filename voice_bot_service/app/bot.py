@@ -6828,6 +6828,9 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
             diag.stt_vendor_final = type(stt_fallback).__name__
             logger.warning("stt failover: vendor error — pipecat switched %s → %s corr=%s",
                            type(stt_primary).__name__, type(stt_fallback).__name__, corr)
+            from . import vendor_failures
+            vendor_failures.record(vendor_failures.vendor_of(stt_primary), "STT stream",
+                                   reason=f"Speech-to-text failed mid-call; switched to {type(stt_fallback).__name__}")
     # to_thread: Vertex constructors do a SYNCHRONOUS service-account OAuth
     # round-trip; keep it off the loop so concurrent calls' audio never glitches.
     # Per-agent LLM routing for the Sarvam POC (config.sarvam_llm_agents): only

@@ -621,6 +621,9 @@ class SarvamKeyPool:
     def __init__(self):
         self._rest_until: dict = {}   # key -> monotonic time its rest ends
         self._last: dict = {}         # key -> last refusal kind
+        self._refused_at: dict = {}   # key -> wall time of that refusal
+        self._used_at: dict = {}      # key -> wall time a call last opened on it
+        self._wall = time.time        # replaceable in tests
         self._rr = 0
 
     def keys(self) -> list:
@@ -655,6 +658,7 @@ class SarvamKeyPool:
                                if self.resting(keys[i]) else 0.0, i)
         best = min(cands, key=order)
         self._rr = (best + 1) % n
+        self._used_at[keys[best]] = self._wall()
         return best
 
     def refused(self, index: int, kind: str) -> float:
@@ -667,14 +671,40 @@ class SarvamKeyPool:
                 else s.sarvam_key_other_rest_secs)
         self._rest_until[keys[index]] = time.monotonic() + max(0.0, secs)
         self._last[keys[index]] = kind
+        self._refused_at[keys[index]] = self._wall()
+        from . import vendor_failures
+        vendor_failures.record("api.sarvam.ai", f"STT stream, key {index + 1}", reason={
+            "credits": "Out of credits: Sarvam said \"Credits exhausted\" (socket close 1003)",
+            "rate_limit": "Rate limited: too many calls opened at once (socket close 1003)",
+        }.get(kind, "Key refused: revoked, invalid or over quota (socket close 1003)"))
         return secs
 
+    def state(self, key: str) -> str:
+        """What the key's last use says about it: 'ok' (a call opened on it after
+        its last refusal, if any, and was not refused — Sarvam refuses within
+        ~0.1 s), the last refusal's kind ('credits', 'rate_limit', 'refused') when
+        nothing has opened on it since, or 'unused' since this process started."""
+        used, refused = self._used_at.get(key), self._refused_at.get(key)
+        if refused is None:
+            return "ok" if used is not None else "unused"
+        if used is not None and used > refused:
+            return "ok"
+        return self._last.get(key) or "refused"
+
     def status(self) -> list:
-        """For /health: per key, seconds of rest left and the last refusal. No key text."""
+        """For /health: per key, rest left, the last refusal and when, the last use
+        and what that adds up to (`state`). Numbers and words only, no key text."""
         now = time.monotonic()
+
+        def iso(t):
+            return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t)) if t else None
+
         return [{"key": i + 1,
                  "restingSecs": max(0, round(self._rest_until.get(k, 0.0) - now)),
-                 "lastRefusal": self._last.get(k)}
+                 "lastRefusal": self._last.get(k),
+                 "lastRefusalAt": iso(self._refused_at.get(k)),
+                 "lastUsedAt": iso(self._used_at.get(k)),
+                 "state": self.state(k)}
                 for i, k in enumerate(self.keys())]
 
 

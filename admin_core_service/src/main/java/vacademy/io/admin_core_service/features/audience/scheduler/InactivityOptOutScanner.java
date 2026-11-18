@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.audience.scheduler;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,7 +55,7 @@ public class InactivityOptOutScanner {
     private final AudienceResponseRepository audienceResponseRepository;
     private final AudienceOptOutService audienceOptOutService;
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
 
     @Value("${notification.server.baseurl:http://localhost:8076}")
     private String notificationServiceUrl;

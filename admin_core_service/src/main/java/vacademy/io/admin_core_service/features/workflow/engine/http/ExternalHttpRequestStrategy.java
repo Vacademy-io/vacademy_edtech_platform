@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.workflow.engine.http;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,7 +29,7 @@ public class ExternalHttpRequestStrategy implements HttpRequestStrategy {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5_000);
         factory.setReadTimeout(30_000);
-        return new RestTemplate(factory);
+        return ExternalCallLog.attach(new RestTemplate(factory));
     }
 
     private final RestTemplate restTemplate = createRestTemplateWithTimeout();

@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.airtel;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -32,7 +33,7 @@ public class AirtelVbcTokenService {
     /** VBC realm suffix appended to the username for the password grant. */
     private static final String VBC_REALM_SUFFIX = "@vbc.prod";
 
-    private final RestTemplate rest = new RestTemplate();
+    private final RestTemplate rest = ExternalCallLog.attach(new RestTemplate());
     private final Map<String, CachedToken> cache = new ConcurrentHashMap<>();
 
     private record CachedToken(String bearer, Instant expiresAt) {}

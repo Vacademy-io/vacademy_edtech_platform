@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.aavtaar;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +33,7 @@ public class AavtaarHttpClient {
     private static final Logger log = LoggerFactory.getLogger(AavtaarHttpClient.class);
 
     private final AiCallingConfigService configService;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
 
     @Value("${aavtaar.base-url:https://webapi.aavtaar.ai/api/v1/partner}")
     private String baseUrl;

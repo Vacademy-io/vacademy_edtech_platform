@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.commerce.otp;
 
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -166,6 +167,6 @@ public class CommerceBotCheck {
         }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        return new RestTemplate(factory).postForObject(url, new HttpEntity<>(form, headers), String.class);
+        return ExternalCallLog.attach(new RestTemplate(factory)).postForObject(url, new HttpEntity<>(form, headers), String.class);
     }
 }

@@ -65,6 +65,10 @@ def test_each_key_goes_only_to_its_vendor():
         if request.url.host == "api.runpod.io":
             assert "clientBalance" in json.loads(request.content)["query"]
             return httpx.Response(200, json={"data": {"myself": {"clientBalance": 3.5, "currentSpendPerHr": 0}}})
+        if request.url.host == "backend-stage.vacademy.io":
+            # The voice bot's health: no key is sent to it.
+            assert "authorization" not in request.headers
+            return httpx.Response(200, json={"sarvamSttKeys": [{"key": 1, "state": "ok"}]})
         raise AssertionError(f"unexpected host {request.url.host}")
 
     env = {"OPENROUTER_API_KEY": OR_KEY, "OPENROUTER_MANAGEMENT_KEY": OR_MGMT,
@@ -74,6 +78,7 @@ def test_each_key_goes_only_to_its_vendor():
         ("openrouter.ai", f"Bearer {OR_MGMT}"),
         ("api.fal.ai", f"Key {FAL_KEY}"),
         ("api.runpod.io", f"Bearer {RP_KEY}"),
+        ("backend-stage.vacademy.io", None),
     ])
     assert rows["OpenRouter"]["balance"] == 30 and rows["OpenRouter"]["account"] == "account"
     assert rows["fal.ai"]["balance"] == 8 and rows["fal.ai"]["account"] == "key …2222"
@@ -93,9 +98,16 @@ def test_without_management_key_uses_each_key_limit():
 
 
 def test_missing_keys_are_not_set_up():
-    rows = _by_vendor(vb.fetch_all({}, _client(lambda r: (_ for _ in ()).throw(AssertionError("no call")))))
+    def handler(request: httpx.Request):
+        if request.url.host == "backend-stage.vacademy.io":
+            return httpx.Response(503)
+        raise AssertionError("no vendor call without a key")
+
+    rows = _by_vendor(vb.fetch_all({}, _client(handler)))
     assert {v: r["status"] for v, r in rows.items()} == {
-        "OpenRouter": "not_set_up", "fal.ai": "not_set_up", "RunPod": "not_set_up"}
+        "OpenRouter": "not_set_up", "fal.ai": "not_set_up", "RunPod": "not_set_up",
+        # Sarvam's state comes from the voice bot, which did not answer here.
+        "Sarvam": "error"}
 
 
 def test_errors_never_echo_key_or_body():
@@ -131,3 +143,26 @@ def test_cache_and_refresh_floor():
     assert cache.get() == [{"n": 2}]
     now[0] += vb.CACHE_SECONDS
     assert cache.get() == [{"n": 3}]
+
+
+def test_sarvam_state_from_the_voice_bot():
+    rows = vb.parse_sarvam_health({"sarvamSttKeys": [
+        {"key": 1, "state": "credits", "lastRefusal": "credits", "lastRefusalAt": "2026-11-18T09:00:00Z"},
+        {"key": 2, "state": "ok", "lastUsedAt": "2026-11-18T09:01:00Z"},
+        {"key": 3, "state": "unused"},
+    ]})
+    assert [r["state_label"] for r in rows] == ["Out of credits", "Working", "Not used yet"]
+    assert [r["status"] for r in rows] == ["error", "ok", "unknown"]
+    assert "2026-11-18 09:00:00 UTC" in rows[0]["message"]
+    assert rows[0]["kind"] == vb.ACCOUNT_STATUS and rows[0]["balance"] is None
+    assert rows[1]["account"] == "account 2 (voice-bot speech-to-text)"
+
+
+def test_sarvam_from_an_older_voice_bot_and_when_it_is_down():
+    old = vb.parse_sarvam_health({"sarvamSttKeys": [{"key": 1, "restingSecs": 0, "lastRefusal": "credits"}]})
+    assert old[0]["state_label"] == "Out of credits" and "doesn't say when" in old[0]["message"]
+
+    def down(request):
+        return httpx.Response(503)
+    rows = vb.sarvam_rows(_client(down), {})
+    assert rows[0]["status"] == "error" and "voice bot didn't answer" in rows[0]["message"]
