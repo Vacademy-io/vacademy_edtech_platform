@@ -50,6 +50,11 @@ export const TestReportDialog = ({
     }));
 
     const [selectedSection, setSelectedSection] = useState(sectionsInfo ? sectionsInfo[0]?.id : '');
+    // Out of = the paper's section totals (was a hardcoded 20).
+    const paperTotalMarks = (assessmentDetails[1]?.saved_data.sections ?? []).reduce(
+        (sum, section) => sum + (Number(section.total_marks) || 0),
+        0
+    );
 
     const currentSectionAllQuestions = testReport.all_sections[selectedSection!];
 
@@ -236,7 +241,8 @@ export const TestReportDialog = ({
                         <div>
                             <h1>{t('score.marks')}</h1>
                             <p className="text-neutral-500">
-                                {studentReport.total_marks.toFixed(2)}/20
+                                {studentReport.total_marks.toFixed(2)}
+                                {paperTotalMarks > 0 && `/${paperTotalMarks}`}
                             </p>
                         </div>
                     </div>
