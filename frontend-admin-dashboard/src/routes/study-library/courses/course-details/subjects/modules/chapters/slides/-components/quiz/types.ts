@@ -1,3 +1,6 @@
+import type { CbeConfig } from '@/components/cbe/types';
+import type { CbeSecretStatus } from '@/routes/assessment/question-papers/-utils/cbe-question';
+
 export interface QuizPreviewProps {
     activeItem: Slide;
     routeParams?: {
@@ -61,6 +64,10 @@ export interface TransformedQuestion {
     subjectiveAnswerText?: string;
     marks?: number | null;
     negativeMarking?: number | null;
+    /** Spreadsheet & Written Response: the question config (see cbe-question.ts). */
+    cbeConfig?: CbeConfig | null;
+    /** Spreadsheet & Written Response: whether the form holds the solution half. */
+    cbeSecretStatus?: CbeSecretStatus;
 }
 
 export interface QuestionTypeProps {
