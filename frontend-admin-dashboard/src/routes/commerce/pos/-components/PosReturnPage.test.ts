@@ -1,6 +1,6 @@
 /** Counter return settle rules of the server (B2): reference only for UPI and bank transfer. */
 import { describe, expect, it } from 'vitest';
-import { settleBody, toReturnLines } from './PosReturnPage';
+import { previewSettle, returnAttemptScope, settleBody, toReturnLines } from './PosReturnPage';
 
 describe('counter return bodies', () => {
     it('settle: EXCHANGE alone, CASH without a reference, UPI and bank transfer with one', () => {
@@ -8,6 +8,17 @@ describe('counter return bodies', () => {
         expect(settleBody('CASH', 'R1')).toEqual({ kind: 'REFUND', method: 'CASH' });
         expect(settleBody('UPI', 'UPI 4411')).toEqual({ kind: 'REFUND', method: 'UPI', reference: 'UPI 4411' });
         expect(settleBody('BANK_TRANSFER', null)).toEqual({ kind: 'REFUND', method: 'BANK_TRANSFER' });
+    });
+
+    it('preview: the method alone, no placeholder reference (the server preview takes UPI/bank without one)', () => {
+        expect(previewSettle('UPI')).toEqual({ kind: 'REFUND', method: 'UPI' });
+        expect(previewSettle('BANK_TRANSFER')).toEqual({ kind: 'REFUND', method: 'BANK_TRANSFER' });
+        expect(previewSettle('EXCHANGE')).toEqual({ kind: 'EXCHANGE' });
+    });
+
+    it('an unanswered return is kept per bill', () => {
+        expect(returnAttemptScope('o-1')).toBe('return.o-1');
+        expect(returnAttemptScope('o-1')).not.toBe(returnAttemptScope('o-2'));
     });
 
     it('lines: one entry per line and condition; pieces by id', () => {

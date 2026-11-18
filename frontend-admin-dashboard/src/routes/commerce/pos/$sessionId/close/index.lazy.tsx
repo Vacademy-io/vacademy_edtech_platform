@@ -1,5 +1,5 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
-import { CommerceGate } from '@/routes/commerce/-components/CommercePage';
+import { PosGate } from '@/routes/commerce/pos/-components/PosGate';
 import { PosClosePage } from '@/routes/commerce/pos/-components/PosClosePage';
 
 /** P6: count the drawer, close the counter, print the day report. */
@@ -10,8 +10,8 @@ export const Route = createLazyFileRoute('/commerce/pos/$sessionId/close/')({
 function PageRoute() {
     const { sessionId } = Route.useParams();
     return (
-        <CommerceGate navId="commerce-pos">
+        <PosGate>
             <PosClosePage sessionId={sessionId} />
-        </CommerceGate>
+        </PosGate>
     );
 }

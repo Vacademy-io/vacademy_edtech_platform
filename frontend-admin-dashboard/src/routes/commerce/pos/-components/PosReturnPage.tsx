@@ -11,8 +11,10 @@ import { RETURN_WARNINGS } from '@/routes/commerce/orders/-components/dialogs/Re
 import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { buzz, useScanInput } from '@/routes/commerce/orders/-shared/use-scan-input';
+import { getInstituteId } from '@/constants/helper';
 import { lookupSales } from '../-shared/pos-api';
 import { useCreatePosReturn, useDebounced, useReturnPreview, useSale } from '../-shared/pos-hooks';
+import { type AttemptStore, useAttemptStore } from '../-shared/pos-session-store';
 import {
     POS_RETURN_REASONS,
     POS_RETURN_SETTLE,
@@ -78,7 +80,14 @@ export function toReturnLines(lines: SaleDetailLine[], picks: Record<string, Pic
  * The return's settle as the server takes it: EXCHANGE alone; a REFUND with its method and, for UPI and bank
  * transfer only, the reference (the server refuses a reference on CASH).
  */
-export const PREVIEW_REFERENCE = 'PREVIEW';
+/**
+ * The settle the preview sends: the method without a reference (the server's preview takes a UPI or
+ * bank refund without one, G1); the reference is typed at the end and goes with the real return.
+ */
+export const previewSettle = (settle: PosReturnSettle): PosReturnBody['settle'] => settleBody(settle, null);
+
+/** The attempt scope of a counter return of one bill. */
+export const returnAttemptScope = (orderId: string) => `return.${orderId}`;
 
 export function settleBody(settle: PosReturnSettle, reference: string | null): PosReturnBody['settle'] {
     if (settle === 'EXCHANGE') return { kind: 'EXCHANGE' };
@@ -101,6 +110,8 @@ function PosReturnBody({
     const [findError, setFindError] = useState<unknown>(null);
     const [message, setMessage] = useState<{ tone: 'danger' | 'info'; text: string } | null>(null);
     const [answer, setAnswer] = useState<PosReturnAnswer | null>(null);
+    // Outlives the form: going back to "Find another" or a reload keeps an unanswered return's id.
+    const attempts = useAttemptStore(getInstituteId() ?? '', session.id, 'posret');
 
     const find = async (q: string) => {
         setFindError(null);
@@ -245,6 +256,7 @@ function PosReturnBody({
                     session={session}
                     online={online}
                     sale={sale.data}
+                    attempts={attempts}
                     onBack={() => setOrderId(null)}
                     onDone={(result, settle) => {
                         if (settle === 'EXCHANGE') {
@@ -271,18 +283,23 @@ function ReturnForm({
     session,
     online,
     sale,
+    attempts,
     onBack,
     onDone,
 }: {
     session: SessionView;
     online: boolean;
     sale: SaleDetail;
+    attempts: AttemptStore;
     onBack: () => void;
     onDone: (answer: PosReturnAnswer, settle: PosReturnSettle) => void;
 }) {
     const { t } = useTranslation('commerce');
     const write = useCreatePosReturn();
-    const pin = usePinWrite(session.register.id, 'posret');
+    const pin = usePinWrite(session.register.id, 'posret', attempts);
+    /** One unanswered return per bill: its id is reused until the server answers for sure. */
+    const scope = returnAttemptScope(sale.order_id);
+    const maybeSaved = attempts.isUncertain(scope);
     const [picks, setPicks] = useState<Record<string, Pick>>({});
     const [reason, setReason] = useState<string>('');
     const [note, setNote] = useState('');
@@ -304,9 +321,7 @@ function ReturnForm({
                   order_id: sale.order_id,
                   lines: [...sums.entries()].map(([order_line_id, quantity]) => ({ order_line_id, quantity })),
                   ...(reason ? { reason } : {}),
-                  // The preview drops a settle it finds invalid and then assumes cash; a UPI or bank refund has
-                  // no reference typed yet, so a fixed one stands in (the preview stores nothing).
-                  settle: settleBody(settle, PREVIEW_REFERENCE),
+                  settle: previewSettle(settle),
               }
             : null;
     }, [lines, session.id, sale.order_id, reason, settle]);
@@ -340,7 +355,7 @@ function ReturnForm({
             settle: settleBody(settle, needsRef ? reference.trim() : null),
         };
         try {
-            await pin.run(body, (full) => write.mutateAsync([full]), (answer) => onDone(answer, settle));
+            await pin.run(body, (full) => write.mutateAsync([full]), (answer) => onDone(answer, settle), scope);
         } catch (raw) {
             setError(raw);
         }
@@ -364,6 +379,24 @@ function ReturnForm({
                         {t('pos.returns.findAnother')}
                     </MyButton>
                 </div>
+                {maybeSaved && (
+                    <OrderNotice
+                        tone="warning"
+                        action={
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="large"
+                                className="h-12"
+                                onClick={() => attempts.clear(scope)}
+                            >
+                                {t('pos.attempt.checked')}
+                            </MyButton>
+                        }
+                    >
+                        <p data-testid="pos-return-maybe-saved">{t('pos.returns.maybeSaved')}</p>
+                    </OrderNotice>
+                )}
                 {returnable.length === 0 && (
                     <OrderNotice tone="info">
                         <p>{t('pos.returns.nothing')}</p>

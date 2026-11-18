@@ -7,10 +7,10 @@ import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 import type { ManagerApproval } from '@/routes/commerce/-shared/commerce-types';
 import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
-import { useRequestId } from '@/routes/commerce/orders/-shared/request-id';
 import { readAutoPrint, writeAutoPrint } from '../-shared/pos-catalogue';
 import { type PosError, readPosError } from '../-shared/pos-errors';
 import { printReceipt } from '../-shared/pos-receipt';
+import type { AttemptStore } from '../-shared/pos-session-store';
 import {
     type TenderRow,
     change,
@@ -38,6 +38,8 @@ export interface PosPayDialogProps {
     onOpenChange: (open: boolean) => void;
     /** The server's total of the bill (the last quote). */
     total: number;
+    /** The quote's round-off (POS bills are whole rupees); shown under the total when not 0. */
+    roundOff?: number;
     /** Exchange credit counted before any tender. */
     credit: number;
     /** The quote matches the bill on screen and the bill is complete. */
@@ -56,6 +58,15 @@ export interface PosPayDialogProps {
     onRefused: (error: PosError) => boolean;
     /** After a bill is made: the screen clears the bill for the next customer. */
     onNewBill: () => void;
+    /**
+     * The write attempts of this counter session: an attempt whose answer never came keeps its
+     * `client_request_id` across a closed and reopened dialog, changed tenders and a reload.
+     */
+    attempts: AttemptStore;
+    /** The attempt scope (`sale`, `billBook`). */
+    attemptScope: string;
+    /** The total or the credit moved while the dialog was open (a re-quote): the dialog closes. */
+    onTotalMoved?: () => void;
 }
 
 const MODE_ICON: Record<string, typeof Money> = {
@@ -88,6 +99,7 @@ export function PosPayDialog({
     open,
     onOpenChange,
     total,
+    roundOff = 0,
     credit,
     ready,
     online,
@@ -98,10 +110,12 @@ export function PosPayDialog({
     submit,
     onRefused,
     onNewBill,
+    attempts,
+    attemptScope,
+    onTotalMoved,
 }: PosPayDialogProps) {
     const { t } = useTranslation('commerce');
     const errorText = usePosErrorText();
-    const { idFor, reset } = useRequestId('pos');
     const pin = usePinGate(registerId);
     const [rows, setRows] = useState<TenderRow[]>([]);
     const [remainderMethod, setRemainderMethod] = useState<string>('CASH');
@@ -109,6 +123,10 @@ export function PosPayDialog({
     const [error, setError] = useState<PosError | null>(null);
     const [busy, setBusy] = useState(false);
     const [answer, setAnswer] = useState<SaleAnswer | null>(null);
+    /** The id was already saved with another body: this bill was most likely made already. */
+    const [probablySaved, setProbablySaved] = useState(false);
+    /** Total and credit when the dialog opened; a re-quote that moves them closes it. */
+    const openedWith = useRef<{ total: number; credit: number } | null>(null);
     const [autoPrint, setAutoPrint] = useState(true);
     const pending = useRef(false);
     const printed = useRef(false);
@@ -124,13 +142,28 @@ export function PosPayDialog({
         setRemainderRef('');
         setError(null);
         setAnswer(null);
+        setProbablySaved(false);
         setAutoPrint(readAutoPrint(instituteId, registerId));
         printed.current = false;
         pending.current = false;
-        reset();
-        // Opening starts a new payment; `due` is read once at that moment.
+        openedWith.current = { total, credit };
+        // Opening starts a new payment; `due` is read once at that moment. The request id is NOT
+        // reset here: an attempt whose answer never came keeps its id (see `attempts`).
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
+
+    // A re-quote moved the price while the money was being taken (window focus, staleness): the
+    // tender rows were built from the old amount, so the dialog closes and the screen says why.
+    useEffect(() => {
+        const at = openedWith.current;
+        if (!open || !at || answer || pending.current) return;
+        if (toPaise(at.total) !== toPaise(total) || toPaise(at.credit) !== toPaise(credit)) {
+            openedWith.current = null;
+            onTotalMoved?.();
+            onOpenChange(false);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [total, credit]);
 
     // Print once, automatically, when the device setting is on.
     useEffect(() => {
@@ -144,7 +177,7 @@ export function PosPayDialog({
     const changeDue = change(rows);
     const problem = tenderProblem(total, credit, rows);
     const remainderOk = giveBack === 0 || remainderMethod === 'CASH' || remainderRef.trim() !== '';
-    const canConfirm = online && ready && !busy && problem === null && remainderOk;
+    const canConfirm = online && ready && !busy && problem === null && remainderOk && !probablySaved;
 
     const finish = (result: SaleAnswer) => {
         setAnswer(result);
@@ -160,8 +193,7 @@ export function PosPayDialog({
             });
             return;
         }
-        if (read.code === 'IDEMPOTENCY_MISMATCH') reset();
-        if (!read.network && onRefused(read)) {
+        if (!read.uncertain && onRefused(read)) {
             onOpenChange(false);
             return;
         }
@@ -169,14 +201,24 @@ export function PosPayDialog({
     };
 
     const attempt = async (body: SaleRequest, approval?: ManagerApproval, fromPin = false) => {
-        const id = idFor(body);
+        // The id comes from the body without `approval`: a PIN resend goes with the same id, and an
+        // attempt whose answer never came keeps its id even when the tenders were changed since.
+        const { id, carried } = attempts.begin(attemptScope, body);
         try {
             const result = await submit({ ...body, client_request_id: id, ...(approval ? { approval } : {}) });
+            attempts.settle(attemptScope, null, carried);
             finish(result);
         } catch (raw) {
             const read = readPosError(raw);
+            if (attempts.settle(attemptScope, read, carried)) {
+                // The earlier, unanswered attempt was saved with other tenders: never take the money twice.
+                setProbablySaved(true);
+                setError(null);
+                if (fromPin) throw raw;
+                return;
+            }
             // A wrong or locked PIN, or a dropped line, keeps the PIN dialog open with the sentence.
-            if (fromPin && (read.code === 'PIN_INVALID' || read.code === 'PIN_LOCKED' || read.network)) throw raw;
+            if (fromPin && (read.code === 'PIN_INVALID' || read.code === 'PIN_LOCKED' || read.uncertain)) throw raw;
             // The server asks for another approval on the resend: the dialog stays open for it.
             if (fromPin && read.code === 'APPROVAL_REQUIRED') {
                 pin.ask(read.action, async (next: ManagerApproval) => {
@@ -310,6 +352,11 @@ export function PosPayDialog({
                                 <span className="tabular-nums text-h3 font-medium text-foreground" data-testid="pos-pay-total">
                                     {rupees(total)}
                                 </span>
+                                {toPaise(roundOff) !== 0 && (
+                                    <span className="tabular-nums text-caption text-muted-foreground" data-testid="pos-pay-round-off">
+                                        {t('pos.pay.roundOff', { amount: rupees(roundOff) })}
+                                    </span>
+                                )}
                             </div>
                             <div className="flex flex-col">
                                 <span className="text-caption text-muted-foreground">{t('pos.pay.remainingLabel')}</span>
@@ -409,6 +456,11 @@ export function PosPayDialog({
                         {!ready && online && (
                             <OrderNotice tone="info">
                                 <p>{t('pos.pay.waitQuote')}</p>
+                            </OrderNotice>
+                        )}
+                        {probablySaved && (
+                            <OrderNotice tone="warning">
+                                <p data-testid="pos-pay-probably-saved">{t('pos.pay.probablySaved')}</p>
                             </OrderNotice>
                         )}
                         {error && (

@@ -3,8 +3,10 @@ import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle, Lock, Printer, Wallet } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
+import { getInstituteId } from '@/constants/helper';
 import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
 import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
+import { clearHeld } from '../-shared/pos-held-bills';
 import { useCloseSession } from '../-shared/pos-hooks';
 import { toPaise } from '../-shared/pos-tenders';
 import { DENOMINATIONS, type SessionView, type ZReport } from '../-shared/pos-types';
@@ -119,7 +121,11 @@ export function PosCloseBody({ session, online }: { session: SessionView; online
             ...(note.trim() ? { note: note.trim() } : {}),
         };
         try {
-            await pin.run(body, (full) => write.mutateAsync([session.id, full]), (answer) => setClosed(answer));
+            await pin.run(body, (full) => write.mutateAsync([session.id, full]), (answer) => {
+                // The counter is closed: bills held under it (with buyers' phones) leave this device.
+                clearHeld(getInstituteId() ?? '', session.register.id);
+                setClosed(answer);
+            });
         } catch (raw) {
             setError(raw);
         }

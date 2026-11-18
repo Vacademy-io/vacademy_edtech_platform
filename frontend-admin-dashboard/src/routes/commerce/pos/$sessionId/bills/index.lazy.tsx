@@ -1,5 +1,5 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
-import { CommerceGate } from '@/routes/commerce/-components/CommercePage';
+import { PosGate } from '@/routes/commerce/pos/-components/PosGate';
 import { PosBillsPage } from '@/routes/commerce/pos/-components/PosBillsPage';
 
 /** P3: the bills of this counter session (reprint, void, change payment mode). */
@@ -10,8 +10,8 @@ export const Route = createLazyFileRoute('/commerce/pos/$sessionId/bills/')({
 function PageRoute() {
     const { sessionId } = Route.useParams();
     return (
-        <CommerceGate navId="commerce-pos">
+        <PosGate>
             <PosBillsPage sessionId={sessionId} />
-        </CommerceGate>
+        </PosGate>
     );
 }

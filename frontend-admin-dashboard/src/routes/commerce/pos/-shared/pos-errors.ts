@@ -50,6 +50,10 @@ export const POS_ERROR_CODES = [
     'EXCHANGE_REMAINDER_REQUIRED',
     'PIN_INVALID',
     'PIN_LOCKED',
+    // POS review follow-ups (D5): a void or payment change from another counter's drawer.
+    'SESSION_MISMATCH',
+    // Screen-side, not a server code: a write whose answer never came was saved under another body.
+    'PROBABLY_SAVED',
 ] as const;
 
 export type PosErrorCode = (typeof POS_ERROR_CODES)[number];
@@ -77,9 +81,22 @@ export interface PosError extends OrderError {
     lineRef: string | null;
     /** The approval an APPROVAL_REQUIRED asks for. */
     action: PosApprovalAction | null;
-    /** No answer reached the screen (offline, timeout): the same request can be sent again. */
+    /**
+     * The server may or may not have saved the write: no answer (offline, timeout), 408, 429, any 5xx
+     * (a gateway 502/503/504 can come after the commit) or a request still in progress. The same
+     * request id must go again.
+     */
+    uncertain: boolean;
+    /** Same as `uncertain`: the screen says "Not sure it was saved. Retry". */
     network: boolean;
 }
+
+/** Statuses after which the server may or may not have saved the write. */
+export const isUncertainStatus = (status: number | null): boolean =>
+    status === null || status === 0 || status === 408 || status === 429 || status >= 500;
+
+/** A 409 that means "the first request with this id is still running". */
+const IN_PROGRESS_CODES: ReadonlySet<string> = new Set(['REQUEST_IN_PROGRESS']);
 
 const TIME = /\b(\d{1,2}:\d{2})\b/;
 const LINE_REF = /\bline\s+(l\d+)\b/i;
@@ -93,7 +110,7 @@ export function approvalActionOf(error: unknown): PosApprovalAction | null {
 }
 
 const isPosError = (value: unknown): value is PosError =>
-    !!value && typeof value === 'object' && 'posKey' in (value as object) && 'network' in (value as object);
+    !!value && typeof value === 'object' && 'posKey' in (value as object) && 'uncertain' in (value as object);
 
 export function readPosError(error: unknown): PosError {
     if (isPosError(error)) return error;
@@ -109,8 +126,11 @@ export function readPosError(error: unknown): PosError {
         time,
         lineRef: LINE_REF.exec(base.message)?.[1] ?? null,
         action: null,
-        network: base.status === null && !base.code,
+        uncertain: false,
+        network: false,
     };
+    read.uncertain = isUncertainStatus(base.status) || (!!code && IN_PROGRESS_CODES.has(code));
+    read.network = read.uncertain;
     read.action = approvalActionOf(read);
     return read;
 }

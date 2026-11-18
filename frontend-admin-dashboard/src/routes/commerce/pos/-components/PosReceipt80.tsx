@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import { cn } from '@/lib/utils';
-import { printReceipt, receiptRows } from '../-shared/pos-receipt';
+import { endReceiptPrint, printReceipt, receiptRows } from '../-shared/pos-receipt';
 import type { Receipt } from '../-shared/pos-types';
 import { usePosLang } from './pos-ui';
 import './pos-receipt.css';
@@ -98,6 +98,8 @@ export function PosReceipt80({ receipt, printable = false }: { receipt: Receipt;
 
 /** Renders print-only content straight under <body>, so it prints at the page's top-start. */
 export function PrintPortal({ children }: { children: ReactNode }) {
+    // Leaving the screen ends a print whose `afterprint` never came (some tablet browsers).
+    useEffect(() => () => endReceiptPrint(), []);
     if (typeof document === 'undefined') return null;
     return createPortal(children, document.body);
 }

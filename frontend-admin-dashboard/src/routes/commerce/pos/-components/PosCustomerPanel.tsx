@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { User, UserCircleCheck } from '@phosphor-icons/react';
 import { Switch } from '@/components/ui/switch';
@@ -8,6 +8,8 @@ import { lookupCustomer } from '../-shared/pos-api';
 import { PosField, posInputClass } from './pos-ui';
 
 const PHONE = /^(\+?91)?[6-9]\d{9}$/;
+
+const cleanPhone = (phone: string) => phone.replace(/[\s-]/g, '');
 
 /** A phone the counter will send: 10 digits (optionally +91). Empty is fine (walk-in). */
 export const phoneLooksValid = (phone: string): boolean => {
@@ -43,25 +45,39 @@ export function PosCustomerPanel({
     onChange: (customer: Partial<CartCustomer>) => void;
 }) {
     const { t } = useTranslation('commerce');
-    const [found, setFound] = useState<string | null>(null);
+    /** The name the lookup found, for the phone it was found for. */
+    const [found, setFound] = useState<{ phone: string; name: string } | null>(null);
     const [touched, setTouched] = useState(false);
     const walkIn = customer.phone.trim() === '' && !customer.businessBill;
+    // The bill as it is now: a lookup answer that comes back late reads this, not its own closure.
+    const latest = useRef(customer);
+    latest.current = customer;
+    const phoneNow = cleanPhone(customer.phone);
+
+    // A new bill (or an edited phone) never shows the previous customer's name.
+    useEffect(() => {
+        setFound((prev) => (prev && prev.phone === phoneNow ? prev : null));
+        if (phoneNow === '') setTouched(false);
+    }, [phoneNow]);
 
     const onPhoneBlur = async () => {
         setTouched(true);
-        setFound(null);
-        const phone = customer.phone.replace(/[\s-]/g, '');
+        const phone = cleanPhone(customer.phone);
         if (!phone || !PHONE.test(phone) || !online) return;
         try {
             const answer = await lookupCustomer(sessionId, phone);
+            // The phone changed while the lookup was on its way: the answer is for someone else.
+            if (cleanPhone(latest.current.phone) !== phone) return;
             if (answer.found && answer.name) {
-                setFound(answer.name);
-                if (!customer.name.trim()) onChange({ name: answer.name });
+                setFound({ phone, name: answer.name });
+                if (!latest.current.name.trim()) onChange({ name: answer.name });
             }
         } catch {
             // The lookup is a convenience; the bill works without it.
         }
     };
+
+    const foundName = found && found.phone === phoneNow ? found.name : null;
 
     const gstin = customer.gstin;
     const gstinBad = customer.businessBill && touched && gstin !== '' && gstinProblem(gstin) !== null;
@@ -76,7 +92,7 @@ export function PosCustomerPanel({
                 label={t('pos.sell.phone')}
                 htmlFor="pos-phone"
                 error={touched && !phoneLooksValid(customer.phone) ? t('pos.customer.phoneInvalid') : null}
-                hint={found ? t('pos.customer.found', { name: found }) : undefined}
+                hint={foundName ? t('pos.customer.found', { name: foundName }) : undefined}
             >
                 <input
                     id="pos-phone"

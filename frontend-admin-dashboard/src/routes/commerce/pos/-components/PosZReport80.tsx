@@ -77,7 +77,7 @@ export function PosZReport80({ report, printable = false }: { report: ZReport; p
                         </div>
                     ))
                 )}
-            {(report.refunds.length > 0 || report.returns.count > 0) &&
+            {(report.refunds.length > 0 || report.refunds_pending.length > 0 || report.returns.count > 0) &&
                 section(
                     t('pos.z.returns'),
                     <>
@@ -85,6 +85,14 @@ export function PosZReport80({ report, printable = false }: { report: ZReport; p
                         {report.refunds.map((r) => (
                             <div key={r.method}>
                                 {row(t('pos.z.refund', { method: modeLabel(r.method, t), count: r.count }), rupees(r.amount))}
+                            </div>
+                        ))}
+                        {report.refunds_pending.map((r) => (
+                            <div key={`pending-${r.method}`}>
+                                {row(
+                                    t('pos.z.refundPending', { method: modeLabel(r.method, t), count: r.count }),
+                                    rupees(r.amount)
+                                )}
                             </div>
                         ))}
                     </>

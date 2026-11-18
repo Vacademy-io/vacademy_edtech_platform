@@ -209,6 +209,11 @@ export function normalizeZReport(data: unknown): ZReport | null {
             count: money(m.count),
             amount: money(m.amount),
         })),
+        refunds_pending: records(r.refunds_pending).map((m) => ({
+            method: text(m.method),
+            count: money(m.count),
+            amount: money(m.amount),
+        })),
         returns: { count: money(returns.count), credit: money(returns.credit) },
         cash_in: money(r.cash_in),
         cash_out: money(r.cash_out),
@@ -259,7 +264,7 @@ export function normalizeSession(data: unknown): SessionView {
     };
 }
 
-const normalizeSessionRow = (r: Rec): SessionRow => ({
+export const normalizeSessionRow = (r: Rec): SessionRow => ({
     id: text(r.id),
     status: text(r.status),
     register_code: text(r.register_code),

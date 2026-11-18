@@ -152,8 +152,22 @@ export const PRINTING_CLASS = 'pos-printing';
 export const PRINT_CLEANUP_MS = 60_000;
 
 export const PAGE_STYLE_ID = 'pos-receipt-page';
-/** The roll's page size; global while present, so it exists only for this print. */
-export const PAGE_RULE = '@media print { @page { size: 80mm auto; margin: 2mm; } }';
+/**
+ * The roll's page margin; global while present, so it exists only for this print. No `size`: a
+ * length cannot pair with `auto` (the whole declaration would be dropped) and the roll printer's
+ * driver knows its paper.
+ */
+export const PAGE_RULE = '@media print { @page { margin: 2mm; } }';
+
+/**
+ * Ends a counter print now: the body class and the page rule go. Called after `afterprint`, by the
+ * fallback timer, and when the printing screen goes away (a later packing-slip print in this tab
+ * must never print blank).
+ */
+export function endReceiptPrint(doc: Document = document): void {
+    doc.body?.classList.remove(PRINTING_CLASS);
+    doc.getElementById(PAGE_STYLE_ID)?.remove();
+}
 
 /**
  * Prints the `.pos-receipt-print` block only: `body.pos-printing` scopes the
@@ -174,7 +188,10 @@ export function printReceipt(win: Window = window): void {
     const cleanup = () => {
         if (cleaned) return;
         cleaned = true;
-        body.classList.remove(PRINTING_CLASS);
+        // Only this print's own rule; a newer print may have replaced it.
+        if (doc.getElementById(PAGE_STYLE_ID) === pageStyle || !doc.getElementById(PAGE_STYLE_ID)) {
+            body.classList.remove(PRINTING_CLASS);
+        }
         pageStyle.remove();
         win.removeEventListener('afterprint', cleanup);
     };

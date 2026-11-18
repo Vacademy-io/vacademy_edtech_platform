@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createLazyFileRoute, useNavigate } from '@tanstack/react-router';
-import { CommerceGate } from '@/routes/commerce/-components/CommercePage';
+import { PosGate } from '@/routes/commerce/pos/-components/PosGate';
 import { PosSellPage } from '@/routes/commerce/pos/-components/PosSellPage';
 import type { CartExchange } from '@/routes/commerce/pos/-shared/pos-cart';
 
@@ -13,8 +13,8 @@ function SellRoute() {
     const { sessionId } = Route.useParams();
     const search = Route.useSearch();
     const navigate = useNavigate();
-    // The exchange arrives once from the returns screen; the bill keeps it, the address drops it
-    // (a reload must not bring a used credit back).
+    // The exchange arrives once from the returns screen. The bill keeps it in this tab's session store
+    // until a bill uses it or the cashier removes it (a reload brings it back), so the address drops it.
     const [exchange] = useState<CartExchange | null>(() =>
         search.exchange
             ? { returnId: search.exchange, number: search.exchangeNumber ?? null, credit: search.exchangeCredit ?? 0 }
@@ -26,8 +26,8 @@ function SellRoute() {
         }
     }, [search.exchange, navigate, sessionId]);
     return (
-        <CommerceGate navId="commerce-pos">
+        <PosGate>
             <PosSellPage key={sessionId} sessionId={sessionId} exchange={exchange} />
-        </CommerceGate>
+        </PosGate>
     );
 }

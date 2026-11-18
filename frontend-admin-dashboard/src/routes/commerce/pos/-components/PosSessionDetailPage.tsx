@@ -17,7 +17,6 @@ import {
 import { useSession, useSessionSales } from '../-shared/pos-hooks';
 import { PosZReport80 } from './PosZReport80';
 import { usePrintOnDemand } from './PosReceipt80';
-import { useStaffNames } from './PosSessionsPage';
 import { PosErrorNotice, rupees } from './pos-ui';
 
 const PAGE_SIZE = 50;
@@ -51,7 +50,6 @@ function SessionDetail({ sessionId }: { sessionId: string }) {
     const [page, setPage] = useState(0);
     const sales = useSessionSales(sessionId, page, PAGE_SIZE);
     const printer = usePrintOnDemand();
-    const names = useStaffNames(true);
     const session = query.data;
     const report = session?.z_report ?? session?.summary ?? null;
     const canOpenOrders = access.canOpen('commerce-orders');
@@ -72,7 +70,7 @@ function SessionDetail({ sessionId }: { sessionId: string }) {
                     <dl className="grid grid-cols-2 gap-3 text-body">
                         <div>
                             <dt className="text-caption text-muted-foreground">{t('pos.sessions.cashier')}</dt>
-                            <dd>{session.cashier_name ?? names.get(session.cashier_user_id ?? '') ?? '—'}</dd>
+                            <dd>{session.cashier_name ?? '—'}</dd>
                         </div>
                         <div>
                             <dt className="text-caption text-muted-foreground">{t('pos.sessions.location')}</dt>
@@ -112,9 +110,7 @@ function SessionDetail({ sessionId }: { sessionId: string }) {
                                             {m.type === 'CASH_OUT' ? t('pos.cash.out') : t('pos.cash.in')} · {m.reason}
                                         </span>
                                         <span className="text-caption text-muted-foreground">
-                                            {[m.created_at ? formatDateTime(m.created_at) : null, names.get(m.actor_user_id ?? '')]
-                                                .filter(Boolean)
-                                                .join(' · ')}
+                                            {m.created_at ? formatDateTime(m.created_at) : ''}
                                         </span>
                                     </span>
                                     <span className="tabular-nums text-body text-foreground">

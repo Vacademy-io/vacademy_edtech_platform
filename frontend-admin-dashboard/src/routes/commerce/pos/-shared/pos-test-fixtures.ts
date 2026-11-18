@@ -50,7 +50,8 @@ export const hose = (over: Partial<CatalogueItem> = {}): CatalogueItem =>
         unit: 'm',
         qty_scale: 10,
         qty_step: 5,
-        unit_price: 200,
+        // The catalogue stores the price of ONE base unit: 20.00 per tenth of a metre = 200.00 a metre.
+        unit_price: 20,
         on_hand: 250,
         ...over,
     });

@@ -1,6 +1,17 @@
 /** Contract §7.4: the bill reducer, one row of the table per test (plus the request builders). */
 import { describe, expect, it } from 'vitest';
-import { type CartState, cartReducer, cartStep, emptyCart, toQuoteRequest, toSaleRequest } from './pos-cart';
+import {
+    type CartLine,
+    type CartState,
+    cartGross,
+    cartReducer,
+    cartStep,
+    emptyCart,
+    lineGross,
+    lineGrossPaise,
+    toQuoteRequest,
+    toSaleRequest,
+} from './pos-cart';
 import { hose, item, piece, scarf } from './pos-test-fixtures';
 
 const run = (events: Parameters<typeof cartStep>[1][], from: CartState = emptyCart()) =>
@@ -76,6 +87,28 @@ describe('ADD_PIECE', () => {
     });
 });
 
+describe('measured goods (price per base unit, as the server prices them)', () => {
+    it('gross = unit price × stored quantity: 2.5 m at 20.00 per tenth is 500.00', () => {
+        const state = run([
+            { type: 'ADD_VARIANT', item: hose() },
+            { type: 'SET_QUANTITY', lineRef: 'l1', quantity: 25 },
+        ]);
+        const line = state.lines[0] as CartLine;
+        expect(lineGrossPaise(line)).toBe(50_000);
+        expect(lineGross(line)).toBe(500);
+        expect(cartGross(state)).toBe(500);
+        // A line discount up to the full line value is allowed (the server allows it too).
+        expect(cartStep(state, { type: 'SET_LINE_DISCOUNT', lineRef: 'l1', amount: 100 }).refusal).toBeNull();
+        expect(cartStep(state, { type: 'SET_LINE_DISCOUNT', lineRef: 'l1', amount: 500 }).refusal).toBeNull();
+        expect(cartStep(state, { type: 'SET_LINE_DISCOUNT', lineRef: 'l1', amount: 500.01 }).refusal).toBe('discountTooHigh');
+    });
+
+    it('no float drift: 199.99 × 25 is 4999.75 exactly (the server half-up value)', () => {
+        const line = { unitPrice: 199.99, quantity: 25 };
+        expect(lineGrossPaise(line)).toBe(499_975);
+    });
+});
+
 describe('SET_QUANTITY', () => {
     const withHose = () => run([{ type: 'ADD_VARIANT', item: hose() }]);
     it('takes a multiple of the step within 1 step .. 100000', () => {
@@ -122,6 +155,18 @@ describe('discounts, customer, exchange, marks', () => {
         expect(cartReducer(state, { type: 'CLEAR' })).toEqual(emptyCart());
     });
 
+    it('CLEAR with keepExchange keeps an unused exchange credit; RESTORE keeps the one on the till', () => {
+        let state = run([{ type: 'ADD_VARIANT', item: item() }]);
+        const exchange = { returnId: 'r-1', number: 'RET-1', credit: 300 };
+        state = cartReducer(state, { type: 'SET_EXCHANGE', exchange });
+        const cleared = cartReducer(state, { type: 'CLEAR', keepExchange: true });
+        expect(cleared.lines).toHaveLength(0);
+        expect(cleared.exchange).toEqual(exchange);
+        const held = { ...run([{ type: 'ADD_VARIANT', item: scarf({ stock_mode: 'QUANTITY' }) }]), exchange: null };
+        expect(cartReducer(cleared, { type: 'RESTORE', state: held }).exchange).toEqual(exchange);
+        expect(cartReducer(cleared, { type: 'CLEAR' }).exchange).toBeNull();
+    });
+
     it('SET_PRICE takes the server price and marks the line', () => {
         const state = cartReducer(run([{ type: 'ADD_VARIANT', item: item() }]), {
             type: 'SET_PRICE',
@@ -151,7 +196,7 @@ describe('requests', () => {
         expect(body.lines).toEqual([
             { line_ref: 'l1', variant_id: 'ps-scarf', quantity: 1, piece_ids: ['id-P1'], unit_price: '1200.00' },
             { line_ref: 'l2', variant_id: 'ps-bottle', quantity: 2, line_discount: '10.00', unit_price: '450.00' },
-            { line_ref: 'l3', variant_id: 'ps-hose', quantity: 25, unit_price: '200.00' },
+            { line_ref: 'l3', variant_id: 'ps-hose', quantity: 25, unit_price: '20.00' },
         ]);
         expect(body.customer).toBeUndefined();
         expect(body.discount_reason).toBe('Regular customer');

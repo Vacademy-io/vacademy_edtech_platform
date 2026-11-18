@@ -1,7 +1,7 @@
 /** Contract §7.2: held bills on this device, at most 10, oldest dropped, storage failures read as empty. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cartReducer, emptyCart } from './pos-cart';
-import { MAX_HELD, dropHeld, holdBill, readHeld, takeHeld } from './pos-held-bills';
+import { HELD_MAX_AGE_MS, MAX_HELD, clearHeld, dropHeld, holdBill, readHeld, takeHeld } from './pos-held-bills';
 import { item } from './pos-test-fixtures';
 
 const cart = (n: number) =>
@@ -18,13 +18,14 @@ afterEach(() => {
 
 describe('held bills', () => {
     it('holds, reads, takes and drops', () => {
-        const held = holdBill('inst-1', 'reg-1', cart(1), new Date('2026-11-18T05:00:00Z'));
+        const at = new Date('2026-11-18T05:00:00Z');
+        const held = holdBill('inst-1', 'reg-1', cart(1), at);
         expect(held).toHaveLength(1);
-        const [bill] = readHeld('inst-1', 'reg-1');
+        const [bill] = readHeld('inst-1', 'reg-1', { now: at });
         expect(bill?.held_at).toBe('2026-11-18T05:00:00.000Z');
         expect(bill?.cart.lines[0]?.variantId).toBe('ps-1');
         expect(readHeld('inst-1', 'reg-2')).toEqual([]);
-        expect(takeHeld('inst-1', 'reg-1', bill?.id ?? '')?.id).toBe(bill?.id);
+        expect(takeHeld('inst-1', 'reg-1', bill?.id ?? '', { now: at })?.id).toBe(bill?.id);
         expect(readHeld('inst-1', 'reg-1')).toEqual([]);
         holdBill('inst-1', 'reg-1', cart(2));
         const [second] = readHeld('inst-1', 'reg-1');
@@ -50,6 +51,33 @@ describe('held bills', () => {
         });
         expect(readHeld('inst-1', 'reg-1')).toEqual([]);
         expect(holdBill('inst-1', 'reg-1', cart(1))).toBeNull();
+    });
+
+    it('a held bill expires after 12 hours and is removed from the device', () => {
+        const at = new Date('2026-11-18T05:00:00Z');
+        holdBill('inst-1', 'reg-1', cart(1), at, 'sess-1');
+        const later = new Date(at.getTime() + HELD_MAX_AGE_MS - 1000);
+        expect(readHeld('inst-1', 'reg-1', { sessionId: 'sess-1', now: later })).toHaveLength(1);
+        const expired = new Date(at.getTime() + HELD_MAX_AGE_MS + 1000);
+        expect(readHeld('inst-1', 'reg-1', { sessionId: 'sess-1', now: expired })).toEqual([]);
+        expect(localStorage.getItem('commerce.pos.held.inst-1.reg-1')).toBe('[]');
+    });
+
+    it('a bill held in a closed session is not offered in the next one; closing clears the register', () => {
+        const at = new Date('2026-11-18T05:00:00Z');
+        holdBill('inst-1', 'reg-1', cart(1), at, 'sess-old');
+        expect(readHeld('inst-1', 'reg-1', { sessionId: 'sess-new', now: at })).toEqual([]);
+        holdBill('inst-1', 'reg-1', cart(2), at, 'sess-new');
+        expect(readHeld('inst-1', 'reg-1', { sessionId: 'sess-new', now: at })).toHaveLength(1);
+        clearHeld('inst-1', 'reg-1');
+        expect(localStorage.getItem('commerce.pos.held.inst-1.reg-1')).toBeNull();
+    });
+
+    it('an exchange credit is never held (it stays on the till)', () => {
+        const at = new Date('2026-11-18T05:00:00Z');
+        const withCredit = { ...cart(1), exchange: { returnId: 'r-1', number: 'RET-1', credit: 300 } };
+        const [bill] = holdBill('inst-1', 'reg-1', withCredit, at, 'sess-1') ?? [];
+        expect(bill?.cart.exchange).toBeNull();
     });
 
     it('a corrupt copy reads as nothing held', () => {

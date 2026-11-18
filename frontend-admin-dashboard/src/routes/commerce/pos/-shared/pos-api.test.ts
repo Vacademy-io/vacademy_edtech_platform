@@ -9,6 +9,7 @@ import {
     normalizeSaleDetail,
     normalizeSaleRow,
     normalizeSession,
+    normalizeSessionRow,
 } from './pos-api';
 
 describe('pos-api normalisers (server shapes)', () => {
@@ -74,6 +75,37 @@ describe('pos-api normalisers (server shapes)', () => {
         expect(session.summary?.expected_cash).toBe(1500);
         expect(session.summary?.by_mode[0]).toEqual({ mode: 'UPI', count: 1, amount: 450 });
         expect(session.denominations).toEqual({ '500': 2 });
+    });
+
+    it('session rows name the cashier (server field cashier_name, G2)', () => {
+        const row = normalizeSessionRow({
+            id: 's1',
+            status: 'CLOSED',
+            register_code: 'C1',
+            location_name: 'Main store',
+            cashier_user_id: 'u1',
+            cashier_name: 'Test Cashier',
+            bills_count: 3,
+            bills_total: '1350.00',
+            variance: '0.00',
+        });
+        expect(row.cashier_name).toBe('Test Cashier');
+        expect(normalizeSessionRow({ id: 's2', cashier_name: null }).cashier_name).toBeNull();
+    });
+
+    it('the day report keeps paid refunds and refunds not paid yet apart', () => {
+        const session = normalizeSession({
+            id: 's1',
+            status: 'CLOSED',
+            register: { id: 'r1', code: 'C1', name: 'Front' },
+            location: { id: 'l1', name: 'Main store' },
+            z_report: {
+                refunds: [{ method: 'CASH', count: 1, amount: '200.00' }],
+                refunds_pending: [{ method: 'UPI', count: 1, amount: '750.00' }],
+            },
+        });
+        expect(session.z_report?.refunds).toEqual([{ method: 'CASH', count: 1, amount: 200 }]);
+        expect(session.z_report?.refunds_pending).toEqual([{ method: 'UPI', count: 1, amount: 750 }]);
     });
 
     it('sale detail: dates, tenders, next actions', () => {

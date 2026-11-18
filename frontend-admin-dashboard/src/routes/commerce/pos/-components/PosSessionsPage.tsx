@@ -15,22 +15,12 @@ import {
     CommerceNoAccessCard,
     CommerceStatusChip,
 } from '@/routes/commerce/-components/CommerceStates';
-import { useCommerceStaff } from '@/routes/commerce/-shared/commerce-hooks';
 import { inputClass } from '@/routes/commerce/orders/-components/order-ui';
 import { useRegisters, useSessions } from '../-shared/pos-hooks';
 import type { SessionRow } from '../-shared/pos-types';
 import { PosErrorNotice } from './pos-ui';
 
 const PAGE_SIZE = 50;
-
-/** Names of staff by user id, for screens whose rows carry only the id. */
-export function useStaffNames(enabled: boolean): Map<string, string> {
-    const staff = useCommerceStaff(enabled);
-    return useMemo(
-        () => new Map((staff.data ?? []).map((member) => [member.user_id, member.full_name])),
-        [staff.data]
-    );
-}
 
 /** P7 (contract §7.3): every counter session of the shop, newest first (manager). */
 export function PosSessionsPage() {
@@ -63,7 +53,6 @@ function SessionsList() {
     };
     const query = useSessions(filters);
     const registers = useRegisters();
-    const names = useStaffNames(true);
     const rows = query.data?.rows ?? [];
     const total = query.data?.total ?? 0;
 
@@ -94,7 +83,7 @@ function SessionsList() {
                 id: 'cashier',
                 header: t('pos.sessions.cashier'),
                 cell: ({ row }) =>
-                    row.original.cashier_name ?? names.get(row.original.cashier_user_id ?? '') ?? '—',
+                    row.original.cashier_name ?? '—',
             },
             {
                 id: 'opened',
@@ -132,7 +121,7 @@ function SessionsList() {
                 cell: ({ row }) => <CommerceStatusChip kind="posSession" value={row.original.status} />,
             },
         ],
-        [t, names]
+        [t]
     );
 
     return (

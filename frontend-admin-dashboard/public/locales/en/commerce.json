@@ -2125,7 +2125,7 @@
         "online": "Online",
         "offlineShort": "No internet",
         "offline": "No internet: the bill is kept, pay when the connection returns.",
-        "notSaved": "Not saved. Retry",
+        "notSaved": "Not sure it was saved. Retry",
         "nav": {
             "sell": "Sell",
             "bills": "Bills",
@@ -2188,7 +2188,15 @@
             "lineDiscountShown": "{{amount}} off",
             "removeExchange": "Remove the exchange credit",
             "discountNeedsPin": "This discount is above your limit: a manager's PIN will be asked at payment.",
-            "reasonMissing": "Write the reason for the discount before payment."
+            "reasonMissing": "Write the reason for the discount before payment.",
+            "addCredit": "Add return credit",
+            "creditNeedsPin": "This return was not taken at this counter in this session: a manager's PIN is asked when the bill is paid.",
+            "maybeSaved": "The last payment may have been saved: its answer did not reach this screen. Check the bills before you take the money again.",
+            "checkBills": "Check bills",
+            "clearMaybeSaved": "Check the bills first: the last payment may have been saved. After clearing, the next payment makes a new bill.",
+            "clearKeepsCredit": "The exchange credit stays on the till.",
+            "removeExchangeTitle": "Remove the exchange credit?",
+            "removeExchangeConfirm": "The credit of return {{number}} stays with the customer. You can add it again with Add return credit."
         },
         "customer": {
             "title": "Customer",
@@ -2274,7 +2282,7 @@
             "removeTender": "Remove this payment",
             "saving": "Saving…",
             "waitQuote": "Updating the bill amount…",
-            "notSavedHint": "The bill was not saved: the connection dropped. Press Retry; it will not make a second bill.",
+            "notSavedHint": "No answer came back (the connection dropped or the server did not answer), so the bill may already be saved. Press Retry: it goes with the same number and will not make a second bill.",
             "creditUsed": "Exchange credit {{amount}} is used first.",
             "giveBackCredit": "The exchange credit is more than this bill. Give back {{amount}} as:",
             "problems": {
@@ -2285,7 +2293,9 @@
                 "short": "Some amount is still to pay.",
                 "over": "The payments add up to more than the bill.",
                 "tooMany": "At most 10 payments on one bill."
-            }
+            },
+            "probablySaved": "This bill was already saved with the earlier payment. Do not take the money again: check Bills, then clear this bill.",
+            "roundOff": "Round off {{amount}}"
         },
         "tender": {
             "OTHER": "Other",
@@ -2380,7 +2390,8 @@
             "creditNote": "Credit note {{number}} for {{amount}}",
             "refunded": "{{amount}} refunded by {{method}}",
             "another": "Take another return",
-            "credit": "Exchange credit {{amount}} for return {{number}}"
+            "credit": "Exchange credit {{amount}} for return {{number}}",
+            "maybeSaved": "The last return of this bill may have been saved: its answer did not reach this screen. Check the bill's returns before you give money back."
         },
         "billBook": {
             "title": "Enter a paper bill",
@@ -2414,7 +2425,8 @@
             "out": "Cash out",
             "amount": "Amount",
             "reason": "Reason",
-            "saved": "{{amount}} recorded."
+            "saved": "{{amount}} recorded.",
+            "maybeSaved": "The last cash entry may have been saved: its answer did not reach this screen. Check the counter's cash movements before you enter it again."
         },
         "z": {
             "title": "Day report",
@@ -2435,7 +2447,8 @@
             "returnCount": "Returns ({{count}})",
             "refund": "Refunds by {{method}} ({{count}})",
             "cash": "Cash drawer",
-            "openingCash": "Cash at opening"
+            "openingCash": "Cash at opening",
+            "refundPending": "Refunds by {{method}} not paid yet ({{count}})"
         },
         "approval": {
             "title": "A manager's PIN is needed",
@@ -2445,9 +2458,10 @@
             "POS_VOID": "Voiding a bill needs a manager.",
             "POS_TENDER_CHANGE": "Changing how a bill was paid needs a manager.",
             "POS_BILL_BOOK": "Entering a paper bill needs a manager.",
-            "POS_CASH_REFUND": "The cash refund is above the cashier's limit.",
-            "POS_RETURN_OVERRIDE": "This return goes against the return policy.",
-            "POS_VARIANCE": "The cash difference is above the cashier's limit."
+            "POS_CASH_REFUND": "The refund is above the cashier's limit.",
+            "POS_RETURN_OVERRIDE": "This return goes against the return policy, or the bill was not sold at a counter of this location.",
+            "POS_VARIANCE": "The cash difference is above the cashier's limit.",
+            "POS_EXCHANGE": "This return's credit was not taken at this counter in this session."
         },
         "validation": {
             "amount": "Enter an amount above 0, up to 2 decimals.",
@@ -2490,7 +2504,9 @@
             "EXCHANGE_NOT_AVAILABLE": "This exchange credit cannot be used now.",
             "EXCHANGE_REMAINDER_REQUIRED": "Choose how to give back the rest of the exchange credit: cash or UPI.",
             "PIN_INVALID": "Wrong PIN, or this manager cannot approve here.",
-            "PIN_LOCKED": "Too many wrong PINs. Try again later."
+            "PIN_LOCKED": "Too many wrong PINs. Try again later.",
+            "SESSION_MISMATCH": "This bill was made at another counter session. Take a return instead.",
+            "PROBABLY_SAVED": "This was most likely saved already: its answer did not reach this screen. Check before you do it again."
         },
         "registers": {
             "title": "Counters",
@@ -2572,6 +2588,15 @@
             "summary": "Session",
             "cashMovements": "Cash in and out",
             "noCashMovements": "No cash in or out."
+        },
+        "addCredit": {
+            "title": "Add return credit",
+            "hint": "Find the bill the goods came back from. Its returns whose credit is still waiting are listed here.",
+            "none": "No return of this bill has credit waiting.",
+            "use": "Use the credit of return {{number}}"
+        },
+        "attempt": {
+            "checked": "I checked: start again"
         }
     }
 }

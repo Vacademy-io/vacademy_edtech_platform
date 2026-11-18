@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useBlocker } from '@tanstack/react-router';
+import { Link, useBlocker } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Broom, PauseCircle, Tag, X } from '@phosphor-icons/react';
+import { Broom, PauseCircle, Receipt, Tag, X } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { getInstituteId } from '@/constants/helper';
@@ -34,6 +34,7 @@ import {
 } from '../-shared/pos-catalogue';
 import { LINE_STOCK_CODES, type PosError, REQUOTE_CODES, readPosError } from '../-shared/pos-errors';
 import { type HeldBill, dropHeld, holdBill, readHeld, takeHeld } from '../-shared/pos-held-bills';
+import { readExchange, useAttemptStore, writeExchange } from '../-shared/pos-session-store';
 import {
     invalidatePos,
     posKeys,
@@ -47,6 +48,7 @@ import {
 } from '../-shared/pos-hooks';
 import { toPaise } from '../-shared/pos-tenders';
 import type { BillBookRequest, CatalogueItem, ScanPiece, SessionView } from '../-shared/pos-types';
+import { PosAddCreditDialog } from './PosAddCreditDialog';
 import { PosCartLines } from './PosCartLines';
 import { PosCustomerPanel, customerProblem } from './PosCustomerPanel';
 import { type DiscountTarget, PosDiscountDialog } from './PosDiscountDialog';
@@ -137,9 +139,22 @@ export function PosBillingWorkspace({
     const bookWrite = useCreateBillBookEntry();
     const instituteId = getInstituteId() ?? '';
     const registerId = session.register.id;
-    const { cart, ref: cartRef, apply } = useCart(() =>
-        initialExchange ? { ...emptyCart(), exchange: initialExchange } : emptyCart()
-    );
+    const isBook = mode === 'billBook';
+    // An exchange credit stays on this session's till (this tab) until a bill uses it or the
+    // cashier removes it: a reload, Clear bill or a trip to another screen keeps it.
+    const { cart, ref: cartRef, apply } = useCart(() => {
+        const exchange = isBook ? null : (initialExchange ?? readExchange(instituteId, session.id));
+        return exchange ? { ...emptyCart(), exchange } : emptyCart();
+    });
+    useEffect(() => {
+        if (!isBook) writeExchange(instituteId, session.id, cart.exchange);
+    }, [cart.exchange, instituteId, session.id, isBook]);
+
+    // The sale (or paper bill) whose answer never came keeps its request id across the Pay dialog
+    // closing, changed tenders and a reload, so a retry can never make a second bill.
+    const attempts = useAttemptStore(instituteId, session.id, 'pos');
+    const attemptScope = isBook ? 'billBook' : 'sale';
+    const maybeSaved = attempts.isUncertain(attemptScope);
 
     // ── Catalogue: the server's copy, else this device's copy (offline). ──
     const catalogueQuery = useCatalogue(registerId);
@@ -155,6 +170,8 @@ export function PosBillingWorkspace({
     const [discountTarget, setDiscountTarget] = useState<DiscountTarget | null>(null);
     const [lengthRef, setLengthRef] = useState<string | null>(null);
     const [clearOpen, setClearOpen] = useState(false);
+    const [removeCreditOpen, setRemoveCreditOpen] = useState(false);
+    const [addCreditOpen, setAddCreditOpen] = useState(false);
     const [held, setHeld] = useState<HeldBill[]>([]);
     const [message, setMessage] = useState<{ tone: 'danger' | 'info'; text: string } | null>(null);
     const allowLeave = useRef(false);
@@ -172,7 +189,15 @@ export function PosBillingWorkspace({
     });
     const blocked = blocker?.status === 'blocked';
 
-    const paused = payOpen || !!discountTarget || !!lengthRef || clearOpen || heldOpen || blocked;
+    const paused =
+        payOpen ||
+        !!discountTarget ||
+        !!lengthRef ||
+        clearOpen ||
+        heldOpen ||
+        blocked ||
+        removeCreditOpen ||
+        addCreditOpen;
 
     const say = (tone: 'danger' | 'info', text: string) => {
         setMessage({ tone, text });
@@ -222,7 +247,11 @@ export function PosBillingWorkspace({
                 return;
             }
             if (answer.kind === 'PIECE' && answer.piece) addPiece(answer.item, answer.piece);
-            else addItem(answer.item);
+            else {
+                addItem(answer.item);
+                // The server knows a code this device's catalogue copy does not: fetch it again.
+                void queryClient.invalidateQueries({ queryKey: posKeys.catalogue(registerId) });
+            }
         } catch (error) {
             say('danger', errorText(readPosError(error)));
         }
@@ -278,6 +307,9 @@ export function PosBillingWorkspace({
     }, [quote.data, quote.isPlaceholderData, apply, cartRef]);
 
     const settings = usePosSettings(!access.isManager);
+    // The quote names the credit when this cashier may use it; without a number it needs a manager's
+    // PIN (asked when the bill is paid) and the amount found with the return counts meanwhile.
+    const creditNeedsPin = !!cart.exchange && !!quoteData && quoteCurrent && quoteData.exchange_credit === null;
     const credit = cart.exchange ? (quoteData?.exchange_credit ?? cart.exchange.credit) : 0;
     const total = quoteData?.totals.total ?? 0;
     const toPay = Math.max(0, (toPaise(total) - toPaise(credit)) / 100);
@@ -335,8 +367,9 @@ export function PosBillingWorkspace({
         return false;
     };
 
-    const newBill = () => {
-        apply({ type: 'CLEAR' });
+    /** After a bill is made (its exchange credit is used up), or the cashier cleared it (the credit stays). */
+    const newBill = (afterSale = true) => {
+        apply({ type: 'CLEAR', keepExchange: !afterSale });
         setMessage(null);
         if (mode === 'billBook') {
             setBookNumber('');
@@ -348,29 +381,28 @@ export function PosBillingWorkspace({
 
     const hold = () => {
         if (cartRef.current.lines.length === 0) return false;
-        const saved = holdBill(instituteId, registerId, cartRef.current);
+        const saved = holdBill(instituteId, registerId, cartRef.current, new Date(), session.id);
         if (!saved) {
             toast.error(t('pos.held.failed'));
             return false;
         }
-        apply({ type: 'CLEAR' });
+        apply({ type: 'CLEAR', keepExchange: true });
         toast.success(t('pos.held.saved'));
         return true;
     };
 
     useEffect(() => {
-        if (heldOpen) setHeld(readHeld(instituteId, registerId));
-    }, [heldOpen, instituteId, registerId]);
+        if (heldOpen) setHeld(readHeld(instituteId, registerId, { sessionId: session.id }));
+    }, [heldOpen, instituteId, registerId, session.id]);
 
     const recall = (bill: HeldBill) => {
         if (cartRef.current.lines.length > 0 && !window.confirm(t('pos.held.replaceConfirm'))) return;
-        const taken = takeHeld(instituteId, registerId, bill.id);
+        const taken = takeHeld(instituteId, registerId, bill.id, { sessionId: session.id });
         if (taken) apply({ type: 'RESTORE', state: taken.cart });
         onHeldOpenChange?.(false);
     };
 
     const lengthLine = cart.lines.find((line) => line.lineRef === lengthRef) ?? null;
-    const isBook = mode === 'billBook';
 
     return (
         <div className="flex min-h-0 flex-1">
@@ -435,7 +467,7 @@ export function PosBillingWorkspace({
                         type="button"
                         buttonType="secondary"
                         scale="large" className="h-12"
-                        disable={cart.lines.length === 0}
+                        disable={cart.lines.length === 0 && !maybeSaved}
                         onClick={() => setClearOpen(true)}
                     >
                         <Broom size={20} className="me-2" />
@@ -511,7 +543,7 @@ export function PosBillingWorkspace({
                                 <button
                                     type="button"
                                     aria-label={t('pos.sell.removeExchange')}
-                                    onClick={() => apply({ type: 'SET_EXCHANGE', exchange: null })}
+                                    onClick={() => setRemoveCreditOpen(true)}
                                     className="flex size-12 items-center justify-center rounded-md hover:bg-info-100"
                                 >
                                     <X size={18} />
@@ -524,6 +556,37 @@ export function PosBillingWorkspace({
                                     number: cart.exchange.number ?? '',
                                 })}
                             </p>
+                            {creditNeedsPin && (
+                                <p className="text-caption" data-testid="pos-credit-needs-pin">
+                                    {t('pos.sell.creditNeedsPin')}
+                                </p>
+                            )}
+                        </OrderNotice>
+                    )}
+                    {!isBook && !cart.exchange && (
+                        <MyButton
+                            type="button"
+                            buttonType="secondary"
+                            scale="large"
+                            className="h-12 w-full"
+                            data-testid="pos-add-credit"
+                            disable={!online}
+                            onClick={() => setAddCreditOpen(true)}
+                        >
+                            <Receipt size={20} className="me-2" />
+                            {t('pos.sell.addCredit')}
+                        </MyButton>
+                    )}
+                    {maybeSaved && !payOpen && (
+                        <OrderNotice tone="warning">
+                            <p data-testid="pos-maybe-saved">{t('pos.sell.maybeSaved')}</p>
+                            <Link
+                                to="/commerce/pos/$sessionId/bills"
+                                params={{ sessionId: session.id }}
+                                className="text-body font-medium text-primary-500 underline"
+                            >
+                                {t('pos.sell.checkBills')}
+                            </Link>
                         </OrderNotice>
                     )}
                     <PosCustomerPanel
@@ -590,6 +653,7 @@ export function PosBillingWorkspace({
                 open={payOpen}
                 onOpenChange={setPayOpen}
                 total={total}
+                roundOff={quoteData?.totals.round_off ?? 0}
                 credit={credit}
                 ready={ready}
                 online={online}
@@ -606,8 +670,48 @@ export function PosBillingWorkspace({
                     isBook ? bookWrite.mutateAsync([body as BillBookRequest]) : saleWrite.mutateAsync([body])
                 }
                 onRefused={onRefused}
-                onNewBill={newBill}
+                onNewBill={() => newBill(true)}
+                attempts={attempts}
+                attemptScope={attemptScope}
+                onTotalMoved={() => toast.error(t('pos.errors.PRICE_CHANGED'))}
             />
+            <PosAddCreditDialog
+                open={addCreditOpen}
+                onOpenChange={setAddCreditOpen}
+                sessionId={session.id}
+                online={online}
+                onPick={(exchange) => apply({ type: 'SET_EXCHANGE', exchange })}
+            />
+            <MyDialog
+                heading={t('pos.sell.removeExchangeTitle')}
+                open={removeCreditOpen}
+                onOpenChange={setRemoveCreditOpen}
+                dialogWidth="max-w-md"
+                footer={
+                    <div className="flex w-full justify-end gap-2">
+                        <MyButton type="button" buttonType="secondary" scale="large" className="h-12" onClick={() => setRemoveCreditOpen(false)}>
+                            {t('pos.leave.stay')}
+                        </MyButton>
+                        <MyButton
+                            type="button"
+                            buttonType="primary"
+                            scale="large"
+                            className="h-12"
+                            data-testid="pos-remove-credit-confirm"
+                            onClick={() => {
+                                apply({ type: 'SET_EXCHANGE', exchange: null });
+                                setRemoveCreditOpen(false);
+                            }}
+                        >
+                            {t('pos.sell.removeExchange')}
+                        </MyButton>
+                    </div>
+                }
+            >
+                <p className="text-body text-foreground">
+                    {t('pos.sell.removeExchangeConfirm', { number: cart.exchange?.number ?? '' })}
+                </p>
+            </MyDialog>
             <PosDiscountDialog
                 target={discountTarget}
                 reason={cart.discountReason}
@@ -671,7 +775,9 @@ export function PosBillingWorkspace({
                             buttonType="primary"
                             scale="large" className="h-12"
                             onClick={() => {
-                                newBill();
+                                // The cashier checked the bills: an unanswered payment is forgotten with the bill.
+                                attempts.clear(attemptScope);
+                                newBill(false);
                                 setClearOpen(false);
                             }}
                         >
@@ -681,6 +787,8 @@ export function PosBillingWorkspace({
                 }
             >
                 <p className="text-body text-foreground">{t('pos.sell.clearConfirm')}</p>
+                {maybeSaved && <p className="mt-2 text-body text-danger-600">{t('pos.sell.clearMaybeSaved')}</p>}
+                {cart.exchange && <p className="mt-2 text-body text-neutral-600">{t('pos.sell.clearKeepsCredit')}</p>}
             </MyDialog>
             <MyDialog
                 heading={t('pos.sell.leave')}
@@ -703,7 +811,8 @@ export function PosBillingWorkspace({
                         >
                             {t('pos.leave.leave')}
                         </MyButton>
-                        {!isBook && (
+                        {/* Never hold a bill whose payment is open or on its way: if it is saved, recalling it would sell the goods twice. */}
+                        {!isBook && !payOpen && (
                             <MyButton
                                 type="button"
                                 buttonType="primary"

@@ -32,15 +32,13 @@ export function PosVoidDialog({
     const [reason, setReason] = useState('');
     const [touched, setTouched] = useState(false);
     const [error, setError] = useState<unknown>(null);
-    const { reset } = pin;
 
     useEffect(() => {
         if (!open) return;
         setReason('');
         setTouched(false);
         setError(null);
-        reset();
-    }, [open, reset]);
+    }, [open]);
 
     const reasonOk = reason.trim().length > 0 && reason.trim().length <= 500;
     const finish = (answer: SaleAnswer) => {
@@ -54,7 +52,12 @@ export function PosVoidDialog({
         if (!reasonOk) return;
         setError(null);
         try {
-            await pin.run({ reason: reason.trim() }, (full) => write.mutateAsync([sale.order_id, full]), finish);
+            await pin.run(
+                { reason: reason.trim() },
+                (full) => write.mutateAsync([sale.order_id, full]),
+                finish,
+                `void.${sale.order_id}`
+            );
         } catch (raw) {
             setError(raw);
         }

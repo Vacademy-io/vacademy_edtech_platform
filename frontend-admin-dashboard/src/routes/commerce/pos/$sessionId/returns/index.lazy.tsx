@@ -1,5 +1,5 @@
 import { createLazyFileRoute } from '@tanstack/react-router';
-import { CommerceGate } from '@/routes/commerce/-components/CommercePage';
+import { PosGate } from '@/routes/commerce/pos/-components/PosGate';
 import { PosReturnPage } from '@/routes/commerce/pos/-components/PosReturnPage';
 
 /** P4: return or exchange at the counter. */
@@ -11,8 +11,8 @@ function ReturnsRoute() {
     const { sessionId } = Route.useParams();
     const { order } = Route.useSearch();
     return (
-        <CommerceGate navId="commerce-pos">
+        <PosGate>
             <PosReturnPage sessionId={sessionId} initialOrderId={order} />
-        </CommerceGate>
+        </PosGate>
     );
 }

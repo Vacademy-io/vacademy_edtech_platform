@@ -15,7 +15,7 @@ import {
 } from '@/routes/commerce/-components/CommerceStates';
 import { useLocations } from '@/routes/commerce/-shared/commerce-hooks';
 import { PosErrorNotice, timeOnly } from '@/routes/commerce/pos/-components/pos-ui';
-import { useRegisters } from '@/routes/commerce/pos/-shared/pos-hooks';
+import { usePosManagerAllowed, useRegisters } from '@/routes/commerce/pos/-shared/pos-hooks';
 import { REGISTER_SETUP_WARNINGS, type RegisterView } from '@/routes/commerce/pos/-shared/pos-types';
 import { BillBooksCard } from './BillBooksCard';
 import { PosLimitsCard } from './PosLimitsCard';
@@ -42,7 +42,10 @@ export function RegistersPage() {
     const [open, setOpen] = useState(false);
     const [editing, setEditing] = useState<RegisterView | null>(null);
     const registers = useRegisters(access.isManager);
-    const locations = useLocations(access.isResolved && access.isManager);
+    // The page component runs before CommercePage's gate decides: only a manager of an institute with
+    // the counter module on may read the locations (contract §7.1: no request otherwise).
+    const posManager = usePosManagerAllowed();
+    const locations = useLocations(posManager);
     const list = registers.data ?? [];
 
     const columns = useMemo<ColumnDef<RegisterView>[]>(

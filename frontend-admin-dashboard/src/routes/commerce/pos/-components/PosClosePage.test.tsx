@@ -79,6 +79,7 @@ const summary = (expected: number): ZReport => ({
     ],
     tax_by_rate: [],
     refunds: [],
+    refunds_pending: [],
     returns: { count: 0, credit: 0 },
     cash_in: 0,
     cash_out: 0,

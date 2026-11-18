@@ -112,7 +112,12 @@ export type CartEvent =
     /** The server's price moved (quote `changes`): take it and say so on the line. */
     | { type: 'SET_PRICE'; lineRef: string; unitPrice: number }
     | { type: 'CLEAR_MARKS' }
-    | { type: 'CLEAR' }
+    /**
+     * Empties the bill. `keepExchange` (Clear bill, Hold bill) keeps an unused exchange credit on the
+     * till: it is the customer's money and only a bill that uses it, or the cashier, removes it.
+     */
+    | { type: 'CLEAR'; keepExchange?: boolean }
+    /** A held bill comes back; an exchange credit already on the till stays. */
     | { type: 'RESTORE'; state: CartState };
 
 export interface CartResult {
@@ -147,11 +152,15 @@ export const isMeasured = (line: Pick<CartLine, 'qtyScale'>): boolean => line.qt
 export const isPieceLine = (line: Pick<CartLine, 'stockMode' | 'tracked'>): boolean =>
     line.stockMode === 'PIECE' && line.tracked;
 
-/** Gross of a line in paise: price × quantity in display units. */
-export const lineGrossPaise = (line: Pick<CartLine, 'unitPrice' | 'quantity' | 'qtyScale'>): number =>
-    Math.round((line.unitPrice * 100 * line.quantity) / (line.qtyScale > 1 ? line.qtyScale : 1));
+/**
+ * Gross of a line in paise: the price of ONE stored unit × the stored quantity, as the server
+ * prices it (`unit_price × quantity`; a measured item's price is per base unit, a tenth of a metre
+ * at `qty_scale` 10). The price goes to whole paise first, so the product is an exact integer.
+ */
+export const lineGrossPaise = (line: Pick<CartLine, 'unitPrice' | 'quantity'>): number =>
+    Math.round(line.unitPrice * 100) * line.quantity;
 
-export const lineGross = (line: Pick<CartLine, 'unitPrice' | 'quantity' | 'qtyScale'>): number =>
+export const lineGross = (line: Pick<CartLine, 'unitPrice' | 'quantity'>): number =>
     lineGrossPaise(line) / 100;
 
 /** Goods value before any discount (the base of the cashier's percent limit). */
@@ -335,9 +344,9 @@ export function cartStep(state: CartState, event: CartEvent): CartResult {
         case 'CLEAR_MARKS':
             return done({ ...state, lines: state.lines.map((l) => (l.mark ? { ...l, mark: null } : l)) });
         case 'CLEAR':
-            return done(emptyCart());
+            return done(event.keepExchange ? { ...emptyCart(), exchange: state.exchange } : emptyCart());
         case 'RESTORE':
-            return done(event.state);
+            return done({ ...event.state, exchange: state.exchange ?? event.state.exchange ?? null });
         default:
             return done(state);
     }

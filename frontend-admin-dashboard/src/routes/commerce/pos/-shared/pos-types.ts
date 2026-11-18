@@ -23,6 +23,8 @@ export const POS_APPROVAL_ACTIONS = [
     'POS_CASH_REFUND',
     'POS_RETURN_OVERRIDE',
     'POS_VARIANCE',
+    // Spending the credit of a return not taken at the counter in the cashier's own session (D1).
+    'POS_EXCHANGE',
 ] as const;
 export type PosApprovalAction = (typeof POS_APPROVAL_ACTIONS)[number];
 
@@ -194,7 +196,10 @@ export interface ZReport {
     discounts: number;
     by_mode: ModeTotal[];
     tax_by_rate: TaxRow[];
+    /** Refunds paid (PROCESSED). */
     refunds: RefundTotal[];
+    /** Refunds recorded but not paid yet (PENDING / IN_PROGRESS, e.g. a UPI refund with no reference). */
+    refunds_pending: RefundTotal[];
     returns: { count: number; credit: number };
     cash_in: number;
     cash_out: number;
@@ -240,7 +245,7 @@ export interface SessionRow {
     register_code: string;
     location_name: string;
     cashier_user_id: string | null;
-    /** Not sent by the server's SessionRow; the staff list names the cashier (kept for a later server field). */
+    /** The cashier's name, resolved by the server (G2); null when unknown. */
     cashier_name: string | null;
     opened_at: string | null;
     closed_at: string | null;

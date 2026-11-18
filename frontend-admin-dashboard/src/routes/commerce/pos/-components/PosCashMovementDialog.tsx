@@ -3,14 +3,22 @@ import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
+import { getInstituteId } from '@/constants/helper';
 import { cn } from '@/lib/utils';
-import { useRequestId } from '@/routes/commerce/orders/-shared/request-id';
+import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
+import { readPosError } from '../-shared/pos-errors';
 import { useCashMovement } from '../-shared/pos-hooks';
+import { useAttemptStore } from '../-shared/pos-session-store';
+import { probablySaved } from './PosPinGate';
 import { PosErrorNotice, PosField, isAmount, posInputClass, rupees, sanitizeAmount } from './pos-ui';
+
+const SCOPE = 'cash';
 
 /**
  * Cash in / cash out of the drawer (manager only, contract §3.8). A correction
- * is an opposite movement; nothing here cancels one.
+ * is an opposite movement; nothing here cancels one. A movement whose answer
+ * never came keeps its request id (across closing the dialog and a reload)
+ * until the server answers for sure, so it is never written twice.
  */
 export function PosCashMovementDialog({
     sessionId,
@@ -27,7 +35,8 @@ export function PosCashMovementDialog({
     const [reason, setReason] = useState('');
     const [error, setError] = useState<unknown>(null);
     const [touched, setTouched] = useState(false);
-    const { idFor, reset } = useRequestId('poscash');
+    const attempts = useAttemptStore(getInstituteId() ?? '', sessionId, 'poscash');
+    const maybeSaved = attempts.isUncertain(SCOPE);
     const write = useCashMovement();
 
     useEffect(() => {
@@ -37,8 +46,7 @@ export function PosCashMovementDialog({
         setReason('');
         setError(null);
         setTouched(false);
-        reset();
-    }, [open, reset]);
+    }, [open]);
 
     const amountOk = isAmount(amount);
     const reasonOk = reason.trim().length > 0 && reason.trim().length <= 200;
@@ -48,12 +56,15 @@ export function PosCashMovementDialog({
         if (!amountOk || !reasonOk) return;
         const body = { type, amount: Number(amount).toFixed(2), reason: reason.trim() };
         setError(null);
+        const { id, carried } = attempts.begin(SCOPE, body);
         try {
-            await write.mutateAsync([sessionId, { ...body, client_request_id: idFor(body) }]);
+            await write.mutateAsync([sessionId, { ...body, client_request_id: id }]);
+            attempts.settle(SCOPE, null, carried);
             toast.success(t('pos.cash.saved', { amount: rupees(body.amount) }));
             onOpenChange(false);
         } catch (e) {
-            setError(e);
+            const read = readPosError(e);
+            setError(attempts.settle(SCOPE, read, carried) ? probablySaved(read) : e);
         }
     };
 
@@ -75,6 +86,27 @@ export function PosCashMovementDialog({
             }
         >
             <div className="flex flex-col gap-4">
+                {maybeSaved && (
+                    <OrderNotice
+                        tone="warning"
+                        action={
+                            <MyButton
+                                type="button"
+                                buttonType="secondary"
+                                scale="large"
+                                className="h-12"
+                                onClick={() => {
+                                    attempts.clear(SCOPE);
+                                    setError(null);
+                                }}
+                            >
+                                {t('pos.attempt.checked')}
+                            </MyButton>
+                        }
+                    >
+                        <p data-testid="pos-cash-maybe-saved">{t('pos.cash.maybeSaved')}</p>
+                    </OrderNotice>
+                )}
                 <div role="radiogroup" aria-label={t('pos.cash.heading')} className="grid grid-cols-2 gap-2">
                     {(['CASH_IN', 'CASH_OUT'] as const).map((value) => (
                         <button

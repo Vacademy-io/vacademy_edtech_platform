@@ -43,4 +43,21 @@ describe('pos errors', () => {
         expect(read.network).toBe(true);
         expect(readPosError(serverError(409, 'SOLD_ONLINE: x')).network).toBe(false);
     });
+
+    it('a gateway error, 408, 429 or any 5xx is uncertain too: the server may have saved it', () => {
+        [0, 408, 429, 500, 502, 503, 504].forEach((status) => {
+            const read = readPosError(serverError(status, 'Bad Gateway'));
+            expect(read.uncertain).toBe(true);
+            expect(read.network).toBe(true);
+        });
+        [400, 403, 404, 409, 422].forEach((status) =>
+            expect(readPosError(serverError(status, 'VALIDATION: x')).uncertain).toBe(false)
+        );
+    });
+
+    it('maps SESSION_MISMATCH (void or payment change from another counter session)', () => {
+        const read = readPosError(serverError(409, 'SESSION_MISMATCH: this bill was made at another counter session'));
+        expect(read.posKey).toBe('pos.errors.SESSION_MISMATCH');
+        expect(read.uncertain).toBe(false);
+    });
 });

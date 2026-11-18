@@ -41,7 +41,6 @@ export function PosTenderChangeDialog({
     const [touched, setTouched] = useState(false);
     const [error, setError] = useState<unknown>(null);
     const open = !!tender;
-    const { reset } = pin;
 
     useEffect(() => {
         if (!tender) return;
@@ -49,8 +48,7 @@ export function PosTenderChangeDialog({
         setReference('');
         setTouched(false);
         setError(null);
-        reset();
-    }, [tender, reset]);
+    }, [tender]);
 
     const needsRef = REFERENCE_REQUIRED_MODES.has(mode);
     const refOk = !needsRef || /^[A-Za-z0-9 /_.:#-]{1,100}$/.test(reference.trim());
@@ -66,7 +64,7 @@ export function PosTenderChangeDialog({
                 toast.success(t('pos.tenderChange.done'));
                 onDone(answer);
                 onOpenChange(false);
-            });
+            }, `tender.${tender.id}`);
         } catch (raw) {
             setError(raw);
         }

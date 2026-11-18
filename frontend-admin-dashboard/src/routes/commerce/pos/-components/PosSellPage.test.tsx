@@ -43,11 +43,14 @@ vi.mock('../-shared/pos-api', () => ({
     lookupCustomer: vi.fn(),
     createSale: vi.fn(),
     createBillBookEntry: vi.fn(),
+    lookupSales: vi.fn(),
+    fetchSale: vi.fn(),
 }));
 
 import * as api from '../-shared/pos-api';
 import { CommerceGate } from '@/routes/commerce/-components/CommercePage';
 import { item, piece, quote, scarf, session } from '../-shared/pos-test-fixtures';
+import type { CartExchange } from '../-shared/pos-cart';
 import { PosSellPage } from './PosSellPage';
 
 const mocked = vi.mocked(api);
@@ -63,16 +66,19 @@ const setOnline = (value: boolean): void => {
     Object.defineProperty(window.navigator, 'onLine', { configurable: true, get: () => value });
 };
 
-const renderSell = () => {
+const renderSell = (exchange: CartExchange | null = null) => {
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     return render(
         <QueryClientProvider client={client}>
             <CommerceGate navId="commerce-pos">
-                <PosSellPage sessionId="sess-1" />
+                <PosSellPage sessionId="sess-1" exchange={exchange} />
             </CommerceGate>
         </QueryClientProvider>
     );
 };
+
+const CREDIT: CartExchange = { returnId: 'r-1', number: 'RET-1', credit: 300 };
+const creditBanner = () => screen.queryByText('pos.returns.credit:₹300.00');
 
 /** A scanner: a fast burst of characters, then Enter. */
 const scanInto = (code: string) => {
@@ -93,6 +99,7 @@ describe('PosSellPage', () => {
         setOnline(true);
         try {
             localStorage.clear();
+            sessionStorage.clear();
         } catch {
             // no storage in this environment
         }
@@ -160,6 +167,64 @@ describe('PosSellPage', () => {
         scanInto('V-BOTTLE');
         expect(await screen.findByTestId('pos-line-l1')).toBeTruthy();
         expect((screen.getByTestId('pos-pay') as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('an exchange credit survives a reload of the till (kept per session in this tab)', async () => {
+        setRoles([COMMERCE_ROLE.POS_CASHIER]);
+        const first = renderSell(CREDIT);
+        await screen.findByTestId('pos-scan');
+        expect(creditBanner()).toBeTruthy();
+        first.unmount();
+        // The address no longer carries it: it comes back from the session store.
+        renderSell(null);
+        await screen.findByTestId('pos-scan');
+        await waitFor(() => expect(creditBanner()).toBeTruthy());
+        expect(screen.queryByTestId('pos-add-credit')).toBeNull();
+    });
+
+    it('Clear bill empties the lines but keeps the exchange credit; removing it asks first', async () => {
+        setRoles([COMMERCE_ROLE.POS_CASHIER]);
+        renderSell(CREDIT);
+        await screen.findByTestId('pos-scan');
+        await catalogueLoaded();
+        scanInto('V-BOTTLE');
+        expect(await screen.findByTestId('pos-line-l1')).toBeTruthy();
+        fireEvent.click(screen.getByText('pos.sell.clear'));
+        const confirms = await screen.findAllByText('pos.sell.clear');
+        fireEvent.click(confirms[confirms.length - 1] as HTMLElement);
+        await waitFor(() => expect(screen.queryByTestId('pos-line-l1')).toBeNull());
+        expect(creditBanner()).toBeTruthy();
+        expect(sessionStorage.getItem('commerce.pos.exchange.inst-1.sess-1')).toContain('r-1');
+
+        fireEvent.click(screen.getByLabelText('pos.sell.removeExchange'));
+        expect(creditBanner()).toBeTruthy(); // not gone until confirmed
+        fireEvent.click(await screen.findByTestId('pos-remove-credit-confirm'));
+        await waitFor(() => expect(creditBanner()).toBeNull());
+        expect(sessionStorage.getItem('commerce.pos.exchange.inst-1.sess-1')).toBeNull();
+        expect(screen.getByTestId('pos-add-credit')).toBeTruthy();
+    });
+
+    it('a credit the quote does not name needs a manager PIN; the amount found with the return counts meanwhile', async () => {
+        setRoles([COMMERCE_ROLE.POS_CASHIER]);
+        mocked.quoteBill.mockResolvedValue({ ...quote(900, [{ ref: 'l1', net: 900 }]), exchange_credit: null });
+        renderSell(CREDIT);
+        await screen.findByTestId('pos-scan');
+        await catalogueLoaded();
+        scanInto('V-BOTTLE');
+        expect(await screen.findByTestId('pos-credit-needs-pin', {}, { timeout: 2000 })).toBeTruthy();
+        expect(mocked.quoteBill.mock.calls.at(-1)?.[0]?.exchange).toEqual({ return_id: 'r-1' });
+        await waitFor(() => expect(screen.getByTestId('pos-pay').textContent).toContain('₹600.00'));
+    });
+
+    it('after a reload, a payment whose answer never came is flagged with a way to the bills', async () => {
+        setRoles([COMMERCE_ROLE.POS_CASHIER]);
+        sessionStorage.setItem(
+            'commerce.pos.attempt.inst-1.sess-1.sale',
+            JSON.stringify({ id: 'pos-x-abcdefabcdef', body: '{}', uncertain: true })
+        );
+        renderSell();
+        expect(await screen.findByTestId('pos-maybe-saved')).toBeTruthy();
+        expect(screen.getByText('pos.sell.checkBills')).toBeTruthy();
     });
 
     it('a cashier of an institute without the module fires no request', async () => {

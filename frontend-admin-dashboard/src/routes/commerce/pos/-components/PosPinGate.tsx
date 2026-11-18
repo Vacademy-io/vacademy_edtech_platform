@@ -2,9 +2,9 @@ import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ManagerPinDialog } from '@/routes/commerce/-components/ManagerPinDialog';
 import type { ManagerApproval } from '@/routes/commerce/-shared/commerce-types';
-import { useRequestId } from '@/routes/commerce/orders/-shared/request-id';
-import { readPosError } from '../-shared/pos-errors';
+import { type PosError, readPosError } from '../-shared/pos-errors';
 import { useApprovers } from '../-shared/pos-hooks';
+import { type AttemptStore, useAttemptStore } from '../-shared/pos-session-store';
 import { POS_APPROVAL_ACTIONS, type PosApprovalAction } from '../-shared/pos-types';
 
 interface PendingApproval {
@@ -57,23 +57,42 @@ export function usePinGate(registerId: string | null) {
 
 /**
  * A counter write that may need a manager's PIN: sends the body with a
- * request id derived from it; on `APPROVAL_REQUIRED` opens the PIN dialog and
- * sends the same body, same id, with the approval. Other failures are thrown
- * to the caller (shown inline). `onDone` runs with the answer either way.
+ * request id from the attempt store; on `APPROVAL_REQUIRED` opens the PIN
+ * dialog and sends the same body, same id, with the approval. Other failures
+ * are thrown to the caller (shown inline). `onDone` runs with the answer.
+ *
+ * The id outlives the form: an attempt whose answer never came (timeout, 5xx)
+ * keeps its id until the server answers for sure, even when the body changed
+ * meanwhile. A store with a session id (`attempts`) keeps it across a reload
+ * too. When that id turns out to be saved with another body the write was
+ * most likely done already: the caller gets `PROBABLY_SAVED`.
  */
-export function usePinWrite(registerId: string | null, prefix: string) {
+export function usePinWrite(registerId: string | null, prefix: string, attempts?: AttemptStore) {
     const gate = usePinGate(registerId);
-    const { idFor, reset } = useRequestId(prefix);
+    const local = useAttemptStore('', null, prefix);
+    const store = attempts ?? local;
     const { ask } = gate;
     const run = useCallback(
         async <B extends object, R>(
             body: B,
             send: (full: B & { client_request_id: string; approval?: ManagerApproval }) => Promise<R>,
-            onDone: (answer: R) => void
+            onDone: (answer: R) => void,
+            scope = 'default'
         ): Promise<void> => {
-            const id = idFor(body);
+            const once = async (approval?: ManagerApproval): Promise<void> => {
+                const { id, carried } = store.begin(scope, body);
+                try {
+                    const answer = await send({ ...body, client_request_id: id, ...(approval ? { approval } : {}) });
+                    store.settle(scope, null, carried);
+                    onDone(answer);
+                } catch (raw) {
+                    const read = readPosError(raw);
+                    if (store.settle(scope, read, carried)) throw probablySaved(read);
+                    throw raw;
+                }
+            };
             try {
-                onDone(await send({ ...body, client_request_id: id }));
+                await once();
             } catch (raw) {
                 const read = readPosError(raw);
                 if (read.code === 'APPROVAL_REQUIRED') {
@@ -81,7 +100,7 @@ export function usePinWrite(registerId: string | null, prefix: string) {
                     // the cash limit): the dialog stays open with that action and the same body goes again.
                     const resend = async (approval: ManagerApproval): Promise<void> => {
                         try {
-                            onDone(await send({ ...body, client_request_id: id, approval }));
+                            await once(approval);
                         } catch (again) {
                             const next = readPosError(again);
                             if (next.code === 'APPROVAL_REQUIRED') ask(next.action, resend);
@@ -91,11 +110,23 @@ export function usePinWrite(registerId: string | null, prefix: string) {
                     ask(read.action, resend);
                     return;
                 }
-                if (read.code === 'IDEMPOTENCY_MISMATCH') reset();
                 throw raw;
             }
         },
-        [ask, idFor, reset]
+        [ask, store]
     );
-    return { run, reset, dialog: gate.dialog, pinOpen: gate.open };
+    return { run, dialog: gate.dialog, pinOpen: gate.open, attempts: store };
+}
+
+/** The error shown when an unanswered attempt turns out to be saved (with another body). */
+export function probablySaved(read: PosError): PosError {
+    return {
+        ...read,
+        code: 'PROBABLY_SAVED',
+        posKey: 'pos.errors.PROBABLY_SAVED',
+        message: '',
+        uncertain: false,
+        network: false,
+        showServerSentence: false,
+    };
 }

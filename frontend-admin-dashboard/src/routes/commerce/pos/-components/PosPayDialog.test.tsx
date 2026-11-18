@@ -6,7 +6,7 @@
  */
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { COMMERCE_ROLE, resolveCommerceAccess } from '@/lib/commerce/commerce-access';
 import type { CommerceAccessState } from '@/lib/commerce/use-commerce-access';
 import type { SaleAnswer, SaleRequest } from '../-shared/pos-types';
@@ -54,7 +54,8 @@ vi.mock('@/routes/commerce/-components/ManagerPinDialog', () => ({
 }));
 
 import { networkError, saleAnswer, serverError } from '../-shared/pos-test-fixtures';
-import { PosPayDialog } from './PosPayDialog';
+import { useAttemptStore } from '../-shared/pos-session-store';
+import { PosPayDialog, type PosPayDialogProps } from './PosPayDialog';
 
 const body = (): SaleRequest => ({
     session_id: 'sess-1',
@@ -63,32 +64,51 @@ const body = (): SaleRequest => ({
     notify: true,
 });
 
-const renderPay = (submit: (b: SaleRequest) => Promise<SaleAnswer>, online = true) => {
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    return render(
-        <QueryClientProvider client={client}>
-            <PosPayDialog
-                open
-                onOpenChange={() => undefined}
-                total={900}
-                credit={0}
-                ready
-                online={online}
-                instituteId="inst-1"
-                registerId="reg-1"
-                buildBody={() => body()}
-                submit={submit}
-                onRefused={() => false}
-                onNewBill={() => undefined}
-            />
+type HarnessProps = Omit<PosPayDialogProps, 'attempts' | 'attemptScope'>;
+
+/** The dialog with the till's attempt store (session `sess-1`), as the sell screen gives it. */
+function Harness(props: HarnessProps) {
+    const attempts = useAttemptStore('inst-1', 'sess-1', 'pos');
+    return <PosPayDialog {...props} attempts={attempts} attemptScope="sale" />;
+}
+
+const props = (
+    submit: (b: SaleRequest) => Promise<SaleAnswer>,
+    over: Partial<HarnessProps> = {}
+): HarnessProps => ({
+    open: true,
+    onOpenChange: () => undefined,
+    total: 900,
+    credit: 0,
+    ready: true,
+    online: true,
+    instituteId: 'inst-1',
+    registerId: 'reg-1',
+    buildBody: () => body(),
+    submit,
+    onRefused: () => false,
+    onNewBill: () => undefined,
+    ...over,
+});
+
+const client = () => new QueryClient({ defaultOptions: { queries: { retry: false } } });
+
+const renderPay = (submit: (b: SaleRequest) => Promise<SaleAnswer>, online = true) =>
+    render(
+        <QueryClientProvider client={client()}>
+            <Harness {...props(submit, { online })} />
         </QueryClientProvider>
     );
-};
 
 const confirm = () => screen.getByTestId('pos-confirm-pay') as HTMLButtonElement;
 
 describe('PosPayDialog', () => {
+    afterEach(() => {
+        sessionStorage.clear();
+    });
+
     beforeEach(() => {
+        sessionStorage.clear();
         state.access = {
             ...resolveCommerceAccess({ roles: [COMMERCE_ROLE.POS_CASHIER], isFeatureOn: () => true }),
             isResolved: true,
@@ -166,6 +186,132 @@ describe('PosPayDialog', () => {
         const ids = submit.mock.calls.map((call) => call[0]?.client_request_id);
         expect(new Set(ids).size).toBe(1);
         expect(await screen.findByTestId('pos-new-bill')).toBeTruthy();
+    });
+
+    it('a gateway 502 (the sale may be saved) keeps the same id for the retry', async () => {
+        const submit = vi
+            .fn<[SaleRequest], Promise<SaleAnswer>>()
+            .mockRejectedValueOnce(serverError(502, 'Bad Gateway'))
+            .mockResolvedValueOnce(saleAnswer());
+        renderPay(submit);
+        fireEvent.click(confirm());
+        expect(await screen.findByText('pos.pay.notSavedHint')).toBeTruthy();
+        fireEvent.click(confirm());
+        await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+        expect(submit.mock.calls[1]?.[0]?.client_request_id).toBe(submit.mock.calls[0]?.[0]?.client_request_id);
+    });
+
+    it('closing and reopening the Pay dialog after a timeout keeps the same id', async () => {
+        const submit = vi
+            .fn<[SaleRequest], Promise<SaleAnswer>>()
+            .mockRejectedValueOnce(networkError())
+            .mockResolvedValueOnce(saleAnswer());
+        const qc = client();
+        const view = render(
+            <QueryClientProvider client={qc}>
+                <Harness {...props(submit)} />
+            </QueryClientProvider>
+        );
+        fireEvent.click(confirm());
+        expect(await screen.findByText('pos.pay.notSavedHint')).toBeTruthy();
+        view.rerender(
+            <QueryClientProvider client={qc}>
+                <Harness {...props(submit, { open: false })} />
+            </QueryClientProvider>
+        );
+        view.rerender(
+            <QueryClientProvider client={qc}>
+                <Harness {...props(submit)} />
+            </QueryClientProvider>
+        );
+        fireEvent.click(confirm());
+        await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+        expect(submit.mock.calls[1]?.[0]?.client_request_id).toBe(submit.mock.calls[0]?.[0]?.client_request_id);
+    });
+
+    it('a reload after a timeout keeps the same id (kept in this tab per session)', async () => {
+        const first = vi.fn<[SaleRequest], Promise<SaleAnswer>>().mockRejectedValueOnce(networkError());
+        const view = renderPay(first);
+        fireEvent.click(confirm());
+        expect(await screen.findByText('pos.pay.notSavedHint')).toBeTruthy();
+        view.unmount();
+        const again = vi.fn<[SaleRequest], Promise<SaleAnswer>>().mockResolvedValueOnce(saleAnswer());
+        renderPay(again);
+        fireEvent.click(confirm());
+        await waitFor(() => expect(again).toHaveBeenCalledTimes(1));
+        expect(again.mock.calls[0]?.[0]?.client_request_id).toBe(first.mock.calls[0]?.[0]?.client_request_id);
+        // A definite answer ends it: the next bill gets a new id.
+        expect(await screen.findByTestId('pos-new-bill')).toBeTruthy();
+        expect(sessionStorage.getItem('commerce.pos.attempt.inst-1.sess-1.sale')).toBeNull();
+    });
+
+    it('changed tenders after an unanswered attempt go with the same id; a mismatch says the bill was saved', async () => {
+        let tenders: SaleRequest['tenders'] = [{ mode: 'CASH', amount: '900.00' }];
+        const submit = vi
+            .fn<[SaleRequest], Promise<SaleAnswer>>()
+            .mockRejectedValueOnce(serverError(504, 'Gateway Timeout'))
+            .mockRejectedValueOnce(serverError(409, 'IDEMPOTENCY_MISMATCH: client_request_id was already used'));
+        render(
+            <QueryClientProvider client={client()}>
+                <Harness {...props(submit, { buildBody: () => ({ ...body(), tenders }) })} />
+            </QueryClientProvider>
+        );
+        fireEvent.click(confirm());
+        expect(await screen.findByText('pos.pay.notSavedHint')).toBeTruthy();
+        tenders = [{ mode: 'UPI', amount: '900.00', reference: 'UPI-1' }];
+        fireEvent.click(confirm());
+        await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+        const [one, two] = submit.mock.calls.map((call) => call[0]);
+        expect(two?.client_request_id).toBe(one?.client_request_id);
+        expect(two?.tenders).toEqual(tenders);
+        expect(await screen.findByTestId('pos-pay-probably-saved')).toBeTruthy();
+        expect(confirm().disabled).toBe(true);
+    });
+
+    it('a definite refusal ends the attempt: a changed bill gets a new id', async () => {
+        let tenders: SaleRequest['tenders'] = [{ mode: 'CASH', amount: '900.00' }];
+        const submit = vi
+            .fn<[SaleRequest], Promise<SaleAnswer>>()
+            .mockRejectedValueOnce(serverError(400, 'TENDERS_SHORT: tenders do not cover the bill'))
+            .mockResolvedValueOnce(saleAnswer());
+        render(
+            <QueryClientProvider client={client()}>
+                <Harness {...props(submit, { buildBody: () => ({ ...body(), tenders }) })} />
+            </QueryClientProvider>
+        );
+        fireEvent.click(confirm());
+        expect(await screen.findByTestId('pos-pay-error')).toBeTruthy();
+        tenders = [{ mode: 'UPI', amount: '900.00', reference: 'UPI-1' }];
+        fireEvent.click(confirm());
+        await waitFor(() => expect(submit).toHaveBeenCalledTimes(2));
+        expect(submit.mock.calls[1]?.[0]?.client_request_id).not.toBe(submit.mock.calls[0]?.[0]?.client_request_id);
+    });
+
+    it('a re-quote that moves the total while the dialog is open closes it and says why', async () => {
+        const onOpenChange = vi.fn();
+        const onTotalMoved = vi.fn();
+        const qc = client();
+        const view = render(
+            <QueryClientProvider client={qc}>
+                <Harness {...props(vi.fn(), { onOpenChange, onTotalMoved })} />
+            </QueryClientProvider>
+        );
+        view.rerender(
+            <QueryClientProvider client={qc}>
+                <Harness {...props(vi.fn(), { onOpenChange, onTotalMoved, total: 950 })} />
+            </QueryClientProvider>
+        );
+        await waitFor(() => expect(onOpenChange).toHaveBeenCalledWith(false));
+        expect(onTotalMoved).toHaveBeenCalledTimes(1);
+    });
+
+    it('shows the round-off of a whole-rupee bill under the total', () => {
+        render(
+            <QueryClientProvider client={client()}>
+                <Harness {...props(vi.fn(), { total: 949, roundOff: -0.05 })} />
+            </QueryClientProvider>
+        );
+        expect(screen.getByTestId('pos-pay-round-off').textContent).toContain('pos.pay.roundOff');
     });
 
     it('offline: Confirm is disabled and nothing is sent', () => {

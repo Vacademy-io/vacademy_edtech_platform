@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { QueryClient } from '@tanstack/react-query';
 import { getInstituteId } from '@/constants/helper';
@@ -58,7 +58,19 @@ export const posKeys = {
     series: () => [...root(), 'document-series'] as const,
 };
 
-export const invalidatePos = (client: QueryClient) => client.invalidateQueries({ queryKey: posKeys.all() });
+/** Catalogue reads: a write leaves them (a bill does not change the price list). */
+const CATALOGUE_PARTS: ReadonlySet<unknown> = new Set(['catalogue', 'catalogue-search']);
+
+/**
+ * After a write: everything of the counter except the catalogue, which is up to 5,000 items and
+ * would otherwise be fetched again (and written to this device's copy) after every bill. The
+ * catalogue refreshes on its own timer, on window focus, and when a scan finds a code the copy
+ * does not have.
+ */
+export const isCatalogueKey = (queryKey: readonly unknown[]): boolean => CATALOGUE_PARTS.has(queryKey[3]);
+
+export const invalidatePos = (client: QueryClient) =>
+    client.invalidateQueries({ queryKey: posKeys.all(), predicate: (query) => !isCatalogueKey(query.queryKey) });
 
 /** The counter's own gate: resolved, module on, role allowed. */
 export function usePosAllowed(): boolean {
@@ -104,6 +116,7 @@ export function useCatalogue(registerId: string | null) {
         queryFn: () => fetchCatalogue(registerId as string),
         enabled: on(allowed, !!registerId),
         staleTime: CATALOGUE_STALE_MS,
+        refetchInterval: CATALOGUE_STALE_MS,
         refetchOnWindowFocus: true,
     });
 }
@@ -228,14 +241,30 @@ export function useReturnPreview(body: Parameters<typeof previewPosReturn>[0] | 
 
 // ───────────────────────── Writes ─────────────────────────
 
-function usePosWrite<A extends unknown[], R>(fn: (...args: A) => Promise<R>) {
+/**
+ * A counter write. The variables of a resend carry the manager's PIN, so the mutation leaves the
+ * cache as soon as it settles (`reset` + `gcTime: 0`): the PIN is never kept (contract §3.4).
+ */
+export function usePosWrite<A extends unknown[], R>(fn: (...args: A) => Promise<R>) {
     const client = useQueryClient();
-    return useMutation({
+    const { mutateAsync, reset } = useMutation({
         mutationFn: (args: A) => fn(...args),
+        gcTime: 0,
         onSuccess: () => {
             void invalidatePos(client);
         },
     });
+    const send = useCallback(
+        async (args: A): Promise<R> => {
+            try {
+                return await mutateAsync(args);
+            } finally {
+                reset();
+            }
+        },
+        [mutateAsync, reset]
+    );
+    return useMemo(() => ({ mutateAsync: send }), [send]);
 }
 
 export const useOpenSession = () => usePosWrite(openSession);
