@@ -1,0 +1,23 @@
+{
+ "analyser_version": "scan-1",
+ "load_no": 2,
+ "status": "BLOCKED",
+ "layout": null,
+ "evidence": null,
+ "pages": [],
+ "sheets": [],
+ "flags": [
+  {
+   "code": "COUNT_MISMATCH",
+   "severity": "BLOCK",
+   "sheet_no": null,
+   "detail": "pass 1 has 24 pages, pass 2 has 23"
+  }
+ ],
+ "usage": {
+  "model": null,
+  "model_calls": 0,
+  "prompt_tokens": 0,
+  "completion_tokens": 0
+ }
+}
