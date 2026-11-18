@@ -93,7 +93,7 @@
         "retry": "Réessayer",
         "switching": "Changement d'établissement…",
         "switchFailed": "Impossible de changer d'établissement. Veuillez réessayer.",
-        "adminRequired": "Ce portail exige le rôle Admin dans cet établissement.",
+        "adminRequired": "Votre rôle dans cet établissement ne permet pas de vous connecter à ce portail.",
         "subOrgTitle": "Choisir une organisation",
         "subOrgDescription": "Vous travaillez avec plusieurs organisations dans {{institute}}. Choisissez-en une pour continuer.",
         "cancelSwitch": "Annuler le changement",
