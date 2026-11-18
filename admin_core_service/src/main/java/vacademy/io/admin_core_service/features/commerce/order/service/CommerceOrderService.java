@@ -98,6 +98,10 @@ public class CommerceOrderService {
     public static final String KIND_BASKET = "BASKET";
     public static final String KIND_OFFER = "OFFER";
     public static final String KIND_COUPON = "COUPON";
+    /** A discount on the whole bill given at the counter (POS), with the cashier's reason as label. */
+    public static final String KIND_BILL = "BILL";
+    /** {@code placeOfSupplySource} of a counter sale: the state of the counter's location. */
+    public static final String PLACE_SOURCE_COUNTER = "COUNTER";
 
     static final String SHIPPING_REF = "SHIPPING";
     static final String COD_REF = "COD_CHARGE";
@@ -151,6 +155,22 @@ public class CommerceOrderService {
 
         BigDecimal unitPrice(String lineRef) {
             return unitPriceByLineRef == null || lineRef == null ? null : unitPriceByLineRef.get(lineRef);
+        }
+    }
+
+    /**
+     * What a counter sale (POS) adds to pricing: the counter's location (the seller and the place
+     * of supply), a discount per line (by line ref, on that line alone) and one discount on the
+     * whole bill with its reason. A counter sale has no delivery charge, no COD, and is not
+     * refused for the website's sellable stock or the per-line maximum: stock at the till is the
+     * stock ledger's job.
+     */
+    public record CounterPricing(String locationId, Map<String, BigDecimal> lineDiscountByRef, BigDecimal billDiscount,
+                                 String billDiscountReason) {
+
+        BigDecimal lineDiscount(String lineRef) {
+            BigDecimal value = lineDiscountByRef == null || lineRef == null ? null : lineDiscountByRef.get(lineRef);
+            return value == null || value.signum() <= 0 ? null : value.setScale(2, RoundingMode.HALF_UP);
         }
     }
 
@@ -254,10 +274,24 @@ public class CommerceOrderService {
      * calculation as the cart's. A null {@code staff} is the cart.
      */
     public CartPrice priceCart(String instituteId, CartPriceRequest request, StaffPricing staff) {
+        return priceCart(instituteId, request, staff, null);
+    }
+
+    /**
+     * {@link #priceCart(String, CartPriceRequest, StaffPricing)} for a counter sale when
+     * {@code counter} is given (see {@link CounterPricing}); a null {@code counter} is exactly the
+     * three-argument form.
+     *
+     * @throws CartPricingException CART_INVALID also when a line discount is more than its line or
+     *                              the bill discount more than the goods left after line discounts
+     *                              and offers
+     */
+    public CartPrice priceCart(String instituteId, CartPriceRequest request, StaffPricing staff,
+                               CounterPricing counter) {
         List<CartPriceRequest.Line> asked = validate(request);
         StorefrontSettings settings = storefrontSettings.read(instituteId);
         List<String> chain = StorefrontLocale.chain(request.getLocale(), settings.baseLocale());
-        boolean codAsked = CartPriceRequest.COD.equalsIgnoreCase(trim(request.getPaymentMethod()));
+        boolean codAsked = counter == null && CartPriceRequest.COD.equalsIgnoreCase(trim(request.getPaymentMethod()));
 
         // 1. The variants, read now.
         Set<String> ids = new LinkedHashSet<>();
@@ -292,7 +326,7 @@ public class CommerceOrderService {
             BigDecimal override = staff == null ? null : staff.unitPrice(ref);
             int quantity = line.getQuantity() == null ? 0 : line.getQuantity();
             int already = variant == null ? 0 : askedSoFar.getOrDefault(variant.packageSessionId(), 0);
-            String reason = refusal(variant, quantity, already, currency, settings, override != null);
+            String reason = refusal(variant, quantity, already, currency, settings, override != null, counter != null);
             if (reason != null) {
                 unavailable.add(unavailable(ref, line, variant, reason, already, settings));
                 changes.add(CartPriceDtos.Change.builder().lineRef(ref)
@@ -319,19 +353,20 @@ public class CommerceOrderService {
         String placeSource = null;
         // The pincode decides when it names a state; a state sent beside it is only used when the
         // pincode names none, so a shopper cannot pick the tax head against their own address.
-        if (pincode != null) {
+        if (pincode != null && counter == null) {
             CommercePincodeService.Pincode found = pincodeService.lookup(pincode);
             if (found != null && found.stateCode() != null) {
                 placeState = found.stateCode();
                 placeSource = found.source();
             }
         }
-        if (placeState == null && PincodeStates.isStateCode(trim(request.getStateCode()))) {
+        if (counter == null && placeState == null && PincodeStates.isStateCode(trim(request.getStateCode()))) {
             placeState = trim(request.getStateCode());
             placeSource = "REQUEST";
         }
 
-        CommerceShippingCalculator.Rule rule = shippingRule(instituteId);
+        // A counter sale has no delivery and no COD: the shop's delivery rule is not read.
+        CommerceShippingCalculator.Rule rule = counter == null ? shippingRule(instituteId) : null;
         BigDecimal codCharge = rule == null || rule.codCharge() == null ? ZERO
                 : rule.codCharge().setScale(2, RoundingMode.HALF_UP);
 
@@ -342,7 +377,13 @@ public class CommerceOrderService {
 
         // 4. Discounts, then delivery.
         BigDecimal itemTotal = priced.stream().map(Priced::gross).reduce(ZERO, BigDecimal::add);
-        Discounts discounts = discounts(instituteId, request, settings, priced, itemTotal);
+        Map<String, BigDecimal> lineDiscounts = counter == null ? Map.of() : lineDiscounts(priced, counter);
+        BigDecimal lineDiscountTotal = lineDiscounts.values().stream().reduce(ZERO, BigDecimal::add);
+        // At the counter the offers apply to what is left after the line discounts.
+        Discounts discounts = discounts(instituteId, request, settings, priced, itemTotal.subtract(lineDiscountTotal));
+        if (counter != null) {
+            discounts = withBillDiscount(discounts, itemTotal.subtract(lineDiscountTotal), counter);
+        }
         BigDecimal goodsValue = itemTotal.subtract(discounts.total());
         long weight = 0;
         for (Priced line : priced) {
@@ -352,13 +393,13 @@ public class CommerceOrderService {
                         / Math.max(1, line.variant().qtyScale()));
             }
         }
-        boolean chargeShipping = staff == null || staff.chargeShipping();
+        boolean chargeShipping = counter == null && (staff == null || staff.chargeShipping());
         CommerceShippingCalculator.Quote shipping = CommerceShippingCalculator.quote(chargeShipping ? rule : null,
                 goodsValue, weight);
 
         // 5. Tax: once as prepaid, and again with the COD charge when COD was asked for and allowed.
         CommerceTaxContext taxContext = taxSettingService.context(instituteId);
-        String locationId = fulfilmentLocation(instituteId);
+        String locationId = counter != null ? counter.locationId() : fulfilmentLocation(instituteId);
         String sellerState;
         Map<String, TaxClassRef> taxClasses;
         try {
@@ -372,8 +413,13 @@ public class CommerceOrderService {
         } catch (InvalidRequestException | ConflictException e) {
             throw new CartPricingException(CartPricingException.NOT_PRICEABLE, e.getMessage());
         }
+        if (counter != null) {
+            // Sold at the counter: the place of supply is the state of the counter's location.
+            placeState = sellerState;
+            placeSource = PLACE_SOURCE_COUNTER;
+        }
         TaxRequest prepaidRequest = taxRequest(instituteId, taxContext, sellerState, placeState, priced,
-                discounts.total(), shipping, null, rule, taxClasses);
+                discounts.total(), shipping, null, rule, taxClasses, lineDiscounts);
         TaxResult prepaid = calculate(prepaidRequest);
 
         CodEligibility.Result cod = CodEligibility.check(codAvailability.effectiveCod(settings.cod()),
@@ -383,7 +429,7 @@ public class CommerceOrderService {
         TaxResult tax = prepaid;
         if (codApplied && codCharge.signum() > 0) {
             finalRequest = taxRequest(instituteId, taxContext, sellerState, placeState, priced, discounts.total(),
-                    shipping, codCharge, rule, taxClasses);
+                    shipping, codCharge, rule, taxClasses, lineDiscounts);
             tax = calculate(finalRequest);
         }
 
@@ -511,7 +557,7 @@ public class CommerceOrderService {
      * tell them apart.
      */
     private static String refusal(CartVariant variant, int quantity, int alreadyAsked, String cartCurrency,
-                                  StorefrontSettings settings, boolean priceTypedByStaff) {
+                                  StorefrontSettings settings, boolean priceTypedByStaff, boolean counter) {
         if (variant == null) {
             return REASON_NOT_FOUND;
         }
@@ -526,6 +572,11 @@ public class CommerceOrderService {
         }
         if (quantity % Math.max(1, variant.qtyStep()) != 0) {
             return REASON_QUANTITY_STEP;
+        }
+        if (counter) {
+            // At the counter the goods are in the buyer's hand: the ledger decides on the stock of
+            // the location when the sale is written, and the website's per-line maximum does not apply.
+            return null;
         }
         // Before the stock test and whatever the stock is: otherwise the accept / refuse boundary
         // of a large quantity would tell the exact count on hand.
@@ -769,6 +820,47 @@ public class CommerceOrderService {
         }
     }
 
+    /** The line discounts of a counter sale, by line ref; each at most its line. */
+    private static Map<String, BigDecimal> lineDiscounts(List<Priced> priced, CounterPricing counter) {
+        Map<String, BigDecimal> out = new LinkedHashMap<>();
+        for (Priced line : priced) {
+            BigDecimal discount = counter.lineDiscount(line.lineRef());
+            if (discount == null) {
+                continue;
+            }
+            if (discount.compareTo(line.gross()) > 0) {
+                throw new CartPricingException(CartPricingException.CART_INVALID,
+                        "line_discount of line " + line.lineRef() + " is more than the line (" + line.gross()
+                                .toPlainString() + ").");
+            }
+            out.put(line.lineRef(), discount);
+        }
+        return out;
+    }
+
+    /**
+     * The bill discount of a counter sale, added after basket pricing and offers as a row of
+     * kind {@link #KIND_BILL}. It may not be more than the goods left after the line discounts
+     * and those reductions.
+     */
+    private static Discounts withBillDiscount(Discounts discounts, BigDecimal goodsAfterLineDiscounts,
+                                              CounterPricing counter) {
+        BigDecimal bill = counter.billDiscount() == null ? ZERO : counter.billDiscount().setScale(2, RoundingMode.HALF_UP);
+        if (bill.signum() <= 0) {
+            return discounts;
+        }
+        BigDecimal left = goodsAfterLineDiscounts.subtract(discounts.total());
+        if (bill.compareTo(left) > 0) {
+            throw new CartPricingException(CartPricingException.CART_INVALID,
+                    "bill_discount is more than the goods left after line discounts and offers (" + left.toPlainString()
+                            + ").");
+        }
+        List<CartPriceSnapshot.Discount> rows = new ArrayList<>(discounts.rows());
+        rows.add(CartPriceSnapshot.Discount.builder().kind(KIND_BILL).label(counter.billDiscountReason())
+                .amount(bill).build());
+        return new Discounts(discounts.total().add(bill), rows, discounts.coupon());
+    }
+
     private static BigDecimal money(double value) {
         return BigDecimal.valueOf(value).setScale(2, RoundingMode.HALF_UP);
     }
@@ -797,7 +889,8 @@ public class CommerceOrderService {
     private TaxRequest taxRequest(String instituteId, CommerceTaxContext context, String sellerState,
                                   String placeState, List<Priced> priced, BigDecimal orderDiscount,
                                   CommerceShippingCalculator.Quote shipping, BigDecimal codCharge,
-                                  CommerceShippingCalculator.Rule rule, Map<String, TaxClassRef> taxClasses) {
+                                  CommerceShippingCalculator.Rule rule, Map<String, TaxClassRef> taxClasses,
+                                  Map<String, BigDecimal> lineDiscounts) {
         List<TaxLineInput> lines = new ArrayList<>();
         for (Priced line : priced) {
             lines.add(TaxLineInput.builder()
@@ -807,6 +900,7 @@ public class CommerceOrderService {
                     .unitPrice(line.unitPrice())
                     .quantity(line.quantity())
                     .qtyScale(line.variant().qtyScale())
+                    .lineDiscount(lineDiscounts == null ? null : lineDiscounts.get(line.lineRef()))
                     .taxClass(taxClasses.get(line.variant().taxClassId()))
                     .build());
         }

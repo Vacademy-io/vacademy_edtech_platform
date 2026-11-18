@@ -159,6 +159,35 @@ public class CommerceBuyerResolver {
         }
     }
 
+    /**
+     * The placeholder address of the institute's one walk-in customer (counter sales without a
+     * phone): {@code w-<24 hex>@buyer.invalid}, an HMAC of the institute under the same server
+     * key, so it is the same on every call and carries nothing typed at the counter.
+     */
+    public String walkInEmail(String instituteId) {
+        if (holderKey == null) {
+            throw new CheckoutException(HttpStatus.SERVICE_UNAVAILABLE, CheckoutException.NOT_CONFIGURED,
+                    "Checkout is not available for this shop yet.");
+        }
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(holderKey, "HmacSHA256"));
+            byte[] digest = mac.doFinal(("walk-in|" + instituteId).getBytes(StandardCharsets.UTF_8));
+            return "w-" + HexFormat.of().formatHex(digest).substring(0, HOLDER_HEX) + HOLDER_DOMAIN;
+        } catch (java.security.GeneralSecurityException e) {
+            throw new IllegalStateException("HMAC-SHA256 is not available", e);
+        }
+    }
+
+    /**
+     * Get-or-create of the institute's walk-in auth user (no role, no mail, no phone). A remote
+     * call: never inside a transaction. The deterministic address makes a retry or a race find
+     * the same user.
+     */
+    public String walkInAccount(String instituteId) {
+        return account(instituteId, walkInEmail(instituteId), "Walk-in customer");
+    }
+
     /** True for a placeholder address of a holder account (never mailed). */
     public static boolean isHolderEmail(String email) {
         return email != null && email.trim().toLowerCase(java.util.Locale.ROOT).endsWith(HOLDER_DOMAIN);

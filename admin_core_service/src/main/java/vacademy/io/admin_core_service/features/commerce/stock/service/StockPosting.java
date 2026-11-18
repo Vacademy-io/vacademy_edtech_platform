@@ -43,4 +43,10 @@ public class StockPosting {
     /** Cost per base unit, when the caller states one. */
     private final BigDecimal unitCost;
     private final CostTreatment costTreatment;
+    /**
+     * Only a counter sale keyed from a paper bill (POS_SALE, out): when the units at an online
+     * location are already promised online, the sale is still posted (it happened) and the
+     * shortfall is returned instead of the 409 SOLD_ONLINE.
+     */
+    private final boolean allowShortfall;
 }
