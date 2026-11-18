@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EngagementAction } from '../../../-types';
-import { approveInTurn, canApproveTask } from '../bulk-approve';
+import { approveInTurn, bulkVerbOf, canApproveTask, canSendTask } from '../bulk-approve';
 
 const task = (over: Partial<EngagementAction>) =>
     ({ kind: 'TASK', status: 'OPEN', actionType: 'SCHEDULE_AI_CALL', ...over }) as EngagementAction;
@@ -17,6 +17,38 @@ describe('canApproveTask', () => {
         expect(canApproveTask(task({ kind: 'REPLY' }))).toBe(false);
         expect(canApproveTask(task({ kind: 'SEND' }))).toBe(false);
         expect(canApproveTask(task({ status: 'DONE' }))).toBe(false);
+    });
+});
+
+describe('canSendTask', () => {
+    const message = (over: Partial<EngagementAction>) =>
+        task({ kind: 'SEND', actionType: undefined, channel: 'EMAIL', ...over });
+
+    it('takes an open WhatsApp, email or in-app draft', () => {
+        expect(canSendTask(message({}))).toBe(true);
+        expect(canSendTask(message({ channel: 'IN_APP', status: 'ACKED' }))).toBe(true);
+        expect(canSendTask(message({ channel: 'WHATSAPP', templateName: 'welcome_1' }))).toBe(true);
+        expect(canSendTask(message({ kind: 'REPLY', channel: 'WHATSAPP' }))).toBe(true);
+    });
+
+    it('leaves out a WhatsApp with no template, AI calls, no channel and anything handled', () => {
+        expect(canSendTask(message({ channel: 'WHATSAPP' }))).toBe(false);
+        expect(canSendTask(message({ channel: 'AI_CALL' }))).toBe(false);
+        expect(canSendTask(message({ channel: undefined }))).toBe(false);
+        expect(canSendTask(message({ status: 'SENT' }))).toBe(false);
+    });
+});
+
+describe('bulkVerbOf', () => {
+    it('approves CRM actions, sends messages, and skips the rest', () => {
+        expect(bulkVerbOf(task({}))).toBe('approve');
+        expect(bulkVerbOf(task({ kind: 'SEND', actionType: undefined, channel: 'EMAIL' }))).toBe(
+            'send'
+        );
+        expect(bulkVerbOf(task({ kind: 'SEND', actionType: undefined, channel: 'WHATSAPP' }))).toBe(
+            null
+        );
+        expect(bulkVerbOf(task({ status: 'DONE' }))).toBe(null);
     });
 });
 

@@ -12,7 +12,8 @@ import {
     setLeadAutomation,
     undoCrmTask,
 } from '../-services/actions';
-import { approveInTurn } from '../inbox/-utils/bulk-approve';
+import { sendTask } from '../-services';
+import { approveInTurn, type BulkVerb } from '../inbox/-utils/bulk-approve';
 import type { CrmActionSetting } from '../-types/actions';
 
 /** A VacademyException body carries its text in `ex`. */
@@ -50,22 +51,44 @@ export const useCrmTaskAction = () => {
     });
 };
 
-/** Approve the selected CRM action tasks, one after another, with a single report at the end. */
-export const useBulkApproveCrmTasks = () => {
+/**
+ * Act on the selected inbox tasks, one after another, with a single report at the end: a CRM action
+ * is approved, a drafted message (WhatsApp, email, in-app) is sent as drafted.
+ */
+export const useBulkActOnTasks = () => {
     const { t } = useTranslation('engagementEnginesInboxIndex');
     const qc = useQueryClient();
     const instituteId = getInstituteId() || '';
     const [done, setDone] = useState(0);
     const mutation = useMutation({
-        mutationFn: (ids: string[]) => {
+        mutationFn: async (items: [string, BulkVerb][]) => {
             setDone(0);
-            return approveInTurn(ids, (id) => approveCrmTask(id, instituteId), setDone);
+            const verbs = new Map(items);
+            let sent = 0;
+            const result = await approveInTurn(
+                items.map(([id]) => id),
+                async (id) => {
+                    if (verbs.get(id) !== 'send') return approveCrmTask(id, instituteId);
+                    const res = await sendTask(id, instituteId);
+                    // An unknown-outcome send comes back 200 with status FAILED: not a send.
+                    if (res?.status && res.status !== 'SENT') {
+                        throw new Error(t('bulk.sendNotConfirmed'));
+                    }
+                    sent += 1;
+                    return res;
+                },
+                setDone
+            );
+            return { ...result, sent, approvedOnly: result.approved - sent };
         },
-        onSuccess: ({ approved, failures }) => {
+        onSuccess: ({ approvedOnly, sent, failures }) => {
             qc.invalidateQueries({ queryKey: ['engagementTasks'] });
             qc.invalidateQueries({ queryKey: ['engagementEngineActions'] });
             qc.invalidateQueries({ queryKey: ['engagementUpcomingCalls'] });
-            if (approved > 0) toast.success(t('bulk.approvedToast', { count: approved }));
+            // The graduation count on the engine page moves with every approved send.
+            if (sent > 0) qc.invalidateQueries({ queryKey: ['engagementEngine'] });
+            if (approvedOnly > 0) toast.success(t('bulk.approvedToast', { count: approvedOnly }));
+            if (sent > 0) toast.success(t('bulk.sentToast', { count: sent }));
             if (failures.length > 0) {
                 toast.error(
                     t('bulk.failedToast', {

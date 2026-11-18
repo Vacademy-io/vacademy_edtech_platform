@@ -9,24 +9,29 @@ const ENGAGEMENT_LEADS_BASE = `${BASE_URL}/admin-core-service/v1/engagement/lead
 /** Most rows the inbox serves per page. */
 const MAX_TASK_PAGE = 200;
 
-/** Every CRM action waiting for approval under these filters, across all pages of the inbox. */
-export const listApprovableTaskIds = async (
+/**
+ * Every task under these statuses and filters, across all pages of the inbox, that a bulk run can
+ * act on, with what it does to each (`verbOf` returns null for the rest).
+ */
+export const listBulkActionableTasks = async <V extends string>(
     instituteId: string,
-    filters: TaskListFilters
-): Promise<string[]> => {
-    const ids: string[] = [];
+    statuses: string,
+    filters: TaskListFilters,
+    verbOf: (task: EngagementAction) => V | null
+): Promise<[string, V][]> => {
+    const found: [string, V][] = [];
     let page = 0;
     let totalPages = 1;
     while (page < totalPages) {
-        const res = await listTasks(instituteId, 'OPEN,ACKED', page, MAX_TASK_PAGE, {
-            ...filters,
-            kind: 'CRM',
+        const res = await listTasks(instituteId, statuses, page, MAX_TASK_PAGE, filters);
+        res.content.forEach((task) => {
+            const verb = verbOf(task);
+            if (verb) found.push([task.id, verb]);
         });
-        ids.push(...res.content.map((task) => task.id));
         totalPages = res.totalPages;
         page += 1;
     }
-    return ids;
+    return found;
 };
 
 /** Run a CRM action the engine drafted (or hold an AI call until the time asked for). */

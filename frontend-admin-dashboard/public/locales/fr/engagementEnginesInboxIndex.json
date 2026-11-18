@@ -32,11 +32,11 @@
     "bulk": {
         "selectPage": "Tout sélectionner sur cette page",
         "selectRow": "Sélectionner {{name}}",
-        "notApprovable": "Seules les actions en attente d'approbation peuvent être sélectionnées. Les messages se relisent et s'envoient un par un.",
+        "notApprovable": "Seules les actions en attente d'approbation et les messages prêts à partir peuvent être sélectionnés. Un message WhatsApp sans modèle approuvé s'ouvre à part.",
         "selected": "Sélection : {{count}}",
         "selectAll": "Sélectionner les {{count}} approbations",
         "selectingAll": "Sélection…",
-        "selectFailed": "Impossible de sélectionner toutes les approbations. Réessayez.",
+        "selectFailed": "Impossible de tout sélectionner. Réessayez.",
         "clear": "Effacer",
         "approve": "Approuver ({{count}})",
         "approving": "Approbation {{done}} sur {{total}}…",
@@ -44,7 +44,16 @@
         "confirmText": "Elles s'exécutent aussitôt. Les appels IA rejoignent la file d'appels, joignent les prospects pendant les heures d'appel et consomment des crédits IA. Les notes, relances et changements de statut sont enregistrés immédiatement.",
         "approvedToast": "Approuvées : {{count}}",
         "failedToast": "Non effectuées : {{count}}. Elles restent dans la boîte avec le motif. La première : {{reason}}",
-        "unknownReason": "L'action a échoué."
+        "unknownReason": "L'action a échoué.",
+        "selectAllPages": "Tout sélectionner sur toutes les pages",
+        "send": "Envoyer ({{count}})",
+        "approveAndSend": "Approuver et envoyer ({{count}})",
+        "working": "{{done}} sur {{total}} en cours…",
+        "confirmTitleSend": "Envoyer les messages sélectionnés ({{count}}) ?",
+        "confirmTitleMixed": "Approuver et envoyer les tâches sélectionnées ({{count}}) ?",
+        "confirmTextSend": "Chaque message part tout de suite, tel que rédigé, sur son canal (WhatsApp, e-mail, in-app). Pour en modifier un, ouvrez-le à part.",
+        "sentToast": "Envoyés : {{count}}",
+        "sendNotConfirmed": "L'envoi du message n'a pas été confirmé."
     },
     "sendDialog": {
         "heading": "Vérifier et envoyer",
