@@ -24,6 +24,7 @@ import { Route as SignupIndexRouteImport } from "./routes/signup/index"
 import { Route as SettingsIndexRouteImport } from "./routes/settings/index"
 import { Route as SalesDashboardIndexRouteImport } from "./routes/sales-dashboard/index"
 import { Route as PlanningIndexRouteImport } from "./routes/planning/index"
+import { Route as PlanWeekIndexRouteImport } from "./routes/plan-week/index"
 import { Route as PaymentDashboardIndexRouteImport } from "./routes/payment-dashboard/index"
 import { Route as MembershipStatsIndexRouteImport } from "./routes/membership-stats/index"
 import { Route as MembershipExpiryIndexRouteImport } from "./routes/membership-expiry/index"
@@ -402,6 +403,11 @@ const SalesDashboardIndexRoute = SalesDashboardIndexRouteImport.update({
 const PlanningIndexRoute = PlanningIndexRouteImport.update({
   id: "/planning/",
   path: "/planning/",
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlanWeekIndexRoute = PlanWeekIndexRouteImport.update({
+  id: "/plan-week/",
+  path: "/plan-week/",
   getParentRoute: () => rootRouteImport,
 } as any)
 const PaymentDashboardIndexRoute = PaymentDashboardIndexRouteImport.update({
@@ -2685,6 +2691,7 @@ export interface FileRoutesByFullPath {
   "/membership-expiry/": typeof MembershipExpiryIndexRoute
   "/membership-stats/": typeof MembershipStatsIndexRoute
   "/payment-dashboard/": typeof PaymentDashboardIndexRoute
+  "/plan-week/": typeof PlanWeekIndexRoute
   "/planning/": typeof PlanningIndexRoute
   "/sales-dashboard/": typeof SalesDashboardIndexRoute
   "/settings/": typeof SettingsIndexRoute
@@ -2983,6 +2990,7 @@ export interface FileRoutesByTo {
   "/membership-expiry": typeof MembershipExpiryIndexRoute
   "/membership-stats": typeof MembershipStatsIndexRoute
   "/payment-dashboard": typeof PaymentDashboardIndexRoute
+  "/plan-week": typeof PlanWeekIndexRoute
   "/planning": typeof PlanningIndexRoute
   "/sales-dashboard": typeof SalesDashboardIndexRoute
   "/settings": typeof SettingsIndexRoute
@@ -3284,6 +3292,7 @@ export interface FileRoutesById {
   "/membership-expiry/": typeof MembershipExpiryIndexRoute
   "/membership-stats/": typeof MembershipStatsIndexRoute
   "/payment-dashboard/": typeof PaymentDashboardIndexRoute
+  "/plan-week/": typeof PlanWeekIndexRoute
   "/planning/": typeof PlanningIndexRoute
   "/sales-dashboard/": typeof SalesDashboardIndexRoute
   "/settings/": typeof SettingsIndexRoute
@@ -3586,6 +3595,7 @@ export interface FileRouteTypes {
     | "/membership-expiry/"
     | "/membership-stats/"
     | "/payment-dashboard/"
+    | "/plan-week/"
     | "/planning/"
     | "/sales-dashboard/"
     | "/settings/"
@@ -3884,6 +3894,7 @@ export interface FileRouteTypes {
     | "/membership-expiry"
     | "/membership-stats"
     | "/payment-dashboard"
+    | "/plan-week"
     | "/planning"
     | "/sales-dashboard"
     | "/settings"
@@ -4184,6 +4195,7 @@ export interface FileRouteTypes {
     | "/membership-expiry/"
     | "/membership-stats/"
     | "/payment-dashboard/"
+    | "/plan-week/"
     | "/planning/"
     | "/sales-dashboard/"
     | "/settings/"
@@ -4476,6 +4488,7 @@ export interface RootRouteChildren {
   MembershipExpiryIndexRoute: typeof MembershipExpiryIndexRoute
   MembershipStatsIndexRoute: typeof MembershipStatsIndexRoute
   PaymentDashboardIndexRoute: typeof PaymentDashboardIndexRoute
+  PlanWeekIndexRoute: typeof PlanWeekIndexRoute
   PlanningIndexRoute: typeof PlanningIndexRoute
   SalesDashboardIndexRoute: typeof SalesDashboardIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
@@ -4828,6 +4841,13 @@ declare module "@tanstack/react-router" {
       path: "/planning"
       fullPath: "/planning/"
       preLoaderRoute: typeof PlanningIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/plan-week/": {
+      id: "/plan-week/"
+      path: "/plan-week"
+      fullPath: "/plan-week/"
+      preLoaderRoute: typeof PlanWeekIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/payment-dashboard/": {
@@ -6896,6 +6916,7 @@ const rootRouteChildren: RootRouteChildren = {
   MembershipExpiryIndexRoute: MembershipExpiryIndexRoute,
   MembershipStatsIndexRoute: MembershipStatsIndexRoute,
   PaymentDashboardIndexRoute: PaymentDashboardIndexRoute,
+  PlanWeekIndexRoute: PlanWeekIndexRoute,
   PlanningIndexRoute: PlanningIndexRoute,
   SalesDashboardIndexRoute: SalesDashboardIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,

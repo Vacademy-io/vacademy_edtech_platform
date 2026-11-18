@@ -144,3 +144,73 @@ export const saveEngagementSettings = async (
         { params: { instituteId, settingKey: ENGAGEMENT_SETTING_KEY } }
     );
 };
+
+// ── weekly planning email (ENGAGEMENT_SETTING.data.planningNudge) ────────────
+// Mirrors PlanningNudgeSettings on the server: same keys, defaults and clamps.
+
+export type PlanningRunDays = 'MON_FRI' | 'MON_SAT' | 'ALL';
+
+export interface PlanningNudge {
+    enabled: boolean;
+    /** ISO day of week: 1 = Monday … 7 = Sunday. */
+    sendDay: number;
+    /** Institute-local hour, 0–23. */
+    sendHour: number;
+    /** Hours before the one reminder; 0 = no reminder. */
+    reminderHours: number;
+    /** Publish the AI draft straight away instead of waiting for the teacher. */
+    autoPublish: boolean;
+    runDays: PlanningRunDays;
+    tasksPerDay: number;
+    /** Empty = every batch that has a teacher. */
+    packageSessionIds: string[];
+}
+
+export const DEFAULT_PLANNING_NUDGE: PlanningNudge = {
+    enabled: false,
+    sendDay: 5,
+    sendHour: 16,
+    reminderHours: 24,
+    autoPublish: false,
+    runDays: 'MON_FRI',
+    tasksPerDay: 2,
+    packageSessionIds: [],
+};
+
+export const normalizePlanningNudge = (raw: unknown): PlanningNudge => {
+    const r = asObject(raw) ?? {};
+    const d = DEFAULT_PLANNING_NUDGE;
+    const runDays = ['MON_FRI', 'MON_SAT', 'ALL'].includes(r.runDays as string)
+        ? (r.runDays as PlanningRunDays)
+        : d.runDays;
+    const ids = Array.isArray(r.packageSessionIds)
+        ? Array.from(
+              new Set(
+                  r.packageSessionIds
+                      .filter((v): v is string => typeof v === 'string' && v.trim() !== '')
+                      .map((v) => v.trim())
+              )
+          )
+        : [];
+    return {
+        enabled: r.enabled === true,
+        sendDay: clamp(r.sendDay, d.sendDay, 1, 7),
+        sendHour: clamp(r.sendHour, d.sendHour, 0, 23),
+        reminderHours: clamp(r.reminderHours, d.reminderHours, 0, 96),
+        autoPublish: r.autoPublish === true,
+        runDays,
+        tasksPerDay: clamp(r.tasksPerDay, d.tasksPerDay, 1, 5),
+        packageSessionIds: ids,
+    };
+};
+
+/** Saves the planning email settings, keeping every other engagement setting as loaded. */
+export const savePlanningNudge = async (
+    loaded: LoadedEngagementSettings,
+    nudge: PlanningNudge
+): Promise<void> => {
+    await saveEngagementSettings(loaded.settings, {
+        ...loaded.extra,
+        planningNudge: normalizePlanningNudge(nudge),
+    });
+};

@@ -10,6 +10,7 @@ import {
     type LoadOptionsResult,
 } from '@/components/design-system/async-searchable-select';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Switch } from '@/components/ui/switch';
 import {
     fetchBatchesByIds,
     fetchPaginatedBatches,
@@ -115,6 +116,8 @@ export function PlanListToolbar({
     onSearchChange,
     sort,
     onSortChange,
+    mine,
+    onMineChange,
 }: {
     packageSessionId?: string;
     /** A label for the selected batch when the caller already has one (a plan's packageSessionLabel). */
@@ -124,6 +127,9 @@ export function PlanListToolbar({
     onSearchChange: (value: string) => void;
     sort: PlanListSort;
     onSortChange: (sort: PlanListSort) => void;
+    /** "My batches": plans on batches the viewer teaches, plus plans they created. */
+    mine: boolean;
+    onMineChange: (mine: boolean) => void;
 }) {
     const { t } = useTranslation('engagement');
     const fallback = t('batchPicker.courseFallback');
@@ -218,6 +224,17 @@ export function PlanListToolbar({
                             className="sm:w-full"
                         />
                     </div>
+                    <label className="inline-flex h-9 cursor-pointer items-center gap-2 whitespace-nowrap rounded-md border border-neutral-300 px-3 text-body text-neutral-600 hover:border-primary-200">
+                        <Switch
+                            checked={mine}
+                            onCheckedChange={onMineChange}
+                            aria-describedby="engagement-mine-hint"
+                        />
+                        {t('list.mine')}
+                        <span id="engagement-mine-hint" className="sr-only">
+                            {t('list.mineHint')}
+                        </span>
+                    </label>
                     <MyDropdown
                         dropdownList={sortItems}
                         currentValue={sort}

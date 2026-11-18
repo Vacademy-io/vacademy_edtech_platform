@@ -1165,3 +1165,44 @@ history and the daily cap.
 **Known limits.**
 - Item tracking's NOT_DONE list includes students whose day hasn't come yet.
 - The AI planner creates calendar plans only.
+
+## 21. Teachers' way in: discoverability and the weekly planning email (2026-11-18)
+
+Feedback: teachers do not reach the planning screen. Two changes.
+
+**Discoverability.**
+- The course page's Engagement tab is a real `CourseDetailsTabId` (`ENGAGEMENT`, order 8.5, after
+  Activity), so admins can move or hide it per role in Display Settings. Before, it was always last.
+- "Assign as task" on a published slide is shown to teachers too. It no longer depends on
+  `hidePublishButtons`, which is on for teachers by default.
+- The plan list takes `mine=true` ("My batches"): plans on batches the caller teaches
+  (`faculty_subject_package_session_mapping`, sub-org rows excluded) plus plans they created.
+  It is on by default for teachers who are not admins.
+- Dashboard widget `engagementPlanning` (both dashboards): active batches with learners and no
+  PUBLISHED plan running on any of the next 7 days. Teachers see only their batches.
+  `GET /engagement/admin/v1/planning/coverage?mine=`.
+
+**Weekly planning email** (`features/engagement/planning`, table `engagement_planning_request`, V728).
+- Settings: `ENGAGEMENT_SETTING.data.planningNudge` = `{enabled, sendDay (ISO, default 5), sendHour
+  (16), reminderHours (24, 0 = none), autoPublish (false), runDays (MON_FRI | MON_SAT | ALL),
+  tasksPerDay (2), packageSessionIds ([] = all)}`. **Off unless an admin turns it on.**
+- Hourly tick (ShedLock): on the send day, at or after the send hour in the institute's timezone,
+  every teacher of every target batch gets one email about the week starting the coming Monday
+  (today, if today is Monday). Unique per (batch, teacher, week), so late or repeated ticks email
+  nobody twice. Skipped: teachers who already have a plan they created running on that batch that week.
+- The link is `/<admin portal>/plan-week?t=<token>`: 32 random bytes; only the SHA-256 is stored.
+  The page posts the token in the body to `/admin-core-service/open/engagement/planning/v1/{view,submit}`.
+  It can read only that request's context (no learner data) and submit a topic. It never signs in
+  and never publishes. The reminder carries a second token; both work until the end of the week.
+- A submitted topic is drafted by the AI planner through ai_service's new service-to-service
+  routes `POST/GET /engagement/plan/internal/draft/jobs` (`X-Internal-Service-Token`, acting as the
+  teacher, role TEACHER). Same brief checks, credit pre-flight and billing as the wizard.
+  Draft tick every minute: SUBMITTED → DRAFTING → a DRAFT plan created by the teacher (or
+  PUBLISHED with autoPublish), then a "ready to review" email. Two attempts, then FAILED with a
+  message the teacher sees on the link page and can resubmit. Out of credits = FAILED, not retried.
+- Admin: Settings → Daily Engagement → Weekly planning email (settings, "Send now", this week's
+  rows). `POST /planning/send-now`, `GET /planning/requests` are admin-only.
+
+Known limits: the email is English only; reading pictures are not generated for emailed drafts
+(placeholders are stripped); one email per teacher per batch, so a batch with five subject
+teachers gets five drafts (the daily cap still applies to learners).

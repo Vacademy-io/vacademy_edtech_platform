@@ -83,6 +83,8 @@ const publicRoutes = [
     // the ?txn= handle, so the page handles sign-in itself (it stashes the txn
     // first). Nothing is granted without a verified session on the backend.
     '/mcp/authorize',
+    // Weekly planning email link: a token that can only send this week's topics.
+    '/plan-week',
 ];
 
 const isVimotionHost = () =>

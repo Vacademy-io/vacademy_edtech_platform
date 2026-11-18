@@ -76,6 +76,7 @@ function defaultDashboardWidgetsTeacher(): DashboardWidgetConfig[] {
         'kpiBand',
         'pendingActions',
         'unresolvedDoubts',
+        'engagementPlanning',
         'recentNotifications',
         'liveClasses',
         'learningCenter',
@@ -116,6 +117,7 @@ function defaultDashboardWidgetsTeacher(): DashboardWidgetConfig[] {
         'subOrgActivityDues',
         // 5. Engagement signals
         'unresolvedDoubts',
+        'engagementPlanning',
         'recentNotifications',
         'dailyActivityTrend',
         'userActivitySummary',
@@ -195,6 +197,9 @@ const TEACHER_DEFAULTS_BASE: Omit<DisplaySettingsData, 'sidebar'> = {
             { id: 'LIVE_SESSION', order: 6, visible: false },
             { id: 'PLANNING', order: 7, visible: false },
             { id: 'ACTIVITY', order: 8, visible: false },
+            // Daily engagement (2026-11): 8.5 slots it after Activity without renumbering
+            // saved orders. Listed so teachers can find it and admins can move or hide it.
+            { id: 'ENGAGEMENT', order: 8.5, visible: true },
             { id: 'PULSE', order: 9, visible: true },
             { id: 'REPORTS', order: 10, visible: true },
             { id: 'CERTIFICATES', order: 11, visible: false },

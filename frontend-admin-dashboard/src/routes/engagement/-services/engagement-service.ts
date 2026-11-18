@@ -59,6 +59,7 @@ export async function listPlans(params: PlanListParams = {}): Promise<PlanListRe
             status: statuses.length > 0 ? statuses.join(',') : undefined,
             q,
             sort: params.sort,
+            mine: params.mine ? true : undefined,
             // Sending page and size asks a newer server for the page object.
             page,
             size,
@@ -298,4 +299,92 @@ function saveCsv(data: Blob, title: string, suffix: string): void {
     link.remove();
     // Revoking immediately can cancel the download in some browsers; give it a beat.
     window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+}
+
+// ── weekly planning: coverage card, emails ───────────────────────────────────
+
+const PLANNING = `${ROOT}/planning`;
+
+export interface UnplannedBatch {
+    packageSessionId: string;
+    label: string | null;
+    learnerCount: number;
+}
+
+/** Active batches with learners and no published tasks in the next seven days. */
+export interface PlanningCoverage {
+    from: string;
+    to: string;
+    batchCount: number;
+    unplannedCount: number;
+    unplanned: UnplannedBatch[];
+}
+
+export async function getPlanningCoverage(mine: boolean, limit = 3): Promise<PlanningCoverage> {
+    const { data } = await authenticatedAxiosInstance.get<PlanningCoverage>(
+        `${PLANNING}/coverage`,
+        {
+            params: { ...instituteParams(), mine, limit },
+        }
+    );
+    return data;
+}
+
+export type PlanningRequestStatus =
+    | 'SENT'
+    | 'SUBMITTED'
+    | 'DRAFTING'
+    | 'DRAFTED'
+    | 'PUBLISHED'
+    | 'FAILED'
+    | 'EXPIRED';
+
+export interface PlanningRequestRow {
+    id: string;
+    packageSessionId: string;
+    batchLabel: string | null;
+    teacherName: string | null;
+    subjects: string | null;
+    status: PlanningRequestStatus;
+    topic: string | null;
+    error: string | null;
+    planId: string | null;
+    sentAt: string | null;
+    remindedAt: string | null;
+    submittedAt: string | null;
+}
+
+export interface PlanningWeekRequests {
+    weekStart: string;
+    rows: PlanningRequestRow[];
+}
+
+export async function getPlanningRequests(): Promise<PlanningWeekRequests> {
+    const { data } = await authenticatedAxiosInstance.get<PlanningWeekRequests>(
+        `${PLANNING}/requests`,
+        {
+            params: instituteParams(),
+        }
+    );
+    return data;
+}
+
+export interface PlanningSendSummary {
+    weekStart: string;
+    sent: number;
+    alreadyAsked: number;
+    alreadyPlanned: number;
+    noEmail: number;
+    failed: number;
+}
+
+export async function sendPlanningEmailsNow(
+    packageSessionId?: string
+): Promise<PlanningSendSummary> {
+    const { data } = await authenticatedAxiosInstance.post<PlanningSendSummary>(
+        `${PLANNING}/send-now`,
+        null,
+        { params: { ...instituteParams(), packageSessionId } }
+    );
+    return data;
 }

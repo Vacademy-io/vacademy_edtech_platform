@@ -45,6 +45,7 @@ const PUBLIC_PREFIXES = [
     '/content',
     '/vim/onboarding',
     '/vim/login',
+    '/plan-week',
     '/vim/waitlist',
 ];
 

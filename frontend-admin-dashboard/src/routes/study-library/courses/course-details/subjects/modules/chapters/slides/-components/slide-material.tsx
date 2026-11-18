@@ -4705,8 +4705,10 @@ export const SlideMaterial = ({
 
                                 {/* Assign this slide as a daily-engagement task. Offered only for a
                                     PUBLISHED slide: a draft is invisible to learners, so scheduling
-                                    one would create a task nobody could open. */}
-                                {!hidePublishButtons && activeItem.status === 'PUBLISHED' && (
+                                    one would create a task nobody could open. Shown to teachers
+                                    too (not tied to hidePublishButtons): scheduling a task does
+                                    not edit the course, and this is the teacher's main way in. */}
+                                {!isLearnerView && activeItem.status === 'PUBLISHED' && (
                                     <MyButton
                                         buttonType="secondary"
                                         scale="medium"

@@ -26,6 +26,7 @@ import { useDashboardUpcomingSessions } from '@/routes/dashboard/-hooks/useDashb
 import MentorshipStatsWidget from '@/routes/dashboard/-components/MentorshipStatsWidget';
 import DailyActivityTrendWidget from '@/routes/dashboard/-components/analytics-widgets/DailyActivityTrendWidget';
 import { UnresolvedDoubtsWidget } from '@/routes/dashboard/-components/UnresolvedDoubtsWidget';
+import { EngagementPlanningWidget } from '@/routes/dashboard/-components/EngagementPlanningWidget';
 import { CrmLink } from '@/routes/dashboard/-components/crm/crm-cards';
 import { instituteTerms } from '@/components/shared/crm-enhance/institute-terms';
 import {
@@ -145,6 +146,9 @@ function LmsDashboardPage() {
                         visible('unresolvedDoubts') && (
                             <UnresolvedDoubtsWidget instituteId={instituteId} />
                         )}
+                    {subModules.lms && visible('engagementPlanning') && (
+                        <EngagementPlanningWidget mine={!isAdmin} />
+                    )}
                     {isAdmin && visible('mentorshipStats') && <MentorshipStatsWidget />}
                 </div>
                 {visible('dailyActivityTrend') && (

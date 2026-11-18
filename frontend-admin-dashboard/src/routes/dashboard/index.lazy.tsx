@@ -37,6 +37,7 @@ import { handleGetAdminDetails } from '@/services/student-list-section/getAdminD
 import { motion } from 'framer-motion';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { UnresolvedDoubtsWidget } from './-components/UnresolvedDoubtsWidget';
+import { EngagementPlanningWidget } from './-components/EngagementPlanningWidget';
 import LiveClassesWidget from './-components/LiveClassesWidget';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { RoleTerms, SystemTerms } from '../settings/-components/NamingSettings';
@@ -777,6 +778,13 @@ export function DashboardComponent({ onOpenAllAlerts }: { onOpenAllAlerts?: () =
                     isWidgetVisible('unresolvedDoubts') && (
                         <UnresolvedDoubtsWidget instituteId={instituteDetails?.id || ''} />
                     )}
+                {/* Daily engagement: batches with no tasks in the next 7 days. Teachers see
+                    their own batches only. Toggle id: engagementPlanning. */}
+                {subModules.lms && !isFreshTenant && isWidgetVisible('engagementPlanning') && (
+                    <TrackedWidget widgetId="engagementPlanning">
+                        <EngagementPlanningWidget mine={!isAdmin} />
+                    </TrackedWidget>
+                )}
                 {/* Admin Only Widgets */}
                 {isAdmin && (
                     <>

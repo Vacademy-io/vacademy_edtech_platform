@@ -246,6 +246,8 @@ export interface PlanListParams {
     page?: number;
     /** Default 20, server max 100. */
     size?: number;
+    /** "My batches": only plans on batches the caller teaches, or that they created. */
+    mine?: boolean;
 }
 
 export interface PlanListResult {
