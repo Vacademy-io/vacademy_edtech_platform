@@ -31,6 +31,7 @@ import {
     normalizeTemplateName,
     placeholderIndexes,
     problemFields,
+    safeSampleFileName,
     validateDraft,
     validateForSubmit,
     type TemplateProblem,
@@ -194,7 +195,8 @@ export function TemplateBuilder({ template, onClose }: Props) {
         setUploadingSample(true);
         try {
             const fileId = await uploadFile({
-                file,
+                // A URL-safe name keeps "%28"-style escapes out of the public link Meta fetches.
+                file: new File([file], safeSampleFileName(file.name), { type: file.type }),
                 setIsUploading: setUploadingSample,
                 userId: getUserId(),
                 source: 'WHATSAPP_TEMPLATE_MEDIA',
