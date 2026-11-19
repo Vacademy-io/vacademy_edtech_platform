@@ -40,6 +40,8 @@ export interface PointsSummary {
   keptToday?: boolean | null;
   /** Normalised by {@link normalizeLast7Days}; oldest first. */
   last7Days?: PointsStreakDay[] | null;
+  /** Course slides marked "Count as engagement" this learner has earned points for. */
+  courseActivitiesCompleted?: number | null;
 }
 
 /**

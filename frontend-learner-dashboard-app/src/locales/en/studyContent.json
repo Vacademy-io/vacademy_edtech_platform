@@ -480,5 +480,12 @@
             "saving": "Saving your score…",
             "saveFailed": "Your score couldn't be saved. Play again to retry."
         }
+    },
+    "slideEngagement": {
+        "toEarn": "Activity · finish it to earn {{points}} points",
+        "earned": "You earned {{points}} points for this activity",
+        "markDone": "Mark as done",
+        "markFailed": "Could not mark this as done. Please try again.",
+        "toastEarned": "+{{points}} points! Activity complete"
     }
 }

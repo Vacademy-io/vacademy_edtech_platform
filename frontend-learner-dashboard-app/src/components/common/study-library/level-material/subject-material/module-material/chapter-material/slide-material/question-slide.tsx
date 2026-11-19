@@ -25,6 +25,7 @@ import { trackOrQueue, isNetworkError } from "@/lib/offline/events/track-or-queu
 import CbeQuestionSlide from "./cbe-question-slide";
 import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { cn } from "@/lib/utils";
+import { announceSlideCompleted } from "@/services/slide-engagement";
 import { QuizInstantFeedbackPanel } from "./quiz-instant-feedback-panel";
 import {
     answerKindOf,
@@ -368,7 +369,8 @@ const ChoiceOrTextQuestionSlide = ({ questionData, onSubmit }: QuestionSlideProp
             if (result && "offlineQueued" in result && result.offlineQueued) {
                 toast.info(t("questionSlide.toast.savedOffline"));
             } else {
-                console.log("Question answer submitted successfully");
+                // Collects "Count as engagement" points once the server sees it done.
+                announceSlideCompleted(slideId);
             }
         },
         onError: (error: Error) => {

@@ -47,6 +47,12 @@ public class PointsSummaryDTO {
     /** The institute's IANA timezone, so a client can count down to its midnight. */
     private String timezone;
 
+    /**
+     * Course slides marked "Count as engagement" that this learner has earned points for.
+     * Drives the course_activity_count badge trigger.
+     */
+    private Long courseActivitiesCompleted;
+
     /** Kept for existing callers: the pre-streak shape. */
     public PointsSummaryDTO(long totalPoints, long weekPoints, long todayPoints, int level,
                             int pointsToNextLevel, List<PointsBreakdownItemDTO> breakdown) {

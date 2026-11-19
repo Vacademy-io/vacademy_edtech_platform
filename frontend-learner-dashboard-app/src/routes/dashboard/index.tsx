@@ -894,6 +894,7 @@ export function DashboardComponent() {
           // One streak everywhere (D9): the server's, so the streak points line
           // and the streak badge agree with every streak display.
           serverStreak,
+          serverPoints,
         });
 
         // The figures above are computed in THIS browser, so they can never

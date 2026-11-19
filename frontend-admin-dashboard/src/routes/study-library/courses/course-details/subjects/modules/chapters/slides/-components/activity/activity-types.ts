@@ -195,3 +195,18 @@ export function serializeGameData(data: GameSlideData): string {
 export function gameReportsScore(html: string): boolean {
     return html.includes('vacademy:complete');
 }
+
+/**
+ * Slides a teacher may mark "Count as engagement": learners earn points once for
+ * finishing them. Mirrors SlideEngagementService.isEligible on the server.
+ */
+export function isEngagementEligibleSlide(
+    sourceType: string | null | undefined,
+    documentType: string | null | undefined
+): boolean {
+    if (sourceType === 'QUESTION' || sourceType === 'QUIZ') return true;
+    return (
+        sourceType === 'DOCUMENT' &&
+        (documentType === 'HTML' || (!!documentType && ACTIVITY_DOC_TYPES.has(documentType)))
+    );
+}

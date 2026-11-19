@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { markSlideCompletion } from "@/services/study-library/tracking-api/mark-slide-completion";
 import { getSlideCompletionThreshold } from "@/constants/study-library";
+import { announceSlideCompleted } from "@/services/slide-engagement";
 
 /**
  * Slide types a learner may complete by hand.
@@ -83,6 +84,8 @@ export const MarkCompleteButton = ({
         completed: next,
         ...context,
       });
+      // "Count as engagement" slides collect their points now.
+      if (next) announceSlideCompleted(slideId);
       // Refresh the slide list so ticks, chapter progress and any drip unlock
       // this completion satisfies all pick the change up.
       if (context.chapterId) {

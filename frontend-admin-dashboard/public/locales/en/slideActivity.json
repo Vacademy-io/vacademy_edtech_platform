@@ -67,5 +67,24 @@
         "scoreOf": "{{score}} / {{max}}",
         "attempts_one": "{{count}} try",
         "attempts_other": "{{count}} tries"
+    },
+    "engagement": {
+        "button": "Count as engagement",
+        "buttonOn": "Engagement · {{points}} pts",
+        "title": "Count as engagement",
+        "body": "Learners earn points the first time they finish this slide. There is no deadline: it stays in the course to come back to.",
+        "points": "Points",
+        "pointsRange": "Points must be between 1 and {{max}}",
+        "hintHtml": "Learners finish it with \"Mark as complete\" (or when your page reports that it is done).",
+        "hintGame": "Finishing a round completes it. The game score is shown to you but does not change the points.",
+        "hintPoll": "Voting completes it.",
+        "hintFlashcards": "Going through the deck once completes it.",
+        "hintQuestion": "Submitting an answer completes it.",
+        "earned_one": "{{count}} learner has earned these points",
+        "earned_other": "{{count}} learners have earned these points",
+        "gamificationOff": "Points are switched off for your institute, so nobody earns them yet. Turn on Settings → Badges & Rewards.",
+        "toastOn": "Learners now earn {{points}} points for finishing this slide",
+        "toastOff": "This slide no longer earns points",
+        "toastFailed": "Could not save. Please try again."
     }
 }

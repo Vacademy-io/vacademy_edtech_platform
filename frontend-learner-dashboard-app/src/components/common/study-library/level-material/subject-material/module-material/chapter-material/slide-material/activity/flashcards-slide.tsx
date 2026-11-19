@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { announceSlideCompleted } from "@/services/slide-engagement";
 import { useTranslation } from "react-i18next";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowCounterClockwise, CheckCircle, Repeat } from "@phosphor-icons/react";
@@ -97,6 +98,7 @@ export function FlashcardsSlide({
       .then(() => {
         const chapterId = contextRef.current?.chapterId;
         if (chapterId) queryClient.invalidateQueries({ queryKey: ["slides", chapterId] });
+        announceSlideCompleted(slide.id);
       })
       .catch(() => {
         markedRef.current = false;

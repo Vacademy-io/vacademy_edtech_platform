@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { announceSlideCompleted } from "@/services/slide-engagement";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { GameController, Trophy } from "@phosphor-icons/react";
@@ -30,6 +31,7 @@ export function GameSlide({ slide }: { slide: Slide }) {
       const first = (view.data?.attempts ?? 0) === 0;
       queryClient.setQueryData(key, data);
       if (first && ids.chapterId) queryClient.invalidateQueries({ queryKey: ["slides", ids.chapterId] });
+      if (first) announceSlideCompleted(slide.id);
     },
   });
 

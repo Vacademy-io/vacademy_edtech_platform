@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { announceSlideCompleted } from "@/services/slide-engagement";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, ChartBar } from "@phosphor-icons/react";
@@ -35,6 +36,7 @@ export function PollSlide({ slide }: { slide: Slide }) {
       const first = !view.data?.myOptionId;
       queryClient.setQueryData(key, data);
       if (first && ids.chapterId) queryClient.invalidateQueries({ queryKey: ["slides", ids.chapterId] });
+      if (first) announceSlideCompleted(slide.id);
     },
     onError: (error) => toast.error(getBackendErrorMessage(error, t("activity.poll.voteFailed"))),
   });

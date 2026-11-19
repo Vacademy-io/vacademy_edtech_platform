@@ -84,7 +84,9 @@ import {
     POLL_DOC_TYPE,
     activityTypeName,
     isActivityDocType,
+    isEngagementEligibleSlide,
 } from './activity/activity-types';
+import { EngagementToggle } from './activity/engagement-toggle';
 import { FlashcardsSlideEditor } from './activity/flashcards-slide-editor';
 import { PollSlideEditor } from './activity/poll-slide-editor';
 import { GameSlideEditor } from './activity/game-slide-editor';
@@ -4766,6 +4768,21 @@ export const SlideMaterial = ({
                                         </span>
                                     </MyButton>
                                 )}
+
+                                {/* "Count as engagement": learners earn points once for finishing
+                                    this slide, with no time window (the course-flow alternative
+                                    to a daily task). Same audience as "Assign as task". */}
+                                {!isLearnerView &&
+                                    isEngagementEligibleSlide(
+                                        activeItem.source_type,
+                                        activeItem.document_slide?.type
+                                    ) && (
+                                        <EngagementToggle
+                                            key={activeItem.id}
+                                            slideId={activeItem.id}
+                                            documentType={activeItem.document_slide?.type}
+                                        />
+                                    )}
 
                                 {/* Publish/Unpublish — shown to ALL roles (no auto-publish anymore).
                                     The confirm step is a compact popover anchored to this button

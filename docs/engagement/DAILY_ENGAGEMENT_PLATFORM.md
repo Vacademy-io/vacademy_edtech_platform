@@ -1237,3 +1237,45 @@ is always created as a DRAFT (an empty deck or poll must never go live by itself
 
 Not done: per-role content-type toggles for the three types (they always show in the add menu);
 "Save to course as a slide" from a daily task, and the reverse for flashcards/poll slides.
+
+## 23. "Count as engagement" on course slides (2026-11-19)
+
+Feedback (The 7cs, parents as learners): daily tasks live in a time window and vanish
+after it, and parents cannot keep a schedule. They want the activity inside the course
+flow ("after a couple of videos, an activity"), still earning points and badges. §22 made
+the formats available as slides but deliberately gave them no points; this adds a
+per-slide switch that does.
+
+- **Which slides:** Question, Quiz, and DOCUMENT slides of type HTML, FLASHCARDS, POLL,
+  GAME (`SlideEngagementService.isEligible`, mirrored by `isEngagementEligibleSlide` in
+  admin and `isEngagementSlideType` in learner).
+- **Setting:** `slide_engagement` (V731) — one row per slide: `enabled`, `points` (1–100
+  from the UI, default 10). Staff only, slide must belong to the institute.
+  `GET|PUT /admin-core-service/slide-activity/admin/v1/engagement?instituteId=`.
+  Admin: "Count as engagement" button in the slide header (popover: switch, points,
+  how many learners earned it, warning when Badges & Rewards is off).
+- **Earning:** `POST /admin-core-service/slide-activity/learner/v1/engagement/claim
+  {slideId, packageSessionId}`. Pays the slide's points ONCE into points_ledger
+  (`COURSE_ACTIVITY`, key `COURSE_ACTIVITY:{slideId}:{userId}`) when ALL hold: setting
+  enabled, slide PUBLISHED/UNSYNC, learner has a live membership on the slide (same rule
+  as quiz access), institute has Badges & Rewards on, and the server sees the slide
+  complete — learner_operation `MARKED_AS_WATCHED=true` or a `PERCENTAGE_{DOCUMENT,
+  QUESTION,QUIZ}_COMPLETED` ≥ 80. The client's word is never enough.
+- **When the app claims:** on opening the slide (pays learners who finished before the
+  teacher switched it on) and after every completion, via the window event
+  `vacademy:slide-completed` (`announceSlideCompleted`): Mark complete, question submit,
+  quiz finish, flashcards first pass, poll vote, game result, and an HTML page posting
+  `vacademy:complete`. Claims retry at 0.3/1.5/4/9 s because question/quiz completion is
+  rolled up in the background. An HTML engagement slide also gets "Mark as done" in the
+  banner (works even when the institute hides the manual completion button), and a page
+  that posts `vacademy:complete` marks itself done.
+- **Learner UI:** strip under the slide header — "Activity · finish it to earn N points",
+  then "You earned N points". The award moves the points pill (`applyResultToPointsCache`,
+  `applyEngagementResult`), shows confetti and a toast. Breakdown label "Course activities".
+- **Badges:** new trigger `course_activity_count` ("Course activities completed"), fed by
+  `PointsSummaryDTO.courseActivitiesCompleted`. Points badges (`xp_total`) now unlock on the
+  higher of the browser XP estimate and the server total — before this, server points
+  (daily tasks too) never counted toward them; max() so no earned badge re-locks.
+- **Never:** game scores (self-reported) do not change points; switching off or changing
+  points never takes back or re-prices earned points; copying a slide does not copy the
+  setting (the copy starts off).

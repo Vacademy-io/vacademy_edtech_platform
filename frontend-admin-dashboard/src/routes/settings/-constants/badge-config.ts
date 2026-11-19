@@ -24,7 +24,8 @@ export type BadgeTriggerType =
     | 'course_completion'
     | 'assessment_score'
     | 'live_session_count'
-    | 'live_session_streak';
+    | 'live_session_streak'
+    | 'course_activity_count';
 
 export interface BadgeDefinitionConfig {
     id: string;
@@ -191,6 +192,12 @@ export const TRIGGER_META: Record<BadgeTriggerType, TriggerMeta> = {
         help: 'Unlocks after the learner attends this many live classes (in total).',
         unit: 'classes',
         defaultThreshold: 10,
+    },
+    course_activity_count: {
+        label: 'Course activities completed',
+        help: 'Unlocks after the learner finishes this many course slides marked "Count as engagement" (questions, quizzes, polls, flashcards, games, HTML activities).',
+        unit: 'activities',
+        defaultThreshold: 5,
     },
     live_session_streak: {
         label: 'Live class streak (in a row)',

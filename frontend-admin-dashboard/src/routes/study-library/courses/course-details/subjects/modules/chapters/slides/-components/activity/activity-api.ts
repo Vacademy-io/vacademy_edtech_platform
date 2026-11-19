@@ -59,3 +59,37 @@ export async function fetchGameScores(
     });
     return data;
 }
+
+// ── "Count as engagement" ────────────────────────────────────────────────────
+
+/** A course slide's engagement setting (SlideEngagementService.AdminView). */
+export interface SlideEngagementSetting {
+    slideId: string;
+    /** The slide's type can be an engagement at all. */
+    eligible: boolean;
+    enabled: boolean;
+    points: number;
+    /** Learners in this institute who have earned these points. */
+    earnedCount: number;
+    /** Badges & Rewards is on; off means nobody earns points anywhere. */
+    gamificationOn: boolean;
+}
+
+export async function fetchSlideEngagement(slideId: string): Promise<SlideEngagementSetting> {
+    const { data } = await authenticatedAxiosInstance.get<SlideEngagementSetting>(`${ROOT}/engagement`, {
+        params: { slideId, instituteId: getCurrentInstituteId() },
+    });
+    return data;
+}
+
+export async function saveSlideEngagement(
+    slideId: string,
+    change: { enabled?: boolean; points?: number }
+): Promise<SlideEngagementSetting> {
+    const { data } = await authenticatedAxiosInstance.put<SlideEngagementSetting>(
+        `${ROOT}/engagement`,
+        { slideId, ...change },
+        { params: { instituteId: getCurrentInstituteId() } }
+    );
+    return data;
+}

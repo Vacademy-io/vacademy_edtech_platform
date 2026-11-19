@@ -42,6 +42,8 @@ import { SpreadsheetSlide } from "./spreadsheet/spreadsheet-slide";
 import { FlashcardsSlide } from "./activity/flashcards-slide";
 import { PollSlide } from "./activity/poll-slide";
 import { GameSlide } from "./activity/game-slide";
+import { EngagementBanner } from "./activity/engagement-banner";
+import { announceSlideCompleted } from "@/services/slide-engagement";
 import { SplitScreenVideoSlide } from "./split-screen-video-slide";
 import { DocumentQuizSlide } from "./document-quiz-slide";
 import { parseDocumentQuizRef } from "./document-quiz-ref";
@@ -1101,7 +1103,8 @@ export const SlideMaterial = ({
                 await handleQuestionSubmit(String(selectedOptionId));
               }}
               onComplete={() => {
-                // Optionally handle quiz completion
+                // Collects "Count as engagement" points once the server sees it done.
+                announceSlideCompleted(activeItem.id);
               }}
             />
           );
@@ -1173,7 +1176,8 @@ export const SlideMaterial = ({
                   await handleQuestionSubmit(String(selectedOptionId));
                 }}
                 onComplete={() => {
-                  // Optionally handle quiz completion
+                  // Collects "Count as engagement" points once the server sees it done.
+                  announceSlideCompleted(activeItem.id);
                 }}
               />
             );
@@ -1763,6 +1767,17 @@ export const SlideMaterial = ({
           <AskDoubtButton />
         </div>
       </div>
+      )}
+
+      {/* "Count as engagement": what this activity is worth, and that it was earned. */}
+      {activeItem && (
+        <EngagementBanner
+          key={activeItem.id}
+          slideId={activeItem.id}
+          sourceType={activeItem.source_type}
+          documentType={activeItem.document_slide?.type}
+          context={completionContext ?? {}}
+        />
       )}
 
       {/* Play themes on mobile: inline slide nav right below the compact header.
