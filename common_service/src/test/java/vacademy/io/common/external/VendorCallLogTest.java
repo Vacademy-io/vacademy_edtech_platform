@@ -212,5 +212,8 @@ class VendorCallLogTest {
         assertFalse(s.contains("ravi@x.in"), s);
         assertFalse(s.contains("98765"), s);
         assertTrue(s.contains("402"), s);
+
+        String url = VendorCallLog.clean("audio https://b.s3.amazonaws.com/a.mp3?X-Amz-Signature=abc&X-Amz-Expires=60 ok", 500);
+        assertEquals("audio https://b.s3.amazonaws.com/a.mp3?<query> ok", url);
     }
 }

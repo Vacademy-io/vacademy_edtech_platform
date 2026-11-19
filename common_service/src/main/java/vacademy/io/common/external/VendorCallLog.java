@@ -71,6 +71,7 @@ public final class VendorCallLog {
                     + "|msisdn|email|card|cvv|account_number|ifsc)");
     private static final String SECRETISH =
             "(?i)(key|token|secret|authorization|bearer|password)[\\s:=\"']+(?:bearer\\s+)?[^\\s,;\"'&]+";
+    private static final Pattern URL_QUERY = Pattern.compile("(https?://[^\\s?\"'<>]+)\\?[^\\s\"'<>]*");
     private static final Pattern EMAIL = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}");
     private static final Pattern LONG_NUMBER = Pattern.compile("\\+?\\d[\\d -]{8,}\\d");
     private static final Pattern FORM =
@@ -358,7 +359,9 @@ public final class VendorCallLog {
     /** Free text with credentials, emails and phone-like numbers hidden, cut to {@code max}. */
     static String clean(String s, int max) {
         if (s == null) return null;
-        String v = s.replaceAll(SECRETISH, "$1=<hidden>");
+        // A URL's query can hold a key or a presigned signature.
+        String v = URL_QUERY.matcher(s).replaceAll("$1?<query>");
+        v = v.replaceAll(SECRETISH, "$1=<hidden>");
         v = EMAIL.matcher(v).replaceAll("<email>");
         v = LONG_NUMBER.matcher(v).replaceAll("<number>");
         return v.length() <= max ? v : v.substring(0, max) + "…";
