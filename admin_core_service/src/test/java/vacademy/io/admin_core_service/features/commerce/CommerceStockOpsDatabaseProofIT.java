@@ -1389,17 +1389,16 @@ class CommerceStockOpsDatabaseProofIT {
         assertEquals(Boolean.FALSE, disagree.get("passes"));
         assertTrue(new BigDecimal(String.valueOf(disagree.get("percent"))).compareTo(new BigDecimal("98")) < 0);
 
-        // W1 posts a difference with limits unset: a PIN for any difference.
+        // W1 posts a difference with limits unset: a PIN for any difference, on the review it approves.
         long before = movements();
         String postKey = key();
-        assertEquals("APPROVAL_REQUIRED", code(() -> counts.post(w1, inst, main.id(),
-                new StockOpsDtos.CountPostRequest(postKey, "ZERO", null, null, null))));
+        StockOpsDtos.CountReview mainSeen = body(counts.review(w1, inst, main.id()));
+        assertEquals("APPROVAL_REQUIRED", code(() -> counts.post(w1, inst, main.id(), zero(postKey, null, mainSeen))));
         assertEquals("PIN_INVALID", code(() -> counts.post(w1, inst, main.id(),
-                new StockOpsDtos.CountPostRequest(postKey, "ZERO", pin(managerId, WRONG_PIN), null, null))));
+                zero(postKey, pin(managerId, WRONG_PIN), mainSeen))));
         assertEquals(before, movements());
         assertEquals("OPEN", text("SELECT status FROM stock_count WHERE id = ?", main.id()));
-        CountView posted = body(counts.post(w1, inst, main.id(),
-                new StockOpsDtos.CountPostRequest(postKey, "ZERO", pin(managerId, PIN), null, null)));
+        CountView posted = body(counts.post(w1, inst, main.id(), zero(postKey, pin(managerId, PIN), mainSeen)));
         assertEquals("POSTED", posted.status());
         assertEquals(1, count("SELECT count(*) FROM commerce_approval WHERE institute_id = ? AND action = "
                 + "'STOCK_COUNT_POST' AND reference_id = ?", inst, main.id()));
@@ -2204,43 +2203,72 @@ class CommerceStockOpsDatabaseProofIT {
         assertEquals(0, onHand(l1, plate));
     }
 
+    /** A ZERO post with the review it was approved on (the fingerprint and the write-off it shows). */
+    private static StockOpsDtos.CountPostRequest zero(String key, Approval approval, StockOpsDtos.CountReview review) {
+        return new StockOpsDtos.CountPostRequest(key, "ZERO", approval, null, review.fingerprint(),
+                review.zeroWriteOff());
+    }
+
     /**
-     * A PIN given on a review covers what ZERO writes off as it was reviewed: an uncounted item
-     * received into scope after the review is not written off under it. A SKIP post does not
-     * write uncounted items off, so the same receipt does not stop it.
+     * A PIN given on a review covers at most what ZERO wrote off at the review. A sale of an
+     * uncounted item since then posts (writing off only what is left); a receipt of an uncounted
+     * item, or a new item in the count's scope, is refused. A SKIP post writes nothing off, so a
+     * receipt does not stop it.
      */
     @Test
     @Order(20)
-    void aZeroPostCoversOnlyTheUncountedItemsThatWereReviewed() throws Exception {
+    void aZeroPostWritesOffAtMostWhatWasReviewed() throws Exception {
+        // A. A sale since the review: posted, and only what is left is written off.
+        receive(w1Id, l1, tray, 3, null);
+        int trays = onHand(l1, tray);
         CountView open = openCount(w1, l1, "COUNT", corner, null);
         countLines(w1, open.id(), set(plate, onHand(l1, plate) + 1));
         StockOpsDtos.CountReview seen = body(counts.review(w1, inst, open.id()));
+        assertEquals(trays, seen.zeroWriteOff().items().get(tray), "the review shows what ZERO writes off");
         String postKey = key();
-        assertEquals("APPROVAL_REQUIRED", code(() -> counts.post(w1, inst, open.id(),
-                new StockOpsDtos.CountPostRequest(postKey, "ZERO", null, null, seen.fingerprint()))));
-        // While the manager types the PIN, a delivery of the uncounted tray is received.
-        int trays = onHand(l1, tray);
-        receive(w1Id, l1, tray, 2, null);
-        long before = movements();
-        assertEquals("COUNT_CHANGED", code(() -> counts.post(w1, inst, open.id(),
-                new StockOpsDtos.CountPostRequest(postKey, "ZERO", pin(managerId, PIN), null, seen.fingerprint()))));
-        assertEquals(before, movements(), "nothing posted");
-        assertEquals(0, count("SELECT count(*) FROM commerce_approval WHERE reference_id = ?", open.id()),
-                "no approval recorded for a write-off the manager did not see");
-        assertEquals(trays + 2, onHand(l1, tray), "the trays just received are not written off");
-        // Reviewed again: the lines are the same, what ZERO writes off is not.
-        StockOpsDtos.CountReview again = body(counts.review(w1, inst, open.id()));
-        assertFalse(seen.fingerprint().equals(again.fingerprint()));
-        assertEquals(seen.fingerprint().split("\\.")[0], again.fingerprint().split("\\.")[0]);
-        assertTrue(again.uncounted().stream().anyMatch(u -> tray.equals(u.packageSessionId())
-                && u.onHandNow() == trays + 2), "the review shows the trays");
-        CountView posted = body(counts.post(w1, inst, open.id(), new StockOpsDtos.CountPostRequest(key(), "ZERO",
-                pin(managerId, PIN), null, again.fingerprint())));
+        assertEquals("APPROVAL_REQUIRED", code(() -> counts.post(w1, inst, open.id(), zero(postKey, null, seen))));
+        assertEquals("VALIDATION", code(() -> counts.post(w1, inst, open.id(), new StockOpsDtos.CountPostRequest(key(),
+                "ZERO", pin(managerId, PIN), null, null))), "a PIN on a ZERO post names the review it approves");
+        // While the manager walks over, the till sells a tray.
+        String session = openSession();
+        sell(session, tray, 1, "250.00");
+        closeSession(session);
+        CountView posted = body(counts.post(w1, inst, open.id(), zero(postKey, pin(managerId, PIN), seen)));
         assertEquals("POSTED", posted.status());
         assertEquals(1, count("SELECT count(*) FROM commerce_approval WHERE reference_id = ?", open.id()));
         assertEquals(0, onHand(l1, tray));
-        assertEquals(-(trays + 2), count("SELECT SUM(quantity_delta) FROM stock_movement WHERE reference_id = ? AND "
-                + "package_session_id = ? AND idempotency_key LIKE 'COUNT_ZERO:%'", open.id(), tray));
+        assertEquals(-(trays - 1), count("SELECT SUM(quantity_delta) FROM stock_movement WHERE reference_id = ? AND "
+                + "package_session_id = ? AND idempotency_key LIKE 'COUNT_ZERO:%'", open.id(), tray),
+                "the tray sold is not written off again");
+
+        // B. A receipt of an uncounted item since the review: refused, nothing posted.
+        receive(w1Id, l1, tray, 2, null);
+        CountView second = openCount(manager, l1, "COUNT", corner, null);
+        countLines(manager, second.id(), set(plate, onHand(l1, plate)));
+        StockOpsDtos.CountReview before2 = body(counts.review(manager, inst, second.id()));
+        receive(w1Id, l1, tray, 1, null);
+        long before = movements();
+        assertEquals("COUNT_CHANGED", code(() -> counts.post(manager, inst, second.id(), zero(key(), null, before2))));
+        assertEquals(before, movements(), "nothing posted");
+        assertEquals(3, onHand(l1, tray), "the tray just received is not written off");
+
+        // C. A new item comes into the count's scope since the review: refused.
+        StockOpsDtos.CountReview before3 = body(counts.review(manager, inst, second.id()));
+        String bowl = product("steel-bowl", "Steel bowl", null, "BOWL", "150.00", false, "PCS", 1, List.of(corner));
+        receive(w1Id, l1, bowl, 4, null);
+        assertEquals("COUNT_CHANGED", code(() -> counts.post(manager, inst, second.id(), zero(key(), null, before3))));
+        assertEquals(4, onHand(l1, bowl));
+
+        // D. The write-off sent back must be the review's own (it is checked against the fingerprint).
+        StockOpsDtos.CountReview latest = body(counts.review(manager, inst, second.id()));
+        Map<String, Integer> inflated = new HashMap<>(latest.zeroWriteOff().items());
+        inflated.put(tray, 99);
+        assertEquals("VALIDATION", code(() -> counts.post(manager, inst, second.id(), new StockOpsDtos.CountPostRequest(
+                key(), "ZERO", null, null, latest.fingerprint(),
+                new StockOpsDtos.ZeroWriteOff(inflated, latest.zeroWriteOff().pieces())))));
+        assertEquals("POSTED", body(counts.post(manager, inst, second.id(), zero(key(), null, latest))).status());
+        assertEquals(0, onHand(l1, tray));
+        assertEquals(0, onHand(l1, bowl));
 
         // SKIP: a receipt of an uncounted item after the review does not stop the post.
         CountView skip = openCount(manager, l1, "COUNT", corner, null);
@@ -2320,6 +2348,16 @@ class CommerceStockOpsDatabaseProofIT {
             LabelDtos.PrintedAnswer marked = body(labels.markPrinted(w1, inst, new LabelDtos.LabelIdsRequest(key(),
                     drawn, printedCopies.isEmpty() ? null : printedCopies)));
             assertEquals(printedCopies.size(), marked.partly() == null ? 0 : marked.partly().size());
+            if (round == 0) {
+                // The part print is stamped with its price ("Tags to replace" sees those labels), and the
+                // row shows the labels it was queued with and how many are printed.
+                assertEquals(1, count("SELECT count(*) FROM commerce_label_request WHERE source_id = ? AND status = "
+                        + "'PENDING' AND printed_price IS NOT NULL AND printed_at IS NULL", receiptId));
+                LabelDtos.LabelRow partRow = labelRows(w1, receiptId).stream()
+                        .filter(r -> "PENDING".equals(r.status()) && r.printedQuantity() > 0).findFirst().orElseThrow();
+                assertEquals(partRow.quantity() + partRow.printedQuantity(), partRow.originalQuantity());
+                assertTrue(List.of(1200, 30).contains(partRow.originalQuantity()), partRow.toString());
+            }
             if (data.leftOut() == null) {
                 break;
             }
@@ -2336,6 +2374,9 @@ class CommerceStockOpsDatabaseProofIT {
                 + "AND printed_price IS NOT NULL", receiptId));
         assertTrue(count("SELECT count(*) FROM commerce_audit WHERE institute_id = ? AND kind = 'LABEL_PART_PRINTED'",
                 inst) >= 2, "each part print is audited");
+        List<LabelDtos.LabelRow> done = labelRows(w1, receiptId);
+        assertTrue(done.stream().allMatch(r -> r.printedQuantity() == r.originalQuantity()), done.toString());
+        assertEquals(Set.of(1200, 30), new HashSet<>(done.stream().map(LabelDtos.LabelRow::originalQuantity).toList()));
     }
 
     private static String refusal(RuntimeException e) {

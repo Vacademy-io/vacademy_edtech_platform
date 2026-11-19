@@ -34,6 +34,7 @@ import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.C
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountPostRequest;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountReview;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountRow;
+import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.ZeroWriteOff;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountView;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountsAnswer;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.LineCountAnswer;
@@ -78,6 +79,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.HashMap;
@@ -88,6 +90,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -653,7 +657,8 @@ public class StockCountService {
     // ================================================================== review
 
     public CountReview review(String instituteId, Caller caller, String countId) {
-        return readOnly.execute(tx -> {
+        // On the primary: a post binds to this review, so it must not lag behind the till (a replica can).
+        return transaction.execute(tx -> {
             StockCount count = get(instituteId, countId);
             requireNotBlind(instituteId, count, caller);
             boolean recount = StockCountKind.RECOUNT.name().equals(count.getKind());
@@ -674,7 +679,7 @@ public class StockCountService {
     private record Model(CountReview review, List<StockPosting> postings, Map<String, LineResult> lineResults,
                          BigDecimal absoluteValue, boolean overLimit, Map<String, Object> summary,
                          List<String> needsRecount, List<String> measured, String fingerprint,
-                         String zeroPrint) {
+                         String zeroPrint, ZeroWriteOff zero) {
     }
 
     /** What the post stamps on a line. */
@@ -877,14 +882,14 @@ public class StockCountService {
         // Items nobody counted. What ZERO would write off (each quantity item's on hand, and the
         // pieces of items nobody scanned) is printed whatever the choice, so a review taken
         // without a choice binds a ZERO post to the same write-off.
-        StringBuilder zeroPrint = new StringBuilder();
+        Map<String, Integer> zeroItems = new TreeMap<>();
         Set<String> countedVariants = new HashSet<>(counted);
         List<UncountedItem> uncounted = new ArrayList<>();
         for (String variant : StockCountMath.uncounted(levels, countedVariants)) {
             ItemFacts item = facts.get(variant);
             int onHand = levels.get(variant);
             if (item != null && !item.piece()) {
-                zeroPrint.append(variant).append(':').append(onHand).append(';');
+                zeroItems.put(variant, onHand);
             }
             uncounted.add(new UncountedItem(variant, item == null ? null : item.sku(),
                     item == null ? null : item.productName(), item == null ? null : item.variantName(),
@@ -906,12 +911,12 @@ public class StockCountService {
         List<String> zeroPieces = new ArrayList<>(StockCountMath.pieceSets(pieceHere, scanned.keySet(),
                 scannedVariants, UncountedChoice.ZERO).missing());
         zeroPieces.sort(null);
-        zeroPieces.forEach(pieceId -> zeroPrint.append("P").append(pieceId).append(';'));
+        ZeroWriteOff zeroWriteOff = new ZeroWriteOff(zeroItems, zeroPieces);
         String print = sha256(fingerprint.toString());
-        String zero = sha256(zeroPrint.toString());
+        String zero = zeroHash(zeroItems, zeroPieces);
         CountReview review = new CountReview(count.getId(), LocalDateTime.now().toString(), reviewLines, uncounted,
                 missing, found, misplaced, notInStock, reserved, arrived, totals, over, needsRecount.size(),
-                !measured.isEmpty(), print + "." + zero);
+                !measured.isEmpty(), print + "." + zero, zeroWriteOff);
 
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("lines", lines.size());
@@ -933,7 +938,34 @@ public class StockCountService {
         detail.put("reserved_not_counted", reserved);
         detail.put("arrived_during_count", arrived);
         summary.put("detail", detail);
-        return new Model(review, postings, results, absolute, over, summary, needsRecount, measured, print, zero);
+        return new Model(review, postings, results, absolute, over, summary, needsRecount, measured, print, zero,
+                zeroWriteOff);
+    }
+
+    /** The uncounted half of a review's fingerprint: items (sorted) with their stock, then pieces (sorted). */
+    static String zeroHash(Map<String, Integer> items, Collection<String> pieces) {
+        StringBuilder text = new StringBuilder();
+        new TreeMap<>(items == null ? Map.<String, Integer>of() : items)
+                .forEach((variant, units) -> text.append(variant).append(':').append(units).append(';'));
+        new TreeSet<>(pieces == null ? List.<String>of() : pieces)
+                .forEach(pieceId -> text.append('P').append(pieceId).append(';'));
+        return sha256(text.toString());
+    }
+
+    /**
+     * Whether ZERO would now write off more than {@code reviewed}: an uncounted item's stock went
+     * up, an item came into scope, or a piece joined the write-off. A sale lowers it: not more.
+     */
+    static boolean writeOffGrew(ZeroWriteOff now, ZeroWriteOff reviewed) {
+        Map<String, Integer> before = reviewed.items() == null ? Map.of() : reviewed.items();
+        for (Map.Entry<String, Integer> item : now.items().entrySet()) {
+            Integer seen = before.get(item.getKey());
+            if (seen == null || item.getValue() > seen) {
+                return true;
+            }
+        }
+        Set<String> seenPieces = new HashSet<>(reviewed.pieces() == null ? List.of() : reviewed.pieces());
+        return !seenPieces.containsAll(now.pieces());
     }
 
     private static String sha256(String text) {
@@ -1054,11 +1086,17 @@ public class StockCountService {
         boolean manager = caller.manager();
         boolean confirmMeasured = Boolean.TRUE.equals(request.confirmMeasured());
         String reviewed = StockTransferService.blankToNull(request.reviewFingerprint());
-        requireReviewed(before, reviewed, choice);
-        requirePostable(before, manager, confirmMeasured);
+        ZeroWriteOff reviewedZero = request.reviewedZero();
         Approval approval = request.approval();
         boolean approvalGiven = approval != null && StockTransferService.blankToNull(approval.approverUserId()) != null
                 && StockTransferService.blankToNull(approval.pin()) != null;
+        if (choice == UncountedChoice.ZERO && approvalGiven && reviewed == null) {
+            // The manager approves what the review showed: a ZERO post is bound to it.
+            throw new InvalidRequestException("VALIDATION: review the count first; a manager's approval of a ZERO post "
+                    + "needs review_fingerprint");
+        }
+        requireReviewed(before, reviewed, choice, reviewedZero);
+        requirePostable(before, manager, confirmMeasured);
         if (before.overLimit() && !manager && !approvalGiven) {
             throw new CommerceAccessDeniedException(StockTransferService.APPROVAL_REQUIRED,
                     "this count has differences above your limit and needs a manager");
@@ -1083,14 +1121,14 @@ public class StockCountService {
                     .orElseThrow(() -> new InvalidRequestException("LOCATION_NOT_FOUND: the count's location"));
             Model model = build(instituteId, locked, choice, true, true);
             // Under the lock: the lines, and with ZERO the write-off of uncounted items, as reviewed.
-            requireReviewed(model, reviewed, choice);
+            requireReviewed(model, reviewed, choice, reviewedZero);
             requirePostable(model, manager, confirmMeasured);
             if (model.overLimit() && !manager && approvedBy == null) {
                 throw new CommerceAccessDeniedException(StockTransferService.APPROVAL_REQUIRED,
                         "this count has differences above your limit and needs a manager");
             }
             if (approvedBy != null && (!model.fingerprint().equals(before.fingerprint())
-                    || (choice == UncountedChoice.ZERO && !model.zeroPrint().equals(before.zeroPrint())))) {
+                    || (choice == UncountedChoice.ZERO && writeOffGrew(model.zero(), before.zero())))) {
                 // The manager approved the lines as they were; lines saved since were not approved.
                 throw new CommerceAccessDeniedException(StockTransferService.APPROVAL_REQUIRED,
                         "the count changed after the manager approved it; review it and approve again");
@@ -1139,23 +1177,40 @@ public class StockCountService {
 
     /**
      * 409 COUNT_CHANGED when the post names the review it was approved on and the lines changed
-     * since, or (ZERO) what is written off for uncounted items changed: an item came into scope or
-     * its stock here changed after the review. A fingerprint without the uncounted part (a screen
-     * loaded before it existed) binds the lines only.
+     * since, or (ZERO) more would be written off than was reviewed: an uncounted item's stock here
+     * went up, or an item or piece came into scope. A sale since the review is fine: ZERO writes
+     * off what is left, which is less than was approved. With {@code reviewed_zero} (the review's
+     * write-off, checked against the fingerprint) that is what the post is held to; without it the
+     * write-off must be exactly the reviewed one. A fingerprint without the uncounted part (a
+     * screen loaded before it existed) binds the lines only.
      */
-    private static void requireReviewed(Model model, String reviewed, UncountedChoice choice) {
+    private static void requireReviewed(Model model, String reviewed, UncountedChoice choice,
+                                        ZeroWriteOff reviewedZero) {
         if (reviewed == null) {
             return;
         }
         int dot = reviewed.indexOf('.');
         String lines = dot < 0 ? reviewed : reviewed.substring(0, dot);
-        boolean changed = !lines.equals(model.fingerprint());
-        if (!changed && dot >= 0 && choice == UncountedChoice.ZERO) {
-            changed = !reviewed.substring(dot + 1).equals(model.zeroPrint());
-        }
-        if (changed) {
+        if (!lines.equals(model.fingerprint())) {
             throw new ConflictException("COUNT_CHANGED: lines of this count changed since it was reviewed; review it "
                     + "again");
+        }
+        if (dot < 0 || choice != UncountedChoice.ZERO) {
+            return;
+        }
+        String zeroHalf = reviewed.substring(dot + 1);
+        boolean grew;
+        if (reviewedZero == null) {
+            grew = !zeroHalf.equals(model.zeroPrint());
+        } else {
+            if (!zeroHalf.equals(zeroHash(reviewedZero.items(), reviewedZero.pieces()))) {
+                throw new InvalidRequestException("VALIDATION: reviewed_zero is not the write-off of that review");
+            }
+            grew = writeOffGrew(model.zero(), reviewedZero);
+        }
+        if (grew) {
+            throw new ConflictException("COUNT_CHANGED: stock of items not counted went up, or items came into the "
+                    + "count, since it was reviewed; review it again");
         }
     }
 

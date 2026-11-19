@@ -210,15 +210,32 @@ public final class StockOpsDtos {
     /**
      * {@code review_fingerprint}: the {@code fingerprint} of the review the person (and the manager
      * giving a PIN) looked at; when sent, a count whose lines changed since is refused, and with
-     * {@code uncounted: ZERO} also one whose uncounted items (what ZERO writes off) changed since.
+     * {@code uncounted: ZERO} also one where more would be written off than was reviewed.
+     * {@code reviewed_zero}: the review's {@code zero_write_off}, sent back with a ZERO post, so a
+     * sale since the review posts (writing off only what is left) while stock that arrived since
+     * is refused. A manager's PIN on a ZERO post needs {@code review_fingerprint}.
      */
     public record CountPostRequest(String clientRequestId, String uncounted, Approval approval,
-                                   Boolean confirmMeasured, String reviewFingerprint) {
+                                   Boolean confirmMeasured, String reviewFingerprint, ZeroWriteOff reviewedZero) {
+
+        public CountPostRequest(String clientRequestId, String uncounted, Approval approval, Boolean confirmMeasured,
+                                String reviewFingerprint) {
+            this(clientRequestId, uncounted, approval, confirmMeasured, reviewFingerprint, null);
+        }
 
         /** The body the request hash is taken over: the PIN and the confirm are resent under the same key. */
         public CountPostRequest withoutApproval() {
-            return new CountPostRequest(clientRequestId, uncounted, null, null, reviewFingerprint);
+            return new CountPostRequest(clientRequestId, uncounted, null, null, reviewFingerprint, reviewedZero);
         }
+    }
+
+    /**
+     * What {@code uncounted: ZERO} would write off at the review: each uncounted item's stock here
+     * ({@code items}, package_session_id to units) and the pieces nobody scanned ({@code pieces}).
+     */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record ZeroWriteOff(Map<String, Integer> items, List<String> pieces) {
     }
 
     /** {@code POST /counts/{id}/lines/{lineId}/accept}: the counted quantity the manager looked at. */
@@ -322,7 +339,18 @@ public final class StockOpsDtos {
                               List<ReviewPiece> misplacedPieces, List<ReviewPiece> notInStockPieces,
                               List<ReviewPiece> reservedNotCounted, List<ReviewPiece> arrivedDuringCount,
                               ReviewTotals totals, boolean needsApproval, int needsRecount,
-                              boolean measuredConfirm, String fingerprint) {
+                              boolean measuredConfirm, String fingerprint, ZeroWriteOff zeroWriteOff) {
+
+        public CountReview(String countId, String asOf, List<ReviewLine> lines, List<UncountedItem> uncounted,
+                           List<ReviewPiece> missingPieces, List<ReviewPiece> foundPieces,
+                           List<ReviewPiece> misplacedPieces, List<ReviewPiece> notInStockPieces,
+                           List<ReviewPiece> reservedNotCounted, List<ReviewPiece> arrivedDuringCount,
+                           ReviewTotals totals, boolean needsApproval, int needsRecount, boolean measuredConfirm,
+                           String fingerprint) {
+            this(countId, asOf, lines, uncounted, missingPieces, foundPieces, misplacedPieces, notInStockPieces,
+                    reservedNotCounted, arrivedDuringCount, totals, needsApproval, needsRecount, measuredConfirm,
+                    fingerprint, null);
+        }
     }
 
     // ================================================================== reads

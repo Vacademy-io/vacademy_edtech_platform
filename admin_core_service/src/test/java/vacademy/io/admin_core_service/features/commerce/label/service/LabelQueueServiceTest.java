@@ -337,7 +337,9 @@ class LabelQueueServiceTest {
 
         // "Yes, printed" for the drawn part: the row keeps waiting with 700, nothing is stamped printed.
         when(repository.findByInstituteIdAndIdIn(INST, List.of("row-1"))).thenReturn(List.of(big));
-        when(repository.markPartlyPrinted(INST, "row-1", 500)).thenReturn(1);
+        // The part print is stamped with the price it printed at, so "Tags to replace" sees those labels.
+        when(repository.markPartlyPrinted(INST, "row-1", 500, new BigDecimal("450.00"), new BigDecimal("450.00")))
+                .thenReturn(1);
         LabelDtos.PrintedAnswer part = service.markPrinted(INST, staffAtL1,
                 new LabelDtos.LabelIdsRequest("printed-0101", List.of("row-1"), Map.of("row-1", 500)));
         assertEquals(0, part.printed());
@@ -347,7 +349,7 @@ class LabelQueueServiceTest {
                 eq("row-1"), isNull(), anyString(), isNull());
 
         // The last round: fewer labels left than were drawn, so the row is printed in full.
-        when(repository.markPartlyPrinted(INST, "row-1", 200)).thenReturn(0);
+        when(repository.markPartlyPrinted(eq(INST), eq("row-1"), eq(200), any(), any())).thenReturn(0);
         when(repository.markPrinted(eq(INST), eq("row-1"), any(LocalDateTime.class), eq("wh-1"), any(), any()))
                 .thenReturn(1);
         LabelDtos.PrintedAnswer last = service.markPrinted(INST, staffAtL1,
@@ -360,6 +362,50 @@ class LabelQueueServiceTest {
                 new LabelDtos.LabelIdsRequest("printed-0103", List.of("row-1"), Map.of("row-9", 5))));
         assertThrows(InvalidRequestException.class, () -> service.markPrinted(INST, staffAtL1,
                 new LabelDtos.LabelIdsRequest("printed-0104", List.of("row-1"), Map.of("row-1", 501))));
+    }
+
+    /** Review m6: a round naming a row printed elsewhere leaves that row out and says so. */
+    @Test
+    void printDataLeavesOutARowPrintedElsewhere() {
+        CommerceLabelRequest done = pending("row-1", "ps-bottle", 3);
+        done.setStatus("PRINTED");
+        CommerceLabelRequest waiting = pending("row-2", "ps-spoon", 2);
+        when(repository.findByInstituteIdAndIdIn(INST, List.of("row-1", "row-2"))).thenReturn(List.of(done, waiting));
+        when(reads.itemFacts(eq(INST), anyCollection())).thenReturn(Map.of(
+                "ps-bottle", item("ps-bottle", "QUANTITY", "TRACKED", "ACTIVE"),
+                "ps-spoon", item("ps-spoon", "QUANTITY", "TRACKED", "ACTIVE")));
+        CartVariant spoonPrice = priced("60.00");
+        when(snapshots.cartVariants(eq(INST), anyCollection(), anyList())).thenReturn(Map.of("ps-spoon", spoonPrice));
+        LabelDtos.PrintDataAnswer data = service.printData(INST, staffAtL1,
+                new LabelDtos.PrintDataRequest(List.of("row-1", "row-2"), null, null));
+        assertEquals(List.of("row-2"), data.labels().stream().map(LabelDtos.PrintLabel::requestId).toList());
+        assertEquals(List.of(new LabelDtos.SkippedLabel("row-1", "SKU-ps-bottle", "NOT_PENDING")), data.skipped());
+    }
+
+    /** Review m4: a row printed in rounds shows the labels it was queued with and how many are printed. */
+    @Test
+    void aRowPrintedInRoundsShowsItsOriginalQuantity() {
+        CommerceLabelRequest big = pending("row-1", "ps-bottle", 200);
+        big.setSourceType("STOCK_RECEIPT");
+        big.setSourceId("rcpt-1");
+        when(repository.search(anyString(), eq(true), anyCollection(), any(), any(), any(), any(), any(), any()))
+                .thenReturn(new org.springframework.data.domain.PageImpl<>(List.of(big)));
+        CommerceLabelRequestRepository.PartPrinted part = mock(CommerceLabelRequestRepository.PartPrinted.class);
+        when(part.getRequestId()).thenReturn("row-1");
+        when(part.getCopies()).thenReturn(1000L);
+        when(repository.partPrinted(INST, List.of("row-1"))).thenReturn(List.of(part));
+        LabelDtos.LabelRow row = service.list(INST, new Caller("ad-1", true, true, true, true, null), null, null, null,
+                null, null, 0, 50).requests().get(0);
+        assertEquals(200, row.quantity(), "still waiting");
+        assertEquals(1200, row.originalQuantity());
+        assertEquals(1000, row.printedQuantity());
+    }
+
+    @Test
+    void cancelRefusesPrintedCopies() {
+        assertThrows(InvalidRequestException.class, () -> service.cancel(INST, staffAtL1,
+                new LabelDtos.LabelIdsRequest("cancel-0001", List.of("row-1"), Map.of("row-1", 5))));
+        verify(repository, never()).cancelPending(anyString(), anyCollection(), anyString());
     }
 
     @Test

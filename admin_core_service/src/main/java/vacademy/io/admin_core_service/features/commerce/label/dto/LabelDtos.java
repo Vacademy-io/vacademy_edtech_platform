@@ -50,6 +50,11 @@ public final class LabelDtos {
     public record PrintDataRequest(List<String> requestIds, String receiptId, String size) {
     }
 
+    /**
+     * A queue row. {@code quantity}: the labels it still has to print (all of them once PRINTED).
+     * {@code original_quantity}: the labels it was queued with; {@code printed_quantity}: how many
+     * are printed (earlier rounds of a row printed in rounds, or all of a PRINTED row).
+     */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record LabelRow(String id, String locationId, String packageSessionId, String sku, String itemName,
@@ -57,7 +62,7 @@ public final class LabelDtos {
                            String pieceCode, String labelCode, int quantity, String reason, String reprintReason,
                            String note, String sourceType, String sourceId, String sourceLabel, String status,
                            String requestedBy, String createdAt, String printedAt, String printedBy,
-                           boolean hasPrice) {
+                           boolean hasPrice, int originalQuantity, int printedQuantity) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -119,6 +124,7 @@ public final class LabelDtos {
     /** A row that was not drawn, and why ({@code NO_PRICE}: a manager sets the price first). */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    /** {@code reason}: NO_PRICE (a manager sets the price first) or NOT_PENDING (printed or cancelled elsewhere). */
     public record SkippedLabel(String requestId, String sku, String reason) {
     }
 

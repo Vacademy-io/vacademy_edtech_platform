@@ -405,6 +405,9 @@ public class LabelQueueService {
 
     public CancelAnswer cancel(String instituteId, Caller caller, LabelIdsRequest request) {
         List<String> ids = ids(request);
+        if (request.printedCopies() != null && !request.printedCopies().isEmpty()) {
+            throw new InvalidRequestException("VALIDATION: printed_copies is for mark-printed only");
+        }
         String key = CommerceRequestGuard.requireClientKey(request.clientRequestId());
         CommerceRequestGuard.Key guardKey = new CommerceRequestGuard.Key(instituteId, key, ACTION_CANCEL,
                 REFERENCE_LABELS, null, CommerceRequestGuard.hash(ACTION_CANCEL, request), caller.userId());
@@ -443,7 +446,9 @@ public class LabelQueueService {
         CommerceRequestGuard.Key guardKey = new CommerceRequestGuard.Key(instituteId, key, ACTION_PRINTED,
                 REFERENCE_LABELS, null, CommerceRequestGuard.hash(ACTION_PRINTED, request), caller.userId());
         return requestGuard.run(guardKey, () -> {
-            List<CommerceLabelRequest> rows = actOn(instituteId, caller, ids);
+            // In id order: two marks of overlapping rows lock them in the same order.
+            List<CommerceLabelRequest> rows = new ArrayList<>(actOn(instituteId, caller, ids));
+            rows.sort(Comparator.comparing(CommerceLabelRequest::getId));
             Set<String> variants = new HashSet<>();
             rows.forEach(row -> variants.add(row.getPackageSessionId()));
             Map<String, CartVariant> prices = snapshotLoader.cartVariants(instituteId, variants, List.of());
@@ -455,7 +460,8 @@ public class LabelQueueService {
             for (CommerceLabelRequest row : rows) {
                 CartVariant price = prices.get(row.getPackageSessionId());
                 Integer part = partCopies.get(row.getId());
-                if (part != null && repository.markPartlyPrinted(instituteId, row.getId(), part) > 0) {
+                if (part != null && repository.markPartlyPrinted(instituteId, row.getId(), part,
+                        price == null ? null : price.price(), mrpOf(price)) > 0) {
                     // The rest of the row's labels keep waiting for the next print.
                     partly.add(row.getId());
                     skipped.remove(row.getId());
@@ -530,6 +536,7 @@ public class LabelQueueService {
             throw new InvalidRequestException("VALIDATION: send request_ids or receipt_id");
         }
         List<String> ids = byIds ? cleanIds(request.requestIds()) : List.of();
+        List<CommerceLabelRequest> notPending = new ArrayList<>();
         List<CommerceLabelRequest> rows = transaction.execute(tx -> {
             List<CommerceLabelRequest> found;
             if (byIds) {
@@ -538,10 +545,16 @@ public class LabelQueueService {
                     throw new VacademyException(HttpStatus.NOT_FOUND, "LABEL_REQUEST_NOT_FOUND: a label request was "
                             + "not found");
                 }
+                // A row printed or cancelled elsewhere meanwhile is left out (and listed); the rest print.
+                found = new ArrayList<>(found);
                 for (CommerceLabelRequest row : found) {
                     if (!LabelStatus.PENDING.name().equals(row.getStatus())) {
-                        throw new ConflictException("LABEL_NOT_PENDING: use Reprint for a label that was printed");
+                        notPending.add(row);
                     }
+                }
+                found.removeAll(notPending);
+                if (found.isEmpty()) {
+                    throw new ConflictException("LABEL_NOT_PENDING: use Reprint for a label that was printed");
                 }
             } else {
                 found = repository.findByInstituteIdAndSourceTypeAndSourceIdAndStatus(instituteId, SOURCE_RECEIPT,
@@ -563,11 +576,12 @@ public class LabelQueueService {
             return found;
         });
         // The primary, not the replica: a label code given a moment ago must be drawn.
-        return transaction.execute(tx -> draw(instituteId, rows,
+        return transaction.execute(tx -> draw(instituteId, rows, notPending,
                 size == null ? LabelTemplate.STICKER_50X25.name() : size));
     }
 
-    private PrintDataAnswer draw(String instituteId, List<CommerceLabelRequest> rows, String size) {
+    private PrintDataAnswer draw(String instituteId, List<CommerceLabelRequest> rows,
+                                 List<CommerceLabelRequest> notPending, String size) {
         Set<String> variants = new HashSet<>();
         Set<String> pieces = new HashSet<>();
         for (CommerceLabelRequest row : rows) {
@@ -576,7 +590,9 @@ public class LabelQueueService {
                 pieces.add(row.getPieceId());
             }
         }
-        Map<String, ItemFacts> facts = readRepository.itemFacts(instituteId, variants);
+        Set<String> skippedVariants = new HashSet<>(variants);
+        notPending.forEach(row -> skippedVariants.add(row.getPackageSessionId()));
+        Map<String, ItemFacts> facts = readRepository.itemFacts(instituteId, skippedVariants);
         Map<String, CartVariant> prices = variants.isEmpty() ? Map.of()
                 : snapshotLoader.cartVariants(instituteId, variants, List.of());
         Map<String, String> codes = readRepository.pieceCodes(instituteId, pieces);
@@ -590,6 +606,10 @@ public class LabelQueueService {
                 .thenComparing(r -> r.getPieceId() == null ? "" : nullToEmpty(codes.get(r.getPieceId()))));
         List<PrintLabel> out = new ArrayList<>();
         List<SkippedLabel> skipped = new ArrayList<>();
+        for (CommerceLabelRequest row : notPending) {
+            ItemFacts item = facts.get(row.getPackageSessionId());
+            skipped.add(new SkippedLabel(row.getId(), item == null ? null : item.sku(), "NOT_PENDING"));
+        }
         List<LeftOutLabel> leftOut = new ArrayList<>();
         int copies = 0;
         int leftOutCopies = 0;
@@ -622,8 +642,9 @@ public class LabelQueueService {
                     drawn, row.getPieceId()));
             copies += drawn;
         }
-        if (out.isEmpty() && !skipped.isEmpty()) {
-            throw new ConflictException("LABEL_NO_PRICE: " + skipped.get(0).sku() + " has no price yet; a manager "
+        SkippedLabel noPrice = skipped.stream().filter(s -> "NO_PRICE".equals(s.reason())).findFirst().orElse(null);
+        if (out.isEmpty() && noPrice != null) {
+            throw new ConflictException("LABEL_NO_PRICE: " + noPrice.sku() + " has no price yet; a manager "
                     + "sets it first");
         }
         Map<String, String> shopName = shop.shopName() == null ? Map.of() : shop.shopName();
@@ -708,6 +729,15 @@ public class LabelQueueService {
         }
         Map<String, ItemFacts> facts = readRepository.itemFacts(instituteId, variants);
         Map<String, ReferenceLabel> labels = readRepository.referenceLabels(instituteId, sources, pieces);
+        // Labels printed in earlier rounds (the row's quantity is what is still waiting).
+        Map<String, Integer> parts = new HashMap<>();
+        List<String> quantityRows = rows.stream().filter(row -> row.getPieceId() == null)
+                .map(CommerceLabelRequest::getId).toList();
+        if (!quantityRows.isEmpty()) {
+            for (CommerceLabelRequestRepository.PartPrinted part : repository.partPrinted(instituteId, quantityRows)) {
+                parts.put(part.getRequestId(), part.getCopies() == null ? 0 : part.getCopies().intValue());
+            }
+        }
         Map<String, CartVariant> prices = variants.isEmpty() ? Map.of()
                 : snapshotLoader.cartVariants(instituteId, variants, List.of());
         List<LabelRow> out = new ArrayList<>();
@@ -725,7 +755,11 @@ public class LabelQueueService {
                     item == null ? null : item.labelCode(), row.getQuantity(), row.getReason(), row.getReprintReason(),
                     row.getNote(), row.getSourceType(), row.getSourceId(), source == null ? null : source.label(),
                     row.getStatus(), row.getRequestedBy(), text(row.getCreatedAt()), text(row.getPrintedAt()),
-                    row.getPrintedBy(), price != null && price.price() != null && price.price().signum() > 0));
+                    row.getPrintedBy(), price != null && price.price() != null && price.price().signum() > 0,
+                    row.getQuantity() + parts.getOrDefault(row.getId(), 0),
+                    LabelStatus.PRINTED.name().equals(row.getStatus())
+                            ? row.getQuantity() + parts.getOrDefault(row.getId(), 0)
+                            : parts.getOrDefault(row.getId(), 0)));
         }
         return out;
     }
