@@ -20,6 +20,11 @@ import java.util.Set;
 @Service
 public class InstitutePaymentGatewayMappingService {
 
+    /**
+     * Credential keys masked in every admin read and preserved when sent back masked.
+     * Must cover each {@code secret: true} field of the vendor forms in the admin
+     * dashboard's PaymentGatewaySettings.tsx, or that value goes to the browser in clear.
+     */
     private static final Set<String> SECRET_FIELDS = Set.of(
             "apiKey",
             "keySecret",
@@ -28,6 +33,7 @@ public class InstitutePaymentGatewayMappingService {
             "password",
             "encryptionKey",
             "webhookSecret",
+            "webhookPassword",
             "saltKey"
     );
 
