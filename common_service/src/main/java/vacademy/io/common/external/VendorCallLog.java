@@ -172,9 +172,17 @@ public final class VendorCallLog {
             if (t instanceof RestClientResponseException r) return r.getStatusCode().value();
             Integer s = reflectStatus(t);
             if (s != null) return s;
+            // HttpURLConnection.getInputStream() says the status only in its message.
+            if (t instanceof java.io.IOException && t.getMessage() != null) {
+                java.util.regex.Matcher m = URL_CONNECTION_STATUS.matcher(t.getMessage());
+                if (m.find()) return Integer.parseInt(m.group(1));
+            }
         }
         return null;
     }
+
+    private static final Pattern URL_CONNECTION_STATUS =
+            Pattern.compile("Server returned HTTP response code: (\\d{3})");
 
     /** The vendor's answer the exception (or one it wraps) carries. */
     static byte[] answerOf(Throwable error) {

@@ -81,6 +81,13 @@ class VendorCallLogTest {
     }
 
     @Test
+    void anHttpUrlConnectionErrorGivesItsStatus() throws Exception {
+        VendorCallLog.failed("https://api.plivo.com/v1/Account/X/Recording/1.mp3", "fetch recording", null,
+                new java.io.IOException("Server returned HTTP response code: 404 for URL: https://api.plivo.com/x"));
+        assertEquals(404, next().httpStatus());
+    }
+
+    @Test
     void wrappedVendorErrorIsFound() throws Exception {
         RuntimeException wrapped = new RuntimeException("WATI send failed",
                 HttpServerErrorException.create(HttpStatus.SERVICE_UNAVAILABLE, "Unavailable", new HttpHeaders(),
