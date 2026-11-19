@@ -5,7 +5,7 @@ import java.util.Set;
 
 /**
  * String constants for the marketing feature (ad spend sync + social posting). Every status,
- * provider and platform stored in the V660 tables is a plain String column; these are the only
+ * provider and platform stored in the V732 tables is a plain String column; these are the only
  * values the code writes.
  */
 public final class MarketingConstants {

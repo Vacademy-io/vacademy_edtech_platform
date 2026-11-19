@@ -31,7 +31,7 @@ YouTube is **not** connected here. It reuses Settings → YouTube Integration (`
 1. The dashboard calls `POST /initiate?instituteId&provider&frontendOrigin` **with credentials**. This needs an institute admin.
    - It saves an `oauth_connect_state` row (vendor `MKT_<provider>`, 10 min TTL).
    - It returns `{oauth_url, session_key}`.
-   - It sets an HttpOnly cookie `mkt_oauth_<state>` holding a random nonce. The nonce's SHA-256 is stored in `oauth_connect_state.browser_nonce_hash` (V661).
+   - It sets an HttpOnly cookie `mkt_oauth_<state>` holding a random nonce. The nonce's SHA-256 is stored in `oauth_connect_state.browser_nonce_hash` (V733).
 2. The browser goes to the consent screen, which redirects to the public `GET /meta/callback` or `/google/callback`.
    - The callback refuses with `invalid_state` unless the cookie matches. This stops an attacker from sending their consent link to someone else and capturing that person's Page or ad account.
    - It exchanges the code server-side; tokens are AES-GCM encrypted (`TokenEncryptionService`) and never reach the browser.
@@ -73,7 +73,7 @@ SQL is in `AdPerformanceSql`; assembly is in `AdPerformanceReportService`. Dates
   1. `source_type`: Meta lead-ad types → META; `GOOGLE_LEAD_ADS` / `GOOGLE_ADS` → GOOGLE, or YOUTUBE when its campaign is a VIDEO campaign.
   2. Otherwise the person's first-touch `utm_attribution.utm_source`: facebook/fb/instagram/ig/meta → META, google/adwords/gads → GOOGLE, youtube/yt → YOUTUBE.
 
-  The campaign is `source_id`, or else a numeric `utm_campaign`. Anything that matches no campaign goes into a per-platform "Other / not matched" row.
+  The campaign is the lead's `audience_response.ad_campaign_id` (V672), else a numeric `source_id`, else a numeric `utm_campaign`. Anything that matches no campaign goes into a per-platform "Other / not matched" row.
 - **Admissions** = `user_lead_profile.conversion_status = 'CONVERTED'` with `converted_at` in the window. Each is attributed through that person's **earliest** ad-attributed response of any date. `audience_response.conversion_status` is never written, so do not use it.
 - `unattributed` = enquiries and admissions with no ad platform, shown for context.
 - **Suggestion**:
@@ -85,7 +85,7 @@ SQL is in `AdPerformanceSql`; assembly is in `AdPerformanceReportService`. Dates
 
 Known limitation: organic social traffic tagged `utm_source=instagram` counts as META, the same as paid traffic. Tag organic links with a different source (for example `ig_organic`) if that matters.
 
-Meta lead-ad intake (`MetaLeadAdsStrategy`) now also requests `campaign_id` and `adset_id` so leads join to spend. If Meta rejects those fields, it retries once with the old field list, so lead intake cannot break.
+Lead-ad intake records the ad each lead came from in `audience_response.ad_campaign_id`, `ad_set_id`, `ad_id` and the matching names (V672, `MetaLeadAdsStrategy` / `GoogleLeadFormStrategy`). That is what joins enquiries to campaign spend. Leads created before V672 fall back to `source_id` or the UTM touch.
 
 ---
 
@@ -143,7 +143,7 @@ The dashboard polls the post list every 15 s while anything is PUBLISHING or jus
 
 ## 4. Data model
 
-Migrations: `V660__Marketing_ads_and_social.sql` (tables) and `V661__Marketing_oauth_browser_binding.sql` (adds `oauth_connect_state.browser_nonce_hash`).
+Migrations: `V732__Marketing_ads_and_social.sql` (tables) and `V733__Marketing_oauth_browser_binding.sql` (adds `oauth_connect_state.browser_nonce_hash`).
 
 | Table | Key columns |
 |---|---|
