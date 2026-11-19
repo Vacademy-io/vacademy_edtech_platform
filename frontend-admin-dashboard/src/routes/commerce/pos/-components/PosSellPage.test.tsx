@@ -375,10 +375,13 @@ describe('PosSellPage: measured goods fix round (WP-44 W6, W8)', () => {
     });
 
     it('W8: a paper bill takes 2.3 m of a roll sold in 0.5 m steps (recorded as written)', async () => {
-        mocked.quoteBill.mockResolvedValue({
-            ...quote(460, [{ ref: 'l1', net: 460 }]),
-            unavailable: [{ line_ref: 'l1', reason: 'QUANTITY_STEP' }],
-        });
+        // What the server answers: a paper-bill quote prices 2.3 m (200.00 a metre = ₹460.00); the
+        // till's quote (no paper_bill) refuses it on the step and leaves it unpriced.
+        mocked.quoteBill.mockImplementation(async (body) =>
+            body.paper_bill
+                ? quote(460, [{ ref: 'l1', net: 460 }])
+                : { ...quote(0), unavailable: [{ line_ref: 'l1', reason: 'QUANTITY_STEP' }] }
+        );
         const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         render(
             <QueryClientProvider client={client}>
@@ -389,13 +392,28 @@ describe('PosSellPage: measured goods fix round (WP-44 W6, W8)', () => {
         );
         await screen.findByTestId('pos-scan');
         await catalogueLoaded();
+        fireEvent.change(document.getElementById('pos-book-number') as HTMLInputElement, { target: { value: '1234' } });
         scanInto('V-HOSE');
         const input = await lengthBox();
         fireEvent.change(input, { target: { value: '2.3' } });
         fireEvent.keyDown(input, { key: 'Enter' });
         await waitFor(() => expect(screen.queryByTestId('pos-length-total')).toBeNull());
         await waitFor(() => expect(mocked.quoteBill.mock.calls.at(-1)?.[0].lines[0]?.quantity).toBe(23), { timeout: 2000 });
-        await new Promise((r) => setTimeout(r, 50));
+        const sent = mocked.quoteBill.mock.calls.at(-1)?.[0];
+        expect(sent?.paper_bill).toBe(true);
+        const pay = screen.getByTestId('pos-pay') as HTMLButtonElement;
+        await waitFor(() => expect(pay.disabled).toBe(false));
+        expect(pay.textContent).toContain('₹460.00');
+        expect(screen.getByTestId('pos-total').textContent).toBe('₹460.00');
         expect(screen.queryByText('pos.errors.QUANTITY_STEP')).toBeNull();
+    });
+
+    it('W8: the till sale never sends paper_bill', async () => {
+        renderSell();
+        await screen.findByTestId('pos-scan');
+        await catalogueLoaded();
+        scanInto('V-BOTTLE');
+        await waitFor(() => expect(mocked.quoteBill).toHaveBeenCalled(), { timeout: 2000 });
+        expect(mocked.quoteBill.mock.calls.every(([body]) => !('paper_bill' in body))).toBe(true);
     });
 });

@@ -76,10 +76,10 @@ export function ReceiveTab({ locationId, allPlaces }: TabProps) {
 
     const sources = allPlaces.filter((p) => p.is_source && p.id !== place && p.status !== 'INACTIVE');
 
-    const add = (item: ReceiveItem, scanned = false) => {
-        const outcome = addReceiveItem(lines, item, { scanned });
+    const add = (item: ReceiveItem) => {
+        const outcome = addReceiveItem(lines, item);
         if (outcome.refusal === 'typeLength') {
-            // A measured roll: no 0.1 m from a scan; the length box of its line waits for the typed length.
+            // A measured roll, scanned or picked: no step added; the length box of its line waits for the typed length.
             setLines(outcome.lines);
             setTyped((previous) => ({ ...previous, [item.package_session_id]: previous[item.package_session_id] ?? '' }));
             setMessage({ tone: 'info', text: t('inventory.receive.refusals.typeLength', { item: item.name ?? item.sku ?? '' }) });
@@ -113,7 +113,7 @@ export function ReceiveTab({ locationId, allPlaces }: TabProps) {
                 unit: v.unit,
                 qty_scale: v.qty_scale,
                 qty_step: 1,
-            }, true);
+            });
         } else if (result.kind === 'PIECE') {
             scan.refuse();
             setMessage({ tone: 'danger', text: t('inventory.receive.pieceAlready') });

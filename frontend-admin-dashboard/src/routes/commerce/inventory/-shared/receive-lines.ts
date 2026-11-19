@@ -4,7 +4,7 @@ import { MAX_BASE_UNITS } from './transfer-lines';
 
 /**
  * The lines of a goods receipt on the Receive tab, pure: one line per item;
- * a scan of an item already on the list adds its step; quantities are base
+ * a counted item already on the list adds its step; quantities are base
  * units; one-of-a-kind items come in whole numbers (each piece gets its own
  * label and code at the server).
  */
@@ -34,20 +34,20 @@ const stepOf = (item: ReceiveItem) =>
     (item.stock_mode ?? '').toUpperCase() === 'PIECE' ? 1 : Math.max(1, Math.floor(item.qty_step || 1));
 
 /**
- * Adds an item. A scanned measured item (cloth by the metre) never adds its
- * step (one base unit, 0.1 m): a new line starts empty and its length must be
- * typed (`typeLength`); a scan of a line already there only asks for it.
+ * Adds an item. A measured item (cloth by the metre), scanned or picked from
+ * the list, never adds a step (D3: no sale step on receive): a new line starts
+ * empty and its length must be typed (`typeLength`); the item again, on a line
+ * already there, only asks for it.
  */
 export function addReceiveItem(
     lines: ReceiptLineDraft[],
-    item: ReceiveItem,
-    options: { scanned?: boolean } = {}
+    item: ReceiveItem
 ): { lines: ReceiptLineDraft[]; refusal: ReceiveRefusal | null } {
     if ((item.stock_policy ?? '').toUpperCase() === 'UNTRACKED') return { lines, refusal: 'untracked' };
     const step = stepOf(item);
     const existing = lines.find((l) => l.package_session_id === item.package_session_id);
     const measured = item.qty_scale > 1 && (item.stock_mode ?? '').toUpperCase() !== 'PIECE';
-    if (options.scanned && measured) {
+    if (measured) {
         if (existing) return { lines, refusal: 'typeLength' };
         return { lines: [...lines, { ...item, qty_step: step, quantity: 0 }], refusal: 'typeLength' };
     }

@@ -409,8 +409,15 @@ function billDiscountRequest(state: CartState): BillDiscountRequest | undefined 
     };
 }
 
-/** What `POST /pos/quote` takes: the bill without money, tenders or approval. */
-export function toQuoteRequest(state: CartState, sessionId: string): QuoteRequest {
+/**
+ * What `POST /pos/quote` takes: the bill without money, tenders or approval. `paperBill` (the
+ * bill book, W8) asks the server to price it as the bill-book entry will: without the sale step.
+ */
+export function toQuoteRequest(
+    state: CartState,
+    sessionId: string,
+    options: { paperBill?: boolean } = {}
+): QuoteRequest {
     const customer = customerRequest(state.customer);
     const billDiscount = billDiscountRequest(state);
     return {
@@ -431,6 +438,7 @@ export function toQuoteRequest(state: CartState, sessionId: string): QuoteReques
             : {}),
         ...(customer ? { customer } : {}),
         ...(state.exchange ? { exchange: { return_id: state.exchange.returnId } } : {}),
+        ...(options.paperBill ? { paper_bill: true } : {}),
     };
 }
 

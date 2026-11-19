@@ -330,6 +330,11 @@ export interface QuoteRequest {
     discount_reason?: string;
     customer?: SaleCustomerRequest;
     exchange?: { return_id: string };
+    /**
+     * Quote only: price the bill as the bill-book entry will (a paper bill is keyed in as cut by
+     * hand, so the sale step is not applied). The server refuses it on a sale.
+     */
+    paper_bill?: boolean;
 }
 
 export interface SaleRequest extends QuoteRequest {

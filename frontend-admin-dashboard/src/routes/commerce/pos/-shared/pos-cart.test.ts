@@ -203,6 +203,13 @@ describe('requests', () => {
         expect(body.discount_reason).toBe('Regular customer');
     });
 
+    it('toQuoteRequest: paper_bill only when asked (the bill book, W8); a sale body never carries it', () => {
+        expect(toQuoteRequest(bill(), 'sess-1', { paperBill: true }).paper_bill).toBe(true);
+        expect(toQuoteRequest(bill(), 'sess-1')).not.toHaveProperty('paper_bill');
+        expect(toQuoteRequest(bill(), 'sess-1', { paperBill: false })).not.toHaveProperty('paper_bill');
+        expect(toSaleRequest(bill(), 'sess-1', [], true)).not.toHaveProperty('paper_bill');
+    });
+
     it('toSaleRequest: tenders and notify, exchange with remainder, a phone makes it a named buyer', () => {
         let state = cartReducer(bill(), { type: 'SET_CUSTOMER', customer: { phone: '90000 00000' } });
         state = cartReducer(state, { type: 'SET_EXCHANGE', exchange: { returnId: 'r-1', number: null, credit: 5000 } });

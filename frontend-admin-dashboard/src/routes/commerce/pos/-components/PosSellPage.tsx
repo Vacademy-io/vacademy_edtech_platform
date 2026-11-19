@@ -284,8 +284,9 @@ export function PosBillingWorkspace({
 
     // ── Server price of the bill. ──
     const quoteBody = useMemo(
-        () => (cart.lines.length > 0 ? toQuoteRequest(cart, session.id) : null),
-        [cart, session.id]
+        // W8: the bill book's quote prices the bill as its entry will (no sale step).
+        () => (cart.lines.length > 0 ? toQuoteRequest(cart, session.id, { paperBill: isBook }) : null),
+        [cart, session.id, isBook]
     );
     const debouncedQuote = useDebounced(quoteBody, 300);
     const quote = useQuote(debouncedQuote);
@@ -345,12 +346,9 @@ export function PosBillingWorkspace({
                 apply({ type: 'SET_PRICE', lineRef: change.line_ref, unitPrice: change.unit_price });
             }
         });
-        // W8: a paper bill is recorded as written; the sale step is not its refusal.
-        const refused = new Map(
-            quote.data.unavailable
-                .filter((u) => !(isBook && u.reason === 'QUANTITY_STEP'))
-                .map((u) => [u.line_ref, u.reason])
-        );
+        // Every refusal is marked on its line: an unmarked one would hold Save with no reason shown.
+        // The bill book's quote carries paper_bill, so the server does not refuse it on the step (W8).
+        const refused = new Map(quote.data.unavailable.map((u) => [u.line_ref, u.reason]));
         cartRef.current.lines.forEach((line) => {
             const reason = refused.get(line.lineRef);
             if (reason !== undefined) {
@@ -360,7 +358,7 @@ export function PosBillingWorkspace({
                 apply({ type: 'MARK_LINE', lineRef: line.lineRef, mark: null });
             }
         });
-    }, [quote.data, quote.isPlaceholderData, apply, cartRef, isBook]);
+    }, [quote.data, quote.isPlaceholderData, apply, cartRef]);
 
     const settings = usePosSettings(!access.isManager);
     // The quote names the credit when this cashier may use it; without a number it needs a manager's

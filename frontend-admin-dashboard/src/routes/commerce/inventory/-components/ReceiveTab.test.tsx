@@ -227,6 +227,67 @@ describe('ReceiveTab: measured goods fix round (WP-44 W5, W6)', () => {
         expect(mocked.createReceipt.mock.calls[0]?.[0].lines).toEqual([{ package_session_id: 'ps-cloth', quantity: 235 }]);
     });
 
+    it('addendum 7: a measured item picked from the list opens its empty length box; a repeat pick reopens it', async () => {
+        const pick = (over: Record<string, unknown>) => ({
+            package_session_id: 'ps-cloth',
+            sku: 'CLOTH-1',
+            product_name: 'Cotton cloth',
+            variant_name: null,
+            stock_mode: 'QUANTITY',
+            unit: 'MTR',
+            qty_scale: 10,
+            product_id: 'p-cloth',
+            names: { en: 'Cotton cloth', hi: null },
+            status: 'ACTIVE',
+            stock_policy: 'TRACKED',
+            qty_step: 5,
+            label_code: null,
+            barcode: null,
+            on_hand: null,
+            ...over,
+        });
+        mocked.searchVariants.mockImplementation(async ({ q }) =>
+            q.startsWith('cot')
+                ? [pick({})]
+                : [pick({ package_session_id: 'ps-bottle', sku: 'BTL-1', product_name: 'Bottle', names: { en: 'Bottle', hi: null }, unit: 'PCS', qty_scale: 1, qty_step: 1 })]
+        );
+        const pickFromList = async (text: string, name: string) => {
+            fireEvent.change(screen.getByTestId('stock-scan'), { target: { value: text } });
+            fireEvent.click(await screen.findByRole('button', { name: new RegExp(name) }));
+        };
+        renderTab();
+        fireEvent.click(screen.getByText('inventory.receive.sourceOpening'));
+
+        await pickFromList('cot', 'Cotton cloth');
+        const box = (await screen.findByLabelText('inventory.receive.quantity')) as HTMLInputElement;
+        // No sale step (0.5 m) added: the box waits for the typed length and Save waits for it (W5).
+        expect(box.value).toBe('');
+        await waitFor(() => expect(document.activeElement).toBe(box));
+        expect(screen.getByTestId('receive-save')).toBeDisabled();
+        expect(screen.getByText('units.problems.blank')).toBeTruthy();
+
+        fireEvent.change(box, { target: { value: '12.5' } });
+        (screen.getByTestId('stock-scan') as HTMLInputElement).focus();
+        await pickFromList('cot', 'Cotton cloth');
+        // The same line's box again, its length kept: nothing added.
+        expect(screen.getAllByLabelText('inventory.receive.quantity')).toHaveLength(1);
+        expect(box.value).toBe('12.5');
+        await waitFor(() => expect(document.activeElement).toBe(box));
+
+        // A counted item still adds its step on each pick.
+        await pickFromList('bot', 'Bottle');
+        await pickFromList('bot', 'Bottle');
+        const boxes = screen.getAllByLabelText('inventory.receive.quantity') as HTMLInputElement[];
+        expect(boxes[1]?.value).toBe('2');
+
+        fireEvent.click(screen.getByTestId('receive-save'));
+        await waitFor(() => expect(mocked.createReceipt).toHaveBeenCalledTimes(1));
+        expect(mocked.createReceipt.mock.calls[0]?.[0].lines).toEqual([
+            { package_session_id: 'ps-cloth', quantity: 125 },
+            { package_session_id: 'ps-bottle', quantity: 2 },
+        ]);
+    });
+
     it('W6: a label scanned into the length box is looked up as a scan and the box keeps its length', async () => {
         const box = await startWithRoll();
         fireEvent.change(box, { target: { value: '2' } });
