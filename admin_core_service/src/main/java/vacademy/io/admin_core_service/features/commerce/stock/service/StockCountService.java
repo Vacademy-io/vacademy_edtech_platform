@@ -273,12 +273,25 @@ public class StockCountService {
             Map<String, StockLocation> places = locations(instituteId);
             Map<String, String> collections = readRepository.collectionNames(instituteId,
                     rows.getContent().stream().map(StockCount::getScopeCollectionId).filter(id -> id != null).toList());
+            // Open counts are few (one a location, plus its recount): their actions cost a read each.
+            Set<String> openRecountOf = new HashSet<>();
+            for (StockCount count : rows.getContent()) {
+                if (StockCountKind.COUNT.name().equals(count.getKind())
+                        && StockCountStatus.OPEN.name().equals(count.getStatus())) {
+                    for (StockCount recount : countRepository.findRecountsOf(instituteId, count.getId())) {
+                        if (StockCountStatus.OPEN.name().equals(recount.getStatus())) {
+                            openRecountOf.add(count.getId());
+                        }
+                    }
+                }
+            }
             List<CountRow> out = new ArrayList<>();
             for (StockCount count : rows.getContent()) {
                 out.add(new CountRow(count.getId(), count.getCountNumber(), count.getKind(), count.getStatus(),
                         location(places, count.getLocationId()), collection(collections, count.getScopeCollectionId()),
                         count.getStartedBy(), text(count.getStartedAt()), text(count.getPostedAt()),
-                        totals.getOrDefault(count.getId(), 0L), count.getRecountOfCountId()));
+                        totals.getOrDefault(count.getId(), 0L), count.getRecountOfCountId(),
+                        nextActions(instituteId, count, caller, openRecountOf.contains(count.getId()))));
             }
             return new CountsAnswer(out, pageNo, pageSize, rows.getTotalElements());
         });
@@ -660,7 +673,8 @@ public class StockCountService {
     /** The review, the movements it posts and the line results; the same code with or without locks. */
     private record Model(CountReview review, List<StockPosting> postings, Map<String, LineResult> lineResults,
                          BigDecimal absoluteValue, boolean overLimit, Map<String, Object> summary,
-                         List<String> needsRecount, List<String> measured, String fingerprint) {
+                         List<String> needsRecount, List<String> measured, String fingerprint,
+                         String zeroPrint) {
     }
 
     /** What the post stamps on a line. */
@@ -860,12 +874,18 @@ public class StockCountService {
         List<ReviewPiece> arrived = sets.arrivedDuringCount().stream()
                 .map(id -> reviewPiece(hereById.get(id), facts, places)).toList();
 
-        // Items nobody counted.
+        // Items nobody counted. What ZERO would write off (each quantity item's on hand, and the
+        // pieces of items nobody scanned) is printed whatever the choice, so a review taken
+        // without a choice binds a ZERO post to the same write-off.
+        StringBuilder zeroPrint = new StringBuilder();
         Set<String> countedVariants = new HashSet<>(counted);
         List<UncountedItem> uncounted = new ArrayList<>();
         for (String variant : StockCountMath.uncounted(levels, countedVariants)) {
             ItemFacts item = facts.get(variant);
             int onHand = levels.get(variant);
+            if (item != null && !item.piece()) {
+                zeroPrint.append(variant).append(':').append(onHand).append(';');
+            }
             uncounted.add(new UncountedItem(variant, item == null ? null : item.sku(),
                     item == null ? null : item.productName(), item == null ? null : item.variantName(),
                     item == null ? null : item.stockMode(), item == null ? null : item.unit(),
@@ -883,10 +903,15 @@ public class StockCountService {
 
         ReviewTotals totals = new ReviewTotals(linesWithDifference, unitsUp, unitsDown,
                 withValue ? valueUp : null, withValue ? valueDown : null);
+        List<String> zeroPieces = new ArrayList<>(StockCountMath.pieceSets(pieceHere, scanned.keySet(),
+                scannedVariants, UncountedChoice.ZERO).missing());
+        zeroPieces.sort(null);
+        zeroPieces.forEach(pieceId -> zeroPrint.append("P").append(pieceId).append(';'));
         String print = sha256(fingerprint.toString());
+        String zero = sha256(zeroPrint.toString());
         CountReview review = new CountReview(count.getId(), LocalDateTime.now().toString(), reviewLines, uncounted,
                 missing, found, misplaced, notInStock, reserved, arrived, totals, over, needsRecount.size(),
-                !measured.isEmpty(), print);
+                !measured.isEmpty(), print + "." + zero);
 
         Map<String, Object> summary = new LinkedHashMap<>();
         summary.put("lines", lines.size());
@@ -908,7 +933,7 @@ public class StockCountService {
         detail.put("reserved_not_counted", reserved);
         detail.put("arrived_during_count", arrived);
         summary.put("detail", detail);
-        return new Model(review, postings, results, absolute, over, summary, needsRecount, measured, print);
+        return new Model(review, postings, results, absolute, over, summary, needsRecount, measured, print, zero);
     }
 
     private static String sha256(String text) {
@@ -1029,7 +1054,7 @@ public class StockCountService {
         boolean manager = caller.manager();
         boolean confirmMeasured = Boolean.TRUE.equals(request.confirmMeasured());
         String reviewed = StockTransferService.blankToNull(request.reviewFingerprint());
-        requireReviewed(before, reviewed);
+        requireReviewed(before, reviewed, choice);
         requirePostable(before, manager, confirmMeasured);
         Approval approval = request.approval();
         boolean approvalGiven = approval != null && StockTransferService.blankToNull(approval.approverUserId()) != null
@@ -1057,13 +1082,15 @@ public class StockCountService {
             locationRepository.lockForPosting(instituteId, locked.getLocationId())
                     .orElseThrow(() -> new InvalidRequestException("LOCATION_NOT_FOUND: the count's location"));
             Model model = build(instituteId, locked, choice, true, true);
-            requireReviewed(model, reviewed);
+            // Under the lock: the lines, and with ZERO the write-off of uncounted items, as reviewed.
+            requireReviewed(model, reviewed, choice);
             requirePostable(model, manager, confirmMeasured);
             if (model.overLimit() && !manager && approvedBy == null) {
                 throw new CommerceAccessDeniedException(StockTransferService.APPROVAL_REQUIRED,
                         "this count has differences above your limit and needs a manager");
             }
-            if (approvedBy != null && !model.fingerprint().equals(before.fingerprint())) {
+            if (approvedBy != null && (!model.fingerprint().equals(before.fingerprint())
+                    || (choice == UncountedChoice.ZERO && !model.zeroPrint().equals(before.zeroPrint())))) {
                 // The manager approved the lines as they were; lines saved since were not approved.
                 throw new CommerceAccessDeniedException(StockTransferService.APPROVAL_REQUIRED,
                         "the count changed after the manager approved it; review it and approve again");
@@ -1110,9 +1137,23 @@ public class StockCountService {
         }, current));
     }
 
-    /** 409 COUNT_CHANGED when the post names the review it was approved on and the lines changed since. */
-    private static void requireReviewed(Model model, String reviewed) {
-        if (reviewed != null && !reviewed.equals(model.fingerprint())) {
+    /**
+     * 409 COUNT_CHANGED when the post names the review it was approved on and the lines changed
+     * since, or (ZERO) what is written off for uncounted items changed: an item came into scope or
+     * its stock here changed after the review. A fingerprint without the uncounted part (a screen
+     * loaded before it existed) binds the lines only.
+     */
+    private static void requireReviewed(Model model, String reviewed, UncountedChoice choice) {
+        if (reviewed == null) {
+            return;
+        }
+        int dot = reviewed.indexOf('.');
+        String lines = dot < 0 ? reviewed : reviewed.substring(0, dot);
+        boolean changed = !lines.equals(model.fingerprint());
+        if (!changed && dot >= 0 && choice == UncountedChoice.ZERO) {
+            changed = !reviewed.substring(dot + 1).equals(model.zeroPrint());
+        }
+        if (changed) {
             throw new ConflictException("COUNT_CHANGED: lines of this count changed since it was reviewed; review it "
                     + "again");
         }
@@ -1220,7 +1261,6 @@ public class StockCountService {
         List<StockCountLine> lines = lineRepository.findByInstituteIdAndCountIdOrderByCreatedAtAscIdAsc(instituteId,
                 count.getId());
         boolean isCount = StockCountKind.COUNT.name().equals(count.getKind());
-        boolean open = StockCountStatus.OPEN.name().equals(count.getStatus());
         RecountRef recount = null;
         boolean recountOpen = false;
         if (isCount) {
@@ -1243,6 +1283,23 @@ public class StockCountService {
                 summary.remove("value_down");
             }
         }
+        List<String> actions = nextActions(instituteId, count, caller, recountOpen);
+        return new CountView(count.getId(), count.getCountNumber(), count.getKind(), count.getStatus(),
+                location(places, count.getLocationId()), collection(collections, count.getScopeCollectionId()),
+                count.getRecountOfCountId(), recount, count.getNote(), count.getStartedBy(), text(count.getStartedAt()),
+                text(count.getPostedAt()), count.getPostedBy(), count.getUncountedChoice(), summary,
+                lineViews(instituteId, lines), lines.size(), actions, null);
+    }
+
+    /**
+     * What the caller may do with a count, the same on the count and in the list: on an open
+     * COUNT, COUNT, REVIEW, POST (no recount open), ACCEPT (manager), CANCEL (starter or manager)
+     * and RECOUNT (not a main counter, no recount open); on an open RECOUNT, COUNT and POST for
+     * its worker; REVIEW on a posted COUNT.
+     */
+    private List<String> nextActions(String instituteId, StockCount count, Caller caller, boolean recountOpen) {
+        boolean isCount = StockCountKind.COUNT.name().equals(count.getKind());
+        boolean open = StockCountStatus.OPEN.name().equals(count.getStatus());
         List<String> actions = new ArrayList<>();
         if (open && caller != null && caller.actsAt(count.getLocationId())) {
             if (isCount) {
@@ -1272,11 +1329,7 @@ public class StockCountService {
                 && caller.actsAt(count.getLocationId())) {
             actions.add("REVIEW");
         }
-        return new CountView(count.getId(), count.getCountNumber(), count.getKind(), count.getStatus(),
-                location(places, count.getLocationId()), collection(collections, count.getScopeCollectionId()),
-                count.getRecountOfCountId(), recount, count.getNote(), count.getStartedBy(), text(count.getStartedAt()),
-                text(count.getPostedAt()), count.getPostedBy(), count.getUncountedChoice(), summary,
-                lineViews(instituteId, lines), lines.size(), actions, null);
+        return actions;
     }
 
     private Agreement agreementOf(StockCount recount) {

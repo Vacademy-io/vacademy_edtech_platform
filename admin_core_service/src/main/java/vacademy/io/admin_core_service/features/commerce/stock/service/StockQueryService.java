@@ -112,9 +112,10 @@ public class StockQueryService {
                 throw new InvalidRequestException("type is not a stock movement type");
             }
         }
-        // Both ends are always given: a null timestamp parameter has no type for Postgres.
-        LocalDateTime fromTime = (from != null ? from : LocalDate.of(2000, 1, 1)).atStartOfDay();
-        LocalDateTime toTime = (to != null ? to.plusDays(1) : LocalDate.of(2200, 1, 1)).atStartOfDay();
+        // Both ends are always given: a null timestamp parameter has no type for Postgres. The dates
+        // are India days, as in the CSV export.
+        LocalDateTime fromTime = StockClock.storedStartOf(from != null ? from : LocalDate.of(2000, 1, 1));
+        LocalDateTime toTime = StockClock.storedStartOf(to != null ? to.plusDays(1) : LocalDate.of(2200, 1, 1));
         boolean all = locationIds == null;
         Page<StockMovement> rows = movementRepository.search(instituteId, all, all ? NO_FILTER : locationIds,
                 blankToNull(packageSessionId), typeName, fromTime, toTime,

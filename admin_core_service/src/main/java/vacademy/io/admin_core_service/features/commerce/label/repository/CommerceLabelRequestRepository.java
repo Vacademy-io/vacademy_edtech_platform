@@ -79,6 +79,19 @@ public interface CommerceLabelRequestRepository extends JpaRepository<CommerceLa
                     @Param("printedAt") LocalDateTime printedAt, @Param("actor") String actor,
                     @Param("price") BigDecimal price, @Param("mrp") BigDecimal mrp);
 
+    /**
+     * Part of a row's labels were printed: the row keeps waiting with the rest. 1 = done; 0 = the
+     * row is not PENDING or has no more than :copies left (then it is printed in full).
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE commerce_label_request
+            SET quantity = quantity - :copies, updated_at = CURRENT_TIMESTAMP
+            WHERE institute_id = :instituteId AND id = :id AND status = 'PENDING' AND quantity > :copies
+            """, nativeQuery = true)
+    int markPartlyPrinted(@Param("instituteId") String instituteId, @Param("id") String id,
+                          @Param("copies") int copies);
+
     /** :locationIds is ignored when :allLocations is true (pass any non-empty list). */
     @Query("""
             SELECT r FROM CommerceLabelRequest r

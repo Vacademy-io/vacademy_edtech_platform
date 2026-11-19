@@ -18,6 +18,7 @@ import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.Labe
 import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.LabelRequestsRequest;
 import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.LabelRow;
 import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.LabelsAnswer;
+import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.LeftOutLabel;
 import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.Names;
 import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.PrintDataAnswer;
 import vacademy.io.admin_core_service.features.commerce.label.dto.LabelDtos.PrintDataRequest;
@@ -87,6 +88,7 @@ public class LabelQueueService {
     public static final String ACTION_REQUEST = "LABEL_REQUEST";
     public static final String ACTION_CANCEL = "LABEL_CANCEL";
     public static final String ACTION_PRINTED = "LABEL_MARK_PRINTED";
+    public static final String AUDIT_PART_PRINTED = "LABEL_PART_PRINTED";
     public static final String REFERENCE_LABELS = "LABEL_REQUEST";
 
     static final int MAX_QUANTITY = 10_000;
@@ -429,10 +431,15 @@ public class LabelQueueService {
         }).value();
     }
 
-    /** After the print dialog: the rows are PRINTED, with the price and MRP of today stamped on them. */
+    /**
+     * After the print dialog: the rows are PRINTED, with the price and MRP of today stamped on them.
+     * A row the print drew in part ({@code printed_copies}) keeps waiting with the labels that were
+     * not drawn, so a receipt line of more than 500 units prints in rounds of at most 500.
+     */
     public PrintedAnswer markPrinted(String instituteId, Caller caller, LabelIdsRequest request) {
         List<String> ids = ids(request);
         String key = CommerceRequestGuard.requireClientKey(request.clientRequestId());
+        Map<String, Integer> partCopies = partCopies(request.printedCopies(), ids);
         CommerceRequestGuard.Key guardKey = new CommerceRequestGuard.Key(instituteId, key, ACTION_PRINTED,
                 REFERENCE_LABELS, null, CommerceRequestGuard.hash(ACTION_PRINTED, request), caller.userId());
         return requestGuard.run(guardKey, () -> {
@@ -444,8 +451,24 @@ public class LabelQueueService {
             int printed = 0;
             // A chunk may name rows an earlier chunk (or another screen) already marked: skipped, not refused.
             List<String> skipped = new ArrayList<>(ids);
+            List<String> partly = new ArrayList<>();
             for (CommerceLabelRequest row : rows) {
                 CartVariant price = prices.get(row.getPackageSessionId());
+                Integer part = partCopies.get(row.getId());
+                if (part != null && repository.markPartlyPrinted(instituteId, row.getId(), part) > 0) {
+                    // The rest of the row's labels keep waiting for the next print.
+                    partly.add(row.getId());
+                    skipped.remove(row.getId());
+                    Map<String, Object> audit = new LinkedHashMap<>();
+                    audit.put("package_session_id", row.getPackageSessionId());
+                    audit.put("copies_printed", part);
+                    audit.put("copies_waiting", row.getQuantity() - part);
+                    audit.put("price", price == null ? null : price.price());
+                    audit.put("mrp", mrpOf(price));
+                    auditService.record(instituteId, caller.userId(), row.getLocationId(), AUDIT_PART_PRINTED,
+                            REFERENCE_LABELS, row.getId(), null, json(audit), null);
+                    continue;
+                }
                 int marked = repository.markPrinted(instituteId, row.getId(), now, caller.userId(),
                         price == null ? null : price.price(), mrpOf(price));
                 printed += marked;
@@ -453,7 +476,8 @@ public class LabelQueueService {
                     skipped.remove(row.getId());
                 }
             }
-            return new PrintedAnswer(printed, skipped.isEmpty() ? null : skipped, null);
+            return new PrintedAnswer(printed, skipped.isEmpty() ? null : skipped, null,
+                    partly.isEmpty() ? null : partly);
         }, () -> {
             int printed = 0;
             for (CommerceLabelRequest row : repository.findByInstituteIdAndIdIn(instituteId, ids)) {
@@ -465,13 +489,35 @@ public class LabelQueueService {
         }).value();
     }
 
+    /** {@code printed_copies}: ids of this request only, each 1 to 500 labels. */
+    private static Map<String, Integer> partCopies(Map<String, Integer> raw, List<String> ids) {
+        if (raw == null || raw.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, Integer> out = new HashMap<>();
+        raw.forEach((id, copies) -> {
+            String clean = blankToNull(id);
+            if (clean == null || !ids.contains(clean)) {
+                throw new InvalidRequestException("VALIDATION: printed_copies names a request id that is not in "
+                        + "request_ids");
+            }
+            if (copies == null || copies < 1 || copies > MAX_COPIES) {
+                throw new InvalidRequestException("VALIDATION: printed_copies is 1 to " + MAX_COPIES + " labels");
+            }
+            out.put(clean, copies);
+        });
+        return out;
+    }
+
     // ================================================================== print data
 
     /**
      * What the browser draws, per label: the scan code, the QR text, the names in English and
      * Hindi, the price. Only PENDING rows (a printed label is printed again through a reprint
      * request). A quantity row of a variant with no label code yet gets one here, in a short write
-     * transaction; nothing else changes.
+     * transaction; nothing else changes. At most 500 labels are drawn at once: the rows that do not
+     * fit (a receipt line of more than 500 units, or many lines) are drawn in part or not at all,
+     * listed in {@code left_out}, and wait for the next print.
      */
     public PrintDataAnswer printData(String instituteId, Caller caller, PrintDataRequest request) {
         if (request == null) {
@@ -544,7 +590,9 @@ public class LabelQueueService {
                 .thenComparing(r -> r.getPieceId() == null ? "" : nullToEmpty(codes.get(r.getPieceId()))));
         List<PrintLabel> out = new ArrayList<>();
         List<SkippedLabel> skipped = new ArrayList<>();
+        List<LeftOutLabel> leftOut = new ArrayList<>();
         int copies = 0;
+        int leftOutCopies = 0;
         for (CommerceLabelRequest row : sorted) {
             ItemFacts item = facts.get(row.getPackageSessionId());
             CartVariant price = prices.get(row.getPackageSessionId());
@@ -552,6 +600,15 @@ public class LabelQueueService {
             if (price == null || price.price() == null || price.price().signum() <= 0) {
                 // An item with no price yet (a quick add) waits; the other labels print.
                 skipped.add(new SkippedLabel(row.getId(), sku, "NO_PRICE"));
+                continue;
+            }
+            // Every copy of a row is the same label, so a row that does not fit is drawn in part.
+            int drawn = Math.min(row.getQuantity(), MAX_COPIES - copies);
+            if (drawn < row.getQuantity()) {
+                leftOut.add(new LeftOutLabel(row.getId(), sku, row.getQuantity() - drawn));
+                leftOutCopies += row.getQuantity() - drawn;
+            }
+            if (drawn <= 0) {
                 continue;
             }
             String code = row.getPieceId() != null ? codes.get(row.getPieceId()) : item == null ? null : item.labelCode();
@@ -562,19 +619,17 @@ public class LabelQueueService {
                     variantNames(price), price.price().multiply(perUnit).setScale(2, java.math.RoundingMode.HALF_UP),
                     mrp == null ? null : mrp.multiply(perUnit).setScale(2, java.math.RoundingMode.HALF_UP),
                     price.currency() == null ? "INR" : price.currency(), item == null ? null : item.unit(), scale,
-                    row.getQuantity(), row.getPieceId()));
-            copies += row.getQuantity();
+                    drawn, row.getPieceId()));
+            copies += drawn;
         }
         if (out.isEmpty() && !skipped.isEmpty()) {
             throw new ConflictException("LABEL_NO_PRICE: " + skipped.get(0).sku() + " has no price yet; a manager "
                     + "sets it first");
         }
-        if (copies > MAX_COPIES) {
-            throw new InvalidRequestException("LABELS_TOO_MANY: at most " + MAX_COPIES + " labels at once");
-        }
         Map<String, String> shopName = shop.shopName() == null ? Map.of() : shop.shopName();
         return new PrintDataAnswer(size, new Names(shopName.get("en"), shopName.get("hi")), out, copies,
-                skipped.isEmpty() ? null : skipped);
+                skipped.isEmpty() ? null : skipped, leftOut.isEmpty() ? null : leftOut,
+                leftOut.isEmpty() ? null : leftOutCopies);
     }
 
     private String linkBase(String instituteId, CommerceNotificationShopSettings.Shop shop) {

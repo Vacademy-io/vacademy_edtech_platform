@@ -209,7 +209,8 @@ public final class StockOpsDtos {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     /**
      * {@code review_fingerprint}: the {@code fingerprint} of the review the person (and the manager
-     * giving a PIN) looked at; when sent, a count whose lines changed since is refused.
+     * giving a PIN) looked at; when sent, a count whose lines changed since is refused, and with
+     * {@code uncounted: ZERO} also one whose uncounted items (what ZERO writes off) changed since.
      */
     public record CountPostRequest(String clientRequestId, String uncounted, Approval approval,
                                    Boolean confirmMeasured, String reviewFingerprint) {
@@ -271,9 +272,10 @@ public final class StockOpsDtos {
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    /** {@code next_actions}: what the caller may do with the count, as on the count itself (e.g. RECOUNT). */
     public record CountRow(String id, String countNumber, String kind, String status, LocationRef location,
                            CollectionRef scopeCollection, String startedBy, String startedAt, String postedAt,
-                           long lineCount, String recountOfCountId) {
+                           long lineCount, String recountOfCountId, List<String> nextActions) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

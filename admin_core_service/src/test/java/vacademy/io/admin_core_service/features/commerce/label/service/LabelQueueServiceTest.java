@@ -312,6 +312,56 @@ class LabelQueueServiceTest {
         assertEquals(List.of("row-1", "row-gone"), printed.skipped());
     }
 
+    /** Item 1: a receipt line of more than 500 units prints in rounds of at most 500, never blocks the rest. */
+    @Test
+    void printDataDrawsAtMost500LabelsAndMarkPrintedKeepsTheRestWaiting() {
+        CommerceLabelRequest big = pending("row-1", "ps-bottle", 1200);
+        CommerceLabelRequest small = pending("row-2", "ps-spoon", 3);
+        when(repository.findByInstituteIdAndIdIn(INST, List.of("row-1", "row-2"))).thenReturn(List.of(big, small));
+        when(reads.itemFacts(eq(INST), anyCollection())).thenReturn(Map.of(
+                "ps-bottle", item("ps-bottle", "QUANTITY", "TRACKED", "ACTIVE"),
+                "ps-spoon", item("ps-spoon", "QUANTITY", "TRACKED", "ACTIVE")));
+        CartVariant bottlePrice = priced("450.00");
+        CartVariant spoonPrice = priced("60.00");
+        when(snapshots.cartVariants(eq(INST), anyCollection(), anyList())).thenReturn(Map.of("ps-bottle", bottlePrice,
+                "ps-spoon", spoonPrice));
+        LabelDtos.PrintDataAnswer data = service.printData(INST, staffAtL1,
+                new LabelDtos.PrintDataRequest(List.of("row-1", "row-2"), null, null));
+        assertEquals(500, data.totalCopies(), "one print draws at most 500 labels");
+        assertEquals(1, data.labels().size());
+        assertEquals("row-1", data.labels().get(0).requestId());
+        assertEquals(500, data.labels().get(0).copies());
+        assertEquals(703, data.leftOutCopies());
+        assertEquals(List.of(new LabelDtos.LeftOutLabel("row-1", "SKU-ps-bottle", 700),
+                new LabelDtos.LeftOutLabel("row-2", "SKU-ps-spoon", 3)), data.leftOut());
+
+        // "Yes, printed" for the drawn part: the row keeps waiting with 700, nothing is stamped printed.
+        when(repository.findByInstituteIdAndIdIn(INST, List.of("row-1"))).thenReturn(List.of(big));
+        when(repository.markPartlyPrinted(INST, "row-1", 500)).thenReturn(1);
+        LabelDtos.PrintedAnswer part = service.markPrinted(INST, staffAtL1,
+                new LabelDtos.LabelIdsRequest("printed-0101", List.of("row-1"), Map.of("row-1", 500)));
+        assertEquals(0, part.printed());
+        assertEquals(List.of("row-1"), part.partly());
+        verify(repository, never()).markPrinted(anyString(), anyString(), any(), anyString(), any(), any());
+        verify(audit).record(eq(INST), eq("wh-1"), eq(L1), eq(LabelQueueService.AUDIT_PART_PRINTED), anyString(),
+                eq("row-1"), isNull(), anyString(), isNull());
+
+        // The last round: fewer labels left than were drawn, so the row is printed in full.
+        when(repository.markPartlyPrinted(INST, "row-1", 200)).thenReturn(0);
+        when(repository.markPrinted(eq(INST), eq("row-1"), any(LocalDateTime.class), eq("wh-1"), any(), any()))
+                .thenReturn(1);
+        LabelDtos.PrintedAnswer last = service.markPrinted(INST, staffAtL1,
+                new LabelDtos.LabelIdsRequest("printed-0102", List.of("row-1"), Map.of("row-1", 200)));
+        assertEquals(1, last.printed());
+        assertEquals(null, last.partly());
+
+        // printed_copies names only ids of the request, 1 to 500 each.
+        assertThrows(InvalidRequestException.class, () -> service.markPrinted(INST, staffAtL1,
+                new LabelDtos.LabelIdsRequest("printed-0103", List.of("row-1"), Map.of("row-9", 5))));
+        assertThrows(InvalidRequestException.class, () -> service.markPrinted(INST, staffAtL1,
+                new LabelDtos.LabelIdsRequest("printed-0104", List.of("row-1"), Map.of("row-1", 501))));
+    }
+
     @Test
     void tagsToReplaceSayHowManyLabelsEachItemNeeds() {
         CommerceLabelRequestRepository.LastPrinted scarf = last("ps-scarf");

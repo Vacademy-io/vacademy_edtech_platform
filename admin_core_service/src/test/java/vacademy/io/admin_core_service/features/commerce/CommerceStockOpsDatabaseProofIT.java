@@ -1572,11 +1572,13 @@ class CommerceStockOpsDatabaseProofIT {
                 key(), l1, "REPRINT", "TORN", null, List.of(new LabelDtos.LabelLineInput(null, null, reprinted, null))))));
         assertEquals("PIECE_SCAN_REQUIRED", code(() -> labels.request(w1, inst, new LabelDtos.LabelRequestsRequest(
                 key(), l1, "REPRINT", "TORN", null, List.of(new LabelDtos.LabelLineInput(scarf, 1, null, null))))));
-        // More than 500 labels at once.
+        // More than 500 labels at once: one print draws 500, the rest waits (the full round trip is test 22).
         LabelDtos.LabelsAnswer many = body(labels.request(w1, inst, new LabelDtos.LabelRequestsRequest(key(), l1,
                 "PRICE_CHANGE", null, null, List.of(new LabelDtos.LabelLineInput(bottle, 501, null, null)))));
-        assertEquals("LABELS_TOO_MANY", code(() -> labels.printData(w1, inst, new LabelDtos.PrintDataRequest(
-                List.of(many.requests().get(0).id()), null, null))));
+        LabelDtos.PrintDataAnswer most = body(labels.printData(w1, inst, new LabelDtos.PrintDataRequest(
+                List.of(many.requests().get(0).id()), null, null)));
+        assertEquals(500, most.totalCopies());
+        assertEquals(1, most.leftOutCopies());
         assertEquals(1, body(labels.cancel(w1, inst, new LabelDtos.LabelIdsRequest(key(),
                 List.of(many.requests().get(0).id(), ids.get(0))))).cancelled());
 
@@ -2200,6 +2202,140 @@ class CommerceStockOpsDatabaseProofIT {
         assertEquals("POSTED", posted.status());
         assertEquals(1, count("SELECT count(*) FROM commerce_approval WHERE reference_id = ?", open.id()));
         assertEquals(0, onHand(l1, plate));
+    }
+
+    /**
+     * A PIN given on a review covers what ZERO writes off as it was reviewed: an uncounted item
+     * received into scope after the review is not written off under it. A SKIP post does not
+     * write uncounted items off, so the same receipt does not stop it.
+     */
+    @Test
+    @Order(20)
+    void aZeroPostCoversOnlyTheUncountedItemsThatWereReviewed() throws Exception {
+        CountView open = openCount(w1, l1, "COUNT", corner, null);
+        countLines(w1, open.id(), set(plate, onHand(l1, plate) + 1));
+        StockOpsDtos.CountReview seen = body(counts.review(w1, inst, open.id()));
+        String postKey = key();
+        assertEquals("APPROVAL_REQUIRED", code(() -> counts.post(w1, inst, open.id(),
+                new StockOpsDtos.CountPostRequest(postKey, "ZERO", null, null, seen.fingerprint()))));
+        // While the manager types the PIN, a delivery of the uncounted tray is received.
+        int trays = onHand(l1, tray);
+        receive(w1Id, l1, tray, 2, null);
+        long before = movements();
+        assertEquals("COUNT_CHANGED", code(() -> counts.post(w1, inst, open.id(),
+                new StockOpsDtos.CountPostRequest(postKey, "ZERO", pin(managerId, PIN), null, seen.fingerprint()))));
+        assertEquals(before, movements(), "nothing posted");
+        assertEquals(0, count("SELECT count(*) FROM commerce_approval WHERE reference_id = ?", open.id()),
+                "no approval recorded for a write-off the manager did not see");
+        assertEquals(trays + 2, onHand(l1, tray), "the trays just received are not written off");
+        // Reviewed again: the lines are the same, what ZERO writes off is not.
+        StockOpsDtos.CountReview again = body(counts.review(w1, inst, open.id()));
+        assertFalse(seen.fingerprint().equals(again.fingerprint()));
+        assertEquals(seen.fingerprint().split("\\.")[0], again.fingerprint().split("\\.")[0]);
+        assertTrue(again.uncounted().stream().anyMatch(u -> tray.equals(u.packageSessionId())
+                && u.onHandNow() == trays + 2), "the review shows the trays");
+        CountView posted = body(counts.post(w1, inst, open.id(), new StockOpsDtos.CountPostRequest(key(), "ZERO",
+                pin(managerId, PIN), null, again.fingerprint())));
+        assertEquals("POSTED", posted.status());
+        assertEquals(1, count("SELECT count(*) FROM commerce_approval WHERE reference_id = ?", open.id()));
+        assertEquals(0, onHand(l1, tray));
+        assertEquals(-(trays + 2), count("SELECT SUM(quantity_delta) FROM stock_movement WHERE reference_id = ? AND "
+                + "package_session_id = ? AND idempotency_key LIKE 'COUNT_ZERO:%'", open.id(), tray));
+
+        // SKIP: a receipt of an uncounted item after the review does not stop the post.
+        CountView skip = openCount(manager, l1, "COUNT", corner, null);
+        countLines(manager, skip.id(), set(plate, onHand(l1, plate)));
+        StockOpsDtos.CountReview skipSeen = body(counts.review(manager, inst, skip.id()));
+        receive(w1Id, l1, tray, 1, null);
+        assertEquals("POSTED", body(counts.post(manager, inst, skip.id(), new StockOpsDtos.CountPostRequest(key(),
+                "SKIP", null, null, skipSeen.fingerprint()))).status());
+        assertEquals(1, onHand(l1, tray), "SKIP leaves the uncounted tray as it is");
+    }
+
+    /** The Counts list offers a blind recount only to someone the server lets open it. */
+    @Test
+    @Order(21)
+    void theCountListOffersARecountOnlyToSomeoneWhoDidNotCount() throws Exception {
+        CountView open = openCount(manager, l1, null, null, null);
+        countLines(w1, open.id(), set(plate, onHand(l1, plate)));
+        java.util.function.Function<CustomUserDetails, List<String>> listed = who -> body(counts.list(who, inst, l1,
+                "OPEN", "COUNT", 0, 50)).counts().stream().filter(row -> open.id().equals(row.id())).findFirst()
+                .orElseThrow(() -> new AssertionError("count not listed")).nextActions();
+        assertFalse(listed.apply(w1).contains("RECOUNT"), "w1 only saved a line, and is still a main counter");
+        assertTrue(listed.apply(w1).contains("COUNT"));
+        assertEquals("RECOUNT_SAME_PERSON", code(() -> openCount(w1, l1, "RECOUNT", null, open.id())));
+        assertFalse(listed.apply(manager).contains("RECOUNT"), "the starter");
+        assertTrue(listed.apply(admin).contains("RECOUNT"), "someone who did not count");
+        assertEquals(body(counts.get(admin, inst, open.id())).nextActions(), listed.apply(admin),
+                "the list and the count say the same");
+        CountView recount = openCount(admin, l1, "RECOUNT", null, open.id());
+        assertFalse(listed.apply(admin).contains("RECOUNT"), "a recount is open");
+        assertTrue(body(counts.list(admin, inst, l1, "OPEN", "RECOUNT", 0, 50)).counts().stream()
+                .filter(row -> recount.id().equals(row.id())).findFirst().orElseThrow().nextActions()
+                .containsAll(List.of("COUNT", "POST")));
+        assertTrue(body(counts.list(admin, inst, l1, "POSTED", "COUNT", 0, 50)).counts().stream()
+                .allMatch(row -> row.nextActions().equals(List.of("REVIEW"))));
+    }
+
+    /**
+     * A receipt line of more than 500 units: its labels print in rounds of at most 500, each round
+     * marked printed for what it drew; every unit gets its label and nothing blocks the other line.
+     */
+    @Test
+    @Order(22)
+    void aReceiptOfMoreThan500UnitsPrintsInRounds() throws Exception {
+        ReceiptRequest request = new ReceiptRequest();
+        request.setLocationId(l1);
+        request.setSourceKind("OTHER");
+        request.setNote("big delivery");
+        request.setClientRequestId("rc-" + key());
+        ReceiptRequest.Line bottles = new ReceiptRequest.Line();
+        bottles.setPackageSessionId(bottle);
+        bottles.setQuantity(1200);
+        ReceiptRequest.Line bags = new ReceiptRequest.Line();
+        bags.setPackageSessionId(bag);
+        bags.setQuantity(30);
+        request.setLines(List.of(bottles, bags));
+        String receiptId = receiptService.create(inst, w1Id, false, request).getId();
+        assertEquals(1230, labelRows(w1, receiptId).stream().mapToInt(LabelDtos.LabelRow::quantity).sum());
+
+        List<Integer> rounds = new ArrayList<>();
+        for (int round = 0; round < 5; round++) {
+            LabelDtos.PrintDataAnswer data = body(labels.printData(w1, inst,
+                    new LabelDtos.PrintDataRequest(null, receiptId, null)));
+            assertTrue(data.totalCopies() <= 500);
+            rounds.add(data.totalCopies());
+            Set<String> partly = new HashSet<>();
+            if (data.leftOut() != null) {
+                data.leftOut().forEach(left -> partly.add(left.requestId()));
+            }
+            Map<String, Integer> printedCopies = new HashMap<>();
+            List<String> drawn = new ArrayList<>();
+            for (LabelDtos.PrintLabel label : data.labels()) {
+                drawn.add(label.requestId());
+                if (partly.contains(label.requestId())) {
+                    printedCopies.put(label.requestId(), label.copies());
+                }
+            }
+            LabelDtos.PrintedAnswer marked = body(labels.markPrinted(w1, inst, new LabelDtos.LabelIdsRequest(key(),
+                    drawn, printedCopies.isEmpty() ? null : printedCopies)));
+            assertEquals(printedCopies.size(), marked.partly() == null ? 0 : marked.partly().size());
+            if (data.leftOut() == null) {
+                break;
+            }
+            int left = 1230 - rounds.stream().mapToInt(Integer::intValue).sum();
+            assertEquals(left, data.leftOutCopies(), "the answer says how many labels wait");
+            assertEquals(left, count("SELECT COALESCE(SUM(quantity), 0) FROM commerce_label_request WHERE source_id = ? "
+                    + "AND status = 'PENDING'", receiptId), "and they wait in the queue");
+        }
+        note("big receipt label rounds: " + rounds);
+        assertEquals(List.of(500, 500, 230), rounds);
+        assertEquals(0, count("SELECT count(*) FROM commerce_label_request WHERE source_id = ? AND status = 'PENDING'",
+                receiptId));
+        assertEquals(2, count("SELECT count(*) FROM commerce_label_request WHERE source_id = ? AND status = 'PRINTED' "
+                + "AND printed_price IS NOT NULL", receiptId));
+        assertTrue(count("SELECT count(*) FROM commerce_audit WHERE institute_id = ? AND kind = 'LABEL_PART_PRINTED'",
+                inst) >= 2, "each part print is audited");
     }
 
     private static String refusal(RuntimeException e) {

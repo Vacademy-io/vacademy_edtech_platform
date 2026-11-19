@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Requests and answers of the label queue ({@code /commerce/v1/labels}). Snake case, nulls left
@@ -29,9 +30,18 @@ public final class LabelDtos {
                                        String reprintReason, String note, List<LabelLineInput> lines) {
     }
 
+    /**
+     * Ids to cancel or mark printed. {@code printed_copies} (mark-printed only): for a row that a
+     * print drew in part (print-data's {@code left_out}), how many of its labels were drawn; the
+     * row keeps waiting with the rest. A row not named in it is printed in full.
+     */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record LabelIdsRequest(String clientRequestId, List<String> requestIds) {
+    public record LabelIdsRequest(String clientRequestId, List<String> requestIds, Map<String, Integer> printedCopies) {
+
+        public LabelIdsRequest(String clientRequestId, List<String> requestIds) {
+            this(clientRequestId, requestIds, null);
+        }
     }
 
     /** {@code request_ids} (1..200) or {@code receipt_id} (its PENDING rows); {@code size} STICKER_50X25 or A4_65. */
@@ -60,9 +70,14 @@ public final class LabelDtos {
     public record CancelAnswer(int cancelled, List<String> skipped, Boolean replayed) {
     }
 
+    /** {@code partly}: rows marked for part of their labels; they keep waiting with the rest. */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record PrintedAnswer(int printed, List<String> skipped, Boolean replayed) {
+    public record PrintedAnswer(int printed, List<String> skipped, Boolean replayed, List<String> partly) {
+
+        public PrintedAnswer(int printed, List<String> skipped, Boolean replayed) {
+            this(printed, skipped, replayed, null);
+        }
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
@@ -107,9 +122,27 @@ public final class LabelDtos {
     public record SkippedLabel(String requestId, String sku, String reason) {
     }
 
+    /**
+     * Labels of a row that did not fit this print (at most 500 labels at once): {@code copies} of
+     * them were not drawn. They stay waiting; the next print draws them.
+     */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record LeftOutLabel(String requestId, String sku, int copies) {
+    }
+
+    /**
+     * {@code labels}: at most 500 copies in all. A row that does not fit is drawn in part or not
+     * at all and listed in {@code left_out} ({@code left_out_copies} labels in all).
+     */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record PrintDataAnswer(String size, Names shopName, List<PrintLabel> labels, int totalCopies,
-                                  List<SkippedLabel> skipped) {
+                                  List<SkippedLabel> skipped, List<LeftOutLabel> leftOut, Integer leftOutCopies) {
+
+        public PrintDataAnswer(String size, Names shopName, List<PrintLabel> labels, int totalCopies,
+                               List<SkippedLabel> skipped) {
+            this(size, shopName, labels, totalCopies, skipped, null, null);
+        }
     }
 }

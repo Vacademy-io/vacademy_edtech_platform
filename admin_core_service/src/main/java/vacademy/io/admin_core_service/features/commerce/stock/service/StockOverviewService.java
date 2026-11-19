@@ -349,9 +349,8 @@ public class StockOverviewService {
             }
         }
         // India dates to the stored (JVM-zone) times.
-        LocalDateTime fromTime = from.atStartOfDay(INDIA).withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime();
-        LocalDateTime toTime = to.plusDays(1).atStartOfDay(INDIA).withZoneSameInstant(ZoneId.systemDefault())
-                .toLocalDateTime();
+        LocalDateTime fromTime = StockClock.storedStartOf(from);
+        LocalDateTime toTime = StockClock.storedStartOf(to.plusDays(1));
         String filterType = typeName;
         String csv = readOnly.execute(tx -> {
             List<ExportRow> rows = readRepository.exportRows(instituteId, locationIds, blankToNull(packageSessionId),
