@@ -68,13 +68,29 @@ class ProductDemoLeadServiceTest {
         assertEquals("ws-1", values.getValue().get("f-Workspace Id"));
         assertEquals("17 Nov 2026", values.getValue().get("f-Trial Ends"));
         assertEquals("hero", values.getValue().get("f-Source"));
+        assertEquals("Demo portal", values.getValue().get("f-Sign-up Method"));
     }
 
     @Test
-    void anOrdinaryTrialSignUpIsNotALead() {
-        SignupEventDTO trial = demo();
-        trial.setMethod("Email OTP");
-        assertNull(service.capture("evalezy", trial));
+    void anOrdinaryTrialSignUpIsALeadToo() {
+        for (String method : new String[] {"Email OTP", "Google"}) {
+            SignupEventDTO trial = demo();
+            trial.setEmail(method.replace(" ", "") + "@school.in");
+            trial.setMethod(method);
+            assertEquals("lead-1", service.capture("evalezy", trial));
+            @SuppressWarnings("unchecked")
+            ArgumentCaptor<Map<String, String>> values = ArgumentCaptor.forClass(Map.class);
+            verify(audienceService).submitLeadToAutoList(eq(list), eq("Asha Verma"), eq(trial.getEmail()),
+                    eq("919876543210"), values.capture(), eq("PRODUCT_SIGNUP"), eq("ws-1"));
+            assertEquals(method, values.getValue().get("f-Sign-up Method"));
+        }
+    }
+
+    @Test
+    void aSignUpWithoutEmailIsNotALead() {
+        SignupEventDTO noEmail = demo();
+        noEmail.setEmail(" ");
+        assertNull(service.capture("evalezy", noEmail));
         verifyNoInteractions(audienceService);
     }
 

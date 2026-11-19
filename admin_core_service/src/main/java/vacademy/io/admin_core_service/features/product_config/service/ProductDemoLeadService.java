@@ -16,12 +16,13 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Every instant-demo sign-up of a product (Evalezy /demo) becomes a lead in our own CRM: one list,
- * "Product &lt;name&gt; ( Instant - Demo )", in the institute set on the health dashboard
- * ({@code demo_leads_institute_id}). The list is created when that setting is saved (and again on
- * the first lead if it is missing); it is found by its link in setting_json, so renaming it in the
- * CRM is safe. A list an admin paused or deleted is left alone. Best-effort: a failure is logged
- * and never reaches the sign-up.
+ * Every self sign-up of a product (Evalezy: the free-trial page with email or Google, "Buy &lt;plan&gt;",
+ * and the instant-demo page) becomes a lead in our own CRM: one list, "Product &lt;name&gt; ( Instant -
+ * Demo )" unless renamed, in the institute set on the health dashboard ({@code demo_leads_institute_id}).
+ * The "Sign-up Method" column says which way the person came in. The list is created when that setting
+ * is saved (and again on the first lead if it is missing); it is found by its link in setting_json, so
+ * renaming it in the CRM is safe. A list an admin paused or deleted is left alone. Best-effort: a
+ * failure is logged and never reaches the sign-up.
  */
 @Slf4j
 @Service
@@ -30,14 +31,17 @@ public class ProductDemoLeadService {
 
     /** campaign_type of the list, and the type of its link in setting_json. */
     public static final String CAMPAIGN_TYPE = "Instant Demo";
-    /** audience_response.source_type of the leads. */
+    /** audience_response.source_type of a lead from the instant-demo page. */
     static final String SOURCE_TYPE = "PRODUCT_DEMO";
+    /** audience_response.source_type of a lead from any other sign-up (trial, Buy). */
+    static final String SIGNUP_SOURCE_TYPE = "PRODUCT_SIGNUP";
     /** SignupEventDTO.method that auth-service sends for the one-screen demo. */
     public static final String DEMO_METHOD = "Demo portal";
 
     static final String FIELD_WORKSPACE = "Workspace Id";
     static final String FIELD_TRIAL_ENDS = "Trial Ends";
     static final String FIELD_SOURCE = "Source";
+    static final String FIELD_METHOD = "Sign-up Method";
 
     /** Name, email and phone take orders 0..2 on a lead form. */
     private static final int FIRST_EXTRA_ORDER = 3;
@@ -57,7 +61,7 @@ public class ProductDemoLeadService {
         return "Product " + name + " ( Instant - Demo )";
     }
 
-    /** The product's demo lead list, created if needed; empty when the product has no target institute. */
+    /** The product's sign-up lead list, created if needed; empty when the product has no target institute. */
     public Optional<Audience> ensureList(ProductSettingsDTO p) {
         if (p == null || !StringUtils.hasText(p.getDemoLeadsInstituteId())) return Optional.empty();
         String instituteId = p.getDemoLeadsInstituteId().trim();
@@ -69,7 +73,7 @@ public class ProductDemoLeadService {
         }
         return Optional.of(provisioner.getOrCreateNamed(instituteId, CAMPAIGN_TYPE, p.getProductKey(), listName(p),
                 "Every " + (StringUtils.hasText(p.getDisplayName()) ? p.getDisplayName() : p.getProductKey())
-                        + " instant-demo sign-up (name, email, phone from the /demo page)"));
+                        + " sign-up: free trial (email or Google), Buy, and the instant-demo page"));
     }
 
     /** Settings were saved: create the list now, so the team sees it before the first lead. */
@@ -85,7 +89,7 @@ public class ProductDemoLeadService {
     /** @return what the lead capture said (lead id or a reason), or null when nothing was attempted */
     public String capture(String productKey, SignupEventDTO event) {
         try {
-            if (!isDemo(event) || !StringUtils.hasText(event.getEmail())) return null;
+            if (event == null || !StringUtils.hasText(event.getEmail())) return null;
             ProductSettingsDTO p = products.find(productKey).orElse(null);
             Audience list = ensureList(p).orElse(null);
             if (list == null) return null;
@@ -97,10 +101,13 @@ public class ProductDemoLeadService {
             int order = FIRST_EXTRA_ORDER;
             put(values, list, FIELD_WORKSPACE, event.getInstituteId(), order++);
             put(values, list, FIELD_TRIAL_ENDS, event.getTrialEnds(), order++);
-            put(values, list, FIELD_SOURCE, event.getSource(), order);
+            put(values, list, FIELD_SOURCE, event.getSource(), order++);
+            put(values, list, FIELD_METHOD, event.getMethod(), order);
             String result = audienceService.submitLeadToAutoList(list, event.getFullName(), event.getEmail().trim(),
-                    event.getPhone(), values, SOURCE_TYPE, event.getInstituteId());
-            log.info("[demo-leads] {}: {} -> list {}: {}", productKey, event.getEmail(), list.getId(), result);
+                    event.getPhone(), values, isDemo(event) ? SOURCE_TYPE : SIGNUP_SOURCE_TYPE,
+                    event.getInstituteId());
+            log.info("[demo-leads] {}: {} ({}) -> list {}: {}", productKey, event.getEmail(), event.getMethod(),
+                    list.getId(), result);
             return result;
         } catch (Exception e) {
             log.warn("[demo-leads] {}: lead for {} not captured: {}", productKey,
