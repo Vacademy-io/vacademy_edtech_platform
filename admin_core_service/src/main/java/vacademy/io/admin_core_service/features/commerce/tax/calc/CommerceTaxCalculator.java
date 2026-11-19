@@ -263,6 +263,7 @@ public class CommerceTaxCalculator {
             work.taxClass = line.getTaxClass();
             work.quantity = line.getQuantity();
             work.qtyScale = qtyScale;
+            work.unit = line.getUnit();
             work.unitPrice = unitPrice;
             work.gross = gross;
             work.lineDiscount = lineDiscount;
@@ -292,6 +293,7 @@ public class CommerceTaxCalculator {
             work.taxClass = component.getTaxClass();
             work.quantity = line.getQuantity();
             work.qtyScale = qtyScale;
+            work.unit = line.getUnit();
             work.unitPrice = grossParts.get(i)
                     .divide(BigDecimal.valueOf(line.getQuantity()), 2, RoundingMode.HALF_UP);
             work.gross = grossParts.get(i);
@@ -315,7 +317,7 @@ public class CommerceTaxCalculator {
                 .taxClassId(taxClass != null ? taxClass.getId() : null)
                 .taxClassCode(taxClass != null ? taxClass.getCode() : null)
                 .hsnCode(taxClass != null ? taxClass.getHsnCode() : null)
-                .unit(taxClass != null ? taxClass.getUnit() : null)
+                .unit(printedUnit(work, taxClass))
                 .quantity(work.quantity)
                 .qtyScale(work.qtyScale)
                 .unitPrice(work.unitPrice)
@@ -353,6 +355,19 @@ public class CommerceTaxCalculator {
                 .cgst(split.cgst).sgst(split.sgst).igst(split.igst).cess(split.cess)
                 .taxAmount(net.subtract(split.taxable))
                 .build();
+    }
+
+    /**
+     * The unit of a tax line, stored on the invoice and credit note rows and printed beside the
+     * quantity. A measured line (qty scale above 1) is counted in its own unit (2.5 m of cloth),
+     * so the item's unit wins over the tax class's: a cloth on a class quoted per piece or per kg
+     * still prints "2.5 m". A counted line keeps the tax class unit, as before.
+     */
+    private static String printedUnit(Work work, TaxClassRef taxClass) {
+        if (work.qtyScale > 1 && work.unit != null && !work.unit.isBlank()) {
+            return work.unit.trim();
+        }
+        return taxClass != null ? taxClass.getUnit() : null;
     }
 
     /**
@@ -541,6 +556,7 @@ public class CommerceTaxCalculator {
         private TaxClassRef taxClass;
         private int quantity;
         private int qtyScale;
+        private String unit;
         private BigDecimal unitPrice;
         private BigDecimal gross;
         private BigDecimal lineDiscount;

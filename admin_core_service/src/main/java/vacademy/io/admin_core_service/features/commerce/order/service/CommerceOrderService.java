@@ -165,6 +165,16 @@ public class CommerceOrderService {
 
     /** Throws {@link #stepRefusal} for the first line of a priced cart refused as {@code QUANTITY_STEP}. */
     public static void requireOnStep(CartPrice priced) {
+        requireOnStep(priced, line -> null);
+    }
+
+    /**
+     * {@link #requireOnStep(CartPrice)} with a way to read a variant the priced cart does not hold
+     * (a line asked by SKU): the step is always worded in the item's unit ("0.5 m"), never in base
+     * units ("5").
+     */
+    public static void requireOnStep(CartPrice priced,
+                                     java.util.function.Function<CartPriceDtos.UnavailableLine, CartVariant> load) {
         if (priced == null || priced.view() == null || priced.view().getUnavailable() == null) {
             return;
         }
@@ -173,10 +183,31 @@ public class CommerceOrderService {
                 continue;
             }
             CartVariant variant = line.getVariantId() == null ? null : priced.variants().get(line.getVariantId());
+            if (variant == null && line.getSku() != null) {
+                variant = priced.variants().values().stream().filter(v -> line.getSku().equals(v.sku()))
+                        .findFirst().orElse(null);
+            }
+            if (variant == null && load != null) {
+                variant = load.apply(line);
+            }
             int step = line.getQtyStep() != null ? line.getQtyStep() : variant == null ? 1 : variant.qtyStep();
             throw stepRefusal(line.getLineRef(), step, variant == null ? 1 : variant.qtyScale(),
                     variant == null ? null : variant.unit());
         }
+    }
+
+    /**
+     * The variant of a refused cart line, read now by its id or SKU (null when there is none):
+     * for wording a refusal in the item's unit.
+     */
+    public CartVariant cartVariant(String instituteId, String variantId, String sku) {
+        Set<String> ids = variantId == null ? Set.of() : Set.of(variantId);
+        Set<String> skus = variantId != null || sku == null ? Set.of() : Set.of(sku);
+        if (ids.isEmpty() && skus.isEmpty()) {
+            return null;
+        }
+        Map<String, CartVariant> found = variantLoader.cartVariants(instituteId, ids, skus);
+        return found == null || found.isEmpty() ? null : found.values().iterator().next();
     }
 
     /**
@@ -203,10 +234,17 @@ public class CommerceOrderService {
      * of supply), a discount per line (by line ref, on that line alone) and one discount on the
      * whole bill with its reason. A counter sale has no delivery charge, no COD, and is not
      * refused for the website's sellable stock or the per-line maximum: stock at the till is the
-     * stock ledger's job.
+     * stock ledger's job. {@code paperBill}: a bill already written by hand and keyed in later
+     * (the bill book): the length was cut as written, so the sale step is not applied.
      */
     public record CounterPricing(String locationId, Map<String, BigDecimal> lineDiscountByRef, BigDecimal billDiscount,
-                                 String billDiscountReason) {
+                                 String billDiscountReason, boolean paperBill) {
+
+        /** A sale at the till: the step applies. */
+        public CounterPricing(String locationId, Map<String, BigDecimal> lineDiscountByRef, BigDecimal billDiscount,
+                              String billDiscountReason) {
+            this(locationId, lineDiscountByRef, billDiscount, billDiscountReason, false);
+        }
 
         BigDecimal lineDiscount(String lineRef) {
             BigDecimal value = lineDiscountByRef == null || lineRef == null ? null : lineDiscountByRef.get(lineRef);
@@ -366,7 +404,8 @@ public class CommerceOrderService {
             BigDecimal override = staff == null ? null : staff.unitPrice(ref);
             int quantity = line.getQuantity() == null ? 0 : line.getQuantity();
             int already = variant == null ? 0 : askedSoFar.getOrDefault(variant.packageSessionId(), 0);
-            String reason = refusal(variant, quantity, already, currency, settings, override != null, counter != null);
+            String reason = refusal(variant, quantity, already, currency, settings, override != null, counter != null,
+                    counter != null && counter.paperBill());
             if (reason != null) {
                 unavailable.add(unavailable(ref, line, variant, reason, already, settings));
                 changes.add(CartPriceDtos.Change.builder().lineRef(ref)
@@ -601,7 +640,8 @@ public class CommerceOrderService {
      * tell them apart.
      */
     private static String refusal(CartVariant variant, int quantity, int alreadyAsked, String cartCurrency,
-                                  StorefrontSettings settings, boolean priceTypedByStaff, boolean counter) {
+                                  StorefrontSettings settings, boolean priceTypedByStaff, boolean counter,
+                                  boolean paperBill) {
         if (variant == null) {
             return REASON_NOT_FOUND;
         }
@@ -614,7 +654,7 @@ public class CommerceOrderService {
         if (quantity < 1 || quantity > MAX_QUANTITY) {
             return REASON_QUANTITY_INVALID;
         }
-        if (quantity % Math.max(1, variant.qtyStep()) != 0) {
+        if (!paperBill && quantity % Math.max(1, variant.qtyStep()) != 0) {
             return REASON_QUANTITY_STEP;
         }
         if (counter) {
@@ -629,7 +669,9 @@ public class CommerceOrderService {
         }
         if (variant.tracked()) {
             int available = Math.max(0, variant.availableSlots() == null ? 0 : variant.availableSlots()) - alreadyAsked;
-            if (available <= 0) {
+            // Less than one sale step left (0.4 m of a cloth cut in 0.5 m) cannot be sold: sold out,
+            // as the product page says, never "only 0 m".
+            if (available < Math.max(1, variant.qtyStep())) {
                 return REASON_OUT_OF_STOCK;
             }
             if (quantity > available) {
@@ -955,6 +997,7 @@ public class CommerceOrderService {
                     .unitPrice(line.unitPrice())
                     .quantity(line.quantity())
                     .qtyScale(line.variant().qtyScale())
+                    .unit(line.variant().unit())
                     .lineDiscount(lineDiscounts == null ? null : lineDiscounts.get(line.lineRef()))
                     .taxClass(taxClasses.get(line.variant().taxClassId()))
                     .build());

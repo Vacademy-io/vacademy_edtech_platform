@@ -296,6 +296,32 @@ class CommerceNotificationSenderTest {
                 "a row without the scale prints as before");
     }
 
+    /** W12: a Hindi email prints the shop's word ("2.5 मी"); a long length is not cut. */
+    @Test
+    void aHindiEmailPrintsTheShopsUnitWordAndALongLengthFits() {
+        f.order.customerEmail = "buyer@example.com";
+        f.order.locale = "hi";
+        f.order.put();
+        f.store.lines.put(DispatcherFixture.ORDER, List.of(
+                Map.of("name_snapshot", "Cotton cloth", "variant_label", "White", "quantity", 25, "qty_scale", 10,
+                        "unit", "MTR", "line_total", new BigDecimal("308.50")),
+                Map.of("name_snapshot", "Ribbon", "variant_label", "Red", "quantity", 1234567, "qty_scale", 1000,
+                        "unit", "BUNDLE", "line_total", new BigDecimal("500.00"))));
+        String id = due("ORDER_CONFIRMED", "EMAIL");
+        assertEquals(CommerceNotificationDispatcher.Result.SENT, send(id));
+
+        String html = f.sent.get(0).getOptions().getEmailBody();
+        assertTrue(html.contains(">2.5 मी<"), html);
+        assertFalse(html.contains(">2.5 m<"), "not the Latin sign in a Hindi email");
+        assertTrue(html.contains(">1234.567 bundle<"), "13+ characters are not cut: " + html);
+        assertEquals("2.5 मी", CommerceNotificationDispatcher.itemQuantity(Map.of("quantity", 25, "qty_scale", 10,
+                "unit", "MTR"), "hi"));
+        assertEquals("2.5 m", CommerceNotificationDispatcher.itemQuantity(Map.of("quantity", 25, "qty_scale", 10,
+                "unit", "MTR"), "en"));
+        assertEquals("2", CommerceNotificationDispatcher.itemQuantity(Map.of("quantity", 2, "qty_scale", 1,
+                "unit", "PCS"), "hi"));
+    }
+
     // ================================================================== answers (§6.3)
 
     private String sendOne(UnifiedSendResponse response) {

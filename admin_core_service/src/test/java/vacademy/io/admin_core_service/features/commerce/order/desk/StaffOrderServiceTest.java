@@ -212,6 +212,18 @@ class StaffOrderServiceTest {
                 .thenReturn(new CommerceOrderService.CartPrice(null, offStep));
         assertEquals("QUANTITY_STEP: line L1 is sold in steps of 5", assertThrows(InvalidRequestException.class,
                 () -> service.create(manager, INST, request().restOnCredit(true).build())).getMessage());
+
+        // W12 (P NIT-5): a variant the priced cart does not hold is read, so the step is in metres.
+        when(orderService.cartVariant(INST, "ps-l1", null)).thenReturn(linen);
+        assertEquals("QUANTITY_STEP: line L1 is sold in steps of 0.5 m", assertThrows(InvalidRequestException.class,
+                () -> service.create(manager, INST, request().restOnCredit(true).build())).getMessage());
+        // A line asked by SKU is found in the priced cart's variants by its SKU.
+        CartPriceDtos.CartPrice bySku = CartPriceDtos.CartPrice.builder().unavailable(List.of(
+                CartPriceDtos.UnavailableLine.builder().lineRef("L1").sku("LINEN-1").reason("QUANTITY_STEP")
+                        .qtyStep(5).build())).build();
+        assertEquals("QUANTITY_STEP: line L1 is sold in steps of 0.5 m", assertThrows(InvalidRequestException.class,
+                () -> CommerceOrderService.requireOnStep(new CommerceOrderService.CartPrice(null, bySku,
+                        Map.of("ps-l1", linen)))).getMessage());
     }
 
     @Test

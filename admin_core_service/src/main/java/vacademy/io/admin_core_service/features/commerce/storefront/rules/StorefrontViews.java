@@ -495,6 +495,7 @@ public final class StorefrontViews {
                 .unit(product.unit())
                 .qtyScale(product.qtyScale())
                 .qtyStep(product.qtyStep())
+                .maxOrderQuantity(settings.maxOrderQuantity())
                 .stockMode(product.piece() ? "PIECE" : "QUANTITY")
                 .origin(product.originName())
                 .price(productPrice(product, settings))

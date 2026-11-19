@@ -284,7 +284,9 @@ public final class PosDtos {
      * The body of {@code POST /pos/sales}, {@code POST /pos/quote} (without the key, tenders and
      * approval) and {@code POST /pos/bill-book-entries} (with {@code book_number} and
      * {@code document_date}). {@code discount_reason} is the reason of the bill's discounts when
-     * {@code bill_discount} carries none (a bill with line discounts only).
+     * {@code bill_discount} carries none (a bill with line discounts only). {@code paper_bill} is
+     * for a quote only: true prices the bill as the bill-book entry will (a paper bill written by
+     * hand is keyed in as cut, so the sale step is not applied).
      */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -292,7 +294,16 @@ public final class PosDtos {
                               BillDiscount billDiscount, Customer customer, List<Tender> tenders, Exchange exchange,
                               Approval approval,
                               @com.fasterxml.jackson.annotation.JsonProperty("notify") Boolean notifyBuyer,
-                              String bookNumber, String documentDate, String discountReason) {
+                              String bookNumber, String documentDate, String discountReason, Boolean paperBill) {
+
+        /** A body that is not a paper-bill quote. */
+        public SaleRequest(String clientRequestId, String sessionId, List<SaleLine> lines,
+                           BillDiscount billDiscount, Customer customer, List<Tender> tenders, Exchange exchange,
+                           Approval approval, Boolean notifyBuyer, String bookNumber, String documentDate,
+                           String discountReason) {
+            this(clientRequestId, sessionId, lines, billDiscount, customer, tenders, exchange, approval, notifyBuyer,
+                    bookNumber, documentDate, discountReason, null);
+        }
 
         /** A body without a top-level discount reason. */
         public SaleRequest(String clientRequestId, String sessionId, List<SaleLine> lines,
@@ -305,7 +316,7 @@ public final class PosDtos {
         /** The same body without the PIN: what the request hash is taken over. */
         public SaleRequest withoutApproval() {
             return new SaleRequest(clientRequestId, sessionId, lines, billDiscount, customer, tenders, exchange, null,
-                    notifyBuyer, bookNumber, documentDate, discountReason);
+                    notifyBuyer, bookNumber, documentDate, discountReason, paperBill);
         }
     }
 

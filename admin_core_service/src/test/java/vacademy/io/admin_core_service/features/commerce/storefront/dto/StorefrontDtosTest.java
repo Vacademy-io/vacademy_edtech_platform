@@ -43,7 +43,7 @@ class StorefrontDtosTest {
             Map.entry("CollectionRef", Set.of("slug", "kind", "name", "path")),
             Map.entry("ProductDetail", Set.of("id", "slug", "path", "locale", "availableLocales", "name",
                     "shortDescription", "descriptionHtml", "contentBlocks", "brand", "unit", "qtyScale", "qtyStep",
-                    "stockMode", "origin", "price", "stock", "badges", "media", "options", "variants", "specs",
+                    "maxOrderQuantity", "stockMode", "origin", "price", "stock", "badges", "media", "options", "variants", "specs",
                     "collections", "seo", "publishedAt", "updatedAt")),
             Map.entry("FacetValue", Set.of("code", "label", "swatchHex", "count", "selected")),
             Map.entry("Facet", Set.of("code", "name", "kind", "values")),

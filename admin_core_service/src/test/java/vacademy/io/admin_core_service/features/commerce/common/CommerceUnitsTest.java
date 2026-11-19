@@ -27,6 +27,32 @@ class CommerceUnitsTest {
         assertNull(CommerceUnits.sign("NOS"));
         assertNull(CommerceUnits.sign(" "));
         assertNull(CommerceUnits.sign(null));
+        assertEquals("g", CommerceUnits.sign("GM"), "the shop's list has GM");
+    }
+
+    /** P NIT-7: one piece-code list on the server, the admin and the shop. */
+    @Test
+    void everyPieceCodeOfTheShopPrintsNoSignAndCannotCarryAMeasuredItem() {
+        for (String piece : new String[] {"PCS", "PC", "NOS", "NO", "PIECE", "PIECES", "pieces", " pc "}) {
+            assertNull(CommerceUnits.sign(piece), piece);
+            assertFalse(CommerceUnits.measuredUnit(piece), piece);
+        }
+        assertFalse(CommerceUnits.measuredUnit(""));
+        assertFalse(CommerceUnits.measuredUnit(null));
+        assertTrue(CommerceUnits.measuredUnit("MTR"));
+        assertTrue(CommerceUnits.measuredUnit("YD"));
+        assertEquals("2.5", CommerceUnits.quantity(25, 10, "PIECE"));
+    }
+
+    /** P NIT-1: a Hindi email prints the shop's word. */
+    @Test
+    void hindiQuantities() {
+        assertEquals("2.5 मी", CommerceUnits.shortQuantityHindi(25, 10, "MTR"));
+        assertEquals("1.25 किग्रा", CommerceUnits.shortQuantityHindi(1250, 1000, "KGS"));
+        assertEquals("1.5 yd", CommerceUnits.shortQuantityHindi(15, 10, "YD"));
+        assertEquals("2", CommerceUnits.shortQuantityHindi(2, 1, "PCS"));
+        assertEquals("मी", CommerceUnits.hindiSign("MTR"));
+        assertNull(CommerceUnits.hindiSign("PCS"));
     }
 
     @Test

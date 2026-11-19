@@ -326,6 +326,27 @@ class ImportPlannerTest {
         }
     }
 
+    /** W2 in the importer: a measured item needs a unit with a sign, never blank or a piece code. */
+    @Test
+    void aMeasuredItemWithNoUnitOrAPieceUnitIsARowError() {
+        assertError(only(row(2, HANDLE, "cloth", NAME_EN, "Cotton cloth", QTY_SCALE, "10", SKU, "CC-1",
+                PRICE, "100")), 2, UNIT, "UNIT_REQUIRED");
+        for (String piece : List.of("PCS", "pc", "NOS", "No", "PIECE", "pieces")) {
+            assertError(only(row(2, HANDLE, "cloth", NAME_EN, "Cotton cloth", UNIT, piece, QTY_SCALE, "10",
+                    SKU, "CC-1", PRICE, "100")), 2, UNIT, "UNIT_REQUIRED");
+        }
+        // A stored product counted in pieces turned measured by the scale alone: its PCS is refused.
+        ImportReferenceData draft = reference()
+                .addProduct(new ProductInfo("pkg-1", "cloth", null, null, "QUANTITY", "PCS", 1, "DRAFT", false));
+        assertError(planner.plan(List.of(row(2, HANDLE, "cloth", QTY_SCALE, "10")), draft).products().get(0),
+                2, UNIT, "UNIT_REQUIRED");
+        // Counted goods keep any unit, and a measured item with a sign passes.
+        assertFalse(only(row(2, HANDLE, "bag", NAME_EN, "Bag", UNIT, "PCS", QTY_SCALE, "1", SKU, "B-1",
+                PRICE, "100")).hasErrors());
+        assertFalse(only(row(2, HANDLE, "rice", NAME_EN, "Rice", UNIT, "KGS", QTY_SCALE, "1000", SKU, "R-1",
+                PRICE, "100")).hasErrors());
+    }
+
     @Test
     void originLocationRules() {
         assertError(only(row(2, HANDLE, "k", NAME_EN, "K", ORIGIN_LOCATION_CODE, "NOWHERE")), 2, ORIGIN_LOCATION_CODE, "UNKNOWN_LOCATION");

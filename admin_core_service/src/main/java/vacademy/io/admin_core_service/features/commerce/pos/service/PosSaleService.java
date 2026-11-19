@@ -37,6 +37,7 @@ import vacademy.io.admin_core_service.features.commerce.order.repository.Commerc
 import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderRepository;
 import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderTenderRepository;
 import vacademy.io.admin_core_service.features.commerce.order.service.CartPricingException;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.order.service.CommerceOrderService;
 import vacademy.io.admin_core_service.features.commerce.pos.dto.PosDtos;
 import vacademy.io.admin_core_service.features.commerce.pos.entity.PosRegister;
@@ -224,7 +225,8 @@ public class PosSaleService {
     record Clean(String clientRequestId, String sessionId, List<CleanLine> lines, String billDiscountKind,
                  BigDecimal billDiscountValue, String discountReason, String phone, String name, String buyerGstin,
                  String buyerLegalName, List<CleanTender> tenders, CommerceExchangeService.Ask exchange,
-                 PosDtos.Approval approval, boolean notifyBuyer, String bookNumber, LocalDate documentDate) {
+                 PosDtos.Approval approval, boolean notifyBuyer, String bookNumber, LocalDate documentDate,
+                 boolean paperBill) {
 
         BigDecimal received() {
             return tenders.stream().map(CleanTender::amount).reduce(ZERO, BigDecimal::add);
@@ -452,9 +454,18 @@ public class PosSaleService {
         } else if (request.bookNumber() != null || request.documentDate() != null) {
             throw validation("book_number and document_date are only for a bill-book entry");
         }
+        // A paper bill is keyed in as it was cut by hand: no sale step. The bill-book entry is one;
+        // a quote says so with paper_bill so it prices the bill the same way.
+        if (kind == Kind.SALE && Boolean.TRUE.equals(request.paperBill())) {
+            throw validation("paper_bill is for a quote of a bill-book entry");
+        }
+        if (Boolean.TRUE.equals(request.paperBill()) && exchange != null) {
+            throw validation("an exchange is taken at the till, not on a paper bill");
+        }
+        boolean paperBill = kind == Kind.BILL_BOOK || (kind == Kind.QUOTE && Boolean.TRUE.equals(request.paperBill()));
         boolean notify = kind == Kind.SALE && (request.notifyBuyer() == null || request.notifyBuyer());
         return new Clean(key, sessionId, lines, billKind, billValue, reason, phone, name, gstin, legalName, tenders,
-                exchange, request.approval(), notify, bookNumber, documentDate);
+                exchange, request.approval(), notify, bookNumber, documentDate, paperBill);
     }
 
     /** The date of a paper bill: today or up to {@link #BILL_BOOK_MAX_AGE_DAYS} days before. */
@@ -509,6 +520,22 @@ public class PosSaleService {
                 throw CommerceOrderService.stepRefusal(line.lineRef(), step, variant.qtyScale(), variant.unit());
             }
         }
+    }
+
+    /**
+     * The new price in a {@code PRICE_CHANGED} answer, as the cashier reads prices: per metre for a
+     * measured item ("₹123.40 / m", not the 12.34 of one base unit); a counted item as before ("450.00").
+     */
+    static String newPriceText(CartPriceDtos.Change change, CartVariant variant) {
+        BigDecimal price = change.getNewUnitPrice();
+        if (variant == null || !CommerceUnits.measured(variant.qtyScale())) {
+            return price.toPlainString();
+        }
+        String currency = variant.currency() == null || variant.currency().isBlank() ? "INR"
+                : variant.currency().trim().toUpperCase(java.util.Locale.ROOT);
+        String money = "INR".equals(currency) ? "₹" : currency + " ";
+        return money + CommerceUnits.perUnit(price, variant.qtyScale()).toPlainString()
+                + CommerceUnits.rateSuffix(variant.qtyScale(), variant.unit());
     }
 
     /** The bill discount in rupees: AMOUNT as given; PERCENT of the goods after line discounts, rounded. */
@@ -592,7 +619,7 @@ public class PosSaleService {
         CommerceOrderService.CartPrice priced;
         try {
             priced = orderService.priceCart(instituteId, cart, null, new CommerceOrderService.CounterPricing(
-                    locationId, lineDiscounts, bill, clean.discountReason()));
+                    locationId, lineDiscounts, bill, clean.discountReason(), clean.paperBill()));
         } catch (CartPricingException e) {
             if (CartPricingException.CART_INVALID.equals(e.getCode())) {
                 throw validation(e.getMessage());
@@ -734,7 +761,11 @@ public class PosSaleService {
         }
         Map<String, CartVariant> variants = variants(instituteId, clean);
         requirePieces(clean.lines(), variants);
-        requireSteps(clean.lines(), variants);
+        if (!clean.paperBill()) {
+            // A paper bill was cut and written by hand before it is keyed in (2.3 m of a cloth sold
+            // in 0.5 m): it records what happened, so the sale step is not applied (W8).
+            requireSteps(clean.lines(), variants);
+        }
         Priced priced = price(instituteId, session.getLocationId(), clean, variants);
         CommerceOrderService.CartPrice price = priced.price();
         if (price.view().getUnavailable() != null && !price.view().getUnavailable().isEmpty()) {
@@ -747,7 +778,7 @@ public class PosSaleService {
             for (CartPriceDtos.Change change : price.view().getChanges()) {
                 if (CommerceOrderService.CHANGE_PRICE.equals(change.getType())) {
                     throw new ConflictException(PRICE_CHANGED + ": line " + change.getLineRef() + " is now "
-                            + change.getNewUnitPrice().toPlainString());
+                            + newPriceText(change, variants.get(change.getVariantId())));
                 }
             }
         }

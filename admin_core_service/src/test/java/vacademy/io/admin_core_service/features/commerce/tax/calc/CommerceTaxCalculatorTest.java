@@ -560,6 +560,36 @@ class CommerceTaxCalculatorTest {
                 TaxHead.CGST_SGST, BigDecimal.ZERO, BigDecimal.ZERO));
     }
 
+    /**
+     * W1: a measured line prints its own unit, not the tax class's. 3.4 m of cloth on a class
+     * quoted per piece (or per kg) is still 3.4 m on the invoice; a counted line keeps the class unit.
+     */
+    @Test
+    void aMeasuredLineCarriesItsOwnUnitWhateverTheTaxClassSays() {
+        TaxClassRef kilos = TestTaxData.flatClassTest();
+        kilos.setUnit("KGS");
+        TaxLineInput clothOnPieces = TaxLineInput.builder().lineRef("cloth").lineType(TaxLineType.ITEM)
+                .description("Cotton cloth").unitPrice(new BigDecimal("12.34")).quantity(34).qtyScale(10)
+                .unit("MTR").taxClass(TestTaxData.flatClassTest()).build();
+        TaxLineInput clothOnKilos = TaxLineInput.builder().lineRef("linen").lineType(TaxLineType.ITEM)
+                .description("Linen cloth").unitPrice(new BigDecimal("20.00")).quantity(25).qtyScale(10)
+                .unit("MTR").taxClass(kilos).build();
+        TaxLineInput bag = TaxLineInput.builder().lineRef("bag").lineType(TaxLineType.ITEM).description("Bag")
+                .unitPrice(new BigDecimal("100.00")).quantity(2).qtyScale(1).unit("NOS")
+                .taxClass(TestTaxData.flatClassTest()).build();
+        TaxLineInput noUnit = TaxLineInput.builder().lineRef("old").lineType(TaxLineType.ITEM).description("Old")
+                .unitPrice(new BigDecimal("12.34")).quantity(10).qtyScale(10)
+                .taxClass(TestTaxData.flatClassTest()).build();
+
+        TaxResult result = calculator.calculate(regular(clothOnPieces, clothOnKilos, bag, noUnit));
+
+        assertEquals("MTR", result.getLines().get(0).getUnit(), "PCS class: the cloth's own unit");
+        assertEquals("MTR", result.getLines().get(1).getUnit(), "KGS class: the cloth's own unit");
+        assertEquals("PCS", result.getLines().get(2).getUnit(), "a counted line keeps the tax class unit");
+        assertEquals("PCS", result.getLines().get(3).getUnit(), "no unit given: the tax class unit as before");
+        assertMoney("419.56", result.getLines().get(0).getNet());
+    }
+
     // ------------------------------------------------------------------ helpers
 
     private static TaxRequest regular(TaxLineInput... lines) {

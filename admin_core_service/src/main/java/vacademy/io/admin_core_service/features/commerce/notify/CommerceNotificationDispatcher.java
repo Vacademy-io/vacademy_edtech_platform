@@ -383,7 +383,7 @@ public class CommerceNotificationDispatcher {
         if (trigger.itemsTable() && CommerceNotificationDelivery.EMAIL.equals(d.channel())) {
             for (Map<String, Object> line : store.itemLines(d.orderId())) {
                 items.add(new CommerceNotificationEmailRenderer.Item(text(line.get("name_snapshot")),
-                        text(line.get("variant_label")), itemQuantity(line),
+                        text(line.get("variant_label")), itemQuantity(line, d.locale()),
                         CommerceNotificationValues.money(decimal(line.get("line_total")), currency)));
             }
         }
@@ -701,12 +701,23 @@ public class CommerceNotificationDispatcher {
      * stored count for a counted line.
      */
     public static String itemQuantity(Map<String, Object> line) {
+        return itemQuantity(line, CommerceNotificationTexts.EN);
+    }
+
+    /**
+     * {@link #itemQuantity(Map)} in the email's language: a Hindi email prints the shop's word
+     * ("2.5 मी"), any other the sign ("2.5 m").
+     */
+    public static String itemQuantity(Map<String, Object> line, String locale) {
         Object quantity = line.get("quantity");
         int scale = line.get("qty_scale") instanceof Number n ? n.intValue() : 1;
         if (!(quantity instanceof Number number) || !CommerceUnits.measured(scale)) {
             return text(quantity);
         }
-        return CommerceUnits.shortQuantity(number.longValue(), scale, text(line.get("unit")));
+        String unit = text(line.get("unit"));
+        return CommerceNotificationTexts.HI.equals(locale)
+                ? CommerceUnits.shortQuantityHindi(number.longValue(), scale, unit)
+                : CommerceUnits.shortQuantity(number.longValue(), scale, unit);
     }
 
     private static String text(Object value) {

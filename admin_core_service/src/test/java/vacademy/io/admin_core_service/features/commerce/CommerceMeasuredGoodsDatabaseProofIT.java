@@ -119,6 +119,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -1037,6 +1038,173 @@ class CommerceMeasuredGoodsDatabaseProofIT {
         Map<String, String> bagRow = csvRows(bag).get(0);
         assertEquals("5", bagRow.get("qty_in"));
         assertEquals("", bagRow.get("unit"));
+    }
+
+    // ================================================================== 7. fix round (WP-44 review)
+
+    /** A measured product on the given tax class (the helper above picks the class by unit). */
+    private ProductResponse measuredOn(String classId, String slug, String name, String sku, String price, int step) {
+        return productService.save(inst, adminId, ProductRequest.builder().slug(slug + "-" + run)
+                .translations(List.of(ProductTranslationDTO.builder().locale("en").name(name).build()))
+                .taxClassId(classId).status("ACTIVE").stockMode("QUANTITY").unit("MTR").qtyScale(10).qtyStep(step)
+                .variants(List.of(VariantRequest.builder().sku(sku + "-" + run).name("One size")
+                        .price(new BigDecimal(price)).weightGrams(200).build()))
+                .build());
+    }
+
+    /**
+     * W1: a cloth whose tax class is quoted per piece (PCS) still prints "2.5 m" at "₹123.40 / m":
+     * the invoice row keeps the item's own unit (MTR), the tax class unit only for counted goods.
+     */
+    @Test
+    @Order(7)
+    void w1_aClothOnAPieceTaxClassStillPrintsMetres() {
+        String money = rupee();
+        String muslin = variantOf(measuredOn(goodsClass, "muslin-cloth", "Muslin cloth", "MUSLIN", "12.34", 1));
+        receive(muslin, 50, "8.0000");
+        snapshotLoader.evict(inst);
+        String s = open("500.00");
+        PosDtos.Quote quoted = quote(s, List.of(line("l1", muslin, 25)), null);
+        same("308.50", quoted.lines().get(0).net(), "2.5 m × 123.40 / m");
+        PosSaleService.Outcome sold = sell(s, List.of(line("l1", muslin, 25)),
+                List.of(new PosDtos.Tender("CASH", quoted.totals().total(), null, null)));
+        String order = sold.answer().sale().orderId();
+        closeEven(s);
+
+        Map<String, Object> row = db.queryForMap("SELECT li.quantity, li.unit FROM invoice_line_item li JOIN invoice i "
+                + "ON i.id = li.invoice_id WHERE i.commerce_order_id = ? AND li.package_session_id = ?", order, muslin);
+        assertEquals(25, ((Number) row.get("quantity")).intValue());
+        assertEquals("MTR", row.get("unit"), "the item's unit, not the tax class's PCS");
+        assertEquals("PCS", text("SELECT unit FROM commerce_tax_class WHERE id = ?", goodsClass));
+        String html = invoiceHtml(order);
+        assertTrue(html.contains("<td class=\"num\">2.5 m</td>"), html);
+        assertTrue(html.contains("<td class=\"num\">" + money + "123.40 / m</td>"), html);
+        note("PCS tax class invoice row: 2.5 m | " + money + "123.40 / m");
+
+        // A counted item on the same class keeps the class unit as before.
+        String s2 = open("500.00");
+        PosSaleService.Outcome bagSale = sell(s2, List.of(line("l1", bag, 1)), List.of(cash("100.00")));
+        closeEven(s2);
+        assertEquals("PCS", text("SELECT li.unit FROM invoice_line_item li JOIN invoice i ON i.id = li.invoice_id "
+                + "WHERE i.commerce_order_id = ?", bagSale.answer().sale().orderId()));
+    }
+
+    /** W2: a measured product whose unit is blank or a piece code is refused; nothing is written. */
+    @Test
+    @Order(8)
+    void w2_aMeasuredProductInPiecesIsRefused() {
+        long products = count("SELECT count(*) FROM commerce_product WHERE institute_id = ?", inst);
+        RuntimeException pcs = refused("VALIDATION", () -> product("pcs-cloth", "Pcs cloth", "PCSCLOTH", "10.00",
+                "QUANTITY", "PCS", 10, 1));
+        assertEquals("VALIDATION: a measured item needs its unit (MTR, KG, …)", pcs.getMessage());
+        RuntimeException none = refused("VALIDATION", () -> product("plain-cloth", "Plain cloth", "PLAINCLOTH",
+                "10.00", "QUANTITY", null, 10, 1));
+        assertEquals("VALIDATION: a measured item needs its unit (MTR, KG, …)", none.getMessage());
+        refused("VALIDATION", () -> product("nos-cloth", "Nos cloth", "NOSCLOTH", "10.00", "QUANTITY", "PIECES", 10, 1));
+        assertEquals(products, count("SELECT count(*) FROM commerce_product WHERE institute_id = ?", inst),
+                "no product row written");
+        note("measured product in pieces: " + pcs.getMessage());
+    }
+
+    /**
+     * W8: a paper bill of 2.3 m of the linen (sold in 0.5 m) is keyed in as written: the quote marked
+     * paper_bill and the bill-book entry price it, one POS_SALE −23 is posted. The till still refuses it.
+     */
+    @Test
+    @Order(9)
+    void w8_aPaperBillOffTheStepIsRecorded() {
+        LocalDate today = LocalDate.now(INDIA);
+        seriesService.create(inst, adminId, DocumentSeriesDTO.builder().documentType("TAX_INVOICE").kind("MANUAL_BOOK")
+                .prefix("MB" + run.substring(0, 2)).locationId(online).bookFrom(300L).bookTo(399L).build());
+        String s = open("500.00");
+        int before = onHand(linen);
+        refused("QUANTITY_STEP", () -> sell(s, List.of(line("l1", linen, 23)), List.of(cash("460.00"))));
+
+        PosDtos.Quote tillQuote = quote(s, List.of(line("l1", linen, 23)), null);
+        assertEquals("QUANTITY_STEP", tillQuote.unavailable().get(0).reason(), "the till's quote keeps the step");
+        PosDtos.Quote paperQuote = sales.quote(cashier, inst, new PosDtos.SaleRequest(null, s,
+                List.of(line("l1", linen, 23)), null, null, null, null, null, null, null, null, null, Boolean.TRUE));
+        assertTrue(paperQuote.unavailable() == null || paperQuote.unavailable().isEmpty(),
+                String.valueOf(paperQuote.unavailable()));
+        same("460.00", paperQuote.totals().total(), "2.3 m × 200.00 / m");
+
+        PosSaleService.Outcome entered = sales.billBook(cashier, inst, new PosDtos.SaleRequest(key(), s,
+                List.of(line("l1", linen, 23)), null, null, List.of(cash("460.00")), null, pin(managerId, PIN), null,
+                "301", today.toString()));
+        String order = entered.answer().sale().orderId();
+        assertEquals(23, entered.answer().sale().lines().get(0).quantity());
+        assertEquals("301", text("SELECT external_invoice_number FROM invoice WHERE commerce_order_id = ?", order));
+        assertEquals(1, count("SELECT count(*) FROM stock_movement WHERE type = 'POS_SALE' AND quantity_delta = -23 "
+                + "AND package_session_id = ? AND reference_id IN (SELECT id FROM commerce_order_line WHERE "
+                + "order_id = ?)", linen, order));
+        assertEquals(before - 23, onHand(linen));
+        note("paper bill 2.3 m of a 0.5 m-step cloth: order " + order + ", on_hand " + before + " -> " + onHand(linen));
+        closeEven(s);
+    }
+
+    /**
+     * W9: less than one sale step left (0.4 m of a cloth cut in 0.5 m) is sold out in the cart, not
+     * "only 0 m"; the product page reads the per-order maximum from the detail.
+     */
+    @Test
+    @Order(10)
+    void w9_lessThanOneStepLeftIsSoldOut() {
+        ProductResponse made = measuredOn(taxClass, "silk-cloth", "Silk cloth", "SILK", "30.00", 5);
+        String silk = variantOf(made);
+        receive(silk, 4, "15.0000");
+        snapshotLoader.evict(inst);
+        assertEquals(4, slots(silk));
+
+        CartPriceDtos.UnavailableLine line = orderService.priceCart(inst, cart(Map.of(silk, 5))).view()
+                .getUnavailable().get(0);
+        assertEquals("OUT_OF_STOCK", line.getReason());
+        assertNull(line.getAvailableQuantity(), "no 'only 0 m'");
+        note("0.4 m left at a 0.5 m step: " + line.getReason());
+
+        receive(silk, 6, "15.0000");
+        snapshotLoader.evict(inst);
+        CartPriceDtos.UnavailableLine more = orderService.priceCart(inst, cart(Map.of(silk, 15))).view()
+                .getUnavailable().get(0);
+        assertEquals("INSUFFICIENT_STOCK", more.getReason(), "one step and more left: a smaller length");
+        assertTrue(orderService.priceCart(inst, cart(Map.of(silk, 10))).view().getUnavailable().isEmpty());
+
+        StorefrontDtos.ProductDetail detail = storefront.detail(inst, made.getSlug(), "en");
+        assertEquals(25, detail.getMaxOrderQuantity(), "the per-order maximum in metres");
+        assertEquals(10, detail.getQtyScale());
+    }
+
+    /**
+     * W11 (read, not changed): a measured line returned part resaleable, part damaged is one return
+     * line of that order line, so the return summary already reads 1 item.
+     */
+    @Test
+    @Order(11)
+    void w11_aSplitMeasuredReturnIsOneItem() {
+        String s = open("500.00");
+        PosReturnService.Outcome back = posReturns.create(cashier, inst, new PosDtos.ReturnRequest(key(), s, posOrder,
+                List.of(new PosDtos.ReturnLine(posLine, 10, "RESALEABLE", null),
+                        new PosDtos.ReturnLine(posLine, 2, "DAMAGED", null)), "DEFECTIVE", null, null,
+                new PosDtos.Settle("REFUND", "CASH", null), pin(managerId, PIN)));
+        String returnId = back.answer().returnId();
+        assertEquals(1, count("SELECT count(*) FROM commerce_return_line WHERE return_id = ?", returnId),
+                "one return line for the one order line");
+        ReturnDtos.ReturnSummary summary = desk.detail(inst, posOrder, admin, false).getReturns().stream()
+                .filter(r -> r.getId().equals(returnId)).findFirst().orElseThrow();
+        assertEquals(1, summary.getUnits(), "1.0 m resaleable + 0.2 m damaged of one cloth line is one item");
+        closeEven(s);
+    }
+
+    /** W12: the till's price-changed answer names the new price per metre. */
+    @Test
+    @Order(12)
+    void w12_thePriceChangedAnswerIsPerMetre() {
+        String s = open("500.00");
+        RuntimeException changed = refused("PRICE_CHANGED", () -> sell(s,
+                List.of(new PosDtos.SaleLine("l1", cotton, 10, null, null, new BigDecimal("12.00"))),
+                List.of(cash("123.00"))));
+        assertEquals("PRICE_CHANGED: line l1 is now ₹123.40 / m", changed.getMessage());
+        note("price changed: " + changed.getMessage());
+        closeEven(s);
     }
 
     private static void assertInstanceOf(Class<?> type, Object value) {

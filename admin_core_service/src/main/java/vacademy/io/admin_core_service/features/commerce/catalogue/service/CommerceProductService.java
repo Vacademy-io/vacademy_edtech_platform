@@ -128,6 +128,8 @@ public class CommerceProductService {
     static final String PAYMENT_OPTION_TYPE = "ONE_TIME";
     static final String DEFAULT_CURRENCY = "INR";
     static final String DEFAULT_UNIT = "PCS";
+    /** A measured item (qty_scale above 1) whose unit is blank or a piece code (W2). */
+    public static final String MEASURED_UNIT_REQUIRED = "VALIDATION: a measured item needs its unit (MTR, KG, …)";
 
     private static final String ENTITY_PRODUCT = "PRODUCT";
     private static final String ENTITY_VARIANT = "VARIANT";
@@ -604,6 +606,15 @@ public class CommerceProductService {
             require(CommerceUnits.allowedScale(effectiveScale), "VALIDATION: qty_scale is 1, 10, 100 or 1000");
             require(!StockMode.PIECE.name().equals(effectiveMode) || effectiveScale == 1,
                     "VALIDATION: a one-of-a-kind item is counted in pieces (qty_scale 1)");
+        }
+        // A measured item prints "2.5 m": its unit must be one with a sign, never blank or a piece
+        // code (the default PCS would print "2.5" on paper and "2.5 pc" in the shop).
+        if (stockMode != null || qtyScale != null || unit != null) {
+            int effectiveScale = qtyScale != null ? qtyScale
+                    : product.getQtyScale() == null ? 1 : product.getQtyScale();
+            String effectiveUnit = unit != null ? unit : product.getUnit();
+            require(!CommerceUnits.measured(effectiveScale) || CommerceUnits.measuredUnit(effectiveUnit),
+                    MEASURED_UNIT_REQUIRED);
         }
         if (stockMode != null) {
             product.setStockMode(stockMode);

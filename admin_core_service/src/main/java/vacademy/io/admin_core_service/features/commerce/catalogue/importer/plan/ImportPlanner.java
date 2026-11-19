@@ -226,6 +226,17 @@ public class ImportPlanner {
                         "a one-of-a-kind item (stock_mode PIECE) is counted in pieces: qty_scale must be 1");
             }
         }
+        // A measured item needs a unit with a sign (MTR, KG): never blank or a piece code, which a
+        // new product gets by default (PCS) when the row has no unit.
+        if ((qtyScale != null || stockMode != null || unit != null) && CommerceUnits.measured(effectiveQtyScale)) {
+            String effectiveUnit = unit != null ? unit
+                    : existing != null && existing.unit() != null ? existing.unit() : "PCS";
+            if (!CommerceUnits.measuredUnit(effectiveUnit)) {
+                ImportRow unitRow = at.get(UNIT) != null ? at.get(UNIT)
+                        : at.get(QTY_SCALE) != null ? at.get(QTY_SCALE) : first;
+                plan.error(unitRow, UNIT, "UNIT_REQUIRED", "a measured item needs its unit (MTR, KG, …)");
+            }
+        }
 
         String originCode = p.get(ORIGIN_LOCATION_CODE);
         if (originCode != null) {

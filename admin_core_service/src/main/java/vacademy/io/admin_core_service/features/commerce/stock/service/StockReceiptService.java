@@ -717,7 +717,8 @@ public class StockReceiptService {
             line.packageSessionId = requireId(requested.getPackageSessionId(), "package_session_id");
             if (requested.getQuantity() == null || requested.getQuantity() < 1
                     || requested.getQuantity() > MAX_QUANTITY) {
-                throw new InvalidRequestException("quantity must be a whole number between 1 and " + MAX_QUANTITY);
+                throw new InvalidRequestException("VALIDATION: quantity must be a whole number between 1 and "
+                        + MAX_QUANTITY + " (base units)");
             }
             line.quantity = requested.getQuantity();
             if (requested.getUnitCost() != null) {

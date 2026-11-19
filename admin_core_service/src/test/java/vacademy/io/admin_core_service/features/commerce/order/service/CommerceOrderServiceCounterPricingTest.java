@@ -155,6 +155,24 @@ class CommerceOrderServiceCounterPricingTest {
         assertEquals(2, counter.view().getLines().size());
     }
 
+    /** W8: a paper bill keyed in later is priced off its step; a sale at the till is not. */
+    @Test
+    void aPaperBillIsPricedOffTheSaleStep() {
+        variants.put("ps-linen", new CartVariant("ps-linen", "pkg-linen", "LINEN", "slug-linen", true, true, true,
+                false, "tc-slab", "MTR", 10, 5, 500, 100, "LINEN", Map.of("en", "Linen cloth"),
+                new BigDecimal("20.00"), null, "INR"));
+
+        CommerceOrderService.CartPrice till = service.priceCart(INSTITUTE, cart(line("l1", "ps-linen", 23)), null,
+                counter(Map.of(), null));
+        assertEquals("QUANTITY_STEP", till.view().getUnavailable().get(0).getReason());
+
+        CommerceOrderService.CartPrice paper = service.priceCart(INSTITUTE, cart(line("l1", "ps-linen", 23)), null,
+                new CommerceOrderService.CounterPricing(STORE, Map.of(), null, null, true));
+        assertTrue(paper.view().getUnavailable().isEmpty());
+        assertEquals(23, paper.view().getLines().get(0).getQuantity());
+        assertMoney("460.00", paper.view().getLines().get(0).getGross());
+    }
+
     @Test
     void theSellerAndThePlaceOfSupplyAreTheCountersLocation() {
         CartPriceSnapshot snapshot = service.priceCart(INSTITUTE, cart(line("l1", "ps-scarf", 1)), null,

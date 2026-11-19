@@ -19,6 +19,8 @@ import java.util.regex.Matcher;
 public class CommerceNotificationEmailRenderer {
 
     static final int MAX_ITEMS = 20;
+    /** The quantity cell: long enough for "1234.567 m" or "1234.5 bundle" (cut with no ellipsis). */
+    static final int QUANTITY_CELL_MAX = 24;
     private static final List<String> LINK_LABELS = List.of("see your order", "details", "see your bill",
             "अपना ऑर्डर देखें", "विवरण", "बिल देखें");
 
@@ -166,7 +168,7 @@ public class CommerceNotificationEmailRenderer {
             out.append("<tr>")
                     .append(cell(CommerceNotificationValues.cleanHtml(item.name(), 120, "-")))
                     .append(cell(CommerceNotificationValues.cleanHtml(item.variant(), 60, "")))
-                    .append(cell(CommerceNotificationValues.cleanHtml(item.quantity(), 12, "")))
+                    .append(cell(CommerceNotificationValues.cleanHtml(item.quantity(), QUANTITY_CELL_MAX, "")))
                     .append(cell(CommerceNotificationValues.cleanHtml(item.lineTotal(), 32, "")))
                     .append("</tr>");
         }

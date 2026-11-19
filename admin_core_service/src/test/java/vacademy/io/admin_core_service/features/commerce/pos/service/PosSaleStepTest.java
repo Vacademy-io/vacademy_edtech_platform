@@ -44,9 +44,12 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -139,5 +142,62 @@ class PosSaleStepTest {
         // A counted item with step 1 is never refused by this rule.
         assertDoesNotThrow(() -> PosSaleService.requireSteps(off.lines(),
                 Map.of("ps-linen", PosSaleValidationTest.variant("ps-linen", false, true))));
+    }
+
+    private static PosDtos.SaleRequest paperBill(int quantity) {
+        return new PosDtos.SaleRequest("pos-book-1", "s-1",
+                List.of(new PosDtos.SaleLine("L1", "ps-linen", quantity, null, null, new BigDecimal("20.00"))),
+                null, null, List.of(new PosDtos.Tender("CASH", new BigDecimal("46.00"), null, null)),
+                null, new PosDtos.Approval("manager-1", "1234", null), null, "123",
+                new DocumentClock().today(INST).toString());
+    }
+
+    /**
+     * W8: a paper bill keyed in later records a length already cut by hand (2.3 m of a cloth sold
+     * in 0.5 m): the bill-book entry does not apply the sale step, and prices it as a paper bill.
+     */
+    @Test
+    void aPaperBillOffTheStepIsPricedNotRefused() {
+        org.mockito.ArgumentCaptor<CommerceOrderService.CounterPricing> counter =
+                org.mockito.ArgumentCaptor.forClass(CommerceOrderService.CounterPricing.class);
+        when(orderService.priceCart(eq(INST), any(), isNull(), counter.capture()))
+                .thenThrow(new IllegalStateException("priced"));
+
+        IllegalStateException reached = assertThrows(IllegalStateException.class,
+                () -> service.billBook(cashier(), INST, paperBill(23)));
+
+        assertEquals("priced", reached.getMessage(), "past the step rule, into pricing");
+        assertTrue(counter.getValue().paperBill(), "priced as a paper bill: the cart's step is off too");
+        // The till's sale keeps the step.
+        assertThrows(InvalidRequestException.class, () -> service.sale(cashier(), INST, sale(23)));
+    }
+
+    /** W8: the bill-book screen's quote says paper_bill; a sale may not. */
+    @Test
+    void onlyAQuoteMayAskForPaperBillPricing() {
+        PosDtos.SaleRequest base = sale(23);
+        PosDtos.SaleRequest asked = new PosDtos.SaleRequest(base.clientRequestId(), base.sessionId(), base.lines(),
+                null, null, base.tenders(), null, null, null, null, null, null, Boolean.TRUE);
+        assertTrue(PosSaleService.validate(asked, PosSaleService.Kind.QUOTE, new DocumentClock().today(INST))
+                .paperBill());
+        assertFalse(PosSaleService.validate(base, PosSaleService.Kind.QUOTE, new DocumentClock().today(INST))
+                .paperBill());
+        InvalidRequestException onSale = assertThrows(InvalidRequestException.class,
+                () -> PosSaleService.validate(asked, PosSaleService.Kind.SALE, new DocumentClock().today(INST)));
+        assertTrue(onSale.getMessage().startsWith("VALIDATION: paper_bill"), onSale.getMessage());
+        assertTrue(PosSaleService.validate(paperBill(23), PosSaleService.Kind.BILL_BOOK,
+                new DocumentClock().today(INST)).paperBill());
+    }
+
+    /** W12: PRICE_CHANGED names the new price per metre for a measured item, as the screen shows it. */
+    @Test
+    void thePriceChangedAnswerIsPerDisplayUnit() {
+        vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceDtos.Change change =
+                vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceDtos.Change.builder()
+                        .lineRef("L1").variantId("ps-linen").newUnitPrice(new BigDecimal("12.34")).build();
+        assertEquals("₹123.40 / m", PosSaleService.newPriceText(change, linen()));
+        assertEquals("12.34", PosSaleService.newPriceText(change, null), "unknown item: as before");
+        assertEquals("12.34", PosSaleService.newPriceText(change,
+                PosSaleValidationTest.variant("ps-linen", false, true)), "a counted item: as before");
     }
 }

@@ -746,4 +746,15 @@ class StockLedgerServiceTest {
         assertEquals("SOLD", StockLedgerService.awayStatus(StockMovementType.SALE).name());
         assertEquals("RETURNED_TO_SUPPLIER", StockLedgerService.awayStatus(StockMovementType.PURCHASE_RETURN).name());
     }
+
+    /** W12: a reorder level is bounded like every stock quantity (10,000,000 base units). */
+    @Test
+    void aReorderLevelAboveTheBaseUnitBoundIsRefusedBeforeAnyRead() {
+        vacademy.io.common.exceptions.InvalidRequestException tooLarge = assertThrows(
+                vacademy.io.common.exceptions.InvalidRequestException.class,
+                () -> ledger.setReorderLevel(INST, LOC, PS, 10_000_001));
+        assertEquals("VALIDATION: reorder_level is at most 10000000 base units", tooLarge.getMessage());
+        verify(levels, never()).setReorderLevel(anyString(), anyString(), anyString(), any());
+        verifyNoInteractions(variants);
+    }
 }

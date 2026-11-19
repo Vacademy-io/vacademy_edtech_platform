@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockMode;
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockPolicy;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockCostAdjustment;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockMovement;
 import vacademy.io.admin_core_service.features.commerce.stock.enums.CostAdjustmentReason;
@@ -284,6 +285,10 @@ public class StockLedgerService {
                                 Integer reorderLevel) {
         if (reorderLevel != null && reorderLevel < 0) {
             throw new InvalidRequestException("reorder_level cannot be negative");
+        }
+        if (reorderLevel != null && reorderLevel > CommerceUnits.MAX_BASE_UNITS) {
+            throw new InvalidRequestException("VALIDATION: reorder_level is at most " + CommerceUnits.MAX_BASE_UNITS
+                    + " base units");
         }
         variantRepository.findFacts(instituteId, packageSessionId)
                 .orElseThrow(() -> new InvalidRequestException("This item is not a shop product of this institute"));

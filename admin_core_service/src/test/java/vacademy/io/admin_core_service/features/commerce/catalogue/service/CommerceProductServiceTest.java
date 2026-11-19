@@ -560,6 +560,35 @@ class CommerceProductServiceTest {
         assertEquals("PIECE", products.get(0).getStockMode());
     }
 
+    /** W2: a measured item needs a unit with a sign; blank or a piece code is refused. */
+    @Test
+    void aMeasuredItemNeedsAMeasuredUnit() {
+        service.save(INSTITUTE, ACTOR, sariRequest("DRAFT"));
+        String packageId = products.get(0).getPackageId();
+        assertEquals("PCS", products.get(0).getUnit(), "a new product starts in pieces");
+
+        // The scale alone on a product in PCS (an API create without a unit).
+        InvalidRequestException scaleOnly = assertThrows(InvalidRequestException.class,
+                () -> service.update(INSTITUTE, ACTOR, packageId, measure(null, 10, null)));
+        assertEquals("VALIDATION: a measured item needs its unit (MTR, KG, …)", scaleOnly.getMessage());
+        for (String piece : List.of("PCS", "pc", "NOS", "NO", "PIECE", "PIECES")) {
+            assertThrows(InvalidRequestException.class,
+                    () -> service.update(INSTITUTE, ACTOR, packageId, measure(piece, 10, "QUANTITY")), piece);
+        }
+        assertEquals(1, products.get(0).getQtyScale(), "nothing was written");
+        assertEquals("PCS", products.get(0).getUnit());
+
+        service.update(INSTITUTE, ACTOR, packageId, measure("MTR", 10, "QUANTITY"));
+        assertEquals(10, products.get(0).getQtyScale());
+        // A measured product cannot be turned back to a piece unit while measured.
+        assertThrows(InvalidRequestException.class,
+                () -> service.update(INSTITUTE, ACTOR, packageId, measure("PCS", null, null)));
+        assertEquals("MTR", products.get(0).getUnit());
+        // Counted again (scale 1): any unit.
+        service.update(INSTITUTE, ACTOR, packageId, measure("PCS", 1, null));
+        assertEquals("PCS", products.get(0).getUnit());
+    }
+
     @Test
     void aProductSummaryCarriesItsUnitScaleAndStep() {
         ProductRequest cloth = sariRequest("DRAFT");

@@ -78,7 +78,9 @@ public class StorefrontCatalogService {
 
     /**
      * The listing parameters. {@code attributes} maps an attribute code to the value codes
-     * picked for it; {@code inStock} null leaves availability unfiltered.
+     * picked for it; {@code inStock} null leaves availability unfiltered. {@code priceMin} and
+     * {@code priceMax} are per display unit for measured goods (per metre, not per 10 cm), as the
+     * price sort and the price bands are; a card's {@code price.amount} stays per base unit.
      */
     public record ProductQuery(String q, String collection, Map<String, List<String>> attributes,
                                BigDecimal priceMin, BigDecimal priceMax, Boolean inStock, String sort, int page,
