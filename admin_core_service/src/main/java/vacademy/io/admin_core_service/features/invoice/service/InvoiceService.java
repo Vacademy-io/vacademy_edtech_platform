@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.invoice.service;
 
+// external-call-log: not a vendor (fetches logo images to embed in invoices)
+
 import vacademy.io.admin_core_service.features.invoice.util.InvoiceDefaultTemplatePicker;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.itextpdf.styledxmlparser.jsoup.Jsoup;

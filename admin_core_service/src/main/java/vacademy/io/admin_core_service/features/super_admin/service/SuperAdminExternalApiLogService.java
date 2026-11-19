@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vacademy.io.admin_core_service.core.external.IntegratedVendors;
+import vacademy.io.common.external.IntegratedVendors;
 import vacademy.io.admin_core_service.features.super_admin.dto.ExternalApiLogDTOs.LogDetail;
 import vacademy.io.admin_core_service.features.super_admin.dto.ExternalApiLogDTOs.LogRow;
 import vacademy.io.admin_core_service.features.super_admin.dto.SuperAdminPageResponse;

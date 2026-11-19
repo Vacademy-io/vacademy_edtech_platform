@@ -1,5 +1,7 @@
 package vacademy.io.assessment_service.features.assessment.service.evaluation_ai;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -460,7 +462,7 @@ public class AiEvaluationAsyncService {
          */
         private String getFileUrl(String fileId) {
                 log.info("Getting file URL for fileId: {}", fileId);
-                WebClient mediaClient = WebClient.builder()
+                WebClient mediaClient = ExternalCallLog.attach(WebClient.builder())
                                 .baseUrl(mediaServiceUrl)
                                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                                 .build();

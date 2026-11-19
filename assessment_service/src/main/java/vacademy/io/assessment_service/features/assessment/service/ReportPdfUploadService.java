@@ -1,5 +1,7 @@
 package vacademy.io.assessment_service.features.assessment.service;
 
+// external-call-log: not a vendor (uploads to our own S3 presigned URLs)
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

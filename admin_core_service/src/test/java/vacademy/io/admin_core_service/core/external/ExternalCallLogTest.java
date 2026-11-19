@@ -1,5 +1,8 @@
 package vacademy.io.admin_core_service.core.external;
 
+import vacademy.io.common.external.ExternalCallLog;
+import vacademy.io.common.external.IntegratedVendors;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -45,10 +48,20 @@ class ExternalCallLogTest {
         assertEquals("GET /", ExternalCallLog.operation("GET", ""));
     }
 
+    /** Rows the log would write, collected instead of stored. */
+    private static java.util.List<ExternalCallLog.Failure> capture() {
+        java.util.List<ExternalCallLog.Failure> rows = new java.util.concurrent.CopyOnWriteArrayList<>();
+        ExternalCallLog.install(rows::add, "admin_core");
+        return rows;
+    }
+
+    private static void waitFor(java.util.List<?> rows, int n) throws InterruptedException {
+        for (int i = 0; i < 200 && rows.size() < n; i++) Thread.sleep(10);
+    }
+
     @Test
-    void aFailedCallIsWrittenAndTheCallerStillGetsItsError() {
-        JdbcTemplate jdbc = mock(JdbcTemplate.class);
-        new ExternalCallLog(jdbc).register();
+    void aFailedCallIsWrittenAndTheCallerStillGetsItsError() throws Exception {
+        var rows = capture();
         RestTemplate rest = ExternalCallLog.attach(new RestTemplate());
         MockRestServiceServer server = MockRestServiceServer.bindTo(rest).build();
         server.expect(requestTo("https://api.plivo.com/v1/Account/MA1/Call/?secret=x"))
@@ -63,16 +76,76 @@ class ExternalCallLogTest {
         assertTrue(error.getResponseBodyAsString().contains("Authentication failed"));
         rest.getForObject("https://api.plivo.com/v1/ok", String.class);
 
-        verify(jdbc, timeout(2000)).update(anyString(), org.mockito.ArgumentMatchers.any(java.sql.Timestamp.class),
-                eq("api.plivo.com"), eq("admin_core"), eq("GET /v1/Account"), eq(401), eq((Object) null),
-                org.mockito.ArgumentMatchers.argThat((String req) -> req.contains("\"query_params\":[\"secret\"]")
-                        && !req.contains("=x")),
-                org.mockito.ArgumentMatchers.argThat((String res) -> res.contains("Authentication failed")
-                        && !res.contains("tok_live_1")));
-        verify(jdbc, never()).update(anyString(), org.mockito.ArgumentMatchers.any(java.sql.Timestamp.class),
-                eq("api.plivo.com"), eq("admin_core"), eq("GET /v1/ok"),
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        waitFor(rows, 1);
+        Thread.sleep(100);
+        assertEquals(1, rows.size(), "the success is not written");
+        ExternalCallLog.Failure f = rows.get(0);
+        assertEquals("api.plivo.com", f.vendor());
+        assertEquals("admin_core", f.sourceService());
+        assertEquals("GET /v1/Account", f.operation());
+        assertEquals(401, f.httpStatus());
+        assertTrue(f.request().contains("\"query_params\":[\"secret\"]") && !f.request().contains("=x"));
+        assertTrue(f.response().contains("Authentication failed") && !f.response().contains("tok_live_1"));
+    }
+
+    @Test
+    void aWebClientFailureIsWrittenAndTheCallerStillGetsTheBody() throws Exception {
+        var rows = capture();
+        org.springframework.web.reactive.function.client.WebClient client = ExternalCallLog.attach(
+                org.springframework.web.reactive.function.client.WebClient.builder()
+                        .exchangeFunction(req -> reactor.core.publisher.Mono.just(
+                                org.springframework.web.reactive.function.client.ClientResponse
+                                        .create(HttpStatus.PAYMENT_REQUIRED)
+                                        .header("Content-Type", "application/json")
+                                        .body("{\"error\":{\"message\":\"Insufficient credits\"}}").build())))
+                .build();
+
+        String body = client.post().uri("https://openrouter.ai/api/v1/chat/completions?key=abc")
+                .retrieve()
+                .onStatus(s -> s.value() == 402, r -> r.bodyToMono(String.class).map(IllegalStateException::new))
+                .bodyToMono(String.class)
+                .onErrorResume(IllegalStateException.class, e -> reactor.core.publisher.Mono.just(e.getMessage()))
+                .block();
+
+        assertTrue(body.contains("Insufficient credits"), "the caller still reads the error body");
+        waitFor(rows, 1);
+        ExternalCallLog.Failure f = rows.get(0);
+        assertEquals("openrouter.ai", f.vendor());
+        assertEquals(402, f.httpStatus());
+        assertEquals("POST /api/v1", f.operation());
+        assertTrue(f.response().contains("Insufficient credits"));
+        assertTrue(f.request().contains("\"query_params\":[\"key\"]") && !f.request().contains("abc"));
+    }
+
+    @Test
+    void anSdkFailureIsWrittenWithSecretsHidden() throws Exception {
+        var rows = capture();
+        ExternalCallLog.sdkFailure("api.razorpay.com", "orders.create", 400,
+                new RuntimeException("BAD_REQUEST_ERROR: amount must be at least INR 1.00"),
+                java.util.Map.of("amount", 0, "currency", "INR", "key_secret", "rzp_secret_1"));
+        ExternalCallLog.sdkFailure("example.com", "x", 500, new RuntimeException("no"), null);
+
+        waitFor(rows, 1);
+        Thread.sleep(100);
+        assertEquals(1, rows.size(), "not an integration: not written");
+        ExternalCallLog.Failure f = rows.get(0);
+        assertEquals("orders.create", f.operation());
+        assertTrue(f.error().contains("amount must be at least"));
+        assertTrue(f.request().contains("\"currency\":\"INR\"") && !f.request().contains("rzp_secret_1"));
+    }
+
+    @Test
+    void failuresPostedByOtherServicesAreCheckedBeforeStoring() {
+        var ok = ExternalCallFailureController.parse(java.util.Map.of(
+                "occurredAt", "2026-11-18T10:00:00Z", "vendor", "live-server.wati.io", "sourceService", "notification",
+                "operation", "POST /api/v1", "httpStatus", 401, "request", "{\"method\":\"POST\"}",
+                "response", "not json"));
+        assertEquals("live-server.wati.io", ok.vendor());
+        assertEquals(401, ok.httpStatus());
+        assertEquals("{\"method\":\"POST\"}", ok.request());
+        assertEquals(null, ok.response(), "text that is not JSON is dropped, it is cast to jsonb");
+        assertEquals(null, ExternalCallFailureController.parse(java.util.Map.of(
+                "vendor", "sayajihotels.com", "sourceService", "notification")), "not an integration");
     }
 
     @Test
@@ -86,7 +159,7 @@ class ExternalCallLogTest {
         String sql = IntegratedVendors.sqlCondition("e.vendor");
         assertTrue(sql.contains("lower(e.vendor) = 'api.sarvam.ai'"));
         assertTrue(sql.contains("LIKE '%.wati.io'"));
-        assertTrue(sql.contains("IN ('serper')"));
+        assertTrue(sql.contains("IN ('serper', 'aws-ses', 'email-smtp')"));
         assertTrue(IntegratedVendors.isIntegrated("serper"));
         assertFalse(IntegratedVendors.isIntegrated("www.linkedin.com"));
     }

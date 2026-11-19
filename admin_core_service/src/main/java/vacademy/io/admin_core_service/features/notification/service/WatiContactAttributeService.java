@@ -1,6 +1,6 @@
 package vacademy.io.admin_core_service.features.notification.service;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
+import vacademy.io.common.external.ExternalCallLog;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

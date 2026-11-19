@@ -1,5 +1,7 @@
 package vacademy.io.community_service.feature.session.manager;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -74,7 +76,7 @@ public class AiServiceLlmClient {
         factory.setConnectTimeout(10_000);
         // GLM reasons before answering and ai_service may walk a fallback model.
         factory.setReadTimeout(180_000);
-        return new RestTemplate(factory);
+        return ExternalCallLog.attach(new RestTemplate(factory));
     }
 
     public record Completion(String content, String model, Map<String, Object> usage) {

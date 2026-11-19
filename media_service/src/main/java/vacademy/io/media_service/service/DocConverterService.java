@@ -1,5 +1,7 @@
 package vacademy.io.media_service.service;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -52,7 +54,7 @@ public class DocConverterService {
         HttpEntity<MultiValueMap<String, Object>> requestEntity =
                 new HttpEntity<>(body, headers);
 
-        return new RestTemplate()
+        return ExternalCallLog.attach(new RestTemplate())
                 .postForObject(API_URL, requestEntity, String.class);
     }
 }

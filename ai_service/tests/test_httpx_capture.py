@@ -34,6 +34,10 @@ def capture(monkeypatch):
     # Restored after each test, so wrapping here never leaks into other tests.
     monkeypatch.setattr(httpx.Client, "send", httpx.Client.send)
     monkeypatch.setattr(httpx.AsyncClient, "send", httpx.AsyncClient.send)
+    import requests as _requests
+    import urllib.request as _urlreq
+    monkeypatch.setattr(_requests.Session, "send", _requests.Session.send)
+    monkeypatch.setattr(_urlreq.OpenerDirector, "open", _urlreq.OpenerDirector.open)
 
     spec = importlib.util.spec_from_file_location("capture_pkg.httpx_capture", SERVICES_DIR / "httpx_capture.py")
     module = importlib.util.module_from_spec(spec)
@@ -177,3 +181,112 @@ def test_install_wraps_only_once(capture):
         client.get("https://api.sarvam.ai/v1/x")
 
     assert len(calls) == 1
+
+
+# --- requests and urllib (the video pipeline, avatars, music) ---------------------------------
+
+import io  # noqa: E402
+import urllib.error  # noqa: E402
+import urllib.request  # noqa: E402
+
+import requests  # noqa: E402
+from requests.adapters import BaseAdapter  # noqa: E402
+
+
+class _Adapter(BaseAdapter):
+    def __init__(self, status, body=b'{"error":{"code":"insufficient_quota_error","message":"out of credits"}}'):
+        super().__init__()
+        self.status, self.body = status, body
+
+    def send(self, request, **kwargs):
+        response = requests.Response()
+        response.status_code = self.status
+        response.reason = "Payment Required" if self.status == 402 else "OK"
+        response._content = self.body
+        response.url = request.url
+        response.request = request
+        return response
+
+    def close(self):
+        pass
+
+
+def test_requests_failure_is_recorded_with_both_bodies(capture):
+    _, calls = capture
+    session = requests.Session()
+    session.mount("https://", _Adapter(402))
+    response = session.post("https://api.runpod.ai/v2/abc/run?api_key=SECRET",
+                            json={"input": {"text": "hi"}, "api_key": "sk-123"})
+
+    assert response.status_code == 402
+    assert b"insufficient_quota_error" in response.content  # caller still gets the body
+    assert len(calls) == 1
+    call = calls[0]
+    assert call["status"] == "FAILED" and call["http_status"] == 402
+    assert call["automatic"] is False  # kept even while auto-capture is off
+    assert call["operation"] == "POST /v2/abc"
+    assert call["request_summary"]["query_params"] == ["api_key"]
+    assert call["request_summary"]["body"]["api_key"] == "<hidden>"
+    assert call["response_summary"]["body"]["error"]["code"] == "insufficient_quota_error"
+    assert "SECRET" not in repr(call) and "sk-123" not in repr(call)
+
+
+def test_requests_to_a_website_is_not_recorded(capture):
+    _, calls = capture
+    session = requests.Session()
+    session.mount("https://", _Adapter(500))
+    session.get("https://sayajihotels.com/about")
+    assert calls == []
+
+
+class _Handler(urllib.request.BaseHandler):
+    handler_order = 100  # ahead of the real HTTPS handler
+
+    def __init__(self, status, body):
+        self.status, self.body = status, body
+
+    def https_open(self, req):
+        if self.status >= 400:
+            raise urllib.error.HTTPError(req.full_url, self.status, "Too Many Requests", {}, io.BytesIO(self.body))
+        import email.message
+        response = urllib.response.addinfourl(io.BytesIO(self.body), email.message.Message(), req.full_url, self.status)
+        response.msg = "OK"
+        return response
+
+
+def test_urllib_failure_is_recorded_and_the_caller_can_still_read_the_error(capture):
+    _, calls = capture
+    opener = urllib.request.build_opener(_Handler(429, b'{"message":"rate limited"}'))
+    request = urllib.request.Request("https://google.serper.dev/search", data=b'{"q":"physics"}', method="POST")
+    with pytest.raises(urllib.error.HTTPError) as caught:
+        opener.open(request)
+
+    assert caught.value.read() == b'{"message":"rate limited"}'
+    call = calls[0]
+    assert call["vendor"] == "google.serper.dev" and call["http_status"] == 429
+    assert call["status"] == "FAILED" and call["automatic"] is False
+    assert call["request_summary"]["body"] == {"q": "physics"}
+    assert call["response_summary"]["body"] == {"message": "rate limited"}
+
+
+def test_urllib_success_is_left_unread(capture):
+    _, calls = capture
+    opener = urllib.request.build_opener(_Handler(200, b"payload"))
+    with opener.open("https://api.pexels.com/v1/search?query=cat") as response:
+        assert response.read() == b"payload"
+    assert calls[0]["status"] == "SUCCESS" and calls[0]["automatic"] is True
+    assert calls[0]["response_summary"] is None
+
+
+def test_urllib_connection_error_is_recorded(capture):
+    _, calls = capture
+
+    class _Down(urllib.request.BaseHandler):
+        handler_order = 100
+
+        def https_open(self, req):
+            raise urllib.error.URLError("timed out")
+
+    with pytest.raises(urllib.error.URLError):
+        urllib.request.build_opener(_Down()).open("https://openrouter.ai/api/v1/chat/completions", data=b"{}")
+    assert calls[0]["status"] == "FAILED" and calls[0]["error_message"] == "URLError"

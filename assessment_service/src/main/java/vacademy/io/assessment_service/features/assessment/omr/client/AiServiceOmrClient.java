@@ -1,5 +1,7 @@
 package vacademy.io.assessment_service.features.assessment.omr.client;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.extern.slf4j.Slf4j;
@@ -38,7 +40,7 @@ public class AiServiceOmrClient {
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
-        this.webClient = WebClient.builder()
+        this.webClient = ExternalCallLog.attach(WebClient.builder())
                 .clientConnector(new JdkClientHttpConnector(jdkClient))
                 .baseUrl(aiServiceBaseUrl.replaceAll("/$", "") + "/ai-service")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)

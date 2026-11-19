@@ -1,5 +1,7 @@
 package vacademy.io.community_service.feature.session.manager;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -12,7 +14,7 @@ import java.util.*;
 @Service
 public class DeepSeekApiService {
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final String apiUrl = "https://openrouter.ai/api/v1/chat/completions";
 
