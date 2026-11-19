@@ -1009,8 +1009,8 @@ class CommerceReportsDatabaseProofIT {
     @Test
     @Order(1)
     void seedMonth() throws Exception {
-        assertEquals("730", text("SELECT version FROM flyway_schema_history WHERE success AND version IS NOT NULL "
-                + "ORDER BY installed_rank DESC LIMIT 1"), "Flyway target 730, no new migration");
+        assertEquals("731", text("SELECT version FROM flyway_schema_history WHERE success AND version IS NOT NULL "
+                + "ORDER BY installed_rank DESC LIMIT 1"), "Flyway target 731 (main's V731), no new migration");
         assertEquals(ZoneId.of("UTC"), ZoneId.systemDefault(), "the JVM runs in UTC as in production");
         db.update("INSERT INTO level (id, level_name, status) VALUES ('DEFAULT', 'DEFAULT', 'ACTIVE'), ('INVITED', "
                 + "'INVITED', 'ACTIVE') ON CONFLICT DO NOTHING");
@@ -1298,6 +1298,18 @@ class CommerceReportsDatabaseProofIT {
             hyperlink |= HYPERLINK.equals(row.path("customer").asText());
         }
         assertEquals(Set.of("CANCELLED"), statuses, "P3 listed as cancelled");
+        BigDecimal p3Total = money("SELECT total_amount FROM invoice WHERE invoice_number = ? AND institute_id = ?",
+                p3Number, inst);
+        for (JsonNode row : rows(g1)) {
+            if (p3Number.equals(row.path("invoice_number").asText())) {
+                for (String column : List.of("taxable_value", "cgst", "sgst", "igst", "cess", "round_off",
+                        "invoice_total")) {
+                    assertTrue(row.path(column).isNull(), "a cancelled bill's " + column + " is empty");
+                }
+                same(p3Total, row.path("cancelled_value"), "its amount sits in cancelled_value");
+            }
+        }
+        same(p3Total, g1.path("totals").path("cancelled_value"), "cancelled_value total");
         assertTrue(hyperlink, "the customer cell comes from the snapshot as typed");
         assertFalse(texts(g1, "invoice_number").contains(invoiceNumber(liveInvoice(orderF))),
                 "the invoice moved to the previous month is not in this month");
@@ -1548,7 +1560,10 @@ class CommerceReportsDatabaseProofIT {
                 assertEquals("101", book.path("from_page").asText());
                 assertEquals("103", book.path("to_page").asText());
                 assertEquals(2, book.path("total").asLong());
-                assertEquals("102", book.path("not_entered").asText(), "page 102 not entered");
+                assertEquals("100, 102", book.path("not_entered").asText(),
+                        "pages 100 and 102 not entered (from the book's first page, contract 2.6)");
+                assertEquals(2, book.path("not_entered_count").asLong());
+                assertTrue(hasWarning(answer, "BILL_BOOK_PAGES_NOT_ENTERED"));
             }
         }
     }
@@ -1577,7 +1592,14 @@ class CommerceReportsDatabaseProofIT {
         BigDecimal received = tenders.entrySet().stream().filter(e -> !e.getKey().equals("CREDIT_NOTE"))
                 .map(Map.Entry::getValue).reduce(BigDecimal.ZERO, BigDecimal::add);
         BigDecimal refunded = refundsPaid.values().stream().reduce(BigDecimal.ZERO, BigDecimal::add);
-        same(received.add(in).subtract(refunded).subtract(out), totals.path("net_money"), "net money");
+        // What couriers kept of remittances received in the month: deductions + short - over-paid.
+        BigDecimal kept = money("SELECT COALESCE(SUM(deductions + orders_total - gross_amount), 0) FROM "
+                + "commerce_cod_remittance WHERE institute_id = ? AND received_on BETWEEN ? AND ?", inst, monthStart,
+                today);
+        same(amount("30.00"), kept, "C's remittance kept 30.00");
+        same(kept, totals.path("cod_deductions"), "COD kept by the courier");
+        same(received.add(in).subtract(refunded).subtract(out).subtract(kept), totals.path("net_money"),
+                "net money = what reached the bank and the tills");
         note("payment modes month totals " + totals);
 
         // IST day boundary: A's tender at 18:31 UTC on the last day of last month counts on the 1st;
@@ -1630,11 +1652,30 @@ class CommerceReportsDatabaseProofIT {
                 + "AND location_id = ? AND document_date = ?", inst, l1, today);
         long notesToday = count("SELECT count(*) FROM commerce_credit_note n JOIN invoice i ON i.id = n.invoice_id "
                 + "WHERE n.institute_id = ? AND i.location_id = ? AND n.document_date = ?", inst, l1, today);
-        assertEquals(invoicesToday + notesToday, rows(docs).size(), "document rows = invoices + notes of L1 today");
+        // R1: the reissue's credit note and new invoice are not counted again (the first bill stays).
+        BigDecimal reissuedTotal = money("SELECT total_amount FROM invoice WHERE id = ?", p5Reissued);
+        BigDecimal reissueNote = money("SELECT total FROM commerce_credit_note WHERE id = ?", noteP5);
+        assertEquals(invoicesToday + notesToday - 2, rows(docs).size(),
+                "document rows = invoices + notes of L1 today, the reissue pair once");
+        assertFalse(texts(docs, "number").contains(invoiceNumber(p5Reissued)), "the reissued invoice not again");
         Map<String, Object> liveToday = invoiceHeads(null, today, today, true, null, l1);
-        same(big(liveToday.get("total")), book.path("totals").path("invoices_value"), "invoice value of the day");
-        same(big(noteHeads(null, today, today, null, l1).get("total")), book.path("totals").path("credit_notes_value"),
-                "credit note value of the day");
+        same(big(liveToday.get("total")).subtract(reissuedTotal), book.path("totals").path("invoices_value"),
+                "invoice value of the day");
+        same(big(noteHeads(null, today, today, null, l1).get("total")).subtract(reissueNote),
+                book.path("totals").path("credit_notes_value"), "credit note value of the day");
+        assertTrue(hasWarning(book, "REISSUE_COUNTED_ONCE"), "the reissue is named");
+        // R2: the value column (notes negative) sums to the documents' net; the voided bill in cancelled_value.
+        BigDecimal valueColumn = BigDecimal.ZERO;
+        BigDecimal cancelledColumn = BigDecimal.ZERO;
+        for (JsonNode row : rows(docs)) {
+            valueColumn = valueColumn.add(decOr0(row.path("value")));
+            cancelledColumn = cancelledColumn.add(decOr0(row.path("cancelled_value")));
+        }
+        same(dec(docs.path("totals").path("value")), valueColumn, "value column = documents net");
+        same(dec(book.path("totals").path("documents_net")), valueColumn, "documents net");
+        same(money("SELECT COALESCE(SUM(total_amount), 0) FROM invoice WHERE institute_id = ? AND location_id = ? "
+                + "AND document_date = ? AND cancelled_at IS NOT NULL", inst, l1, today), cancelledColumn,
+                "cancelled_value = the voided bill");
 
         List<JsonNode> money = rows(section(book, "money"));
         Set<String> p2Modes = new HashSet<>();
@@ -1667,6 +1708,18 @@ class CommerceReportsDatabaseProofIT {
         assertTrue(cod && refund && cashIn && cashOut, "COD collected, cash refunds, cash in and out");
         same(money("SELECT counted_cash FROM pos_session WHERE id = ?", sessionR1),
                 book.path("totals").path("cash_at_tills"), "cash at the tills = R1 counted");
+        // Several days: cash at the tills per day and location, never added over days.
+        JsonNode twoDays = report("day-book", p("from", today.minusDays(1).toString(), "to", today.toString()));
+        assertTrue(twoDays.path("totals").path("cash_at_tills").isNull(), "no total over days");
+        BigDecimal counted = money("SELECT COALESCE(SUM(counted_cash), 0) FROM pos_session WHERE institute_id = ? AND "
+                + indiaDay("closed_at") + " = ?", inst, today);
+        BigDecimal perDay = BigDecimal.ZERO;
+        for (JsonNode row : rows(section(twoDays, "tills"))) {
+            if (today.toString().equals(row.path("date").asText())) {
+                perDay = perDay.add(decOr0(row.path("cash_at_tills")));
+            }
+        }
+        same(counted, perDay, "today's tills = sessions closed today");
         note("day book L1 " + today + " totals " + book.path("totals"));
         note("payment modes L1 today " + pm);
     }
@@ -1779,18 +1832,33 @@ class CommerceReportsDatabaseProofIT {
         JsonNode sold = report("sales", month());
         Map<String, Object> live = invoiceHeads(null, monthStart, today, true, null, null);
         Map<String, Object> notes = noteHeads(null, monthStart, today, null, null);
-        same(big(live.get("total")), sold.path("totals").path("net"), "sales net = live invoice totals");
-        same(big(notes.get("total")), sold.path("totals").path("returns"), "returns = note totals");
-        same(big(live.get("total")).subtract(big(notes.get("total"))), sold.path("totals").path("net_after_returns"),
-                "net after returns");
-        assertEquals(((Number) live.get("n")).longValue(), sold.path("totals").path("invoices").asLong());
+        // R1: P5 was reissued with a GSTIN: one sale (the first bill), no return. The new invoice and
+        // the reissue note are left out of the sales figures (the GST registers keep them).
+        BigDecimal reissued = money("SELECT total_amount FROM invoice WHERE id = ?", p5Reissued);
+        BigDecimal reissueNote = money("SELECT total FROM commerce_credit_note WHERE id = ?", noteP5);
+        BigDecimal liveNet = big(live.get("total")).subtract(reissued);
+        BigDecimal returnsTotal = big(notes.get("total")).subtract(reissueNote);
+        same(liveNet, sold.path("totals").path("net"), "sales net = live invoice totals, the reissue once");
+        same(returnsTotal, sold.path("totals").path("returns"), "returns = note totals but the reissue note");
+        same(liveNet.subtract(returnsTotal), sold.path("totals").path("net_after_returns"), "net after returns");
+        assertEquals(((Number) live.get("n")).longValue() - 1, sold.path("totals").path("invoices").asLong(),
+                "invoices: the reissue counted once");
+        assertEquals(((Number) notes.get("n")).longValue() - 1, sold.path("totals").path("credit_notes").asLong());
+        long items = count("SELECT COALESCE(SUM(CASE WHEN li.item_type IN ('COMMERCE_SHIPPING', 'COMMERCE_COD_CHARGE') "
+                + "THEN 0 WHEN ol.qty_scale > 1 THEN 1 ELSE li.quantity END), 0) FROM invoice i JOIN invoice_line_item "
+                + "li ON li.invoice_id = i.id LEFT JOIN commerce_order_line ol ON ol.order_id = i.commerce_order_id AND "
+                + "ol.line_ref = li.source_id WHERE i.institute_id = ? AND i.document_type IS NOT NULL AND "
+                + "i.cancelled_at IS NULL AND i.id <> ? AND i.document_date BETWEEN ? AND ?", inst, p5Reissued,
+                monthStart, today);
+        assertEquals(items, sold.path("totals").path("items").asLong(), "items: P5's bottle once");
+        assertTrue(hasWarning(sold, "REISSUE_COUNTED_ONCE"));
 
         JsonNode byStaff = report("sales", month("groupBy", "staff"));
         String staffColumn = byStaff.path("columns").get(0).path("key").asText();
         Set<String> staff = texts(byStaff, staffColumn);
         assertTrue(staff.contains("Test Cashier"), "the cashier by name: " + staff);
         assertTrue(staff.contains("Online"), "online rows read Online: " + staff);
-        same(big(live.get("total")), byStaff.path("totals").path("net"), "by staff adds to the same net");
+        same(liveNet, byStaff.path("totals").path("net"), "by staff adds to the same net");
 
         JsonNode products = report("products", month());
         JsonNode cloth = rows(products).stream().filter(r -> "Cotton cloth".equals(r.path("product").asText()))
@@ -1809,8 +1877,21 @@ class CommerceReportsDatabaseProofIT {
         assertTrue(texts(section(products, "never_sold"), "product").contains("Steel cup"), "the unsold cup");
         assertEquals(count("SELECT count(DISTINCT i.id) FROM invoice i JOIN invoice_line_item li ON li.invoice_id = "
                 + "i.id WHERE i.institute_id = ? AND i.document_type IS NOT NULL AND i.cancelled_at IS NULL AND "
-                + "li.package_session_id IS NOT NULL AND i.document_date BETWEEN ? AND ?", inst, monthStart, today),
-                products.path("totals").path("invoices").asLong(), "products: distinct invoices with goods");
+                + "li.package_session_id IS NOT NULL AND i.id <> ? AND i.document_date BETWEEN ? AND ?", inst,
+                p5Reissued, monthStart, today),
+                products.path("totals").path("distinct_invoices").asLong(), "products: distinct invoices with goods");
+        assertTrue(products.path("totals").path("invoices").isMissingNode(), "no column-sum key for a distinct count");
+        // R1 in products: the reissued bottle is sold once and never "returned".
+        JsonNode steel = rows(products).stream().filter(r -> "Steel bottle".equals(r.path("product").asText()))
+                .findFirst().orElseThrow();
+        long bottlesSold = count("SELECT COALESCE(SUM(li.quantity), 0) FROM invoice_line_item li JOIN invoice i ON "
+                + "i.id = li.invoice_id WHERE i.institute_id = ? AND i.cancelled_at IS NULL AND li.package_session_id = ? "
+                + "AND i.id <> ? AND i.document_date BETWEEN ? AND ?", inst, bottle, p5Reissued, monthStart, today);
+        long bottlesBack = count("SELECT COALESCE(SUM(l.quantity), 0) FROM commerce_credit_note_line l JOIN "
+                + "commerce_credit_note n ON n.id = l.credit_note_id WHERE n.institute_id = ? AND l.package_session_id = ? "
+                + "AND n.id <> ? AND n.document_date BETWEEN ? AND ?", inst, bottle, noteP5, monthStart, today);
+        same(BigDecimal.valueOf(bottlesSold), steel.path("sold"), "bottles sold, P5 once");
+        same(BigDecimal.valueOf(bottlesBack), steel.path("returned"), "bottles back, no reissue 'return'");
         note("products cloth " + cloth);
         note("sales totals " + sold.path("totals"));
     }
@@ -1839,7 +1920,7 @@ class CommerceReportsDatabaseProofIT {
         return out;
     }
 
-    /** CSV column sums = JSON totals; for the sales register, ACTIVE rows only (status forward-filled). */
+    /** CSV column sums = JSON totals, every row summed (cancelled rows carry no money in summable cells). */
     private void csvAgrees(String name, JsonNode answer, byte[] bytes) throws IOException {
         assertTrue(bytes.length >= 3 && (bytes[0] & 0xFF) == 0xEF && (bytes[1] & 0xFF) == 0xBB
                 && (bytes[2] & 0xFF) == 0xBF, name + " CSV starts with the BOM");
@@ -1874,16 +1955,10 @@ class CommerceReportsDatabaseProofIT {
                 group = groups.getOrDefault(groupKey, List.of());
             }
             assertEquals(block.rows(), group.size(), name + " " + block.key() + " CSV rows = JSON rows");
-            String lastStatus = null;
+            // R2: every row is summed, cancelled ones included: their money cells are empty and
+            // their amount sits in cancelled_value, so a plain column sum equals the totals.
             Map<String, BigDecimal> sums = new HashMap<>();
             for (CSVRecord record : group) {
-                if ("sales-register".equals(name)) {
-                    String s = record.get("status");
-                    lastStatus = s == null || s.isBlank() ? lastStatus : s;
-                    if (!"ACTIVE".equals(lastStatus)) {
-                        continue;
-                    }
-                }
                 for (JsonNode column : block.columns()) {
                     String key = column.path("key").asText();
                     if (!summed(column) || !record.isMapped(key)) {
@@ -1965,12 +2040,11 @@ class CommerceReportsDatabaseProofIT {
     }
 
     /**
-     * The products report's {@code invoices} total is the number of distinct invoices, not the sum
-     * of the per-row counts (an invoice of two products is one invoice); held against SQL in
-     * {@code salesAndProducts} instead.
+     * Columns whose total is not a column sum. None since the products total became
+     * {@code distinct_invoices} (a key of its own); kept as the one place to name such a column.
      */
     private static boolean distinctCount(String report, String key) {
-        return "products".equals(report) && "invoices".equals(key);
+        return false;
     }
 
     /** Money and count columns are compared (their totals are sums of the rows). */
@@ -2061,6 +2135,39 @@ class CommerceReportsDatabaseProofIT {
             refused("ROLE_NOT_ALLOWED", () -> auditList.list(who, inst, monthStart, today, null, null, null, null,
                     null, null, null));
         }
+        // R7: "every location" counts every place whatever its status. With L3 switched to INACTIVE, a
+        // manager assigned to L1 and L2 is still not every location: no GST pack, and L1/L2 rows only.
+        String limitedId = "manager-l12-" + run;
+        CustomUserDetails limited = user(limitedId, "COMMERCE_STORE_MANAGER");
+        assign(limitedId, l1);
+        assign(limitedId, l2);
+        db.update("UPDATE stock_location SET status = 'INACTIVE' WHERE id = ?", l3);
+        try {
+            refused("LOCATION_NOT_ALLOWED", () -> report(limited, "sales-register", month("sellerGstin", G1)));
+            refused("LOCATION_NOT_ALLOWED", () -> report(limited, "gstr1", month("sellerGstin", G1)));
+            JsonNode places = objectMapper.valueToTree(reports.places(limited, inst).getBody());
+            assertFalse(places.path("all_places").asBoolean());
+            assertFalse(places.path("gst_reports").asBoolean(), "the screen hides the GST cards for this reader");
+            assertEquals(Set.of(l1, l2), texts(wrap(places.path("places")), "id"), "places of the reader");
+        } finally {
+            db.update("UPDATE stock_location SET status = 'ACTIVE' WHERE id = ?", l3);
+        }
+        JsonNode adminPlaces = objectMapper.valueToTree(reports.places(admin, inst).getBody());
+        assertEquals(Set.of(l1, l2, l3), texts(wrap(adminPlaces.path("places")), "id"));
+        assertTrue(adminPlaces.path("gst_reports").asBoolean());
+        assertEquals(G2, wrap(adminPlaces.path("places")).path("rows").findValuesAsText("gstin").stream()
+                .filter(G2::equals).findFirst().orElse(null), "places carry their GSTIN");
+        // R7: a reader limited to L1 sees only L1's share of the COD remittance, no batch figures.
+        String l1Only = "manager-l1-" + run;
+        assign(l1Only, l1);
+        JsonNode cod = report(user(l1Only, "COMMERCE_STORE_MANAGER"), "cod-outstanding", month());
+        JsonNode remittance = rows(section(cod, "remittances")).get(0);
+        same(money("SELECT COALESCE(SUM(COALESCE(cod_amount, total)), 0) FROM commerce_order WHERE cod_remittance_id = ? "
+                + "AND fulfilment_location_id = ?", remittanceId, l1), remittance.path("orders_total"), "L1's share");
+        assertTrue(remittance.path("gross").isNull() && remittance.path("deductions").isNull()
+                && remittance.path("net").isNull(), "the batch figures cover other places: empty");
+        assertTrue(section(cod, "remittances").path("totals").path("gross").isMissingNode());
+
         header(otherInst);
         try {
             CustomUserDetails otherAdmin = user("admin-other-" + run, "ADMIN");
@@ -2113,6 +2220,19 @@ class CommerceReportsDatabaseProofIT {
             assertFalse(ids.contains(row.path("id").asText()), "no repeats on page 2");
         }
         assertTrue(second.path("rows").size() > 0);
+        // R9: the "who" filter lists the staff of the caller's rows, by name.
+        JsonNode actors = objectMapper.valueToTree(auditList.actors(admin, inst, monthStart, today, null).getBody());
+        Set<String> actorIds = new HashSet<>(wrap(actors.path("actors")).path("rows").findValuesAsText("user_id"));
+        assertEquals(new HashSet<>(db.queryForList("SELECT DISTINCT actor_user_id FROM commerce_audit WHERE "
+                + "institute_id = ? AND actor_user_id IS NOT NULL", String.class, inst)), actorIds, "every actor once");
+        assertTrue(wrap(actors.path("actors")).path("rows").findValuesAsText("name").contains("Test Cashier"));
+    }
+
+    /** A JSON array as a block with {@code rows}, for {@link #texts}. */
+    private JsonNode wrap(JsonNode array) {
+        com.fasterxml.jackson.databind.node.ObjectNode block = objectMapper.createObjectNode();
+        block.set("rows", array);
+        return block;
     }
 
     private String liveOrCancelledInvoice(String orderId) {
@@ -2126,6 +2246,32 @@ class CommerceReportsDatabaseProofIT {
     void limitsAndTimeout() throws Exception {
         refused("VALIDATION", () -> report("sales", p("from", today.minusDays(366).toString(), "to",
                 today.toString())));
+        // R5: numbers are bounded before they are parsed.
+        refused("VALIDATION", () -> report("gstr1", month("sellerGstin", G1, "b2clLimit", "1E999999999")));
+        refused("VALIDATION", () -> report("sales", month("b2clLimit", "500")));
+        refused("VALIDATION", () -> report("sales-register", month("sellerGstin", G1, "size", "500")));
+        refused("VALIDATION", () -> report("sales-register", month("sellerGstin", G1, "cursor", "%%%")));
+        refused("VALIDATION", () -> report("day-book", p("channel", "POS")));
+        refused("VALIDATION", () -> report("sales", p("from", today.minusYears(3).minusDays(1).toString(), "to",
+                today.minusYears(3).plusDays(10).toString())));
+
+        // R8: the same answer in a JVM that is not in UTC (the data was written in UTC).
+        JsonNode utc = report("payment-modes", month());
+        JsonNode auditUtc = objectMapper.valueToTree(auditList.list(admin, inst, monthStart, today, null, null,
+                null, null, null, 200, null).getBody());
+        java.util.TimeZone jvmZone = java.util.TimeZone.getDefault();
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("Asia/Kolkata"));
+            JsonNode india = report("payment-modes", month());
+            assertEquals(utc.path("totals"), india.path("totals"), "payment modes in an IST JVM");
+            JsonNode auditIndia = objectMapper.valueToTree(auditList.list(admin, inst, monthStart, today, null, null,
+                    null, null, null, 200, null).getBody());
+            assertTrue(auditIndia.path("rows").size() > 0);
+            assertEquals(auditUtc.path("rows").get(0).path("created_at"), auditIndia.path("rows").get(0)
+                    .path("created_at"), "audit times in an IST JVM");
+        } finally {
+            java.util.TimeZone.setDefault(jvmZone);
+        }
         assertEquals("25s", reportRunner.screen(() -> db.queryForObject("SHOW statement_timeout", String.class)),
                 "the screen read runs with the 25 s statement timeout");
 
