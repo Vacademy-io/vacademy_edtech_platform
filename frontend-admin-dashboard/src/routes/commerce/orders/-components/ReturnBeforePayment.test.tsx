@@ -133,6 +133,31 @@ describe('ReturnCreateDialog on an unpaid staff credit order', () => {
         expect(split.textContent).toContain('To pay back (estimate)₹0.00');
     });
 
+    it('shows the server\'s split (credit_to_due, refund_amount) instead of its own estimate', async () => {
+        // ₹50 received, ₹950 owed by the screen's reckoning; the server says ₹600 off the due and ₹50 back.
+        api.previewReturn.mockResolvedValue({
+            policy: null,
+            warnings: [],
+            lines: [],
+            credit_estimate: 700,
+            credit_to_due: 600,
+            refund_amount: 50,
+        });
+        wrap(
+            <ReturnCreateDialog
+                open
+                onOpenChange={() => undefined}
+                detail={creditOrder({ amount_due: '600.00' }, { payment_status: 'PARTIALLY_PAID', amount_paid: '50.00' })}
+            />
+        );
+        fireEvent.change(screen.getByLabelText(/Cotton scarf/), { target: { value: '1' } });
+        fireEvent.change(screen.getByLabelText('Reason for the return'), { target: { value: 'DEFECTIVE' } });
+        const split = await screen.findByTestId('return-credit-split', {}, { timeout: 2000 });
+        expect(split.textContent).toContain('Off what is owed (estimate)₹600.00');
+        expect(split.textContent).toContain('To pay back (estimate)₹50.00');
+        expect(split.textContent).not.toContain('₹100.00');
+    });
+
     it('a paid website order shows neither the owed line nor the split', async () => {
         api.previewReturn.mockResolvedValue({ policy: null, warnings: [], lines: [], credit_estimate: 300 });
         wrap(

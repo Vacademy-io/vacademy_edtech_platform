@@ -563,6 +563,8 @@ export async function previewReturn(body: {
             returnable_quantity: int(l.returnable_quantity),
         })),
         credit_estimate: num(r.credit_estimate),
+        credit_to_due: num(r.credit_to_due),
+        refund_amount: num(r.refund_amount),
     };
 }
 

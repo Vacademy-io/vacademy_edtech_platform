@@ -99,6 +99,21 @@ describe('report catalogue', () => {
         expect(ids(visibleReportGroups(accessOf(['ADMIN'], ALL_FEATURES), false))).toEqual([...REPORT_IDS]);
     });
 
+    it('M6: the server\'s gst_reports wins over all_places when it is sent', () => {
+        const manager = accessOf([COMMERCE_ROLE.STORE_MANAGER], ALL_FEATURES);
+        const admin = accessOf(['ADMIN'], ALL_FEATURES);
+        // Every place but the server says no (tax reports off there): no GST cards, even for ADMIN.
+        expect(gstClosedToPlaces(manager, true, false)).toBe(true);
+        expect(gstClosedToPlaces(admin, true, false)).toBe(true);
+        expect(visibleReportGroups(admin, true, false).map((g) => g.group)).not.toContain('gst');
+        // The server says yes: the cards stay whatever all_places says.
+        expect(gstClosedToPlaces(manager, false, true)).toBe(false);
+        expect(ids(visibleReportGroups(manager, false, true))).toEqual([...REPORT_IDS]);
+        // Not sent: all_places decides, as before.
+        expect(gstClosedToPlaces(manager, false, null)).toBe(true);
+        expect(gstClosedToPlaces(manager, true, null)).toBe(false);
+    });
+
     it('N9: the sales register offers the bill status; GSTR-1 and the GST pack the B2C large limit', () => {
         expect(reportEntry('salesRegister')?.filters).toContain('status');
         expect(reportEntry('gstr1')?.filters).toContain('b2clLimit');

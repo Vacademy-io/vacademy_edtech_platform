@@ -45,6 +45,8 @@ vi.mock('../../-shared/reports-api', () => ({
 import * as api from '../../-shared/reports-api';
 import { renderWithQuery } from '../../-components/report-test-kit';
 import type { AuditSearch } from '../../-shared/report-search';
+import { localeT } from '@/routes/commerce/-shared/en-t';
+import { changeKeyLabel } from './AuditChanges';
 import { AuditLog, auditFilters } from './AuditLogPage';
 
 const fetchAudit = vi.mocked(api.fetchAudit);
@@ -164,6 +166,13 @@ describe('AuditLog', () => {
         expect(table.textContent).toContain('Something new happened');
         expect(table.textContent).not.toContain('SOMETHING_NEW_HAPPENED');
         expect(screen.getByTestId('audit-changes').textContent).toContain('Courier slot');
+    });
+
+    it('M9: a return before payment names its credit_on_due and amount_due keys in English and Hindi', () => {
+        expect(changeKeyLabel('credit_on_due', localeT('en'))).toBe('Credit taken off what is owed');
+        expect(changeKeyLabel('amount_due', localeT('en'))).toBe('Still owed');
+        expect(changeKeyLabel('credit_on_due', localeT('hi'))).toBe('बकाया में से घटाया गया क्रेडिट');
+        expect(changeKeyLabel('amount_due', localeT('hi'))).toBe('अभी बाकी');
     });
 
     it('M9: kinds the server records are named (transfers, returns, tracking)', async () => {

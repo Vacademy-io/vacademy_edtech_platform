@@ -244,7 +244,7 @@ describe('report screen words (reports fix round)', () => {
                 { invoice_number: null, status: null },
                 { invoice_number: 'INV-2', status: 'ACTIVE' },
                 { invoice_number: null, status: null },
-                { number: 'B-3', status: 'VOID' },
+                { number: 'B-3', status: 'CANCELLED' },
                 { number: 'B-4' },
             ])
         ).toEqual([true, true, false, false, true, false]);

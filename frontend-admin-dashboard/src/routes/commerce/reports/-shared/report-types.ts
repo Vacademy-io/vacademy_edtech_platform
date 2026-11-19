@@ -131,6 +131,12 @@ export interface ReportPlaces {
      * server did not say.
      */
     allPlaces: boolean | null;
+    /**
+     * The server's own word that the GST reports will answer this caller
+     * (`gst_reports`: every place and the tax reports feature on). Null or
+     * absent when the server did not say; then `allPlaces` decides.
+     */
+    gstReports?: boolean | null;
 }
 
 /** Someone seen in the caller's audit scope (`GET /reports/audit/actors`, R9). */

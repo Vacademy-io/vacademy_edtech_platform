@@ -73,7 +73,7 @@ export function codeText(columnKey: string, value: unknown, t: TFunction): strin
 const CANCELLED = new Set<string>(CANCELLED_STATUSES);
 
 /**
- * Rows of a cancelled bill (R2): the row's `status` is CANCELLED or VOID. The
+ * Rows of a cancelled bill (R2): the row's `status` is CANCELLED. The
  * further lines of a bill carry neither status nor number (the server prints
  * them on its first line only) and follow the line above. Their money is in
  * `cancelled_value`, not in the summable columns; the screen strikes them through.

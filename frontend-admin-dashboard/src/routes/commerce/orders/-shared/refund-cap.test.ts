@@ -12,6 +12,7 @@ import {
     creditSplit,
     dueLoweredByReturns,
     owesOnCredit,
+    previewSplit,
     receiptDue,
     refundCap,
     refundCapText,
@@ -116,6 +117,35 @@ describe('returns before payment (contract §15)', () => {
         expect(creditSplit(700, 600)).toEqual({ offDue: 600, paidBack: 100 });
         expect(creditSplit(1000, 1000)).toEqual({ offDue: 1000, paidBack: 0 });
         expect(creditSplit(250.5, 0)).toEqual({ offDue: 0, paidBack: 250.5 });
+    });
+});
+
+describe('the return preview split: the server\'s credit_to_due / refund_amount first', () => {
+    it('uses the server split when sent, even where the screen\'s own estimate would differ', () => {
+        // ₹700 back on an order with ₹600 owed and only ₹50 received: the server caps the refund at what was paid.
+        expect(previewSplit({ credit_estimate: 700, credit_to_due: 600, refund_amount: 50 }, true, 600)).toEqual({
+            offDue: 600,
+            paidBack: 50,
+        });
+    });
+
+    it('falls back to the screen estimate when the server sent no split, and only on an order that owes', () => {
+        expect(previewSplit({ credit_estimate: 700, credit_to_due: null, refund_amount: null }, true, 600)).toEqual({
+            offDue: 600,
+            paidBack: 100,
+        });
+        expect(previewSplit({ credit_estimate: 300 }, true, 1000)).toEqual({ offDue: 300, paidBack: 0 });
+        expect(previewSplit({ credit_estimate: 300, credit_to_due: null, refund_amount: null }, false, 0)).toBeNull();
+        expect(previewSplit({ credit_estimate: null, credit_to_due: null, refund_amount: null }, true, 600)).toBeNull();
+        expect(previewSplit(null, true, 600)).toBeNull();
+    });
+
+    it('an order that owes nothing shows no split when the server put nothing off a due', () => {
+        expect(previewSplit({ credit_estimate: 300, credit_to_due: 0, refund_amount: 300 }, false, 0)).toBeNull();
+        expect(previewSplit({ credit_estimate: 300, credit_to_due: 200, refund_amount: 100 }, false, 0)).toEqual({
+            offDue: 200,
+            paidBack: 100,
+        });
     });
 });
 

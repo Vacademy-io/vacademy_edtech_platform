@@ -157,8 +157,11 @@ export const REPORT_VALUE_CODES = [
     'OFFLINE',
 ] as const;
 
-/** Statuses that mark a bill as cancelled: its row is struck through, its money is in `cancelled_value` (R2). */
-export const CANCELLED_STATUSES = ['CANCELLED', 'VOID'] as const;
+/**
+ * Statuses that mark a bill as cancelled: its row is struck through, its money is in `cancelled_value` (R2).
+ * The server writes CANCELLED only (a voided counter bill is a cancelled invoice); there is no VOID bill status.
+ */
+export const CANCELLED_STATUSES = ['CANCELLED'] as const;
 
 /** Figures of the flat report checks that are no column of the report, with words of their own. */
 export const CHECK_FIGURES = [
@@ -357,6 +360,8 @@ export const AUDIT_CHANGE_KEYS = [
     'filters',
     'from',
     'to',
+    'credit_on_due',
+    'amount_due',
 ] as const;
 
 /** Approval actions (manager PIN) the screen names; others print as their code. */

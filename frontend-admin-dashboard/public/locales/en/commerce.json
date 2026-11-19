@@ -3703,7 +3703,9 @@
                 "rows": "Rows",
                 "filters": "Filters",
                 "from": "From",
-                "to": "To"
+                "to": "To",
+                "credit_on_due": "Credit taken off what is owed",
+                "amount_due": "Still owed"
             }
         },
         "check": {

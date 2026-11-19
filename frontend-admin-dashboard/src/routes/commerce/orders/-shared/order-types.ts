@@ -349,6 +349,10 @@ export interface ReturnPreview {
     warnings: string[];
     lines: { order_line_id: string; returnable_quantity: number }[];
     credit_estimate: number | null;
+    /** Part of the estimate that comes off what a staff credit order owes (§15); null when the server sent none. */
+    credit_to_due: number | null;
+    /** Part of the estimate due back as money; null when the server sent none. */
+    refund_amount: number | null;
 }
 
 export interface RefundView extends RefundSummary {

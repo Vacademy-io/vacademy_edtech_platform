@@ -133,9 +133,12 @@ describe('reports api', () => {
                 { id: 'L2', name: 'Test Depot', code: 'D2', gstin: null },
             ],
             allPlaces: false,
+            gstReports: null,
         });
         http.get.mockResolvedValueOnce({ data: [{ id: 'L1', name: 'Test Store' }] });
-        expect(await fetchReportPlaces()).toMatchObject({ places: [{ id: 'L1' }], allPlaces: null });
+        expect(await fetchReportPlaces()).toMatchObject({ places: [{ id: 'L1' }], allPlaces: null, gstReports: null });
+        http.get.mockResolvedValueOnce({ data: { places: [], all_places: true, gst_reports: false } });
+        expect(await fetchReportPlaces()).toMatchObject({ allPlaces: true, gstReports: false });
     });
 
     it('R9: the people seen in the audit scope, {actors} or a list; a missing name shows the id', async () => {

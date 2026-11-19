@@ -23,9 +23,11 @@ import { useReportLocations } from '../-shared/report-hooks';
 export function ReportsHome() {
     const { t } = useTranslation('commerce');
     const access = useCommerceAccess();
-    const { allPlaces } = useReportLocations();
-    const groups = visibleReportGroups(access, allPlaces);
-    const gstHidden = gstClosedToPlaces(access, allPlaces) && wouldSeeGst(access);
+    const { allPlaces, gstReports } = useReportLocations();
+    const groups = visibleReportGroups(access, allPlaces, gstReports);
+    // The line says "needs every place"; it is shown only when places are the reason.
+    const gstHidden =
+        gstClosedToPlaces(access, allPlaces, gstReports) && allPlaces !== true && !access.isAdmin && wouldSeeGst(access);
     if (groups.length === 0) return <CommerceEmptyState title={t('reports.home.none')} />;
     return (
         <div className="flex flex-col gap-6" data-testid="reports-home">

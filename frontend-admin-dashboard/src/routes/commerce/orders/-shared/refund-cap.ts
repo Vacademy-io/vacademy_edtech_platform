@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next';
 import { formatMoney } from '@/components/design-system/money-cell';
 import { round2 } from './order-format';
-import type { ReturnView, StaffOrderDetail } from './order-types';
+import type { ReturnPreview, ReturnView, StaffOrderDetail } from './order-types';
 
 /**
  * Money limits the dialogs show before the server checks them (contract §5.7.4,
@@ -73,6 +73,32 @@ export function dueLoweredByReturns(detail: DueDetail): number {
 export function creditSplit(credit: number, due: number): { offDue: number; paidBack: number } {
     const offDue = Math.max(0, Math.min(credit, due));
     return { offDue: round2(offDue), paidBack: Math.max(0, round2(credit - offDue)) };
+}
+
+type SplitPreview = Pick<ReturnPreview, 'credit_estimate'> &
+    Partial<Pick<ReturnPreview, 'credit_to_due' | 'refund_amount'>>;
+
+/**
+ * The split the return dialog shows. The server's own split (`credit_to_due`,
+ * `refund_amount`) wins when the preview carries it; the screen's estimate
+ * (`creditSplit` of the estimate against what is owed) is the fallback for an
+ * order that owes. null = nothing to split (an order that owes nothing, and
+ * the server put nothing off a due).
+ */
+export function previewSplit(
+    preview: SplitPreview | null | undefined,
+    owing: boolean,
+    due: number
+): { offDue: number; paidBack: number } | null {
+    if (!preview) return null;
+    const toDue = preview.credit_to_due;
+    const back = preview.refund_amount;
+    if (toDue !== null && toDue !== undefined && back !== null && back !== undefined) {
+        if (!owing && toDue <= 0) return null;
+        return { offDue: round2(Math.max(0, toDue)), paidBack: round2(Math.max(0, back)) };
+    }
+    if (!owing || preview.credit_estimate === null) return null;
+    return creditSplit(preview.credit_estimate, due);
 }
 
 /** Field check for a typed amount against a cap: null = fine. */

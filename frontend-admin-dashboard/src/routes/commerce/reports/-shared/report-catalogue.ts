@@ -297,14 +297,17 @@ export function canSeeReport(entry: ReportEntry, access: Pick<CommerceAccess, 'i
 
 /**
  * The GST reports cover the whole GSTIN: the server opens them only to ADMIN
- * and to staff assigned to every active place (contract §3.5). `allPlaces` is
- * the places answer's word on that (R9); null = not known, the cards stay and
- * the server still refuses.
+ * and to staff assigned to every place (contract §3.5), with the tax reports
+ * feature on. The places answer (R9) says so in `gst_reports`, which wins when
+ * sent; else `all_places` decides for a non-admin. null = not known, the cards
+ * stay and the server still refuses.
  */
 export function gstClosedToPlaces(
     access: Pick<CommerceAccess, 'isAdmin'>,
-    allPlaces: boolean | null | undefined
+    allPlaces: boolean | null | undefined,
+    gstReports: boolean | null | undefined = null
 ): boolean {
+    if (typeof gstReports === 'boolean') return !gstReports;
     return !access.isAdmin && allPlaces === false;
 }
 
@@ -315,9 +318,10 @@ export function gstClosedToPlaces(
  */
 export function visibleReportGroups(
     access: Pick<CommerceAccess, 'isFeatureOn' | 'hasAnyRole'> & Partial<Pick<CommerceAccess, 'isAdmin'>>,
-    allPlaces: boolean | null = null
+    allPlaces: boolean | null = null,
+    gstReports: boolean | null = null
 ): { group: ReportGroup; entries: ReportEntry[] }[] {
-    const gstClosed = gstClosedToPlaces({ isAdmin: !!access.isAdmin }, allPlaces);
+    const gstClosed = gstClosedToPlaces({ isAdmin: !!access.isAdmin }, allPlaces, gstReports);
     return REPORT_GROUPS.map((group) => ({
         group,
         entries: REPORT_CATALOGUE.filter(

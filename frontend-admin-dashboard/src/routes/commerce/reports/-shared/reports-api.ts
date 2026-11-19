@@ -277,9 +277,10 @@ export function normalizePlace(raw: unknown): ReportPlace | null {
 
 /**
  * `GET /reports/places` (R9): the places the caller may report on, readable
- * by every report reader (no stock feature). Answer `{places: [...], all_places}`
- * or a bare list; `all_places` (true = ADMIN or every active place) opens the GST
- * reports, which cover the whole GSTIN.
+ * by every report reader (no stock feature). Answer `{places: [...], all_places,
+ * gst_reports}` or a bare list; `gst_reports` says whether the GST reports (which
+ * cover the whole GSTIN) will answer; `all_places` (ADMIN or every place) is the
+ * fallback when it is missing.
  */
 export async function fetchReportPlaces(): Promise<ReportPlaces> {
     const res = await authenticatedAxiosInstance.get<unknown>(COMMERCE_REPORT_PLACES, { params: instituteParams() });
@@ -287,9 +288,11 @@ export async function fetchReportPlaces(): Promise<ReportPlaces> {
     const r = rec(data);
     const list = Array.isArray(data) ? data : r.places;
     const all = r.all_places;
+    const gst = r.gst_reports;
     return {
         places: (Array.isArray(list) ? list : []).map(normalizePlace).filter((p): p is ReportPlace => !!p),
         allPlaces: typeof all === 'boolean' ? all : null,
+        gstReports: typeof gst === 'boolean' ? gst : null,
     };
 }
 

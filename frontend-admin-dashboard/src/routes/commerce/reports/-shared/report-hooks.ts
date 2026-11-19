@@ -72,7 +72,12 @@ export function useReportLocations() {
         staleTime: REFERENCE_STALE_MS,
         retry: false,
     });
-    return { ...query, places: query.data?.places ?? NO_PLACES, allPlaces: query.data?.allPlaces ?? null };
+    return {
+        ...query,
+        places: query.data?.places ?? NO_PLACES,
+        allPlaces: query.data?.allPlaces ?? null,
+        gstReports: query.data?.gstReports ?? null,
+    };
 }
 
 export function useReport(entry: ReportEntry, filters: ReportFilterValues, cursor: string | null, on = true) {

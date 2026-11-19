@@ -14,7 +14,7 @@ import { createReturn, previewReturn } from '@/routes/commerce/orders/-shared/or
 import { lengthProblemText, unitWord } from '@/routes/commerce/-shared/units';
 import { returnRequestLines, typedQuantity } from '@/routes/commerce/orders/-shared/length-entry';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
-import { creditSplit, owesOnCredit, receiptDue } from '@/routes/commerce/orders/-shared/refund-cap';
+import { owesOnCredit, previewSplit, receiptDue } from '@/routes/commerce/orders/-shared/refund-cap';
 import {
     RETURN_REASONS,
     RETURN_VIA,
@@ -137,7 +137,7 @@ export function ReturnCreateDialog({ open, onOpenChange, detail }: OrderDialogPr
 
     const owing = owesOnCredit(detail);
     const due = receiptDue(detail);
-    const split = owing && preview && preview.credit_estimate !== null ? creditSplit(preview.credit_estimate, due) : null;
+    const split = previewSplit(preview, owing, due);
 
     const policyText = preview?.policy?.policy_text[language] ?? preview?.policy?.policy_text[language === 'hi' ? 'en' : 'hi'];
     const activeLocations = (locations.data ?? []).filter(
