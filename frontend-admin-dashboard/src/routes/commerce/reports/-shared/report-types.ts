@@ -64,12 +64,17 @@ export interface ReportCheckLine {
 
 /** `check` of an answer: `{rule, columns?: [...], difference, ...figures}`. */
 export interface ReportCheck {
-    /** The rule as the server words it (English). */
+    /** The rule as the server words it (English; the screen shows its own words per report). */
     rule: string | null;
     /** The overall difference as the server sent it (0.00 when the sections add up). */
     difference: ReportCell;
     /** GSTR-1 only: one line per checked column (`check.columns`). */
     columns: ReportCheckLine[];
+    /**
+     * The flat figures of the other checks (sales register, credit notes, HSN summary, POS
+     * sessions): every key but `rule`, `difference` and `columns`, in the server's order.
+     */
+    figures: [string, ReportCell][];
 }
 
 export interface ReportAnswer {
@@ -100,6 +105,38 @@ export interface ReportFilterValues {
     groupBy?: string;
     /** `YYYY-MM-DD` (COD outstanding). */
     asOf?: string;
+    /** Sales register: `ACTIVE` or `CANCELLED` (absent = all bills). */
+    status?: string;
+    /** GSTR-1 / GST pack: the B2C large limit in rupees (absent = the server's default). */
+    b2clLimit?: string;
+}
+
+/**
+ * A place the caller may report on (`GET /reports/places`, R9): any report
+ * reader can read it, without the stock feature.
+ */
+export interface ReportPlace {
+    id: string;
+    name: string;
+    /** A short code when the server sends one. */
+    code: string | null;
+    gstin: string | null;
+}
+
+export interface ReportPlaces {
+    places: ReportPlace[];
+    /**
+     * True when the caller is ADMIN or assigned to every active place: the GST
+     * reports (which cover the whole GSTIN) are open to them. Null when the
+     * server did not say.
+     */
+    allPlaces: boolean | null;
+}
+
+/** Someone seen in the caller's audit scope (`GET /reports/audit/actors`, R9). */
+export interface AuditActor {
+    userId: string;
+    name: string;
 }
 
 export type ReportFormat = 'csv' | 'xlsx';

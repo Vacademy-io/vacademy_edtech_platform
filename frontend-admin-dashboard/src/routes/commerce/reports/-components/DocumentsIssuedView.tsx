@@ -36,7 +36,7 @@ export function DocumentsIssuedView({ answer }: { answer: ReportAnswer }) {
 
     return (
         <div className="flex flex-col gap-6" data-testid="documents-issued-view">
-            <SectionBlock section={system} rowTone={(row) => (hasGap(row) ? 'danger' : null)} />
+            <SectionBlock section={system} rowFlag={(row) => (hasGap(row) ? t('reports.table.gapRow') : null)} />
             <SectionBlock section={books}>
                 {booksWithBlanks.length > 0 && (
                     <ul className="flex flex-col gap-1" data-testid="not-entered">

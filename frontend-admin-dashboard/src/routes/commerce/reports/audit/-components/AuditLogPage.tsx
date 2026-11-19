@@ -17,17 +17,18 @@ import { ReportTabs } from '../../-components/ReportTabs';
 import { REPORT_CATALOGUE } from '../../-shared/report-catalogue';
 import { formatIndiaDateTime, indiaToday } from '../../-shared/report-format';
 import { APPROVAL_ACTION_LABELS, AUDIT_KIND_LABELS, AUDIT_TABS } from '../../-shared/report-keys';
+import { placeLabel } from '../../-components/ReportFilters';
 import {
     useApprovals,
+    useAuditActors,
     useAuditKinds,
     useAuditLog,
     useReportLocations,
-    useStaffNames,
 } from '../../-shared/report-hooks';
 import { type AuditSearch, rangeProblem } from '../../-shared/report-search';
 import type { ApprovalRow, AuditFilterValues, AuditRow } from '../../-shared/report-types';
 import { downloadAudit } from '../../-shared/reports-api';
-import { AuditChanges } from './AuditChanges';
+import { AuditChanges, humanCode } from './AuditChanges';
 
 const KNOWN_KINDS = new Set<string>(AUDIT_KIND_LABELS);
 
@@ -155,18 +156,18 @@ function AuditFilters({
     const { t } = useTranslation('commerce');
     const locations = useReportLocations();
     const kinds = useAuditKinds();
-    const staff = useStaffNames();
+    const actors = useAuditActors();
     const [reference, setReference] = useState(search.reference ?? '');
     useEffect(() => setReference(search.reference ?? ''), [search.reference]);
 
-    // People: the shop's staff when the list is open to the reader, plus everyone seen in the rows.
+    // People: everyone the server has seen in the reader's audit scope (R9), plus anyone in the rows.
     const people = useMemo(() => {
         const map = new Map<string, string>();
-        (staff.data ?? []).forEach((s) => map.set(s.user_id, s.full_name || s.user_id));
+        (actors.data ?? []).forEach((a) => map.set(a.userId, a.name));
         rows.forEach((r) => r.actorUserId && !map.has(r.actorUserId) && map.set(r.actorUserId, r.actorName ?? r.actorUserId));
         if (search.actor && !map.has(search.actor)) map.set(search.actor, search.actor);
         return Array.from(map, ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
-    }, [staff.data, rows, search.actor]);
+    }, [actors.data, rows, search.actor]);
 
     const applyReference = () => {
         const next = reference.trim() || undefined;
@@ -227,7 +228,7 @@ function AuditFilters({
                         value={search.location ?? ''}
                         noneLabel={t('reports.filters.allPlaces')}
                         onChange={(location) => onSearch({ location: location || undefined })}
-                        options={locations.places.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
+                        options={locations.places.map((p) => ({ value: p.id, label: placeLabel(p) }))}
                     />
                     <PlainSelect
                         label={t('reports.audit.kind')}
@@ -242,8 +243,9 @@ function AuditFilters({
     );
 }
 
+/** A kind in the admin's words; a kind not yet named reads "Tracking edited", not `TRACKING_EDITED` (M9). */
 const kindLabel = (kind: string, t: TFunction) =>
-    KNOWN_KINDS.has(kind) ? t(`reports.audit.kinds.${kind}`) : kind;
+    KNOWN_KINDS.has(kind) ? t(`reports.audit.kinds.${kind}`) : humanCode(kind);
 
 function ChangesTable({ rows }: { rows: AuditRow[] }) {
     const { t } = useTranslation('commerce');
@@ -295,7 +297,7 @@ function ApprovalsTable({ rows }: { rows: ApprovalRow[] }) {
                 cell: ({ row }) =>
                     KNOWN_ACTIONS.has(row.original.action)
                         ? t(`reports.audit.actions.${row.original.action}`)
-                        : row.original.action || '—',
+                        : humanCode(row.original.action) || '—',
             },
             { id: 'reference', header: t('reports.audit.document'), cell: ({ row }) => row.original.referenceLabel ?? '—' },
             { id: 'requested', header: t('reports.audit.requestedBy'), cell: ({ row }) => row.original.requestedBy ?? '—' },

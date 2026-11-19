@@ -10,6 +10,7 @@ import { describe, expect, it } from 'vitest';
 import { COMMERCE_FEATURE, COMMERCE_ROLE, resolveCommerceAccess } from '@/lib/commerce/commerce-access';
 import {
     canSeeReport,
+    gstClosedToPlaces,
     REPORT_CATALOGUE,
     REPORT_IDS,
     reportEntry,
@@ -84,5 +85,23 @@ describe('report catalogue', () => {
         expect(reportEntry('gstPack')?.formats).toEqual(['xlsx']);
         expect(reportEntry('dayBook')?.maxDays).toBe(31);
         expect(reportEntry('nope')).toBeUndefined();
+    });
+
+    it('M6: a reader limited to some places does not get the GST cards (the server would refuse each one)', () => {
+        const manager = accessOf([COMMERCE_ROLE.STORE_MANAGER], ALL_FEATURES);
+        const limited = visibleReportGroups(manager, false);
+        expect(limited.map((g) => g.group)).toEqual(['sales', 'money', 'counter', 'audit']);
+        expect(gstClosedToPlaces(manager, false)).toBe(true);
+        // Every place, or not known yet: the cards stay (the server still checks).
+        expect(ids(visibleReportGroups(manager, true))).toEqual([...REPORT_IDS]);
+        expect(ids(visibleReportGroups(manager, null))).toEqual([...REPORT_IDS]);
+        // An institute ADMIN reads every place whatever the answer says.
+        expect(ids(visibleReportGroups(accessOf(['ADMIN'], ALL_FEATURES), false))).toEqual([...REPORT_IDS]);
+    });
+
+    it('N9: the sales register offers the bill status; GSTR-1 and the GST pack the B2C large limit', () => {
+        expect(reportEntry('salesRegister')?.filters).toContain('status');
+        expect(reportEntry('gstr1')?.filters).toContain('b2clLimit');
+        expect(reportEntry('gstPack')?.filters).toContain('b2clLimit');
     });
 });

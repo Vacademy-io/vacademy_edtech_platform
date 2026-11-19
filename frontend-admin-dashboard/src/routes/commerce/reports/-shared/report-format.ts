@@ -70,6 +70,18 @@ export function monthRange(month: string, today: string = indiaToday()): { from:
     return { from, to: last > today ? today : last };
 }
 
+/** The month before a `YYYY-MM-DD` day, as `YYYY-MM` (a GST return is filed for the month gone by). */
+export function previousMonth(today: string = indiaToday()): string {
+    const year = Number(today.slice(0, 4));
+    const month = Number(today.slice(5, 7));
+    const index = year * 12 + (month - 1) - 1;
+    return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, '0')}`;
+}
+
+/** True when `month` is the month `today` is in: its figures are the month so far. */
+export const isRunningMonth = (month: string | null | undefined, today: string = indiaToday()): boolean =>
+    !!month && month === monthOf(today);
+
 /** This month so far: the default range of most reports. */
 export const thisMonthRange = (today: string = indiaToday()) => ({ from: `${monthOf(today)}-01`, to: today });
 
@@ -130,12 +142,22 @@ const WALL_TIME = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(?::\d{2})?$/;
  * as "19 Nov 2026, 14:05" (the same date and clock, re-worded only). Anything
  * else ("—" for a date-only event) is printed exactly as sent.
  */
-export function formatWallTime(value: ReportCell): string {
+export function formatWallTime(value: ReportCell, timeOnly = false): string {
     const text = str(value);
     if (!text) return '—';
     const match = WALL_TIME.exec(text);
     if (!match) return text;
-    return `${formatIndiaDate(match[1])}, ${match[2]}`;
+    // Beside a Date column the date would only repeat (N3): the clock alone.
+    return timeOnly ? (match[2] as string) : `${formatIndiaDate(match[1])}, ${match[2]}`;
+}
+
+/** "November 2026" / "नवंबर 2026" for a `YYYY-MM` month (the sales report's month rows). */
+export function formatMonthText(value: ReportCell): string | null {
+    const text = str(value);
+    const match = text ? /^(\d{4})-(0[1-9]|1[0-2])$/.exec(text) : null;
+    if (!match) return null;
+    const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, 1));
+    return new Intl.DateTimeFormat(reportLocale(), { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(date);
 }
 
 /** A percentage the server computed (12.5 → "12.5%"). */
@@ -146,13 +168,13 @@ export function formatPercentCell(value: ReportCell): string {
 }
 
 /** Text of any non-money cell by its column type (money goes through `MoneyCell`). */
-export function cellText(type: ReportColumnType, value: ReportCell): string {
+export function cellText(type: ReportColumnType, value: ReportCell, timeOnly = false): string {
     if (value === null || value === undefined || value === '') return '';
     switch (type) {
         case 'DATE':
             return formatIndiaDate(value);
         case 'TIME':
-            return formatWallTime(value);
+            return formatWallTime(value, timeOnly);
         case 'QTY':
             return formatQuantityCell(value);
         case 'PERCENT':

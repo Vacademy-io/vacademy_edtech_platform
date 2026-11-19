@@ -1,13 +1,13 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { formatNumber } from '@/lib/formatters';
 import { PlainSelect } from '@/routes/commerce/-components/CatalogueBits';
-import type { InventoryLocation } from '@/routes/commerce/inventory/-shared/inventory-types';
 import { channelLabel } from '@/routes/commerce/orders/-shared/order-format';
 import { inputClass } from '@/routes/commerce/orders/-components/order-ui';
-import { REPORT_CHANNELS, type ReportEntry } from '../-shared/report-catalogue';
-import { indiaToday, monthOf, reportLocale } from '../-shared/report-format';
-import type { RangeProblem, ReportsSearch } from '../-shared/report-search';
-import type { ReportFilterValues } from '../-shared/report-types';
+import { REPORT_CHANNELS, REPORT_STATUSES, type ReportEntry } from '../-shared/report-catalogue';
+import { indiaToday, reportLocale } from '../-shared/report-format';
+import { B2CL_LIMIT_MAX, B2CL_LIMIT_MIN, type RangeProblem, type ReportsSearch, resolvedMonth } from '../-shared/report-search';
+import type { ReportFilterValues, ReportPlace } from '../-shared/report-types';
 
 /** Months offered in the GST month picker: this one and the 23 before it. */
 const MONTHS_BACK = 24;
@@ -47,7 +47,7 @@ export function ReportFilters({
     search: ReportsSearch;
     /** What is being sent (defaults filled in). */
     filters: ReportFilterValues;
-    places: InventoryLocation[];
+    places: ReportPlace[];
     gstins: string[];
     problem: RangeProblem | null;
     onChange: (next: Partial<ReportsSearch>) => void;
@@ -91,7 +91,7 @@ export function ReportFilters({
                 {has('month') && (
                     <PlainSelect
                         label={t('reports.filters.month')}
-                        value={search.month ?? monthOf(today)}
+                        value={resolvedMonth(search, today)}
                         onChange={(month) => onChange({ month: month || undefined })}
                         options={months.map((value) => ({ value, label: monthLabel(value) }))}
                     />
@@ -102,7 +102,25 @@ export function ReportFilters({
                         value={search.location ?? ''}
                         noneLabel={t('reports.filters.allPlaces')}
                         onChange={(location) => onChange({ location: location || undefined })}
-                        options={places.map((p) => ({ value: p.id, label: `${p.code} · ${p.name}` }))}
+                        options={places.map((p) => ({ value: p.id, label: placeLabel(p) }))}
+                    />
+                )}
+                {has('status') && (
+                    <PlainSelect
+                        label={t('reports.filters.status')}
+                        value={search.status ?? ''}
+                        noneLabel={t('reports.filters.allStatuses')}
+                        onChange={(status) => onChange({ status: status || undefined })}
+                        options={REPORT_STATUSES.map((value) => ({ value, label: t(`reports.values.${value}`) }))}
+                    />
+                )}
+                {has('b2clLimit') && (
+                    <AmountBox
+                        label={t('reports.filters.b2clLimit')}
+                        hint={t('reports.filters.b2clLimitHint')}
+                        value={search.b2clLimit ?? ''}
+                        onChange={(b2clLimit) => onChange({ b2clLimit: b2clLimit || undefined })}
+                        testId="report-b2cl-limit"
                     />
                 )}
                 {has('channel') && (
@@ -137,10 +155,58 @@ export function ReportFilters({
             </div>
             {problem && (
                 <p role="alert" className="text-caption text-danger-600" data-testid="report-range-problem">
-                    {t(`reports.filters.problems.${problem}`, { days: entry.maxDays })}
+                    {t(`reports.filters.problems.${problem}`, {
+                        days: entry.maxDays,
+                        min: B2CL_LIMIT_MIN,
+                        max: formatNumber(B2CL_LIMIT_MAX),
+                    })}
                 </p>
             )}
         </div>
+    );
+}
+
+/** A place as the picker shows it: "CODE · Name" when the server sends a code, else the name. */
+export const placeLabel = (place: Pick<ReportPlace, 'code' | 'name'>): string =>
+    place.code ? `${place.code} · ${place.name}` : place.name;
+
+/** A rupee amount typed in full, sent on Enter or when the box is left (not on every key). */
+function AmountBox({
+    label,
+    hint,
+    value,
+    onChange,
+    testId,
+}: {
+    label: string;
+    hint: string;
+    value: string;
+    onChange: (value: string) => void;
+    testId: string;
+}) {
+    const [typed, setTyped] = useState(value);
+    useEffect(() => setTyped(value), [value]);
+    const apply = () => {
+        const next = typed.trim().replace(/,/g, '');
+        if (next !== value) onChange(next);
+    };
+    return (
+        <label className="flex flex-col gap-1.5 text-caption text-muted-foreground">
+            {label}
+            <input
+                type="text"
+                inputMode="decimal"
+                className={inputClass}
+                value={typed}
+                placeholder={hint}
+                onChange={(event) => setTyped(event.target.value)}
+                onBlur={apply}
+                onKeyDown={(event) => {
+                    if (event.key === 'Enter') apply();
+                }}
+                data-testid={testId}
+            />
+        </label>
     );
 }
 

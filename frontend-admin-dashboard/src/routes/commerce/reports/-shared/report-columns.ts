@@ -1,4 +1,12 @@
-import { COUNT_TOTALS, MONEY_TOTALS } from './report-keys';
+import type { TFunction } from 'i18next';
+import { formatMonthText } from './report-format';
+import {
+    CANCELLED_STATUSES,
+    COUNT_TOTALS,
+    MONEY_TOTALS,
+    REPORT_VALUE_CODES,
+    REPORT_VALUE_COLUMNS,
+} from './report-keys';
 import type { ReportAnswer, ReportColumn, ReportColumnType, ReportRow, ReportSection } from './report-types';
 
 /**
@@ -22,10 +30,15 @@ const TEXT_REPLACES: Readonly<Record<string, string>> = {
     average_rate_text: 'average_rate',
 };
 
-/** The columns a table shows: every column except a raw quantity or rate whose `*_text` column is there. */
+/**
+ * The columns a table shows: every column except a raw quantity or rate whose
+ * `*_text` column is there, and the `unit` column when a quantity text
+ * already carries the unit ("1.2 m" beside "MTR", N4).
+ */
 export function screenColumns(columns: ReportColumn[]): ReportColumn[] {
     const byKey = new Map(columns.map((column) => [column.key, column]));
     const hidden = new Set<string>();
+    let unitInText = false;
     columns.forEach((column) => {
         if (!column.key.endsWith('_text')) return;
         const named = TEXT_REPLACES[column.key];
@@ -33,8 +46,53 @@ export function screenColumns(columns: ReportColumn[]): ReportColumn[] {
         // Any other `<key>_text` beside a QTY or MONEY `<key>`: same rule.
         const raw = byKey.get(column.key.slice(0, -'_text'.length));
         if (raw && (raw.type === 'QTY' || raw.type === 'MONEY')) hidden.add(raw.key);
+        if ((named && byKey.get(named)?.type === 'QTY') || raw?.type === 'QTY') unitInText = true;
     });
+    if (unitInText && byKey.has('unit')) hidden.add('unit');
     return hidden.size === 0 ? columns : columns.filter((column) => !hidden.has(column.key));
+}
+
+const VALUE_COLUMNS = new Set<string>(REPORT_VALUE_COLUMNS);
+const VALUE_CODES = new Set<string>(REPORT_VALUE_CODES);
+
+/**
+ * A code cell in the admin's words (M2): `reports.values.<CODE>` for a code
+ * the screen knows, each part of `CASH+UPI` on its own, a sales `month` row
+ * ("2026-11") as the month's name; null when the cell is no such code (it is
+ * printed as sent).
+ */
+export function codeText(columnKey: string, value: unknown, t: TFunction): string | null {
+    if (typeof value !== 'string' || value.trim() === '') return null;
+    if (columnKey === 'month') return formatMonthText(value);
+    if (!VALUE_COLUMNS.has(columnKey)) return null;
+    const parts = value.split('+').map((part) => part.trim());
+    if (!parts.every((part) => VALUE_CODES.has(part))) return null;
+    return parts.map((part) => t(`reports.values.${part}`)).join(' + ');
+}
+
+const CANCELLED = new Set<string>(CANCELLED_STATUSES);
+
+/**
+ * Rows of a cancelled bill (R2): the row's `status` is CANCELLED or VOID. The
+ * further lines of a bill carry neither status nor number (the server prints
+ * them on its first line only) and follow the line above. Their money is in
+ * `cancelled_value`, not in the summable columns; the screen strikes them through.
+ */
+export function cancelledRows(rows: ReportRow[]): boolean[] {
+    let bill: unknown = null;
+    let billCancelled = false;
+    return rows.map((row) => {
+        const status = typeof row.status === 'string' && row.status !== '' ? row.status.toUpperCase() : null;
+        const number = row.invoice_number ?? row.number ?? null;
+        if (status) {
+            bill = number;
+            billCancelled = CANCELLED.has(status);
+            return billCancelled;
+        }
+        if (number === null || number === undefined || number === '' || number === bill) return billCancelled;
+        billCancelled = false;
+        return false;
+    });
 }
 
 /** A column's label in the admin's language: `label_hi` in Hindi, `label` in English, else the key. */

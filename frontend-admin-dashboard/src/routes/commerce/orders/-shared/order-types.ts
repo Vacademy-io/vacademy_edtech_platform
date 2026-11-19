@@ -100,6 +100,12 @@ export interface StaffOrderRow {
     return_state: string | null;
     /** B1: what the courier collects; absent on a backend without B1. */
     cod_amount?: number | null;
+    /**
+     * What the order still owes (M10): total − paid − the credit of goods
+     * returned before payment, the figure "Record receipt" and the dues report
+     * use. Absent on a server that does not send it on list rows.
+     */
+    amount_due?: number | null;
 }
 
 export interface StaffOrderPage {

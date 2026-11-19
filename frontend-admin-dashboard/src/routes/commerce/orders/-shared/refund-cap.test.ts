@@ -5,7 +5,17 @@ import { describe, expect, it } from 'vitest';
 import { formatMoney } from '@/components/design-system/money-cell';
 import { detailFixture } from './order-fixtures';
 import { readOrderError } from './order-errors';
-import { amountProblem, receiptDue, refundCap, refundCapText } from './refund-cap';
+import { normalizeRow } from './order-api';
+import { rowDue } from './order-format';
+import {
+    amountProblem,
+    creditSplit,
+    dueLoweredByReturns,
+    owesOnCredit,
+    receiptDue,
+    refundCap,
+    refundCapText,
+} from './refund-cap';
 
 const t = ((key: string, options?: { amount?: string }) => `${key}|${options?.amount ?? ''}`) as unknown as TFunction;
 
@@ -67,5 +77,54 @@ describe('receiptDue', () => {
     it('falls back to total less paid only when the server sent no amount_due, floored at 0', () => {
         expect(receiptDue(detailFixture({}, { total: '800.00', amount_paid: '300.00' }))).toBe(500);
         expect(receiptDue(detailFixture({}, { total: '800.00', amount_paid: '900.00' }))).toBe(0);
+    });
+});
+
+/** A staff credit order of ₹1,000 (contract §15 cases). */
+const credit = (money: Record<string, unknown>, order: Record<string, unknown> = {}) =>
+    detailFixture(money, {
+        channel: 'ADMIN',
+        status: 'DELIVERED',
+        payment_method: 'CREDIT',
+        payment_status: 'UNPAID',
+        total: '1000.00',
+        amount_paid: 0,
+        ...order,
+    });
+
+describe('returns before payment (contract §15)', () => {
+    it('a staff credit order that still owes takes a return; website, COD and paid orders keep their rules', () => {
+        expect(owesOnCredit(credit({ amount_due: '1000.00' }))).toBe(true);
+        expect(owesOnCredit(credit({ amount_due: '600.00' }, { payment_status: 'PARTIALLY_PAID', amount_paid: '400.00' }))).toBe(true);
+        expect(owesOnCredit(credit({ amount_due: 0 }, { payment_status: 'PAID', amount_paid: '1000.00' }))).toBe(false);
+        expect(owesOnCredit(credit({ amount_due: 0 }))).toBe(false);
+        expect(owesOnCredit(credit({ amount_due: '1000.00' }, { channel: 'ONLINE' }))).toBe(false);
+        expect(owesOnCredit(credit({ amount_due: '1000.00' }, { payment_method: 'COD' }))).toBe(false);
+        expect(owesOnCredit(credit({ amount_due: '1000.00' }, { channel: 'POS' }))).toBe(false);
+    });
+
+    it('₹300 returned before payment took ₹300 off; ₹400 paid then ₹700 returned took ₹600 off', () => {
+        expect(dueLoweredByReturns(credit({ amount_due: '700.00' }))).toBe(300);
+        expect(dueLoweredByReturns(credit({ amount_due: 0 }, { payment_status: 'PARTIALLY_PAID', amount_paid: '400.00' }))).toBe(600);
+        expect(dueLoweredByReturns(credit({ amount_due: '1000.00' }))).toBe(0);
+        // No amount_due from the server: nothing is claimed.
+        expect(dueLoweredByReturns(credit({}))).toBe(0);
+    });
+
+    it('a return\'s credit goes first off what is owed, the rest is paid back', () => {
+        expect(creditSplit(300, 1000)).toEqual({ offDue: 300, paidBack: 0 });
+        expect(creditSplit(700, 600)).toEqual({ offDue: 600, paidBack: 100 });
+        expect(creditSplit(1000, 1000)).toEqual({ offDue: 1000, paidBack: 0 });
+        expect(creditSplit(250.5, 0)).toEqual({ offDue: 0, paidBack: 250.5 });
+    });
+});
+
+describe('M10: the DUES queue reads amount_due', () => {
+    it('a listed order owes the server amount_due (₹700 after ₹300 returned), else total − paid', () => {
+        const row = normalizeRow({ id: 'o', total: '1000.00', amount_paid: 0, amount_due: '700.00' });
+        expect(row.amount_due).toBe(700);
+        expect(rowDue(row)).toBe(700);
+        expect(rowDue(normalizeRow({ id: 'o', total: '1000.00', amount_paid: '400.00' }))).toBe(600);
+        expect(rowDue(normalizeRow({ id: 'o', total: '1000.00', amount_paid: 0, amount_due: '-1.00' }))).toBe(0);
     });
 });

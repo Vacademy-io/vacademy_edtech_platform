@@ -107,6 +107,8 @@ export function normalizeRow(data: unknown): StaffOrderRow {
     };
     const cod = num(r.cod_amount);
     if (cod !== null) row.cod_amount = cod;
+    const due = num(r.amount_due);
+    if (due !== null) row.amount_due = due;
     return row;
 }
 

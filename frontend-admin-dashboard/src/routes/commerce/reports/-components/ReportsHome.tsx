@@ -1,27 +1,42 @@
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { CaretRight } from '@phosphor-icons/react';
+import { CaretRight, Info } from '@phosphor-icons/react';
 import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
 import { CommerceEmptyState } from '@/routes/commerce/-components/CommerceStates';
+import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
 import {
+    gstClosedToPlaces,
     type ReportEntry,
     reportHelpKey,
     reportTitleKey,
     visibleReportGroups,
+    wouldSeeGst,
 } from '../-shared/report-catalogue';
+import { useReportLocations } from '../-shared/report-hooks';
 
 /**
  * Reports home (contract §7.1): the reports as cards in five groups. A card
- * shows only when the person's features and role open it (§3.5); the server
- * refuses the rest regardless.
+ * shows only when the person's features and role open it (§3.5); the GST
+ * group also needs every place (M6: the places answer says so), else a line
+ * says why it is not there. The server refuses the rest regardless.
  */
 export function ReportsHome() {
     const { t } = useTranslation('commerce');
     const access = useCommerceAccess();
-    const groups = visibleReportGroups(access);
+    const { allPlaces } = useReportLocations();
+    const groups = visibleReportGroups(access, allPlaces);
+    const gstHidden = gstClosedToPlaces(access, allPlaces) && wouldSeeGst(access);
     if (groups.length === 0) return <CommerceEmptyState title={t('reports.home.none')} />;
     return (
         <div className="flex flex-col gap-6" data-testid="reports-home">
+            {gstHidden && (
+                <OrderNotice tone="info">
+                    <p className="flex items-center gap-2" data-testid="reports-gst-needs-all-places">
+                        <Info size={16} aria-hidden="true" />
+                        {t('reports.home.gstNeedsAllPlaces')}
+                    </p>
+                </OrderNotice>
+            )}
             {groups.map(({ group, entries }) => (
                 <section key={group} className="flex flex-col gap-3" aria-labelledby={`reports-group-${group}`}>
                     <h3 id={`reports-group-${group}`} className="text-subtitle font-medium text-foreground">

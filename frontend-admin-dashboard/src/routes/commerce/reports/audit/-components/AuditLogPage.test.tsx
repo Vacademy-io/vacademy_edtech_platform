@@ -31,11 +31,6 @@ vi.mock('@/lib/commerce/use-commerce-access', async () => {
     return { useCommerceAccess: () => accessFor(['COMMERCE_ACCOUNTANT']) };
 });
 vi.mock('@/constants/helper', () => ({ getInstituteId: () => 'inst-1' }));
-vi.mock('@/routes/commerce/inventory/-shared/inventory-api', () => ({ fetchInventoryLocations: vi.fn(async () => []) }));
-vi.mock('@/routes/commerce/-shared/commerce-api', async (original) => ({
-    ...(await original<typeof import('@/routes/commerce/-shared/commerce-api')>()),
-    fetchCommerceStaff: vi.fn(async () => []),
-}));
 vi.mock('../../-shared/reports-api', () => ({
     REPORT_PAGE_SIZE: 100,
     fetchReport: vi.fn(),
@@ -43,6 +38,8 @@ vi.mock('../../-shared/reports-api', () => ({
     fetchApprovals: vi.fn(),
     fetchAuditKinds: vi.fn(async () => ['POS_VOID', 'VARIANT_PRICE_CHANGED']),
     downloadAudit: vi.fn(),
+    fetchReportPlaces: vi.fn(async () => ({ places: [], allPlaces: null })),
+    fetchAuditActors: vi.fn(async () => []),
 }));
 
 import * as api from '../../-shared/reports-api';
@@ -53,6 +50,8 @@ import { AuditLog, auditFilters } from './AuditLogPage';
 const fetchAudit = vi.mocked(api.fetchAudit);
 const fetchApprovals = vi.mocked(api.fetchApprovals);
 const downloadAudit = vi.mocked(api.downloadAudit);
+const fetchAuditActors = vi.mocked(api.fetchAuditActors);
+const fetchReportPlaces = vi.mocked(api.fetchReportPlaces);
 
 const priceChange = {
     id: 'a-1',
@@ -126,7 +125,7 @@ describe('AuditLog', () => {
         renderLog({});
         const table = await screen.findByTestId('audit-changes-table');
         const changes = screen.getByTestId('audit-changes');
-        expect(changes.textContent).toBe('price120.00130.00');
+        expect(changes.textContent).toBe('reports.audit.changeKeys.price120.00130.00');
         expect(changes.querySelector('[aria-label="reports.audit.becomes"]')).not.toBeNull();
         expect(table.textContent).toContain('Test Manager');
         expect(table.textContent).toContain('BOTTLE-1');
@@ -153,6 +152,34 @@ describe('AuditLog', () => {
         fireEvent.click(screen.getByTestId('report-download-csv'));
         await waitFor(() => expect(downloadAudit).toHaveBeenCalledTimes(1));
         expect(downloadAudit.mock.calls[0]?.[0]).toMatchObject({ kind: 'POS_VOID' });
+    });
+
+    it('M9: a kind or key the screen has not named reads as words, not as a code', async () => {
+        fetchAudit.mockResolvedValue({
+            rows: [{ ...priceChange, kind: 'SOMETHING_NEW_HAPPENED', changes: [{ key: 'courier_slot', old: 'a', new: 'b' }] }],
+            nextCursor: null,
+        });
+        renderLog({});
+        const table = await screen.findByTestId('audit-changes-table');
+        expect(table.textContent).toContain('Something new happened');
+        expect(table.textContent).not.toContain('SOMETHING_NEW_HAPPENED');
+        expect(screen.getByTestId('audit-changes').textContent).toContain('Courier slot');
+    });
+
+    it('M9: kinds the server records are named (transfers, returns, tracking)', async () => {
+        fetchAudit.mockResolvedValue({ rows: [{ ...priceChange, kind: 'TRACKING_EDITED' }], nextCursor: null });
+        renderLog({});
+        const table = await screen.findByTestId('audit-changes-table');
+        expect(table.textContent).toContain('reports.audit.kinds.TRACKING_EDITED');
+    });
+
+    it('R9: "who" and the places come from the reports endpoints, not the staff or stock lists', async () => {
+        fetchAuditActors.mockResolvedValue([{ userId: 'u-9', name: 'Test Accountant' }]);
+        fetchReportPlaces.mockResolvedValue({ places: [{ id: 'L1', name: 'Test Store', code: null, gstin: null }], allPlaces: false });
+        renderLog({});
+        await screen.findByTestId('audit-changes-table');
+        await waitFor(() => expect(fetchAuditActors).toHaveBeenCalledTimes(1));
+        expect(fetchReportPlaces).toHaveBeenCalled();
     });
 
     it('defaults to this month', () => {

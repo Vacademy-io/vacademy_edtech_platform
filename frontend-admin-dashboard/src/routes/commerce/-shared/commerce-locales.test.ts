@@ -37,14 +37,20 @@ import { POS_ERROR_CODES } from '../pos/-shared/pos-errors';
 import { RECEIPT_DOCUMENT_TYPES } from '../pos/-shared/pos-receipt';
 import * as catalogue from '../reports/-shared/report-catalogue';
 import { REPORT_ERROR_CODES, REPORT_ERROR_FALLBACKS } from '../reports/-shared/report-errors';
+import { RANGE_PROBLEMS } from '../reports/-shared/report-search';
 import {
     APPROVAL_ACTION_LABELS,
+    AUDIT_CHANGE_KEYS,
     AUDIT_KIND_LABELS,
     AUDIT_TABS,
+    CHECK_FIGURES,
+    CHECK_RULE_REPORTS,
     COUNT_TOTALS,
     GSTR1_TABS,
     MONEY_TOTALS,
+    REPORT_VALUE_CODES,
     REPORT_WARNING_CODES,
+    VALIDATION_REASONS,
 } from '../reports/-shared/report-keys';
 import { TENDER_PROBLEMS } from '../pos/-shared/pos-tenders';
 import {
@@ -460,6 +466,14 @@ describe('commerce strings: every key the code asks for exists', () => {
         each('reports.audit.actions', APPROVAL_ACTION_LABELS);
         each('reports.audit.tabs', AUDIT_TABS);
         each('orders.channel', catalogue.REPORT_CHANNELS);
+        // Reports fix round: codes in the admin's words, check rules and figures, change keys,
+        // the refused-filter sentences, the bill status filter and every filter problem.
+        each('reports.values', [...REPORT_VALUE_CODES, ...catalogue.REPORT_STATUSES]);
+        each('reports.check.rules', CHECK_RULE_REPORTS);
+        each('reports.check.figures', CHECK_FIGURES);
+        each('reports.audit.changeKeys', AUDIT_CHANGE_KEYS);
+        each('reports.errors.validation', VALIDATION_REASONS);
+        each('reports.filters.problems', RANGE_PROBLEMS);
         expect(need.length).toBeGreaterThan(150);
         expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
         // Report names as the contract words them (§7.2), Hindi first.

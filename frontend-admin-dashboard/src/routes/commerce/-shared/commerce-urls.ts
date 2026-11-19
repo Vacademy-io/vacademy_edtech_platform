@@ -203,3 +203,7 @@ export const COMMERCE_REPORT = (name: string) => `${COMMERCE_REPORTS}/${id$(name
 export const COMMERCE_AUDIT = `${COMMERCE_BASE}/audit`;
 export const COMMERCE_AUDIT_APPROVALS = `${COMMERCE_AUDIT}/approvals`;
 export const COMMERCE_AUDIT_KINDS = `${COMMERCE_AUDIT}/kinds`;
+/** R9: places the caller may report on (any report reader; no stock feature needed). */
+export const COMMERCE_REPORT_PLACES = `${COMMERCE_REPORTS}/places`;
+/** R9: people seen in the caller's audit scope (the audit log's "who" filter). */
+export const COMMERCE_AUDIT_ACTORS = `${COMMERCE_REPORTS}/audit/actors`;

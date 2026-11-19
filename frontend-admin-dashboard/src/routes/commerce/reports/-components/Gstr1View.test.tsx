@@ -82,7 +82,7 @@ describe('Gstr1View', () => {
         });
         render(<Gstr1View answer={off} />);
         expect(screen.getByTestId('gstr1-check').textContent).toContain('reports.gstr1.check.doesNotAddUp');
-        expect(checkAddsUp({ rule: null, difference: '0.01', columns: [] })).toBe(false);
-        expect(checkAddsUp({ rule: null, difference: 0, columns: [] })).toBe(true);
+        expect(checkAddsUp({ rule: null, difference: '0.01', columns: [], figures: [] })).toBe(false);
+        expect(checkAddsUp({ rule: null, difference: 0, columns: [], figures: [] })).toBe(true);
     });
 });

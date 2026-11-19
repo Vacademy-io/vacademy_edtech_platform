@@ -36,6 +36,45 @@ export function receiptDue(detail: Pick<StaffOrderDetail, 'order' | 'amount_due'
     return Math.max(0, round2(due));
 }
 
+type DueDetail = Pick<StaffOrderDetail, 'order' | 'amount_due'>;
+
+/**
+ * A staff order left on credit that still owes (contract §15): channel ADMIN,
+ * not cash on delivery, unpaid or part paid, something due. A return on it is
+ * allowed; its credit first lowers what is owed. Online and counter orders
+ * keep their own rules (returned once paid).
+ */
+export function owesOnCredit(detail: DueDetail): boolean {
+    const order = detail.order;
+    const status = (order.payment_status ?? '').toUpperCase();
+    return (
+        (order.channel ?? '').toUpperCase() === 'ADMIN' &&
+        (order.payment_method ?? '').toUpperCase() !== 'COD' &&
+        (status === 'UNPAID' || status === 'PARTIALLY_PAID') &&
+        receiptDue(detail) > 0
+    );
+}
+
+/**
+ * How much goods returned before payment took off what is owed: total − paid −
+ * the server's `amount_due` (0 when the server sent no `amount_due`).
+ */
+export function dueLoweredByReturns(detail: DueDetail): number {
+    if (detail.amount_due === null || detail.amount_due === undefined) return 0;
+    const lowered = (detail.order.total ?? 0) - (detail.order.amount_paid ?? 0) - detail.amount_due;
+    return Math.max(0, round2(lowered));
+}
+
+/**
+ * Where a return's credit goes on an order that still owes (§15): first off
+ * what is owed, only the part above it paid back. An estimate for the dialog;
+ * the server books it.
+ */
+export function creditSplit(credit: number, due: number): { offDue: number; paidBack: number } {
+    const offDue = Math.max(0, Math.min(credit, due));
+    return { offDue: round2(offDue), paidBack: Math.max(0, round2(credit - offDue)) };
+}
+
 /** Field check for a typed amount against a cap: null = fine. */
 export function amountProblem(amount: number | null, cap: number): 'required' | 'positive' | 'aboveCap' | null {
     if (amount === null || !Number.isFinite(amount)) return 'required';

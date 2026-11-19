@@ -98,6 +98,16 @@ export function codToCollect(row: Pick<StaffOrderRow, 'cod_amount' | 'total' | '
     return Math.max(0, round2(row.total - row.amount_paid));
 }
 
+/**
+ * What a listed order still owes (the DUES queue, M10): the server's
+ * `amount_due` (net of goods returned before payment, as "Record receipt" and
+ * the customer dues report), else total − paid. Floored at 0.
+ */
+export function rowDue(row: Pick<StaffOrderRow, 'amount_due' | 'total' | 'amount_paid'>): number {
+    const due = typeof row.amount_due === 'number' ? row.amount_due : row.total - row.amount_paid;
+    return Math.max(0, round2(due));
+}
+
 export const round2 = (value: number): number => Math.round(value * 100) / 100;
 
 /** Today in the browser's own calendar, as `YYYY-MM-DD` (date inputs and request bodies). */

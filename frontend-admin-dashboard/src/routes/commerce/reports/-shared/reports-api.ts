@@ -3,12 +3,16 @@ import { saveBlob } from '@/lib/save-blob';
 import { asRecord, instituteParams, num, str } from '@/routes/commerce/-shared/commerce-api';
 import {
     COMMERCE_AUDIT,
+    COMMERCE_AUDIT_ACTORS,
     COMMERCE_AUDIT_APPROVALS,
     COMMERCE_AUDIT_KINDS,
     COMMERCE_REPORT,
+    COMMERCE_REPORT_PLACES,
 } from '@/routes/commerce/-shared/commerce-urls';
+import { indiaToday, monthRange } from './report-format';
 import {
     type ApprovalRow,
+    type AuditActor,
     type AuditChange,
     type AuditFilterValues,
     type AuditRow,
@@ -21,6 +25,8 @@ import {
     type ReportColumnType,
     type ReportFilterValues,
     type ReportFormat,
+    type ReportPlace,
+    type ReportPlaces,
     type ReportRow,
     type ReportSection,
     type ReportWarning,
@@ -65,6 +71,8 @@ export function reportParams(filters: ReportFilterValues): Rec {
         month: filters.month,
         groupBy: filters.groupBy,
         asOf: filters.asOf,
+        status: filters.status,
+        b2clLimit: filters.b2clLimit,
     });
 }
 
@@ -117,7 +125,13 @@ function sectionsOf(value: unknown): ReportSection[] {
     });
 }
 
-/** `{rule, difference, columns?: [{key, sections, documents, difference}]}` (GSTR-1 sends `columns`). */
+const CHECK_OWN_KEYS = new Set(['rule', 'difference', 'columns']);
+
+/**
+ * `{rule, difference, columns?: [{key, sections, documents, difference}], ...figures}`:
+ * GSTR-1 sends `columns`; the sales register, credit notes, HSN summary and POS
+ * sessions send flat figures (`taxable_value`, `tax`, `invoice_total`…), kept in order.
+ */
 function checkOf(value: unknown): ReportCheck | null {
     const r = asRecord(value);
     if (!r) return null;
@@ -127,7 +141,10 @@ function checkOf(value: unknown): ReportCheck | null {
             ? [{ key, sections: l.sections ?? null, documents: l.documents ?? null, difference: l.difference ?? null }]
             : [];
     });
-    return { rule: str(r.rule), difference: r.difference ?? null, columns };
+    const figures = Object.entries(r).filter(
+        ([key, figure]) => !CHECK_OWN_KEYS.has(key) && figure !== null && typeof figure !== 'object'
+    );
+    return { rule: str(r.rule), difference: r.difference ?? null, columns, figures };
 }
 
 /** The server's fold of the warnings beyond 100 per code: "and N more" with no ref. */
@@ -211,10 +228,28 @@ export function fileNameFrom(headers: unknown, fallback: string): string {
     return name && /^[\w.\- ]+$/.test(name) ? name : fallback;
 }
 
-/** The name a file gets when the server sends none: `<report>-<from>-<to>.<ext>` or `<report>-<month>.xlsx`. */
-export function defaultFileName(name: string, filters: ReportFilterValues, format: ReportFormat): string {
-    const span = filters.from && filters.to ? `${filters.from}-${filters.to}` : (filters.month ?? filters.asOf ?? '');
-    return `${name}${span ? `-${span}` : ''}.${format}`;
+/**
+ * The name a file gets when the browser cannot read the server's
+ * (`Content-Disposition` is not exposed to a cross-origin page unless CORS
+ * lists it): `<report>-<from>-<to>[-<gstin>].<ext>`, the same pattern as the
+ * server's (contract §3.7), so two GSTINs or two months never share a name. A
+ * GST month becomes its dates (the running month ends today); a report with no
+ * dates (customer dues) is named by its as-of day.
+ */
+export function defaultFileName(
+    name: string,
+    filters: ReportFilterValues,
+    format: ReportFormat,
+    today?: string
+): string {
+    const month = filters.month ? monthRange(filters.month, today) : null;
+    const from = filters.from ?? month?.from;
+    const to = filters.to ?? month?.to;
+    const parts = [name];
+    if (from && to) parts.push(from, to);
+    else if (filters.asOf ?? today) parts.push((filters.asOf ?? today) as string);
+    if (filters.sellerGstin) parts.push(filters.sellerGstin);
+    return `${parts.join('-')}.${format}`;
 }
 
 /** Download a report as CSV or Excel and hand it to the browser (or the app's share sheet). */
@@ -225,9 +260,53 @@ export async function downloadReport(name: string, filters: ReportFilterValues, 
             responseType: 'blob',
         })
     );
-    const fileName = fileNameFrom(res.headers, defaultFileName(name, filters, format));
+    const fileName = fileNameFrom(res.headers, defaultFileName(name, filters, format, indiaToday()));
     await saveBlob(res.data, fileName);
     return fileName;
+}
+
+// ─── Places and actors (R9) ──────────────────────────────────────────────────
+
+/** `{id, name, code?, gstin?}` → a place; a row without id is dropped. */
+export function normalizePlace(raw: unknown): ReportPlace | null {
+    const r = asRecord(raw);
+    const id = text(r?.id) ?? text(r?.location_id);
+    if (!r || !id) return null;
+    return { id, name: str(r.name) ?? id, code: str(r.code), gstin: str(r.gstin) };
+}
+
+/**
+ * `GET /reports/places` (R9): the places the caller may report on, readable
+ * by every report reader (no stock feature). Answer `{places: [...], all_places}`
+ * or a bare list; `all_places` (true = ADMIN or every active place) opens the GST
+ * reports, which cover the whole GSTIN.
+ */
+export async function fetchReportPlaces(): Promise<ReportPlaces> {
+    const res = await authenticatedAxiosInstance.get<unknown>(COMMERCE_REPORT_PLACES, { params: instituteParams() });
+    const data = res.data;
+    const r = rec(data);
+    const list = Array.isArray(data) ? data : r.places;
+    const all = r.all_places;
+    return {
+        places: (Array.isArray(list) ? list : []).map(normalizePlace).filter((p): p is ReportPlace => !!p),
+        allPlaces: typeof all === 'boolean' ? all : null,
+    };
+}
+
+/** `{user_id, name}` → an actor; the id stands in for a missing name. */
+export function normalizeActor(raw: unknown): AuditActor | null {
+    const r = asRecord(raw);
+    const userId = text(r?.user_id) ?? text(r?.id);
+    if (!r || !userId) return null;
+    return { userId, name: str(r.name) ?? str(r.full_name) ?? userId };
+}
+
+/** `GET /reports/audit/actors` (R9): everyone seen in the caller's audit scope, `{actors: [...]}` or a list. */
+export async function fetchAuditActors(): Promise<AuditActor[]> {
+    const res = await authenticatedAxiosInstance.get<unknown>(COMMERCE_AUDIT_ACTORS, { params: instituteParams() });
+    const data = res.data;
+    const list = Array.isArray(data) ? data : rec(data).actors;
+    return (Array.isArray(list) ? list : []).map(normalizeActor).filter((a): a is AuditActor => !!a);
 }
 
 // ─── Audit log ───────────────────────────────────────────────────────────────

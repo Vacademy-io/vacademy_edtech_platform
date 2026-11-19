@@ -14,6 +14,7 @@ import { createReturn, previewReturn } from '@/routes/commerce/orders/-shared/or
 import { lengthProblemText, unitWord } from '@/routes/commerce/-shared/units';
 import { returnRequestLines, typedQuantity } from '@/routes/commerce/orders/-shared/length-entry';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
+import { creditSplit, owesOnCredit, receiptDue } from '@/routes/commerce/orders/-shared/refund-cap';
 import {
     RETURN_REASONS,
     RETURN_VIA,
@@ -21,7 +22,7 @@ import {
     type ReturnPreview,
     type ReturnView,
 } from '@/routes/commerce/orders/-shared/order-types';
-import { DialogButtons, Field, OrderErrorAlert, OrderNotice, TextAreaField, inputClass } from '../order-ui';
+import { DialogButtons, Field, OrderErrorAlert, OrderNotice, TextAreaField, inputClass, money } from '../order-ui';
 import type { OrderDialogProps } from './dialog-types';
 import { useAnswerWrite } from './use-answer-write';
 
@@ -34,6 +35,10 @@ export const RETURN_SHIPPING_PAID_BY = ['SELLER', 'BUYER'] as const;
  * reason and how the customer asked. Every change is previewed (debounced): the
  * policy, its warnings, what each line can still return and an estimate of the
  * credit. A warning needs a reason to go ahead anyway. No photos (owner Q11).
+ *
+ * A staff order left on credit may be returned before it is paid (contract
+ * §15): the dialog says what is still owed and that the credit first lowers
+ * it, and splits the estimate into "off what is owed" and "paid back".
  */
 export function ReturnCreateDialog({ open, onOpenChange, detail }: OrderDialogProps) {
     const { t } = useTranslation('commerce');
@@ -130,6 +135,10 @@ export function ReturnCreateDialog({ open, onOpenChange, detail }: OrderDialogPr
     const linesError = requested.length === 0 ? t('orders.returns.linesRequired') : null;
     const invalid = !!(reasonError || linesError || overrideError || lineProblems.length > 0);
 
+    const owing = owesOnCredit(detail);
+    const due = receiptDue(detail);
+    const split = owing && preview && preview.credit_estimate !== null ? creditSplit(preview.credit_estimate, due) : null;
+
     const policyText = preview?.policy?.policy_text[language] ?? preview?.policy?.policy_text[language === 'hi' ? 'en' : 'hi'];
     const activeLocations = (locations.data ?? []).filter(
         (location) => (location.status ?? 'ACTIVE').toUpperCase() !== 'INACTIVE'
@@ -182,6 +191,13 @@ export function ReturnCreateDialog({ open, onOpenChange, detail }: OrderDialogPr
             }
         >
             <div className="flex flex-col gap-4">
+                {owing && (
+                    <OrderNotice tone="info">
+                        <p data-testid="return-before-payment">
+                            {t('orders.returns.beforePayment', { amount: money(due, order.currency) })}
+                        </p>
+                    </OrderNotice>
+                )}
                 {lines.length === 0 && <OrderNotice tone="info">{t('orders.returns.nothingShipped')}</OrderNotice>}
                 {lines.length > 0 && (
                     <ul className="flex flex-col divide-y divide-border rounded-lg border border-border">
@@ -315,6 +331,22 @@ export function ReturnCreateDialog({ open, onOpenChange, detail }: OrderDialogPr
                         </div>
                         <MoneyCell value={preview.credit_estimate} currency={order.currency} />
                     </div>
+                )}
+                {split && (
+                    <dl className="flex flex-col gap-1 rounded-lg border border-border p-3 text-caption" data-testid="return-credit-split">
+                        <div className="flex items-center justify-between gap-2">
+                            <dt className="text-muted-foreground">{t('orders.returns.offDue')}</dt>
+                            <dd>
+                                <MoneyCell value={split.offDue} currency={order.currency} />
+                            </dd>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                            <dt className="text-muted-foreground">{t('orders.returns.paidBack')}</dt>
+                            <dd>
+                                <MoneyCell value={split.paidBack} currency={order.currency} />
+                            </dd>
+                        </div>
+                    </dl>
                 )}
                 {previewFailed && <p className="text-caption text-muted-foreground">{t('orders.returns.previewFailed')}</p>}
                 {needsOverride && (

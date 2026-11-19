@@ -40,12 +40,23 @@ export const REPORT_GROUPS = ['gst', 'sales', 'money', 'counter', 'audit'] as co
 export type ReportGroup = (typeof REPORT_GROUPS)[number];
 
 /** Filters a report page can show (contract §7.2 `ReportFilters`). */
-export type ReportFilterKey = 'range' | 'month' | 'location' | 'channel' | 'gstin' | 'groupBy' | 'asOf';
+export type ReportFilterKey =
+    | 'range'
+    | 'month'
+    | 'location'
+    | 'channel'
+    | 'gstin'
+    | 'groupBy'
+    | 'asOf'
+    | 'status'
+    | 'b2clLimit';
 
 /** How the page draws the answer. */
 export type ReportView = 'table' | 'gstr1' | 'documents' | 'dayBook' | 'file' | 'link';
 
 export const REPORT_CHANNELS = ['ONLINE', 'ADMIN', 'POS'] as const;
+/** Sales register `status` filter (contract §2.1; absent = all bills). */
+export const REPORT_STATUSES = ['ACTIVE', 'CANCELLED'] as const;
 export const SALES_GROUP_BY = ['day', 'month', 'channel', 'location', 'staff', 'payment_method'] as const;
 export const PRODUCT_GROUP_BY = ['variant', 'product', 'collection', 'category'] as const;
 
@@ -87,7 +98,7 @@ export const REPORT_CATALOGUE: readonly ReportEntry[] = [
         api: 'sales-register',
         group: 'gst',
         anyFeature: TAX,
-        filters: ['range', 'location', 'channel', 'gstin'],
+        filters: ['range', 'location', 'channel', 'gstin', 'status'],
         defaultRange: 'month',
         kind: 'register',
         formats: FILES,
@@ -99,7 +110,7 @@ export const REPORT_CATALOGUE: readonly ReportEntry[] = [
         api: 'gstr1',
         group: 'gst',
         anyFeature: TAX,
-        filters: ['month', 'gstin'],
+        filters: ['month', 'gstin', 'b2clLimit'],
         defaultRange: 'month',
         kind: 'summary',
         // One answer holds every sheet: a CSV cannot carry them, the workbook can.
@@ -160,7 +171,7 @@ export const REPORT_CATALOGUE: readonly ReportEntry[] = [
         api: 'gst-pack',
         group: 'gst',
         anyFeature: TAX,
-        filters: ['month', 'gstin'],
+        filters: ['month', 'gstin', 'b2clLimit'],
         defaultRange: 'month',
         kind: 'file',
         formats: ['xlsx'],
@@ -284,12 +295,37 @@ export function canSeeReport(entry: ReportEntry, access: Pick<CommerceAccess, 'i
     return access.hasAnyRole(REPORT_ROLES) && entry.anyFeature.some((feature) => access.isFeatureOn(feature));
 }
 
-/** The cards of the reports home for this person, grouped in screen order; empty groups left out. */
+/**
+ * The GST reports cover the whole GSTIN: the server opens them only to ADMIN
+ * and to staff assigned to every active place (contract §3.5). `allPlaces` is
+ * the places answer's word on that (R9); null = not known, the cards stay and
+ * the server still refuses.
+ */
+export function gstClosedToPlaces(
+    access: Pick<CommerceAccess, 'isAdmin'>,
+    allPlaces: boolean | null | undefined
+): boolean {
+    return !access.isAdmin && allPlaces === false;
+}
+
+/**
+ * The cards of the reports home for this person, grouped in screen order; empty
+ * groups left out. The GST group is left out for a reader limited to some
+ * places (M6): every card would only answer "no access at this location".
+ */
 export function visibleReportGroups(
-    access: Pick<CommerceAccess, 'isFeatureOn' | 'hasAnyRole'>
+    access: Pick<CommerceAccess, 'isFeatureOn' | 'hasAnyRole'> & Partial<Pick<CommerceAccess, 'isAdmin'>>,
+    allPlaces: boolean | null = null
 ): { group: ReportGroup; entries: ReportEntry[] }[] {
+    const gstClosed = gstClosedToPlaces({ isAdmin: !!access.isAdmin }, allPlaces);
     return REPORT_GROUPS.map((group) => ({
         group,
-        entries: REPORT_CATALOGUE.filter((entry) => entry.group === group && canSeeReport(entry, access)),
+        entries: REPORT_CATALOGUE.filter(
+            (entry) => entry.group === group && canSeeReport(entry, access) && !(gstClosed && entry.group === 'gst')
+        ),
     })).filter((block) => block.entries.length > 0);
 }
+
+/** True when the person's features and role would show the GST group (to explain why it is not there). */
+export const wouldSeeGst = (access: Pick<CommerceAccess, 'isFeatureOn' | 'hasAnyRole'>): boolean =>
+    REPORT_CATALOGUE.some((entry) => entry.group === 'gst' && canSeeReport(entry, access));

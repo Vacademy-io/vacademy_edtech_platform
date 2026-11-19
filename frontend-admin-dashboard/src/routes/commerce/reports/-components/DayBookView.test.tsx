@@ -32,16 +32,24 @@ describe('DayBookView', () => {
         expect(money.querySelector('h3')?.textContent).toBe('Money');
         expect(documents.textContent).toContain('INV/2627-00001');
         expect(documents.textContent).not.toContain('SALE_PAYMENT');
-        expect(money.textContent).toContain('SALE_PAYMENT');
+        // M2: the money row's kind in the admin's words, never the raw code.
+        expect(money.textContent).toContain('reports.values.SALE_PAYMENT');
+        expect(money.textContent).toContain('reports.values.UPI');
+        expect(documents.textContent).toContain('reports.values.TAX_INVOICE');
+        expect(documents.textContent).toContain('reports.values.PAPER_BILL');
+        expect(documents.textContent).toContain('reports.values.ACTIVE');
         expect(money.textContent).not.toContain('INV/2627-00001');
         expect(money.textContent).toContain('₹105.00');
         expect(Array.from(money.querySelectorAll('th')).map((th) => th.textContent)).toContain('Amount in');
     });
 
-    it('TIME is the India wall clock as sent: 10:30 stays 10:30; a paper bill reads "—"', () => {
+    it('TIME is the India wall clock as sent: 10:30 stays 10:30 (N3: beside the date, the clock only); a paper bill reads "—"', () => {
         render(<DayBookView answer={day} />);
         const documents = screen.getByTestId('report-section-documents');
-        expect(documents.textContent).toContain('19 Nov 2026, 10:30');
+        const cellsText = Array.from(documents.querySelectorAll('td')).map((td) => td.textContent);
+        expect(cellsText).toContain('10:30');
+        expect(cellsText).toContain('19 Nov 2026');
+        expect(documents.textContent).not.toContain('19 Nov 2026, 10:30');
         // The old screen read the text as UTC and added 5:30 again.
         expect(documents.textContent).not.toContain('16:00');
         const cells = Array.from(documents.querySelectorAll('td')).map((td) => td.textContent);

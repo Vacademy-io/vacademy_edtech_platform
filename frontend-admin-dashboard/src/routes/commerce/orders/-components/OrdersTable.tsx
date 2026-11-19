@@ -17,7 +17,7 @@ import {
     formatAge,
     isLate,
     paymentLabel,
-    round2,
+    rowDue,
 } from '@/routes/commerce/orders/-shared/order-format';
 import type { QueueDefinition, RowAction } from '@/routes/commerce/orders/-shared/order-queues';
 import type { StaffOrderRow } from '@/routes/commerce/orders/-shared/order-types';
@@ -135,7 +135,7 @@ export function OrdersTable(props: OrdersTableProps) {
             case 'codToCollect':
                 return <MoneyCell value={codToCollect(row)} currency={row.currency} />;
             case 'due':
-                return <MoneyCell value={Math.max(0, round2(row.total - row.amount_paid))} currency={row.currency} />;
+                return <MoneyCell value={rowDue(row)} currency={row.currency} />;
             case 'refundOpen':
                 return <MoneyCell value={row.refund_open ?? 0} currency={row.currency} />;
             case 'returnState':
