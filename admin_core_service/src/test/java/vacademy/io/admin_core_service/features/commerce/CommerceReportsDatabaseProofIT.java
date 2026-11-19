@@ -55,6 +55,7 @@ import vacademy.io.admin_core_service.features.commerce.media.CommerceRenditionC
 import vacademy.io.admin_core_service.features.commerce.order.checkout.CommerceCheckoutService;
 import vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodRemittanceService;
 import vacademy.io.admin_core_service.features.commerce.order.cod.dto.CodRemittanceDtos;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderDeskService;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceReceiptService;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceStaffOrderService;
 import vacademy.io.admin_core_service.features.commerce.order.desk.dto.OrderDeskDtos;
@@ -167,7 +168,8 @@ import static org.mockito.Mockito.when;
  * webhook, COD orders remitted, outstanding, in transit and RTO, counter sales with round-off, a
  * void, a B2B bill and a reissue, a 0% bill, measured cloth by length, counter returns incl. a
  * capped note with negative round-off, paper bill-book entries with a skipped page, a part-paid
- * staff credit order (whose return before payment the desk refuses), a paid staff order with a
+ * staff credit order with one bottle returned before the rest is paid (contract section 15: the
+ * credit lowers what is owed), a paid staff order with a
  * return, a back-dated credit note, a delivery challan, two places
  * with two GSTINs), and every report of contract section 2 is held against sums the proof computes
  * itself from the document tables ({@code invoice}, {@code invoice_line_item},
@@ -251,6 +253,7 @@ class CommerceReportsDatabaseProofIT {
     @Autowired private CommerceCodRemittanceService remittances;
     @Autowired private CommerceStaffOrderService staffOrders;
     @Autowired private CommerceReceiptService receipts;
+    @Autowired private CommerceOrderDeskService desk;
     @Autowired private CommerceReturnService returns;
     @Autowired private CommerceRefundService refunds;
     @Autowired private CommerceInvoiceService invoices;
@@ -1000,6 +1003,10 @@ class CommerceReportsDatabaseProofIT {
                 .session().id();
     }
 
+    private BigDecimal amountDue(String orderId) {
+        return desk.detail(inst, orderId, admin, false).getAmountDue();
+    }
+
     private BigDecimal expected(String session) {
         return sessions.detail(admin, inst, session).summary().expectedCash();
     }
@@ -1009,8 +1016,13 @@ class CommerceReportsDatabaseProofIT {
     @Test
     @Order(1)
     void seedMonth() throws Exception {
-        assertEquals("731", text("SELECT version FROM flyway_schema_history WHERE success AND version IS NOT NULL "
-                + "ORDER BY installed_rank DESC LIMIT 1"), "Flyway target 731 (main's V731), no new migration");
+        // The commerce migrations the reports read (V679–V730) are applied and nothing in the chain failed.
+        // Other features keep adding migrations after them, so the latest version is not asserted.
+        assertEquals(15, count("SELECT count(*) FROM flyway_schema_history WHERE success AND version IN ("
+                + "'679','680','681','682','683','684','685','686','687','688','710','711','721','724','730')"),
+                "every commerce migration up to V730 is applied");
+        assertEquals(0, count("SELECT count(*) FROM flyway_schema_history WHERE NOT success"),
+                "no failed migration in the Flyway history");
         assertEquals(ZoneId.of("UTC"), ZoneId.systemDefault(), "the JVM runs in UTC as in production");
         db.update("INSERT INTO level (id, level_name, status) VALUES ('DEFAULT', 'DEFAULT', 'ACTIVE'), ('INVITED', "
                 + "'INVITED', 'ACTIVE') ON CONFLICT DO NOTHING");
@@ -1200,9 +1212,9 @@ class CommerceReportsDatabaseProofIT {
                 r2Expected.add(new BigDecimal("10.00")), null, "Ten over at close", pin(managerId, PIN)));
         same(amount("10.00"), money("SELECT variance FROM pos_session WHERE id = ?", sessionR2), "R2 variance");
 
-        // ---- a staff credit order at L1: 2 bottles handed over, part paid. A return before the rest
-        // is paid (F1) is refused by the return desk (requireReturnable: ORDER_NOT_PAID), so the dues
-        // report has no return to net here; finding recorded in build-proof.md.
+        // ---- a staff credit order at L1: 2 bottles handed over, part paid, then one bottle returned
+        // before the rest is paid (contract section 15): the credit first lowers what is owed, nothing is
+        // paid back, and the order stays in the dues report with the lower amount.
         staffOrder = staffOrders.create(admin, inst, StaffOrderRequest.builder().clientRequestId(key())
                 .customer(StaffOrderRequest.Customer.builder().phone(newPhone()).name("Credit Buyer").build())
                 .lines(List.of(StaffOrderRequest.Line.builder().variantId(bottle).quantity(2).build()))
@@ -1210,11 +1222,21 @@ class CommerceReportsDatabaseProofIT {
         assertEquals("DELIVERED", status(staffOrder));
         receipts.record(admin, inst, staffOrder, OrderDeskDtos.ReceiptRequest.builder().clientRequestId(key())
                 .mode("UPI").amount(new BigDecimal("300.00")).reference("UPI-" + run).build());
-        String creditLine = lineOf(staffOrder, bottle);
-        refused("ORDER_NOT_PAID", () -> returns.create(admin, inst, ReturnDtos.CreateReturnRequest.builder()
-                .clientRequestId(key()).orderId(staffOrder).reason("DEFECTIVE")
-                .lines(List.of(ReturnDtos.LineRequest.builder().orderLineId(creditLine).quantity(1).build()))
-                .approveNow(true).build()));
+        BigDecimal creditTotal = money("SELECT total FROM commerce_order WHERE id = ?", staffOrder);
+        BigDecimal owedBeforeReturn = amountDue(staffOrder);
+        same(creditTotal.subtract(new BigDecimal("300.00")), owedBeforeReturn, "owed before the return");
+        ReturnDtos.ReturnView creditReturn = returnReceived(staffOrder, lineOf(staffOrder, bottle), 1);
+        BigDecimal creditReturned = creditReturn.getCreditTotal();
+        assertTrue(creditReturned.signum() > 0 && creditReturned.compareTo(owedBeforeReturn) < 0,
+                "the return credits less than is owed: " + creditReturned + " of " + owedBeforeReturn);
+        same(BigDecimal.ZERO, money("SELECT due_raised FROM commerce_return WHERE id = ?", creditReturn.getId()),
+                "nothing is due back: the whole credit went off what is owed");
+        assertEquals("CLOSED", text("SELECT status FROM commerce_return WHERE id = ?", creditReturn.getId()));
+        assertEquals(1, count("SELECT count(*) FROM commerce_credit_note WHERE commerce_order_id = ?", staffOrder),
+                "the return's credit note");
+        assertEquals(0, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", staffOrder), "no refund");
+        assertEquals("PARTIALLY_PAID", text("SELECT payment_status FROM commerce_order WHERE id = ?", staffOrder));
+        same(owedBeforeReturn.subtract(creditReturned), amountDue(staffOrder), "owed after the return");
         // ---- a paid staff order at L1, one bottle back: a credit note on an ADMIN invoice
         staffPaid = staffOrders.create(admin, inst, StaffOrderRequest.builder().clientRequestId(key())
                 .customer(StaffOrderRequest.Customer.builder().phone(newPhone()).name("Desk Buyer").build())
@@ -1784,9 +1806,13 @@ class CommerceReportsDatabaseProofIT {
         same(credited, row.path("credited_by_returns"), "credited by returns");
         same(due, row.path("due"), "due = total - received - credit not raised");
         same(due, dues.path("totals").path("due"), "dues total = rows");
-        if (credited.signum() > 0) {
-            assertTrue(hasWarning(dues, "DUE_REDUCED_BY_RETURN"), "the lowered due is flagged");
-        }
+        assertTrue(credited.signum() > 0, "the return before payment lowered the due");
+        assertTrue(hasWarning(dues, "DUE_REDUCED_BY_RETURN"), "the lowered due is flagged");
+        same(credited, money("SELECT total FROM commerce_credit_note WHERE commerce_order_id = ?", staffOrder),
+                "the whole credit note went off what is owed");
+        same(amountDue(staffOrder), row.path("due"), "the dues row shows the order's amount_due after the return");
+        same(amount("150.00"), row.path("due"), "₹900 order, ₹300 received, ₹450 returned before payment: ₹150 due");
+        same(amount("450.00"), row.path("credited_by_returns"), "the returned bottle's credit");
         note("dues " + row);
     }
 

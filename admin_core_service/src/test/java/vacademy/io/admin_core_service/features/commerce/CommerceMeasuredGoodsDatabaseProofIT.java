@@ -629,8 +629,13 @@ class CommerceMeasuredGoodsDatabaseProofIT {
     @Test
     @Order(1)
     void seed() {
-        assertEquals("730", text("SELECT version FROM flyway_schema_history WHERE success AND version IS NOT NULL "
-                + "ORDER BY installed_rank DESC LIMIT 1"), "Flyway target 730, no new migration");
+        // The commerce migrations this proof relies on (V679–V730) are applied and nothing in the chain failed.
+        // Other features keep adding migrations after them, so the latest version is not asserted.
+        assertEquals(15, count("SELECT count(*) FROM flyway_schema_history WHERE success AND version IN ("
+                + "'679','680','681','682','683','684','685','686','687','688','710','711','721','724','730')"),
+                "every commerce migration up to V730 is applied");
+        assertEquals(0, count("SELECT count(*) FROM flyway_schema_history WHERE NOT success"),
+                "no failed migration in the Flyway history");
         db.update("INSERT INTO level (id, level_name, status) VALUES ('DEFAULT', 'DEFAULT', 'ACTIVE'), ('INVITED', "
                 + "'INVITED', 'ACTIVE') ON CONFLICT DO NOTHING");
         db.update("INSERT INTO session (id, session_name, status) VALUES ('DEFAULT', 'DEFAULT', 'ACTIVE'), "
