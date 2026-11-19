@@ -31,6 +31,7 @@ import java.util.Map;
  * </ul>
  * The approved templates must declare exactly these parameters in this order.
  */
+// vendor-call-log: sends through MetaWhatsAppServiceProvider, which records failures
 @Service
 @Slf4j
 public class ClassroomWhatsAppService {

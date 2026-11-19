@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.workflow.engine.http;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,9 +8,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import vacademy.io.admin_core_service.features.workflow.dto.HttpRequestNodeConfigDTO;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -29,7 +30,7 @@ public class ExternalHttpRequestStrategy implements HttpRequestStrategy {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5_000);
         factory.setReadTimeout(30_000);
-        return ExternalCallLog.attach(new RestTemplate(factory));
+        return new RestTemplate(factory);
     }
 
     private final RestTemplate restTemplate = createRestTemplateWithTimeout();
@@ -107,7 +108,13 @@ public class ExternalHttpRequestStrategy implements HttpRequestStrategy {
             log.info("Executing EXTERNAL HTTP {} → {}", method, finalUrl);
             if (requestBody != null) log.debug("Request body: {}", requestBody);
 
-            ResponseEntity<String> response = restTemplate.exchange(finalUri, method, entity, String.class);
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.exchange(finalUri, method, entity, String.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(finalUrl, "workflow http request", requestBody, e);
+                throw e;
+            }
             result.putAll(httpHelperUtils.processResponse(response));
 
         } catch (HttpClientErrorException e) {

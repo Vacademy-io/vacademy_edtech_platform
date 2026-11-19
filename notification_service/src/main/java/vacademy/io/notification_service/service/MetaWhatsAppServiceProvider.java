@@ -8,7 +8,9 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.common.logging.SentryLogger;
 import vacademy.io.notification_service.dto.MetaWhatsAppPayload;
 import vacademy.io.notification_service.dto.WhatsAppOTPRequest;
@@ -299,11 +301,17 @@ public class MetaWhatsAppServiceProvider implements WhatsAppServiceProvider {
 
             HttpEntity<MetaWhatsAppPayload> request = new HttpEntity<>(payload, headers);
 
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.POST,
-                    request,
-                    String.class);
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.exchange(
+                        url,
+                        HttpMethod.POST,
+                        request,
+                        String.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(url, "send template message", otp == null ? request : null, e);
+                throw e;
+            }
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 log.info("Meta API call successful");

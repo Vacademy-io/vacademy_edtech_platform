@@ -13,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.InetAddress;
 import java.time.Duration;
@@ -461,10 +462,13 @@ public class PlatformHealthCheckService {
                 if (response.getStatusCode().is2xxSuccessful()) {
                     log.info("[PlatformHealth] WhatsApp sent to {}: {}", phone, truncate(response.getBody(), 120));
                 } else {
+                    VendorCallLog.failed(url, "send whatsapp alert", payload, response.getStatusCode().value(),
+                            response.getBody());
                     log.error("[PlatformHealth] WhatsApp to {} REJECTED by Meta: HTTP {} {}",
                             phone, response.getStatusCode().value(), truncate(response.getBody(), 300));
                 }
             } catch (Exception e) {
+                VendorCallLog.failed(META_API, "send whatsapp alert", payload, e);
                 // One bad number must not stop the rest of the list being paged.
                 log.error("[PlatformHealth] WhatsApp to {} failed: {}", phone, e.getMessage());
             }

@@ -7,8 +7,10 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.io.IOException;
 
@@ -52,7 +54,12 @@ public class DocConverterService {
         HttpEntity<MultiValueMap<String, Object>> requestEntity =
                 new HttpEntity<>(body, headers);
 
-        return new RestTemplate()
-                .postForObject(API_URL, requestEntity, String.class);
+        try {
+            return new RestTemplate()
+                    .postForObject(API_URL, requestEntity, String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(API_URL, "convert document", requestEntity, e);
+            throw e;
+        }
     }
 }

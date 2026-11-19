@@ -7,6 +7,7 @@ import org.springframework.http.*;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.InetAddress;
 import java.time.ZoneId;
@@ -355,6 +356,7 @@ public class BbbHealthCheckService {
             log.info("[BBB Pool] GitHub Action triggered: action={}, slug={}, count={}", action, serverSlug,
                     serverCount);
         } catch (Exception e) {
+            VendorCallLog.failed("api.github.com", "dispatch bbb pool workflow", null, e);
             result.put("error", e.getMessage());
             log.error("[BBB Pool] GitHub Action trigger failed: {}", e.getMessage());
         }
@@ -428,6 +430,7 @@ public class BbbHealthCheckService {
                         url, HttpMethod.POST, new HttpEntity<>(payload, headers), String.class);
                 log.info("[BBB HealthCheck] WhatsApp sent to {}: {}", phone, response.getBody());
             } catch (Exception e) {
+                VendorCallLog.failed(META_API, "send whatsapp alert", payload, e);
                 log.error("[BBB HealthCheck] WhatsApp to {} failed: {}", phone, e.getMessage());
             }
         }

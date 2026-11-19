@@ -1,5 +1,6 @@
 package vacademy.io.notification_service.features.email_verification.service;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailService;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesRequest;
 import com.amazonaws.services.simpleemail.model.GetIdentityVerificationAttributesResult;
@@ -12,6 +13,7 @@ import com.amazonaws.services.simpleemail.model.VerifyEmailIdentityRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.notification_service.features.email_verification.dto.DnsRecordDTO;
 
 import java.util.ArrayList;
@@ -56,7 +58,12 @@ public class SesIdentityService {
      */
     public void verifyEmailIdentity(String email) {
         requireEnabled();
-        ses.verifyEmailIdentity(new VerifyEmailIdentityRequest().withEmailAddress(email));
+        try {
+            ses.verifyEmailIdentity(new VerifyEmailIdentityRequest().withEmailAddress(email));
+        } catch (AmazonClientException e) {
+            VendorCallLog.failed("aws-ses", "verify email identity", null, e);
+            throw e;
+        }
         log.info("Requested SES email-identity verification for {}", email);
     }
 
@@ -70,8 +77,13 @@ public class SesIdentityService {
         List<DnsRecordDTO> records = new ArrayList<>();
 
         // 1) Domain ownership TXT record: _amazonses.<domain> = <token>
-        VerifyDomainIdentityResult identityResult =
-                ses.verifyDomainIdentity(new VerifyDomainIdentityRequest().withDomain(domain));
+        VerifyDomainIdentityResult identityResult;
+        try {
+            identityResult = ses.verifyDomainIdentity(new VerifyDomainIdentityRequest().withDomain(domain));
+        } catch (AmazonClientException e) {
+            VendorCallLog.failed("aws-ses", "verify domain identity", null, e);
+            throw e;
+        }
         if (identityResult != null && identityResult.getVerificationToken() != null) {
             records.add(DnsRecordDTO.builder()
                     .type("TXT")
@@ -82,8 +94,14 @@ public class SesIdentityService {
         }
 
         // 2) DKIM CNAMEs: <token>._domainkey.<domain> = <token>.dkim.amazonses.com
-        records.addAll(buildDkimRecords(domain,
-                ses.verifyDomainDkim(new VerifyDomainDkimRequest().withDomain(domain))));
+        VerifyDomainDkimResult dkimResult;
+        try {
+            dkimResult = ses.verifyDomainDkim(new VerifyDomainDkimRequest().withDomain(domain));
+        } catch (AmazonClientException e) {
+            VendorCallLog.failed("aws-ses", "verify domain dkim", null, e);
+            throw e;
+        }
+        records.addAll(buildDkimRecords(domain, dkimResult));
 
         log.info("Initiated SES domain verification for {} ({} DNS records)", domain, records.size());
         return records;
@@ -92,8 +110,14 @@ public class SesIdentityService {
     /** Rebuild the DKIM DNS records for an already-initiated domain (for re-display). */
     public List<DnsRecordDTO> getDkimRecords(String domain) {
         requireEnabled();
-        return buildDkimRecords(domain,
-                ses.verifyDomainDkim(new VerifyDomainDkimRequest().withDomain(domain)));
+        VerifyDomainDkimResult dkimResult;
+        try {
+            dkimResult = ses.verifyDomainDkim(new VerifyDomainDkimRequest().withDomain(domain));
+        } catch (AmazonClientException e) {
+            VendorCallLog.failed("aws-ses", "verify domain dkim", null, e);
+            throw e;
+        }
+        return buildDkimRecords(domain, dkimResult);
     }
 
     private List<DnsRecordDTO> buildDkimRecords(String domain, VerifyDomainDkimResult dkimResult) {
@@ -121,8 +145,14 @@ public class SesIdentityService {
      */
     public String getStatus(String identity) {
         requireEnabled();
-        GetIdentityVerificationAttributesResult result = ses.getIdentityVerificationAttributes(
-                new GetIdentityVerificationAttributesRequest().withIdentities(identity));
+        GetIdentityVerificationAttributesResult result;
+        try {
+            result = ses.getIdentityVerificationAttributes(
+                    new GetIdentityVerificationAttributesRequest().withIdentities(identity));
+        } catch (AmazonClientException e) {
+            VendorCallLog.failed("aws-ses", "get identity verification status", null, e);
+            throw e;
+        }
 
         Map<String, IdentityVerificationAttributes> attrs =
                 result != null ? result.getVerificationAttributes() : null;

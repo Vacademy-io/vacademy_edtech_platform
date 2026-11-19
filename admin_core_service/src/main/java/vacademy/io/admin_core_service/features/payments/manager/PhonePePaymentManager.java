@@ -14,6 +14,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.common.payment.currency.CurrencyRegistry;
 import vacademy.io.common.payment.dto.*;
 import vacademy.io.common.payment.enums.PaymentStatusEnum;
@@ -260,6 +261,7 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
                 })
+                .doOnError(e -> VendorCallLog.failed(url, "create payment", body, e))
                 .block();
 
         Object hostedUrl = response != null ? response.get("redirectUrl") : null;
@@ -302,6 +304,7 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
                     .header("Authorization", "O-Bearer " + token)
                     .retrieve()
                     .bodyToMono(PhonePeStatusResponseDTO.class)
+                    .doOnError(e -> VendorCallLog.failed(url, "check payment status", null, e))
                     .block();
 
             if (status != null && StringUtils.hasText(status.getState())) {
@@ -355,6 +358,7 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<Map<String, Object>>() {
                 })
+                .doOnError(e -> VendorCallLog.failed(oauthUrl, "fetch access token", form, e))
                 .block();
 
         Object accessToken = tokenResponse != null ? tokenResponse.get("access_token") : null;
@@ -479,6 +483,7 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
                 .retrieve()
                 .bodyToMono(new ParameterizedTypeReference<PhonePeResponseWrapperDTO<PhonePePaymentResponseDTO>>() {
                 })
+                .doOnError(e -> VendorCallLog.failed(url, "create payment", null, e))
                 .block();
     }
 
@@ -546,6 +551,7 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
                     .retrieve()
                     .bodyToMono(new ParameterizedTypeReference<PhonePeResponseWrapperDTO<PhonePeStatusResponseDTO>>() {
                     })
+                    .doOnError(e -> VendorCallLog.failed(url, "check payment status", null, e))
                     .block();
 
             if (response != null && response.isSuccess()) {

@@ -14,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClientRequestExceptio
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import vacademy.io.admin_core_service.features.ai_models.ModelDefaults;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -326,7 +327,8 @@ public class LlmGatewayRouter {
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(String.class)
-                .timeout(timeout);
+                .timeout(timeout)
+                .doOnError(e -> VendorCallLog.failed("api.isoquant.ai", "chat completion", payload, e));
     }
 
     /**
@@ -463,7 +465,8 @@ public class LlmGatewayRouter {
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(String.class)
-                .timeout(timeout);
+                .timeout(timeout)
+                .doOnError(e -> VendorCallLog.failed("openrouter.ai", "chat completion", payload, e));
     }
 
     /**

@@ -22,6 +22,7 @@ import vacademy.io.admin_core_service.features.audience.dto.WebhookSubscriptionR
 import vacademy.io.admin_core_service.features.audience.entity.FormWebhookConnector;
 import vacademy.io.admin_core_service.features.audience.service.TokenEncryptionService;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -296,6 +297,7 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                 .get().uri(url)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(url, "fetch lead", null, e))
                 .block();
     }
 
@@ -493,7 +495,10 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
             final URI pageUri = URI.create(url);
             JsonNode response = webClient
                     .get().uri(pageUri)
-                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class))
+                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class)
+                            .doOnNext(b -> VendorCallLog.failed(GRAPH_API_BASE, "poll leads", null,
+                                    resp.statusCode().value(), b)))
+                    .doOnError(e -> VendorCallLog.failed(GRAPH_API_BASE, "poll leads", null, e))
                     .block();
             pages++;
             if (response == null) break;
@@ -506,7 +511,10 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                 JsonNode refused = response.path("error");
                 JsonNode plain = webClient
                         .get().uri(URI.create(firstPageBase))
-                        .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class))
+                        .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class)
+                                .doOnNext(b -> VendorCallLog.failed(GRAPH_API_BASE, "poll leads", null,
+                                        resp.statusCode().value(), b)))
+                        .doOnError(e -> VendorCallLog.failed(GRAPH_API_BASE, "poll leads", null, e))
                         .block();
                 if (plain != null && !plain.has("error") && refusesAdFields(refused)) {
                     markAdFieldsRefused(connector, refused.path("code").asInt(0));
@@ -615,6 +623,7 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                 .body(BodyInserters.fromFormData(params))
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(META_TOKEN_URL, "exchange code for token", null, e))
                 .block();
 
         if (response == null || !response.has("access_token")) {
@@ -637,6 +646,7 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                 .body(BodyInserters.fromFormData(params))
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(META_TOKEN_URL, "exchange long-lived token", params, e))
                 .block();
 
         if (response == null || !response.has("access_token")) {
@@ -667,6 +677,7 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                 .get().uri(url)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(url, "list pages", null, e))
                 .block();
 
         List<Map<String, String>> pages = new ArrayList<>();
@@ -706,9 +717,11 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
         JsonNode resp;
         try {
             resp = webClient.get().uri(URI.create(url))
-                    .exchangeToMono(r -> r.bodyToMono(JsonNode.class))
+                    .exchangeToMono(r -> r.bodyToMono(JsonNode.class)
+                            .doOnNext(b -> VendorCallLog.failed(url, "debug token", null, r.statusCode().value(), b)))
                     .block();
         } catch (Exception e) {
+            VendorCallLog.failed(url, "debug token", null, e);
             log.warn("debug_token call failed while reading granted page IDs: {}", e.getMessage());
             return ids;
         }
@@ -780,6 +793,7 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                     .get().uri(url)
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> VendorCallLog.failed(url, "fetch form name", null, e))
                     .block();
             if (response == null) return null;
             String name = response.path("name").asText(null);
@@ -807,9 +821,11 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
         JsonNode node;
         try {
             node = webClient.get().uri(url)
-                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class))
+                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class)
+                            .doOnNext(b -> VendorCallLog.failed(url, "fetch page", null, resp.statusCode().value(), b)))
                     .block();
         } catch (Exception e) {
+            VendorCallLog.failed(url, "fetch page", null, e);
             throw new VacademyException("Couldn't reach Facebook to load that Page: " + e.getMessage());
         }
         if (node == null) {
@@ -858,6 +874,7 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                     .get().uri(URI.create(url))
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> VendorCallLog.failed(GRAPH_API_BASE, "list lead forms", null, e))
                     .block();
             pages++;
             if (response == null) break;
@@ -887,6 +904,7 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
                 .get().uri(url)
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(url, "fetch form fields", null, e))
                 .block();
 
         List<PlatformFormField> fields = new ArrayList<>();
@@ -923,9 +941,11 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
         try {
             response = webClient
                     .post().uri(url)
-                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class))
+                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class)
+                            .doOnNext(b -> VendorCallLog.failed(url, "subscribe page", null, resp.statusCode().value(), b)))
                     .block();
         } catch (Exception e) {
+            VendorCallLog.failed(url, "subscribe page", null, e);
             log.error("Page subscription call failed for page {}: {}", pageId, e.getMessage());
             return WebhookSubscriptionResult.failure(null, e.getMessage(),
                     "Couldn't reach Facebook to link this Page. Try again, or reconnect.");
@@ -964,9 +984,12 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
         try {
             response = webClient
                     .get().uri(url)
-                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class))
+                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class)
+                            .doOnNext(b -> VendorCallLog.failed(url, "read page subscriptions", null,
+                                    resp.statusCode().value(), b)))
                     .block();
         } catch (Exception e) {
+            VendorCallLog.failed(url, "read page subscriptions", null, e);
             return Optional.of("Couldn't read this Page's app subscriptions from Facebook: " + e.getMessage());
         }
         if (response == null) {
@@ -999,9 +1022,11 @@ public class MetaLeadAdsStrategy implements AdPlatformStrategy {
         try {
             response = webClient
                     .get().uri(url)
-                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class))
+                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class)
+                            .doOnNext(b -> VendorCallLog.failed(url, "read leads", null, resp.statusCode().value(), b)))
                     .block();
         } catch (Exception e) {
+            VendorCallLog.failed(url, "read leads", null, e);
             return Optional.of("Couldn't read leads from Facebook: " + e.getMessage());
         }
         if (response == null) {

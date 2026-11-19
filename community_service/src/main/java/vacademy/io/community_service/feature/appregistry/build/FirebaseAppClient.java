@@ -14,7 +14,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -139,8 +141,14 @@ public class FirebaseAppClient {
         if (body != null) {
             headers.setContentType(MediaType.APPLICATION_JSON);
         }
-        String response = restTemplate.exchange(new RequestEntity<>(body, headers, method, URI.create(API + path)),
-                String.class).getBody();
+        String response;
+        try {
+            response = restTemplate.exchange(new RequestEntity<>(body, headers, method, URI.create(API + path)),
+                    String.class).getBody();
+        } catch (RestClientException e) {
+            VendorCallLog.failed(API + path, "firebase app management", body, e);
+            throw e;
+        }
         return objectMapper.readTree(response == null ? "{}" : response);
     }
 
@@ -165,8 +173,14 @@ public class FirebaseAppClient {
         form.add("assertion", assertion);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        String response = restTemplate.exchange(new RequestEntity<>(form, headers, HttpMethod.POST, URI.create(TOKEN_URL)),
-                String.class).getBody();
+        String response;
+        try {
+            response = restTemplate.exchange(new RequestEntity<>(form, headers, HttpMethod.POST, URI.create(TOKEN_URL)),
+                    String.class).getBody();
+        } catch (RestClientException e) {
+            VendorCallLog.failed(TOKEN_URL, "fetch access token", null, e);
+            throw e;
+        }
         JsonNode json = objectMapper.readTree(response);
         cachedToken = json.path("access_token").asText(null);
         cachedTokenExpiresAt = now + json.path("expires_in").asLong(3300);

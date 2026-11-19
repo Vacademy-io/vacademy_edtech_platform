@@ -35,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * {@link PushNotificationService} can retry a token that the institute's own project rejects as
  * belonging to a different sender.</p>
  */
+// vendor-call-log: builds per-institute Firebase apps; FCM sends are recorded in PushNotificationService
 @Service
 @Slf4j
 public class MultiTenantFirebaseManager {

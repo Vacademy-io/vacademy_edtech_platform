@@ -13,6 +13,7 @@ import vacademy.io.admin_core_service.features.payments.service.WebHookService;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.common.payment.currency.CurrencyRegistry;
 import vacademy.io.common.payment.dto.*;
 import vacademy.io.common.payment.enums.PaymentGateway;
@@ -248,6 +249,7 @@ public class EwayPaymentManager implements PaymentServiceStrategy {
                 .onStatus(status -> status.isError(),
                         resp -> Mono.error(new VacademyException("Eway shared-page error: " + resp.statusCode())))
                 .bodyToMono(EwaySharedPageResponseDTO.class)
+                .doOnError(e -> VendorCallLog.failed(baseUrl, "create shared payment page", transaction, e))
                 .block();
 
         if (response == null || StringUtils.hasText(response.Errors)
@@ -279,6 +281,7 @@ public class EwayPaymentManager implements PaymentServiceStrategy {
                 .onStatus(status -> status.isError(),
                         resp -> Mono.error(new VacademyException("Eway access-code lookup error: " + resp.statusCode())))
                 .bodyToMono(EwayApiResponseDTO.class)
+                .doOnError(e -> VendorCallLog.failed(baseUrl, "fetch access code result", null, e))
                 .block();
     }
 
@@ -406,6 +409,7 @@ public class EwayPaymentManager implements PaymentServiceStrategy {
                     return Mono.error(new VacademyException("Eway API error: " + resp.statusCode()));
                 })
                 .bodyToMono(String.class)
+                .doOnError(e -> VendorCallLog.failed(baseUrl, "fetch transaction", null, e))
                 .block();
         EwayTransactionQueryResponse response = JsonUtil.fromJson(str, EwayTransactionQueryResponse.class);
         if (response == null) {
@@ -443,6 +447,7 @@ public class EwayPaymentManager implements PaymentServiceStrategy {
                 .retrieve()
                 .onStatus(status -> status.isError(), resp -> Mono.error(new VacademyException("Eway API error: " + resp.statusCode())))
                 .bodyToMono(EwayApiResponseDTO.class)
+                .doOnError(e -> VendorCallLog.failed(baseUrl, "transaction request", null, e))
                 .block();
     }
 

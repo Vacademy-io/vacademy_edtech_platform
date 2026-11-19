@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.features.chatbot_flow.dto.WhatsAppTemplateDTO;
 import vacademy.io.notification_service.features.chatbot_flow.entity.WhatsAppTemplate;
@@ -252,6 +253,7 @@ public class WhatsAppTemplateManagerService {
         try {
             response = restTemplate.postForEntity(url, request, String.class);
         } catch (RestClientException e) {
+            VendorCallLog.failed(url, "submit template", request, e);
             // The important branch: Meta answers a bad template with 400 + a JSON body naming the
             // problem. RestTemplate turns that into an exception whose message is escaped JSON, so
             // the translator digs out error_user_msg / code / subcode and phrases it for an admin.
@@ -365,6 +367,7 @@ public class WhatsAppTemplateManagerService {
                 response = restTemplate.exchange(url, HttpMethod.GET,
                         new HttpEntity<>(headers), String.class);
             } catch (RestClientException e) {
+                VendorCallLog.failed(url, "sync templates", null, e);
                 // An expired token is the usual cause; the translator turns Meta's code 190 into
                 // "the token is expired, update it in Settings" rather than a bare "Sync failed".
                 throw errorTranslator.translate("Meta", "sync templates", e);
@@ -520,6 +523,7 @@ public class WhatsAppTemplateManagerService {
                 response = restTemplate.exchange(url, HttpMethod.GET,
                         new HttpEntity<>(headers), String.class);
             } catch (RestClientException e) {
+                VendorCallLog.failed(url, "sync templates", null, e);
                 throw errorTranslator.translate("WATI", "sync templates", e);
             }
 
@@ -714,6 +718,7 @@ public class WhatsAppTemplateManagerService {
             }
             contentType = downloadResp.getHeaders().getFirst(HttpHeaders.CONTENT_TYPE);
         } catch (RestClientException | IllegalArgumentException e) {
+            VendorCallLog.failed(mediaUrl, "download template sample media", null, e);
             log.warn("Sample {} download failed for {}: {}", headerType, mediaUrl, e.getMessage());
             throw WhatsAppTemplateException.invalid("SAMPLE_MEDIA_UNREACHABLE", "headerSampleUrl",
                     "Could not download the sample " + headerType.toLowerCase() + " from " + mediaUrl + ".",
@@ -761,6 +766,7 @@ public class WhatsAppTemplateManagerService {
                         "Meta started the sample upload but returned no session id: " + startResp.getBody());
             }
         } catch (RestClientException e) {
+            VendorCallLog.failed(startUrl, "start sample upload", null, e);
             // Meta puts the real reason (bad app_id, token missing a scope) in the response body.
             throw errorTranslator.translate("Meta", "upload the sample " + headerType.toLowerCase(), e);
         } catch (JsonProcessingException e) {
@@ -793,6 +799,7 @@ public class WhatsAppTemplateManagerService {
             log.info("Meta resumable-upload succeeded: bytes={}, sessionId={}", bytes.length, uploadSessionId);
             return handle;
         } catch (RestClientException e) {
+            VendorCallLog.failed(uploadUrl, "upload sample file", null, e);
             throw errorTranslator.translate("Meta", "upload the sample " + headerType.toLowerCase(), e);
         } catch (JsonProcessingException e) {
             throw uploadFailed(headerType, "Meta returned an unreadable response after the sample upload.");
@@ -952,7 +959,12 @@ public class WhatsAppTemplateManagerService {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(creds.accessToken);
 
-        restTemplate.exchange(url, HttpMethod.DELETE, new HttpEntity<>(headers), String.class);
+        try {
+            restTemplate.exchange(url, HttpMethod.DELETE, new HttpEntity<>(headers), String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(url, "delete template", null, e);
+            throw e;
+        }
         log.info("Deleted template from Meta: name={}", template.getName());
     }
 

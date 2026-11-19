@@ -35,6 +35,7 @@ import java.time.Instant;
 @RequestMapping("/admin-core-service/live-sessions/provider/meeting")
 @RequiredArgsConstructor
 @Slf4j
+// vendor-call-log: builds Zoom join links, makes no call
 public class ZoomSdkController {
 
     private final SessionScheduleRepository scheduleRepository;

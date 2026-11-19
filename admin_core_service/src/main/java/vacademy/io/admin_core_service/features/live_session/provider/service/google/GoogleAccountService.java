@@ -13,6 +13,7 @@ import vacademy.io.admin_core_service.features.live_session.provider.dto.google.
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccountSummary;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleTestConnectionResponse;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.util.Date;
 import java.util.List;
@@ -110,6 +111,7 @@ public class GoogleAccountService {
                     .retrieve()
                     .bodyToMono(JsonNode.class)
                     .timeout(java.time.Duration.ofSeconds(15))
+                    .doOnError(e -> VendorCallLog.failed(GoogleMeetEndpoints.USERINFO_URL, "test connection userinfo", null, e))
                     .block();
 
             String email = me != null && me.hasNonNull("email") ? me.get("email").asText()

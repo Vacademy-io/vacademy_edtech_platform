@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+// vendor-call-log: receives Stripe webhooks and verifies signatures, makes no Stripe API call
 @Slf4j
 @Service
 public class StripeWebHookService {

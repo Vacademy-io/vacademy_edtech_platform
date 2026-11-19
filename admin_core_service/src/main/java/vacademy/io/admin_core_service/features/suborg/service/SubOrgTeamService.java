@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.suborg.service;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -211,7 +210,7 @@ public class SubOrgTeamService {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(10000);
         factory.setReadTimeout(30000);
-        return ExternalCallLog.attach(new RestTemplate(factory));
+        return new RestTemplate(factory);
     }
 
     private String currentRequestAuthHeader() {

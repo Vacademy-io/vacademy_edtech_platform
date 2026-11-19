@@ -14,6 +14,7 @@ import org.springframework.web.client.RestTemplate;
  * credentials.
  * Handles multiple JSON structures for backward compatibility.
  */
+// vendor-call-log: builds Meta/WATI providers; calls are recorded in MetaWhatsAppServiceProvider and WatiWhatsAppServiceProvider
 @Component
 @Slf4j
 public class WhatsAppProviderFactory {

@@ -10,7 +10,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URI;
 import java.security.KeyFactory;
@@ -350,7 +352,13 @@ public class AppStoreConnectClient {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + token());
         RequestEntity<Void> request = new RequestEntity<>(headers, HttpMethod.GET, URI.create(BASE_URL + path));
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(request, String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(BASE_URL + path, "app store connect api call", null, e);
+            throw e;
+        }
         return objectMapper.readTree(response.getBody());
     }
 

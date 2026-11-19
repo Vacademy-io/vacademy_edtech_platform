@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
  *       {@code RUMIK_VOICES}) MUST agree.
  * </ol>
  */
+// vendor-call-log: TTS voice catalog constants, makes no call
 public final class TtsVoiceCatalog {
 
     private TtsVoiceCatalog() {}

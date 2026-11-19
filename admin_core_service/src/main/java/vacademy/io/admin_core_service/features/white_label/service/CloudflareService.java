@@ -10,8 +10,10 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.white_label.dto.WhiteLabelSetupResponse;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -99,10 +101,16 @@ public class CloudflareService {
         String url = CF_API_BASE + "/accounts/" + accountId + "/pages/projects/" + projectName + "/domains";
         Map<String, Object> body = Map.of("name", host);
         try {
-            ResponseEntity<CfPagesDomainResponse> resp = restTemplate.exchange(
-                    url, HttpMethod.POST,
-                    new HttpEntity<>(body, authHeaders()),
-                    CfPagesDomainResponse.class);
+            ResponseEntity<CfPagesDomainResponse> resp;
+            try {
+                resp = restTemplate.exchange(
+                        url, HttpMethod.POST,
+                        new HttpEntity<>(body, authHeaders()),
+                        CfPagesDomainResponse.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(url, "attach pages domain", body, e);
+                throw e;
+            }
             CfPagesDomainResponse r = resp.getBody();
             String status = (r != null && r.getResult() != null) ? r.getResult().getStatus() : null;
             log.info("[CloudflareService] Attached Pages custom domain {} to project {} (status={})",
@@ -208,6 +216,7 @@ public class CloudflareService {
             }
             return body.getResult() != null ? body.getResult() : List.of();
         } catch (Exception e) {
+            VendorCallLog.failed(CF_API_BASE, "list pages domains", null, e);
             log.warn("[CloudflareService] Could not list Pages domains for {} page {}: {}",
                     projectName, page, e.getMessage());
             return null;
@@ -237,6 +246,7 @@ public class CloudflareService {
                 return body.getResult().get(0).getId();
             }
         } catch (Exception e) {
+            VendorCallLog.failed(CF_API_BASE, "find dns record", null, e);
             log.warn("[CloudflareService] Could not check existing record for name={}: {}", name, e.getMessage());
         }
         return null;
@@ -252,10 +262,16 @@ public class CloudflareService {
                 "ttl", 1 // 1 = auto in Cloudflare
         );
         try {
-            ResponseEntity<CfSingleResponse> resp = restTemplate.exchange(
-                    url, HttpMethod.POST,
-                    new HttpEntity<>(body, authHeaders()),
-                    CfSingleResponse.class);
+            ResponseEntity<CfSingleResponse> resp;
+            try {
+                resp = restTemplate.exchange(
+                        url, HttpMethod.POST,
+                        new HttpEntity<>(body, authHeaders()),
+                        CfSingleResponse.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(url, "create dns record", body, e);
+                throw e;
+            }
             CfSingleResponse r = resp.getBody();
             String recordId = (r != null && r.getResult() != null) ? r.getResult().getId() : null;
             log.info("[CloudflareService] Created CNAME {} → {} (id={})", name, target, recordId);
@@ -276,9 +292,14 @@ public class CloudflareService {
                 "proxied", true,
                 "ttl", 1);
         try {
-            restTemplate.exchange(url, HttpMethod.PUT,
-                    new HttpEntity<>(body, authHeaders()),
-                    Void.class);
+            try {
+                restTemplate.exchange(url, HttpMethod.PUT,
+                        new HttpEntity<>(body, authHeaders()),
+                        Void.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(url, "update dns record", body, e);
+                throw e;
+            }
             log.info("[CloudflareService] Updated CNAME {} → {} (id={})", name, target, recordId);
             return buildResult("UPDATED", name, target, recordId);
         } catch (HttpClientErrorException e) {
@@ -317,6 +338,7 @@ public class CloudflareService {
         } catch (HttpClientErrorException.NotFound nf) {
             return null;
         } catch (Exception e) {
+            VendorCallLog.failed(CF_API_BASE, "get pages domain", null, e);
             log.warn("[CloudflareService] Could not check existing Pages domain {} on {}: {}",
                     host, projectName, e.getMessage());
             return null;

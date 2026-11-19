@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import vacademy.io.assessment_service.features.assessment.client.AiServiceLlmClient;
 import vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.AiGradingResponseDto;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.time.Duration;
 import java.util.List;
@@ -152,6 +153,8 @@ public class AiClientService {
                                 .bodyValue(payload)
                                 .retrieve()
                                 .bodyToMono(String.class)
+                                .doOnError(e -> VendorCallLog.failed(API_URL + "/api/v1/chat/completions",
+                                                "chat completion", payload, e))
                                 .timeout(Duration.ofSeconds(timeoutSeconds));
         }
 

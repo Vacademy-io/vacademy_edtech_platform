@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+// vendor-call-log: stores fal.ai avatar ids, makes no call
 public class StudioAvatarService {
 
     private static final String PROVIDER_CUSTOM = "custom";

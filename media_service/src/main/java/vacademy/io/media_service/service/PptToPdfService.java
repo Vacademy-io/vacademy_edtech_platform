@@ -9,9 +9,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.io.IOException;
 import java.util.Map;
@@ -182,11 +184,17 @@ public class PptToPdfService {
         String requestBody = objectMapper.writeValueAsString(job);
         HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(
-                CLOUD_CONVERT_BASE_URL + "/jobs",
-                HttpMethod.POST,
-                request,
-                String.class);
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(
+                    CLOUD_CONVERT_BASE_URL + "/jobs",
+                    HttpMethod.POST,
+                    request,
+                    String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(CLOUD_CONVERT_BASE_URL + "/jobs", "create job", null, e);
+            throw e;
+        }
 
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new VacademyException("Failed to create CloudConvert job: " + response.getBody());
@@ -222,11 +230,17 @@ public class PptToPdfService {
         String requestBody = objectMapper.writeValueAsString(job);
         HttpEntity<String> request = new HttpEntity<>(requestBody, headers);
 
-        ResponseEntity<String> response = restTemplate.exchange(
-                CLOUD_CONVERT_BASE_URL + "/jobs",
-                HttpMethod.POST,
-                request,
-                String.class);
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(
+                    CLOUD_CONVERT_BASE_URL + "/jobs",
+                    HttpMethod.POST,
+                    request,
+                    String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(CLOUD_CONVERT_BASE_URL + "/jobs", "create job", requestBody, e);
+            throw e;
+        }
 
         if (!response.getStatusCode().is2xxSuccessful()) {
             throw new VacademyException("Failed to create CloudConvert job: " + response.getBody());
@@ -260,7 +274,12 @@ public class PptToPdfService {
         HttpEntity<org.springframework.util.LinkedMultiValueMap<String, Object>> request = new HttpEntity<>(body,
                 headers);
 
-        restTemplate.exchange(uploadUrl, HttpMethod.POST, request, String.class);
+        try {
+            restTemplate.exchange(uploadUrl, HttpMethod.POST, request, String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(uploadUrl, "upload file", request, e);
+            throw e;
+        }
     }
 
     /**
@@ -271,11 +290,17 @@ public class PptToPdfService {
             Thread.sleep(POLL_INTERVAL_MS);
 
             HttpEntity<Void> request = new HttpEntity<>(createHeaders());
-            ResponseEntity<String> response = restTemplate.exchange(
-                    CLOUD_CONVERT_BASE_URL + "/jobs/" + jobId,
-                    HttpMethod.GET,
-                    request,
-                    String.class);
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.exchange(
+                        CLOUD_CONVERT_BASE_URL + "/jobs/" + jobId,
+                        HttpMethod.GET,
+                        request,
+                        String.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(CLOUD_CONVERT_BASE_URL + "/jobs", "poll job status", null, e);
+                throw e;
+            }
 
             JsonNode jobData = objectMapper.readTree(response.getBody()).path("data");
             String status = jobData.path("status").asText();
@@ -325,6 +350,7 @@ public class PptToPdfService {
 
             return response.getBody();
         } catch (Exception e) {
+            VendorCallLog.failed(downloadUrl, "download converted pdf", null, e);
             logger.error("Failed to download PDF from CloudConvert", e);
             throw new VacademyException("Failed to download converted PDF: " + e.getMessage());
         }

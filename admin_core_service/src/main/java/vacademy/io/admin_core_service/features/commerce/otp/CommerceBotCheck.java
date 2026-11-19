@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.commerce.otp;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +17,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceStockSettings;
 import vacademy.io.admin_core_service.features.institute.service.setting.InstituteSettingService;
+import vacademy.io.common.external.VendorCallLog;
 
 /**
  * The bot check of the public checkout: Cloudflare Turnstile. The
@@ -137,6 +137,7 @@ public class CommerceBotCheck {
             answer = siteVerify.post(verifyUrl, secret, token.trim(), StringUtils.hasText(clientIp) ? clientIp.trim()
                     : null);
         } catch (RuntimeException e) {
+            VendorCallLog.failed(verifyUrl, "verify bot check token", null, e);
             log.error("COMMERCE_ALERT bot check could not reach Cloudflare ({}); the checkout is {}",
                     e.getClass().getSimpleName(), failOpen ? "let through" : "refused");
             return failOpen;
@@ -167,6 +168,6 @@ public class CommerceBotCheck {
         }
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        return ExternalCallLog.attach(new RestTemplate(factory)).postForObject(url, new HttpEntity<>(form, headers), String.class);
+        return new RestTemplate(factory).postForObject(url, new HttpEntity<>(form, headers), String.class);
     }
 }

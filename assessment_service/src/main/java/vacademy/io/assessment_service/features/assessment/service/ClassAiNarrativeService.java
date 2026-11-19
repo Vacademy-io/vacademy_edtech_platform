@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import vacademy.io.assessment_service.features.assessment.client.AiServiceLlmClient;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.time.Duration;
 import java.util.List;
@@ -159,6 +160,8 @@ public class ClassAiNarrativeService {
                     .bodyValue(payload)
                     .retrieve()
                     .bodyToMono(String.class)
+                    .doOnError(e -> VendorCallLog.failed("https://openrouter.ai/api/v1/chat/completions",
+                            "chat completion", payload, e))
                     // No retry. The row is already claimed and a retry after a
                     // truncation is how the admin_core incident billed twice.
                     .block(Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS));

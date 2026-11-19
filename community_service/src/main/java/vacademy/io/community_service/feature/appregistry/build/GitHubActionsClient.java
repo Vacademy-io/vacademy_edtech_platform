@@ -12,7 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -191,9 +193,13 @@ public class GitHubActionsClient {
         try {
             return restTemplate.exchange(new RequestEntity<>(body, headers, method, URI.create(API + path)), String.class);
         } catch (HttpClientErrorException e) {
+            VendorCallLog.failed(API + path, "github actions api call", body, e);
             log.warn("[GitHubActions] {} {} -> {} {}", method, path, e.getStatusCode(),
                     e.getResponseBodyAsString().length() > 300 ? e.getResponseBodyAsString().substring(0, 300)
                             : e.getResponseBodyAsString());
+            throw e;
+        } catch (RestClientException e) {
+            VendorCallLog.failed(API + path, "github actions api call", body, e);
             throw e;
         }
     }

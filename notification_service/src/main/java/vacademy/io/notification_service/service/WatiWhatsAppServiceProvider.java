@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.common.logging.SentryLogger;
 import vacademy.io.notification_service.dto.WhatsAppOTPRequest;
 import vacademy.io.notification_service.dto.WhatsAppOTPResponse;
@@ -129,6 +130,7 @@ public class WatiWhatsAppServiceProvider implements WhatsAppServiceProvider {
             }
 
         } catch (Exception e) {
+            VendorCallLog.failed(url, "send otp template message", null, e);
             log.error("Exception while calling WATI API: {}", e.getMessage(), e);
             SentryLogger.SentryEventBuilder.error(e)
                     .withMessage("WATI API call failed")

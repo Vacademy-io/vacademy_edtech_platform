@@ -26,6 +26,7 @@ import vacademy.io.admin_core_service.features.user_subscription.service.UserPla
 import vacademy.io.admin_core_service.features.user_subscription.enums.PaymentLogStatusEnum;
 import vacademy.io.admin_core_service.features.user_subscription.enums.UserPlanStatusEnum;
 import vacademy.io.common.logging.SentryLogger;
+import vacademy.io.common.external.VendorCallLog;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -1223,7 +1224,13 @@ public class RazorpayWebHookService {
                     .POST(HttpRequest.BodyPublishers.ofString(invoiceRequest.toString()))
                     .build();
 
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response;
+            try {
+                response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (java.io.IOException | InterruptedException e) {
+                VendorCallLog.failed(invoiceApiUrl, "create invoice", invoiceRequest.toString(), e);
+                throw e;
+            }
 
             if (response.statusCode() == 200 || response.statusCode() == 201) {
                 JSONObject invoiceResponse = new JSONObject(response.body());
@@ -1236,6 +1243,7 @@ public class RazorpayWebHookService {
 
                 return shortUrl;
             } else {
+                VendorCallLog.failed(invoiceApiUrl, "create invoice", invoiceRequest.toString(), response.statusCode(), response.body());
                 log.error("Failed to generate Razorpay invoice. Status: {}, Response: {}",
                         response.statusCode(), response.body());
                 SentryLogger.SentryEventBuilder.error(new RuntimeException("Razorpay invoice API failed"))

@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.features.chatbot_flow.engine.provider.CombotMessageProvider;
 import vacademy.io.notification_service.features.chatbot_flow.engine.provider.WatiMessageProvider;
@@ -107,7 +109,13 @@ public class ChannelMappingController {
             );
 
             HttpEntity<Map<String, Object>> request = new HttpEntity<>(payload, headers);
-            ResponseEntity<String> response = restTemplate.postForEntity(url, request, String.class);
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.postForEntity(url, request, String.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(url, "set webhook", request, e);
+                throw e;
+            }
 
             boolean success = response.getStatusCode().is2xxSuccessful();
             log.info("WATI webhook registration: url={}, success={}", webhookUrl, success);
@@ -193,7 +201,13 @@ public class ChannelMappingController {
                     + "&access_token=" + java.net.URLEncoder.encode(appAccessToken, java.nio.charset.StandardCharsets.UTF_8);
 
             HttpEntity<String> request = new HttpEntity<>(formBody, headers);
-            ResponseEntity<String> response = restTemplate.postForEntity(subscriptionUrl, request, String.class);
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.postForEntity(subscriptionUrl, request, String.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(subscriptionUrl, "register app webhook subscription", request, e);
+                throw e;
+            }
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 steps.add("Webhook URL registered on app");
@@ -214,7 +228,13 @@ public class ChannelMappingController {
 
                 String subscribeBody = "access_token=" + java.net.URLEncoder.encode(accessToken, java.nio.charset.StandardCharsets.UTF_8);
                 HttpEntity<String> subscribeRequest = new HttpEntity<>(subscribeBody, tokenHeaders);
-                ResponseEntity<String> subscribeResponse = restTemplate.postForEntity(subscribeUrl, subscribeRequest, String.class);
+                ResponseEntity<String> subscribeResponse;
+                try {
+                    subscribeResponse = restTemplate.postForEntity(subscribeUrl, subscribeRequest, String.class);
+                } catch (RestClientException e) {
+                    VendorCallLog.failed(subscribeUrl, "subscribe waba to app", subscribeRequest, e);
+                    throw e;
+                }
 
                 if (subscribeResponse.getStatusCode().is2xxSuccessful()) {
                     steps.add("WABA subscribed to app webhook");

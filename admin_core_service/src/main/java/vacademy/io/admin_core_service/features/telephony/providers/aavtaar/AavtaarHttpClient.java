@@ -1,15 +1,16 @@
 package vacademy.io.admin_core_service.features.telephony.providers.aavtaar;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.telephony.core.AiCallingConfigService;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URI;
 import java.util.LinkedHashMap;
@@ -33,7 +34,7 @@ public class AavtaarHttpClient {
     private static final Logger log = LoggerFactory.getLogger(AavtaarHttpClient.class);
 
     private final AiCallingConfigService configService;
-    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${aavtaar.base-url:https://webapi.aavtaar.ai/api/v1/partner}")
     private String baseUrl;
@@ -75,8 +76,14 @@ public class AavtaarHttpClient {
         body.put("campaignId", campaignId);
         body.put("metadata", metadata == null ? Map.of() : metadata);
 
-        ResponseEntity<Map> resp = restTemplate.exchange(
-                URI.create(url), HttpMethod.POST, new HttpEntity<>(body, headers), Map.class);
+        ResponseEntity<Map> resp;
+        try {
+            resp = restTemplate.exchange(
+                    URI.create(url), HttpMethod.POST, new HttpEntity<>(body, headers), Map.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(url, "click to call", body, e);
+            throw e;
+        }
 
         Map<?, ?> respBody = resp.getBody();
         boolean ok = respBody != null && Boolean.TRUE.equals(respBody.get("isSuccess"));

@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.call_intelligence.core;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -43,7 +42,7 @@ public class CallIntelligenceQueryService {
     private final AuthService authService;
 
     /** For fetching transcript artifacts from their stored S3 URLs. */
-    private final RestTemplate transcriptFetcher = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate transcriptFetcher = new RestTemplate();
 
     public Optional<CallIntelligenceDto> getByCallLogId(String callLogId) {
         return repo.findByCallLogId(callLogId).map(CallIntelligenceDto::from);

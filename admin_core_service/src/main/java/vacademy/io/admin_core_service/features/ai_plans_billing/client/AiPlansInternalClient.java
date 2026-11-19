@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.ai_plans_billing.client;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -81,7 +80,7 @@ public class AiPlansInternalClient {
         java.net.http.HttpClient http = http11Client();
         JdkClientHttpRequestFactory f = new JdkClientHttpRequestFactory(http);
         f.setReadTimeout(java.time.Duration.ofSeconds(30));
-        return ExternalCallLog.attach(new RestTemplate(f));
+        return new RestTemplate(f);
     }
 
     // ── storefront ───────────────────────────────────────────────────────

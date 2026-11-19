@@ -8,6 +8,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.common.meeting.dto.MeetingAttendeeDTO;
 import vacademy.io.common.meeting.dto.MeetingRecordingDTO;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -138,6 +139,7 @@ public class GoogleConferenceService {
                     .retrieve()
                     .bodyToMono(JsonNode.class)
                     .timeout(java.time.Duration.ofSeconds(15))
+                    .doOnError(e -> VendorCallLog.failed(url, "fetch conference data", null, e))
                     .block();
         } catch (Exception e) {
             log.warn("google.conference.fetch.fail url={} reason={}", url, e.getClass().getSimpleName());

@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import vacademy.io.admin_core_service.features.audience.service.TokenEncryptionService;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.zoom.ZoomAccount;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -140,6 +141,7 @@ public class ZoomOAuthService {
                     .bodyValue(formBody)
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> VendorCallLog.failed(ZoomEndpoints.OAUTH_TOKEN_URL, "token request", null, e))
                     .block();
         } catch (Exception e) {
             throw new VacademyException("Zoom OAuth token request failed: " + e.getMessage());
@@ -154,6 +156,7 @@ public class ZoomOAuthService {
                     .header("Authorization", "Bearer " + accessToken)
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> VendorCallLog.failed(ZoomEndpoints.API_BASE_URL, "fetch users/me", null, e))
                     .block();
         } catch (WebClientResponseException e) {
             // Surface Zoom's body so the actual cause shows up — e.g. a 400 with

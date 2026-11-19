@@ -9,6 +9,7 @@ package vacademy.io.admin_core_service.features.live_session.provider.service.zo
  * an endpoint, override here in code — a deliberate code change is the right
  * trigger for that kind of switch.
  */
+// vendor-call-log: URL constants; calls are recorded in ZoomMeetingManager, ZoomAccessTokenService, ZoomOAuthService, ZoomAccountService
 public final class ZoomEndpoints {
 
     /** OAuth token endpoint — both account_credentials (S2S) and authorization_code/refresh_token (Connect-with-Zoom). */

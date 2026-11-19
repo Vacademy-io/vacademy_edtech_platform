@@ -8,7 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.util.Objects;
 
@@ -29,8 +31,14 @@ public class DocumentConverterTokenService {
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
         RestTemplate restTemplate = new RestTemplate();
 
-        ResponseEntity<TokenResponse> response = restTemplate.postForEntity(
-                API_URL, request, TokenResponse.class);
+        ResponseEntity<TokenResponse> response;
+        try {
+            response = restTemplate.postForEntity(
+                    API_URL, request, TokenResponse.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(API_URL, "fetch access token", null, e);
+            throw e;
+        }
 
         return Objects.requireNonNull(response.getBody()).accessToken;
     }

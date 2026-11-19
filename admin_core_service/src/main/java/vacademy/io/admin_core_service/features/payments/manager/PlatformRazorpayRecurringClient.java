@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.platform_billing.service.PlatformPaymentConfigService;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -157,6 +158,7 @@ public class PlatformRazorpayRecurringClient {
                 Thread.currentThread().interrupt();
                 throw new VacademyException("Razorpay call interrupted: " + method + " " + url);
             } catch (Exception e) {
+                VendorCallLog.failed(url, "recurring payments request", jsonBody, e);
                 throw new VacademyException("Razorpay call failed: " + method + " " + url + ": " + e.getMessage());
             }
         }
@@ -443,6 +445,7 @@ public class PlatformRazorpayRecurringClient {
         Transport.Response r = transport.send(method, apiBase + path, auth, json);
         JsonNode parsed = parse(r.body());
         if (r.status() < 200 || r.status() >= 300) {
+            VendorCallLog.failed(apiBase, "recurring payments request", json, r.status(), r.body());
             JsonNode err = parsed == null ? null : parsed.get("error");
             String code = err == null ? null : textOrNull(err, "code");
             String desc = err == null ? r.body() : textOrNull(err, "description");

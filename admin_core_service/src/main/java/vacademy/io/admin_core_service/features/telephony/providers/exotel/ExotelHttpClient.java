@@ -1,15 +1,16 @@
 package vacademy.io.admin_core_service.features.telephony.providers.exotel;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.telephony.spi.dto.BridgeCallRequest;
 import vacademy.io.admin_core_service.features.telephony.spi.dto.ProviderCredentials;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +49,7 @@ public class ExotelHttpClient {
         SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
         f.setConnectTimeout(Duration.ofSeconds(3));
         f.setReadTimeout(Duration.ofMillis(requestTimeoutMs));
-        this.restTemplate = ExternalCallLog.attach(new RestTemplate(f));
+        this.restTemplate = new RestTemplate(f);
     }
 
     /**
@@ -93,10 +94,16 @@ public class ExotelHttpClient {
         HttpHeaders headers = basicAuthHeaders(creds);
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        ResponseEntity<Map> resp = restTemplate.exchange(uri,
-                HttpMethod.POST,
-                new HttpEntity<>(form, headers),
-                Map.class);
+        ResponseEntity<Map> resp;
+        try {
+            resp = restTemplate.exchange(uri,
+                    HttpMethod.POST,
+                    new HttpEntity<>(form, headers),
+                    Map.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(uri.toString(), "connect call", form, e);
+            throw e;
+        }
         return resp.getBody();
     }
 
@@ -140,10 +147,16 @@ public class ExotelHttpClient {
         HttpHeaders headers = basicAuthHeaders(creds);
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        ResponseEntity<Map> resp = restTemplate.exchange(uri,
-                HttpMethod.PUT,
-                new HttpEntity<>(form, headers),
-                Map.class);
+        ResponseEntity<Map> resp;
+        try {
+            resp = restTemplate.exchange(uri,
+                    HttpMethod.PUT,
+                    new HttpEntity<>(form, headers),
+                    Map.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(uri.toString(), "attach exophone to flow", form, e);
+            throw e;
+        }
         return resp.getBody();
     }
 
@@ -158,10 +171,16 @@ public class ExotelHttpClient {
         URI uri = URI.create(baseUrl + "/v2_beta/Accounts/" + creds.getAccountId()
                 + "/IncomingPhoneNumbers");
         HttpHeaders headers = basicAuthHeaders(creds);
-        ResponseEntity<Map> resp = restTemplate.exchange(uri,
-                HttpMethod.GET,
-                new HttpEntity<>(headers),
-                Map.class);
+        ResponseEntity<Map> resp;
+        try {
+            resp = restTemplate.exchange(uri,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    Map.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(uri.toString(), "list exophones", null, e);
+            throw e;
+        }
         return resp.getBody();
     }
 
@@ -190,10 +209,16 @@ public class ExotelHttpClient {
                 + "/Balance.json");
         HttpHeaders headers = basicAuthHeaders(creds);
         headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
-        ResponseEntity<String> resp = restTemplate.exchange(uri,
-                HttpMethod.GET,
-                new HttpEntity<>(headers),
-                String.class);
+        ResponseEntity<String> resp;
+        try {
+            resp = restTemplate.exchange(uri,
+                    HttpMethod.GET,
+                    new HttpEntity<>(headers),
+                    String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(uri.toString(), "get account balance", null, e);
+            throw e;
+        }
         return resp.getBody();
     }
 
@@ -210,7 +235,12 @@ public class ExotelHttpClient {
         conn.setRequestProperty("Authorization", "Basic " + basic);
         conn.setConnectTimeout(8_000);
         conn.setReadTimeout(30_000);
-        return conn.getInputStream();
+        try {
+            return conn.getInputStream();
+        } catch (IOException e) {
+            VendorCallLog.failed(recordingUrl, "fetch recording", null, e);
+            throw e;
+        }
     }
 
     private HttpHeaders basicAuthHeaders(ProviderCredentials creds) {

@@ -21,6 +21,7 @@ import vacademy.io.notification_service.constants.NotificationConstants;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
+// vendor-call-log: sends through Meta/WATI WhatsAppServiceProviders, which record failures
 @Service
 @Slf4j
 public class WhatsAppOTPService {

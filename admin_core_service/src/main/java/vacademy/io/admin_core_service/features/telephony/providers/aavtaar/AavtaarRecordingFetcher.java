@@ -1,11 +1,11 @@
 package vacademy.io.admin_core_service.features.telephony.providers.aavtaar;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.telephony.enums.ProviderType;
 import vacademy.io.admin_core_service.features.telephony.spi.RecordingFetcher;
 import vacademy.io.admin_core_service.features.telephony.spi.dto.ProviderCredentials;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -20,7 +20,7 @@ import java.net.URI;
 @Component
 public class AavtaarRecordingFetcher implements RecordingFetcher {
 
-    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
     public String providerType() {
@@ -36,6 +36,7 @@ public class AavtaarRecordingFetcher implements RecordingFetcher {
             }
             return new ByteArrayInputStream(bytes);
         } catch (Exception e) {
+            VendorCallLog.failed(recordingUrl, "fetch recording", null, e);
             throw new IOException("failed to fetch Aavtaar recording: " + e.getMessage(), e);
         }
     }

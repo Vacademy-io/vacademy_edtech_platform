@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.credits.client;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -104,7 +103,7 @@ public class CreditClient {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(connectMs);
         factory.setReadTimeout(readMs);
-        return ExternalCallLog.attach(new RestTemplate(factory));
+        return new RestTemplate(factory);
     }
 
     /**

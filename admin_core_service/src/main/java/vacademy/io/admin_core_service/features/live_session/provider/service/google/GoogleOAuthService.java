@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import vacademy.io.admin_core_service.features.audience.service.TokenEncryptionService;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -171,6 +172,7 @@ public class GoogleOAuthService {
                     .retrieve()
                     .bodyToMono(String.class)
                     .timeout(java.time.Duration.ofSeconds(15))
+                    .doOnError(e -> VendorCallLog.failed(GoogleMeetEndpoints.OAUTH_REVOKE_URL, "revoke token", null, e))
                     .block();
         } catch (Exception e) {
             log.warn("google.oauth.revoke.fail accountId={} reason={}", account.getId(),
@@ -192,10 +194,13 @@ public class GoogleOAuthService {
                     .uri(GoogleMeetEndpoints.OAUTH_TOKEN_URL)
                     .header("Content-Type", "application/x-www-form-urlencoded")
                     .bodyValue(formBody)
-                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class))
+                    .exchangeToMono(resp -> resp.bodyToMono(JsonNode.class)
+                            .doOnNext(b -> VendorCallLog.failed(GoogleMeetEndpoints.OAUTH_TOKEN_URL, "token request", null,
+                                    resp.statusCode().value(), b)))
                     .timeout(java.time.Duration.ofSeconds(15))
                     .block();
         } catch (Exception e) {
+            VendorCallLog.failed(GoogleMeetEndpoints.OAUTH_TOKEN_URL, "token request", null, e);
             throw new VacademyException("Google OAuth token request failed: " + e.getMessage());
         }
     }
@@ -209,6 +214,7 @@ public class GoogleOAuthService {
                     .retrieve()
                     .bodyToMono(JsonNode.class)
                     .timeout(java.time.Duration.ofSeconds(15))
+                    .doOnError(e -> VendorCallLog.failed(GoogleMeetEndpoints.USERINFO_URL, "fetch userinfo", null, e))
                     .block();
         } catch (WebClientResponseException e) {
             log.warn("google.oauth.userinfo.fail status={} body={}", e.getStatusCode().value(),

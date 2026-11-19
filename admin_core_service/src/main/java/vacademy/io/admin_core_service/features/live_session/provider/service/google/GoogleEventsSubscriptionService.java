@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.util.List;
 import java.util.Map;
@@ -72,6 +73,7 @@ public class GoogleEventsSubscriptionService {
                     .retrieve()
                     .bodyToMono(JsonNode.class)
                     .timeout(java.time.Duration.ofSeconds(15))
+                    .doOnError(e -> VendorCallLog.failed(GoogleMeetEndpoints.WORKSPACE_EVENTS_SUBSCRIPTIONS, "create events subscription", body, e))
                     .block();
             log.info("google.events.subscribe space={} op={}", spaceName,
                     resp != null ? resp.path("name").asText("") : "");

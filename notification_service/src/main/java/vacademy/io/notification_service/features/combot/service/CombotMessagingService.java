@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.features.announcements.service.UserAnnouncementPreferenceService;
 import vacademy.io.notification_service.features.combot.constants.CombotWebhookKeys;
@@ -246,6 +247,7 @@ public class CombotMessagingService {
                     .build();
 
         } catch (HttpClientErrorException e) {
+            VendorCallLog.failed(config.getApiUrl(), "send template message", message.getPayload(), e);
             log.error("Com.bot API error: {}", e.getResponseBodyAsString());
             Map<String, Object> payload = message.getPayload();
             String phone = payload != null ? (String) payload.get("to") : "unknown";

@@ -20,6 +20,7 @@ import vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.Crit
 import vacademy.io.assessment_service.features.assessment.dto.evaluation_ai.GenerateCriteriaRequest;
 import vacademy.io.assessment_service.features.assessment.entity.QuestionAssessmentSectionMapping;
 import vacademy.io.assessment_service.core.exception.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -226,6 +227,8 @@ public class AiCriteriaGenerationService {
                                 .bodyValue(payload)
                                 .retrieve()
                                 .bodyToMono(String.class)
+                                .doOnError(e -> VendorCallLog.failed(API_URL + "/api/v1/chat/completions",
+                                                "generate criteria", payload, e))
                                 .timeout(Duration.ofSeconds(RESPONSE_TIMEOUT_SECONDS))
                                 .flatMap(response -> parseResponse(response, model));
         }

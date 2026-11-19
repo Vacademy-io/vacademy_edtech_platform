@@ -11,6 +11,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import vacademy.io.admin_core_service.features.audience.service.TokenEncryptionService;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.zoom.ZoomAccount;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
@@ -77,6 +78,7 @@ public class ZoomAccessTokenService {
                     .header("Authorization", "Bearer " + token)
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> VendorCallLog.failed(ZoomEndpoints.API_BASE_URL, "fetch zak token", null, e))
                     .block();
             return resp != null && resp.hasNonNull("token") ? resp.get("token").asText() : null;
         } catch (WebClientResponseException e) {
@@ -125,6 +127,7 @@ public class ZoomAccessTokenService {
                     .header("Content-Type", "application/x-www-form-urlencoded")
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> VendorCallLog.failed(url, "fetch s2s access token", null, e))
                     .block();
 
             if (response == null || !response.hasNonNull("access_token")) {

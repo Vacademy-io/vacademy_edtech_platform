@@ -6,7 +6,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.features.chatbot_flow.dto.WhatsAppTemplateInfoDTO;
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
@@ -100,8 +102,14 @@ public class WhatsAppTemplateFetcher {
             HttpHeaders headers = new HttpHeaders();
             headers.setBearerAuth(accessToken);
 
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET,
-                    new HttpEntity<>(headers), String.class);
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.exchange(url, HttpMethod.GET,
+                        new HttpEntity<>(headers), String.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(url, "list message templates", null, e);
+                throw e;
+            }
 
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 log.warn("Meta template API returned {}", response.getStatusCode());
@@ -214,8 +222,14 @@ public class WhatsAppTemplateFetcher {
             HttpHeaders headers = new HttpHeaders();
             headers.set("Authorization", "Bearer " + apiKey);
 
-            ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.GET,
-                    new HttpEntity<>(headers), String.class);
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.exchange(url, HttpMethod.GET,
+                        new HttpEntity<>(headers), String.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(url, "list message templates", null, e);
+                throw e;
+            }
 
             if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
                 log.warn("WATI template API returned {}", response.getStatusCode());

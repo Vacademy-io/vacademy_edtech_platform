@@ -17,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ import vacademy.io.notification_service.features.announcements.service.EmailConf
 import vacademy.io.notification_service.features.announcements.service.InstituteAnnouncementSettingsService;
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
 import vacademy.io.notification_service.institute.InstituteInternalService;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.common.logging.SentryLogger;
 import vacademy.io.notification_service.features.bounced_emails.service.BouncedEmailService;
 import vacademy.io.notification_service.features.notification_log.entity.NotificationLog;
@@ -631,7 +633,12 @@ public class EmailService {
             }
             stampMessageRef(message, includeSesHeader);
 
-            mailSenderToUse.send(message);
+            try {
+                mailSenderToUse.send(message);
+            } catch (MailException e) {
+                VendorCallLog.failed("email-smtp", "send email", null, e);
+                throw e;
+            }
             logger.info("Email sent successfully to {} using {}", to,
                     StringUtils.hasText(instituteId) ? "custom SMTP" : "default SMTP");
 
@@ -741,7 +748,12 @@ public class EmailService {
                     message.setContent(multipart);
 
                     logger.info("Sending OTP email to: {}", to);
-                    mailSenderToUse.send(message);
+                    try {
+                        mailSenderToUse.send(message);
+                    } catch (MailException e) {
+                        VendorCallLog.failed("email-smtp", "send email", null, e);
+                        throw e;
+                    }
                     logger.info("OTP email successfully sent to: {}", to);
 
                     // Preserve existing OTP behavior: sourceId = calling service identifier (replies to OTP emails are not expected).
@@ -1024,7 +1036,12 @@ public class EmailService {
                     multipart.addBodyPart(htmlPart);
 
                     message.setContent(multipart);
-                    finalMailSender.send(message);
+                    try {
+                        finalMailSender.send(message);
+                    } catch (MailException e) {
+                        VendorCallLog.failed("email-smtp", "send email", null, e);
+                        throw e;
+                    }
 
                     String messageId = null;
                     try { messageId = message.getMessageID(); } catch (Exception ignored) {}
@@ -1171,7 +1188,12 @@ public class EmailService {
                     message.setContent(multipart);
 
                     logger.info("Sending email to: {}", to);
-                    mailSenderToUse.send(message);
+                    try {
+                        mailSenderToUse.send(message);
+                    } catch (MailException e) {
+                        VendorCallLog.failed("email-smtp", "send email", null, e);
+                        throw e;
+                    }
                     logger.info("Email successfully sent to: {}", to);
 
                     String messageId = null;

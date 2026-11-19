@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.product_config.service;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +16,7 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import vacademy.io.admin_core_service.features.product_config.dto.AlertTemplateDTO;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -51,7 +51,7 @@ public class PlatformWhatsAppClient {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5_000);
         factory.setReadTimeout(15_000);
-        this.rest = ExternalCallLog.attach(new RestTemplate(factory));
+        this.rest = new RestTemplate(factory);
     }
 
     private static String withoutPlaceholder(String value) {
@@ -88,8 +88,10 @@ public class PlatformWhatsAppClient {
                     new HttpEntity<>(body, headers()), String.class);
             return null;
         } catch (HttpStatusCodeException e) {
+            VendorCallLog.failed(baseUrl, "send template message", body, e);
             return metaError(e);
         } catch (RestClientException e) {
+            VendorCallLog.failed(baseUrl, "send template message", body, e);
             return "WhatsApp could not be reached";
         }
     }
@@ -138,8 +140,10 @@ public class PlatformWhatsAppClient {
             String response = rest.exchange(url, method, new HttpEntity<>(body, headers()), String.class).getBody();
             return mapper.readTree(response == null ? "{}" : response);
         } catch (HttpStatusCodeException e) {
+            VendorCallLog.failed(url, "manage message template", body, e);
             throw new IllegalStateException(metaError(e));
         } catch (RestClientException | com.fasterxml.jackson.core.JsonProcessingException e) {
+            if (e instanceof RestClientException) VendorCallLog.failed(url, "manage message template", body, e);
             throw new IllegalStateException("WhatsApp could not be reached");
         }
     }

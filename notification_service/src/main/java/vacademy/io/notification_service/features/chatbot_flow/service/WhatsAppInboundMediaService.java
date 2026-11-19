@@ -9,8 +9,10 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.server.ResponseStatusException;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.notification_service.features.chatbot_flow.engine.provider.CombotMessageProvider;
 import vacademy.io.notification_service.features.chatbot_flow.engine.provider.ProviderMediaCredentials;
 import vacademy.io.notification_service.features.chatbot_flow.engine.provider.WatiMessageProvider;
@@ -119,15 +121,20 @@ public class WhatsAppInboundMediaService {
     private byte[] download(String url, String token, long limit) {
         // Used verbatim: the provider hands back an already-encoded, signed URL.
         URI uri = URI.create(url);
-        return restTemplate.execute(uri, HttpMethod.GET,
-                request -> request.getHeaders().set(HttpHeaders.AUTHORIZATION, "Bearer " + token),
-                response -> {
-                    long declared = response.getHeaders().getContentLength();
-                    if (declared > limit) throw tooLarge();
-                    try (InputStream body = response.getBody()) {
-                        return readCapped(body, limit);
-                    }
-                });
+        try {
+            return restTemplate.execute(uri, HttpMethod.GET,
+                    request -> request.getHeaders().set(HttpHeaders.AUTHORIZATION, "Bearer " + token),
+                    response -> {
+                        long declared = response.getHeaders().getContentLength();
+                        if (declared > limit) throw tooLarge();
+                        try (InputStream body = response.getBody()) {
+                            return readCapped(body, limit);
+                        }
+                    });
+        } catch (RestClientException e) {
+            VendorCallLog.failed(url, "fetch inbound media", null, e);
+            throw e;
+        }
     }
 
     private static byte[] readCapped(InputStream in, long limit) throws IOException {

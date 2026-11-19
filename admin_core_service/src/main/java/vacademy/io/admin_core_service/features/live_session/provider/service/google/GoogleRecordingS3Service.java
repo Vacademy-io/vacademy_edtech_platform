@@ -9,12 +9,14 @@ import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedu
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.admin_core_service.features.live_session.repository.SessionScheduleRepository;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.common.media.service.FileService;
 import vacademy.io.common.meeting.dto.MeetingRecordingDTO;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -169,8 +171,15 @@ public class GoogleRecordingS3Service {
         connection.setConnectTimeout(15_000);
         connection.setReadTimeout(300_000);
         connection.setInstanceFollowRedirects(true);
-        int code = connection.getResponseCode();
+        int code;
+        try {
+            code = connection.getResponseCode();
+        } catch (IOException e) {
+            VendorCallLog.failed(downloadUrl, "download drive recording", null, e);
+            throw e;
+        }
         if (code < 200 || code >= 300) {
+            VendorCallLog.failed(downloadUrl, "download drive recording", null, code, null);
             throw new IllegalStateException("Google Drive returned HTTP " + code
                     + (code == 403 ? " (no access — reconnect Google with Drive access)" : "")
                     + (code == 404 ? " (file no longer in Drive)" : ""));

@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.core.config;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -230,7 +229,7 @@ public class ApplicationSecurityConfig {
 
     @Bean
     public RestTemplate restTemplate() {
-        return ExternalCallLog.attach(new RestTemplate());
+        return new RestTemplate();
     }
 
     @Bean

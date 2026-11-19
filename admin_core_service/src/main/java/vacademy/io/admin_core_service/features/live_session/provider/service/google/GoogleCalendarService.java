@@ -6,9 +6,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.google.GoogleAccount;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -71,6 +73,7 @@ public class GoogleCalendarService {
                                             "Calendar create HTTP " + r.statusCode().value() + ": " + snippet(b))))
                     .bodyToMono(JsonNode.class)
                     .timeout(Duration.ofSeconds(15))
+                    .doOnError(e -> VendorCallLog.failed(CALENDAR_API, "create calendar event", body, e))
                     .block();
             if (resp != null && resp.hasNonNull("id")) {
                 String id = resp.get("id").asText();
@@ -104,6 +107,7 @@ public class GoogleCalendarService {
                         .bodyValue(body)
                         .retrieve()
                         .bodyToMono(String.class)
+                        .doOnError(e -> VendorCallLog.failed(CALENDAR_API, "update calendar event", body, e))
                         .onErrorResume(ex -> Mono.empty())
                         .timeout(Duration.ofSeconds(15))
                         .block();
@@ -125,6 +129,9 @@ public class GoogleCalendarService {
                         .header("Authorization", "Bearer " + token)
                         .retrieve()
                         .bodyToMono(String.class)
+                        .doOnError(e -> !(e instanceof WebClientResponseException w
+                                        && (w.getStatusCode().value() == 404 || w.getStatusCode().value() == 410)),
+                                e -> VendorCallLog.failed(CALENDAR_API, "delete calendar event", null, e))
                         .onErrorResume(ex -> Mono.empty())
                         .timeout(Duration.ofSeconds(15))
                         .block();

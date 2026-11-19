@@ -1,11 +1,11 @@
 package vacademy.io.admin_core_service.features.telephony.providers.airtel;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.telephony.spi.dto.ProviderCredentials;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.nio.charset.StandardCharsets;
 import java.net.URLEncoder;
@@ -33,7 +33,7 @@ public class AirtelVbcTokenService {
     /** VBC realm suffix appended to the username for the password grant. */
     private static final String VBC_REALM_SUFFIX = "@vbc.prod";
 
-    private final RestTemplate rest = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate rest = new RestTemplate();
     private final Map<String, CachedToken> cache = new ConcurrentHashMap<>();
 
     private record CachedToken(String bearer, Instant expiresAt) {}
@@ -93,6 +93,7 @@ public class AirtelVbcTokenService {
             ResponseEntity<Map> resp = rest.postForEntity(tokenUrl, new HttpEntity<>(form, headers), Map.class);
             body = resp.getBody();
         } catch (Exception e) {
+            VendorCallLog.failed(tokenUrl, "mint access token", null, e);
             throw new VacademyException("Airtel token request failed: " + e.getMessage());
         }
         if (body == null || body.get("access_token") == null) {

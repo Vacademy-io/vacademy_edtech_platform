@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.ai_plans_billing.gateway;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -19,6 +18,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.platform_billing.service.PlatformPaymentConfigService;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.http.HttpClient;
 import java.nio.charset.StandardCharsets;
@@ -67,7 +67,7 @@ public class RazorpayHttpPlatformGateway implements PlatformRazorpayGateway {
         HttpClient http = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
         JdkClientHttpRequestFactory f = new JdkClientHttpRequestFactory(http);
         f.setReadTimeout(Duration.ofSeconds(30));
-        return ExternalCallLog.attach(new RestTemplate(f));
+        return new RestTemplate(f);
     }
 
     // ── Payment Links ────────────────────────────────────────────────────
@@ -347,6 +347,7 @@ public class RazorpayHttpPlatformGateway implements PlatformRazorpayGateway {
             String s = resp.getBody();
             return s == null || s.isBlank() ? mapper.createObjectNode() : mapper.readTree(s);
         } catch (HttpStatusCodeException e) {
+            VendorCallLog.failed(apiBase, "platform billing request", body, e);
             String code = null;
             String desc = e.getStatusText();
             try {
@@ -362,6 +363,7 @@ public class RazorpayHttpPlatformGateway implements PlatformRazorpayGateway {
             throw new RazorpayGatewayException(e.getStatusCode().value(), code,
                     "Razorpay " + method + " " + path + " failed: " + desc);
         } catch (RestClientException e) {
+            VendorCallLog.failed(apiBase, "platform billing request", body, e);
             throw new RazorpayGatewayException(0, "UNREACHABLE", "Razorpay " + method + " " + path
                     + " failed: " + e.getMessage());
         } catch (RazorpayGatewayException e) {

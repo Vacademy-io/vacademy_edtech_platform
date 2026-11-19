@@ -7,10 +7,12 @@ import vacademy.io.admin_core_service.features.live_session.entity.SessionSchedu
 import vacademy.io.admin_core_service.features.live_session.provider.dto.zoom.ZoomAccount;
 import vacademy.io.common.media.service.FileService;
 import vacademy.io.common.meeting.dto.MeetingRecordingDTO;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -201,6 +203,9 @@ public class ZoomRecordingS3Service {
                 out.write(buf, 0, n);
                 total += n;
             }
+        } catch (IOException e) {
+            VendorCallLog.failed(downloadUrl, "download recording", null, e);
+            throw e;
         }
         return total;
     }

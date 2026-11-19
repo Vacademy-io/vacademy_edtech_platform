@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.regional_pricing.service;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.regional_pricing.entity.FxRate;
 import vacademy.io.admin_core_service.features.regional_pricing.repository.FxRateRepository;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -38,7 +38,7 @@ public class FxRateService {
 
     private final FxRateRepository fxRateRepository;
     private final ObjectMapper objectMapper;
-    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate restTemplate = new RestTemplate();
 
     @Value("${regional.pricing.fx.url:https://open.er-api.com/v6/latest/USD}")
     private String fxUrl;
@@ -49,7 +49,13 @@ public class FxRateService {
      * fetch inside a joined transaction would mark the caller's transaction rollback-only.
      */
     public int refreshRates() {
-        String body = restTemplate.getForObject(fxUrl, String.class);
+        String body;
+        try {
+            body = restTemplate.getForObject(fxUrl, String.class);
+        } catch (org.springframework.web.client.RestClientException e) {
+            VendorCallLog.failed(fxUrl, "fetch exchange rates", null, e);
+            throw e;
+        }
         JsonNode rates;
         try {
             rates = objectMapper.readTree(body).path("rates");

@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
  * - Notification log persistence
  * - Result format mapping (provider exceptions → List<Map<String, Boolean>>)
  */
+// vendor-call-log: sends through CombotMessageProvider and WatiService, which record failures
 @Service
 @Slf4j
 public class WhatsAppService {

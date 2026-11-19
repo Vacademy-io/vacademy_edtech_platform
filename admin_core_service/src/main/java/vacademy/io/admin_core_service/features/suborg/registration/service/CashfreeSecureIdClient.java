@@ -9,6 +9,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.util.HashMap;
 import java.util.List;
@@ -88,6 +89,7 @@ public class CashfreeSecureIdClient {
                 .bodyValue(payload)
                 .retrieve()
                 .bodyToMono(Map.class)
+                .doOnError(e -> VendorCallLog.failed(baseUrl, "create digilocker url", payload, e))
                 .onErrorResume(WebClientResponseException.class, ex -> {
                     log.error("Cashfree SecureID error on {}. Status: {}, Body: {}",
                             path, ex.getStatusCode(), ex.getResponseBodyAsString());
@@ -104,6 +106,7 @@ public class CashfreeSecureIdClient {
                 .header("x-client-secret", clientSecret)
                 .retrieve()
                 .bodyToMono(Map.class)
+                .doOnError(e -> VendorCallLog.failed(baseUrl, "fetch digilocker status or document", null, e))
                 .onErrorResume(WebClientResponseException.class, ex -> {
                     log.error("Cashfree SecureID error on {}. Status: {}, Body: {}",
                             pathWithQuery, ex.getStatusCode(), ex.getResponseBodyAsString());

@@ -18,6 +18,7 @@ import java.util.List;
  * the same account used for pre-signup OTP — and emails an internal alert
  * recording who (name + email) from which institute requested it.
  */
+// vendor-call-log: sends through MetaWhatsAppServiceProvider and EmailService, which record failures
 @Service
 @Slf4j
 public class AdminAppLinkService {

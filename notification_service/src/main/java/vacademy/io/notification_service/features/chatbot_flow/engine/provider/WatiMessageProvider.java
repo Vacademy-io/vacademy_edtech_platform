@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
 import vacademy.io.notification_service.institute.InstituteInternalService;
@@ -263,6 +264,7 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
         try {
             fileBytes = restTemplate.getForObject(mediaUrl, byte[].class);
         } catch (Exception e) {
+            VendorCallLog.failed(mediaUrl, "download media", null, e);
             log.error("Failed to download media for WATI session file: url={}, error={}", mediaUrl, e.getMessage());
             throw new RuntimeException("Could not download media: " + e.getMessage());
         }
@@ -311,6 +313,7 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
             }
             return null;
         } catch (RuntimeException e) {
+            VendorCallLog.failed(url, "send session file", request, e);
             log.error("Failed to send document via WATI sendSessionFile: url={}, error={}", url, e.getMessage());
             throw e;
         } catch (Exception e) {
@@ -371,6 +374,7 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
                 }
             }
         } catch (RuntimeException e) {
+            VendorCallLog.failed(url, "send message", request, e);
             log.error("Failed to send message via WATI: url={}, error={}", url, e.getMessage());
             throw e;
         }
@@ -413,6 +417,7 @@ public class WatiMessageProvider implements ChatbotMessageProvider {
                 }
             }
         } catch (RuntimeException e) {
+            VendorCallLog.failed(url, "send message", request, e);
             log.error("Failed to send message via WATI: url={}, error={}", url, e.getMessage());
             throw e;
         }

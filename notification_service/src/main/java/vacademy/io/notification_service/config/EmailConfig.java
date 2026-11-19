@@ -9,6 +9,7 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 
 import java.util.Properties;
 
+// vendor-call-log: builds the JavaMailSender bean; sends are recorded in EmailService
 @Configuration
 public class EmailConfig {
 

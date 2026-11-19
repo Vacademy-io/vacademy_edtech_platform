@@ -15,6 +15,7 @@ import vacademy.io.admin_core_service.features.live_session.provider.entity.Live
 import vacademy.io.admin_core_service.features.live_session.provider.repository.LiveSessionProviderConfigRepository;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.meeting.enums.MeetingProvider;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.time.Instant;
 import java.util.Date;
@@ -77,6 +78,7 @@ public class ZohoOAuthService {
                 .body(BodyInserters.fromFormData(params))
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(tokenUrl, "exchange authorization code", null, e))
                 .block();
 
         if (tokenResponse == null || !tokenResponse.has("access_token")) {
@@ -227,6 +229,7 @@ public class ZohoOAuthService {
                 .body(BodyInserters.fromFormData(params))
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(tokenUrl, "refresh access token", null, e))
                 .block();
 
         if (response == null || !response.has("access_token")) {
@@ -255,6 +258,7 @@ public class ZohoOAuthService {
                     .header("Authorization", "Zoho-oauthtoken " + accessToken)
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> VendorCallLog.failed(userInfoUrl, "fetch user info", null, e))
                     .block();
 
             if (response == null) {
@@ -336,6 +340,7 @@ public class ZohoOAuthService {
                 .body(BodyInserters.fromFormData(params))
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(tokenUrl, "exchange sdk authorization code", null, e))
                 .block();
 
         if (tokenResponse == null || !tokenResponse.has("access_token")) {
@@ -460,6 +465,7 @@ public class ZohoOAuthService {
                 .body(BodyInserters.fromFormData(params))
                 .retrieve()
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(tokenUrl, "refresh sdk access token", null, e))
                 .block();
 
         if (response == null || !response.has("access_token")) {

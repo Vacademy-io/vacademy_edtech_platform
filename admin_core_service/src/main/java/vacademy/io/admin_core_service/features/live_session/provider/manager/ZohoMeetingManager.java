@@ -11,6 +11,7 @@ import vacademy.io.admin_core_service.features.live_session.provider.service.Zoh
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.meeting.dto.*;
 import vacademy.io.common.meeting.enums.MeetingProvider;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.util.*;
 
@@ -135,6 +136,7 @@ public class ZohoMeetingManager implements LiveSessionProviderStrategy {
                                     return new VacademyException("Zoho SDK error: " + body);
                                 }))
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(url, "create sdk session", sessionBody, e))
                 .block();
 
         return parseCreateMeetingResponse(response);
@@ -183,6 +185,7 @@ public class ZohoMeetingManager implements LiveSessionProviderStrategy {
                                     return new VacademyException("Zoho error: " + body);
                                 }))
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(url, "create meeting", sessionBody, e))
                 .block();
 
         return parseCreateMeetingResponse(response);
@@ -234,6 +237,7 @@ public class ZohoMeetingManager implements LiveSessionProviderStrategy {
                             return new VacademyException("Zoho participant error: " + body);
                         }))
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(url, "register participant", participantBody, e))
                 .block();
 
         if (response == null) {
@@ -289,6 +293,7 @@ public class ZohoMeetingManager implements LiveSessionProviderStrategy {
                             return new VacademyException("Zoho sessions list error: " + body);
                         }))
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(url, "list upcoming sessions", null, e))
                 .block();
 
         List<UserScheduleAvailabilityDTO.ConflictingSessionDTO> conflicts = new ArrayList<>();
@@ -354,6 +359,7 @@ public class ZohoMeetingManager implements LiveSessionProviderStrategy {
                             return new VacademyException("Zoho recordings error: " + body);
                         }))
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(url, "fetch recordings", null, e))
                 .block();
 
         log.debug("[Zoho Recordings] Raw response for meetingKey={}: {}", providerMeetingId, response);
@@ -384,6 +390,7 @@ public class ZohoMeetingManager implements LiveSessionProviderStrategy {
                             return new VacademyException("Zoho attendance error: " + body);
                         }))
                 .bodyToMono(JsonNode.class)
+                .doOnError(e -> VendorCallLog.failed(url, "fetch attendance", null, e))
                 .block();
 
         return parseAttendeesResponse(response);

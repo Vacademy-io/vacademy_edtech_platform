@@ -19,6 +19,7 @@ import java.util.Set;
  * imported from Airtel's CCR/CDR S3 export — see AirtelCcrImportService). Inbound
  * is native (no applet) and real-time events/transfer (VIS) are not yet wired.
  */
+// vendor-call-log: provider description with default Vonage URLs; calls are recorded in AirtelHttpClient and AirtelVbcTokenService
 @Component
 public class AirtelProviderDescriptor implements TelephonyProviderDescriptor {
 

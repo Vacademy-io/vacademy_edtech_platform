@@ -8,7 +8,9 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URI;
 
@@ -134,7 +136,13 @@ public class MicrosoftPartnerCenterClient {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Bearer " + accessToken());
         RequestEntity<Void> request = new RequestEntity<>(headers, HttpMethod.GET, URI.create(API_BASE + path));
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(request, String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(API_BASE + path, "partner center api call", null, e);
+            throw e;
+        }
         return objectMapper.readTree(response.getBody());
     }
 
@@ -155,7 +163,13 @@ public class MicrosoftPartnerCenterClient {
         RequestEntity<MultiValueMap<String, String>> request =
                 new RequestEntity<>(form, headers, HttpMethod.POST, URI.create(tokenUrl));
 
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(request, String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(tokenUrl, "fetch access token", null, e);
+            throw e;
+        }
         JsonNode json = objectMapper.readTree(response.getBody());
         String accessToken = json.path("access_token").asText(null);
         if (accessToken == null) {

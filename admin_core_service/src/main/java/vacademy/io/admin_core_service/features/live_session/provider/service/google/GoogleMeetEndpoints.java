@@ -8,6 +8,7 @@ package vacademy.io.admin_core_service.features.live_session.provider.service.go
  * with values that never change across environments — same convention as
  * {@code ZoomEndpoints}.
  */
+// vendor-call-log: URL constants; calls are recorded in GoogleOAuthService, GoogleMeetManager, GoogleConferenceService, GoogleAccountService, GoogleEventsSubscriptionService
 public final class GoogleMeetEndpoints {
 
     /** Authorization-code consent screen for the "Connect Google Workspace" onboarding flow. */

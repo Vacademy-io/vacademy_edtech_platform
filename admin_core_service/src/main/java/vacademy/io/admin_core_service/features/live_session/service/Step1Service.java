@@ -30,6 +30,7 @@ import java.util.Map;
 
 @Service
 @Slf4j
+// vendor-call-log: detects the provider from a meeting link, makes no call
 public class Step1Service {
 
     /** Frontend StreamingPlatform.ZOOM — must stay lowercase, see getLinkTypeFromUrl. */

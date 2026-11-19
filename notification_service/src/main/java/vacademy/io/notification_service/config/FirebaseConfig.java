@@ -12,6 +12,7 @@ import org.springframework.core.io.ClassPathResource;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 
+// vendor-call-log: initializes Firebase app; FCM sends are recorded in PushNotificationService
 @Configuration
 public class FirebaseConfig {
 

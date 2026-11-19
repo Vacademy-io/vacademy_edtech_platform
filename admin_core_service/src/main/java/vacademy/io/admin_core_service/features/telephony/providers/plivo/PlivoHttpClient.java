@@ -1,13 +1,14 @@
 package vacademy.io.admin_core_service.features.telephony.providers.plivo;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.telephony.spi.dto.ProviderCredentials;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +49,7 @@ public class PlivoHttpClient {
         SimpleClientHttpRequestFactory f = new SimpleClientHttpRequestFactory();
         f.setConnectTimeout(Duration.ofSeconds(3));
         f.setReadTimeout(Duration.ofMillis(requestTimeoutMs));
-        this.restTemplate = ExternalCallLog.attach(new RestTemplate(f));
+        this.restTemplate = new RestTemplate(f);
     }
 
     /**
@@ -104,8 +105,14 @@ public class PlivoHttpClient {
         HttpHeaders headers = basicAuthHeaders(creds);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        ResponseEntity<Map> resp = restTemplate.exchange(uri, HttpMethod.POST,
-                new HttpEntity<>(body, headers), Map.class);
+        ResponseEntity<Map> resp;
+        try {
+            resp = restTemplate.exchange(uri, HttpMethod.POST,
+                    new HttpEntity<>(body, headers), Map.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(uri.toString(), "create call", body, e);
+            throw e;
+        }
         return resp.getBody();
     }
 
@@ -118,8 +125,14 @@ public class PlivoHttpClient {
         URI uri = URI.create(baseUrl + "/v1/Account/" + authId + "/");
         HttpHeaders headers = basicAuthHeaders(creds);
         headers.setAccept(java.util.List.of(MediaType.APPLICATION_JSON));
-        ResponseEntity<String> resp = restTemplate.exchange(uri, HttpMethod.GET,
-                new HttpEntity<>(headers), String.class);
+        ResponseEntity<String> resp;
+        try {
+            resp = restTemplate.exchange(uri, HttpMethod.GET,
+                    new HttpEntity<>(headers), String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(uri.toString(), "get account balance", null, e);
+            throw e;
+        }
         return resp.getBody();
     }
 
@@ -134,7 +147,12 @@ public class PlivoHttpClient {
         conn.setRequestProperty("Authorization", "Basic " + basicToken(creds));
         conn.setConnectTimeout(8_000);
         conn.setReadTimeout(30_000);
-        return conn.getInputStream();
+        try {
+            return conn.getInputStream();
+        } catch (IOException e) {
+            VendorCallLog.failed(recordingUrl, "fetch recording", null, e);
+            throw e;
+        }
     }
 
     private String requireAuthId(ProviderCredentials creds) {

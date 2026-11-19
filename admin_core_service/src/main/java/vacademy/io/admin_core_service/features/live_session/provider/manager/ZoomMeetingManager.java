@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import vacademy.io.admin_core_service.features.live_session.provider.LiveSessionProviderStrategy;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.ProviderConnectRequestDTO;
 import vacademy.io.admin_core_service.features.live_session.provider.entity.LiveSessionProviderConfig;
@@ -21,6 +22,7 @@ import vacademy.io.common.meeting.dto.*;
 import vacademy.io.common.meeting.enums.MeetingProvider;
 
 import vacademy.io.admin_core_service.features.live_session.provider.support.ScheduleConflicts;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -129,6 +131,7 @@ public class ZoomMeetingManager implements LiveSessionProviderStrategy {
                                                         + clientResponse.statusCode().value());
                                     }))
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> VendorCallLog.failed(ZoomEndpoints.API_BASE_URL, "create meeting", body, e))
                     .block();
         } catch (VacademyException e) {
             // If the token was the problem, evict so the next attempt re-issues one.
@@ -248,6 +251,7 @@ public class ZoomMeetingManager implements LiveSessionProviderStrategy {
                     .header("Authorization", "Bearer " + accessTokenService.getAccessToken(account))
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> VendorCallLog.failed(ZoomEndpoints.API_BASE_URL, "fetch meeting start url", null, e))
                     .block();
             return resp != null && resp.hasNonNull("start_url") ? resp.get("start_url").asText() : null;
         } catch (Exception e) {
@@ -272,6 +276,8 @@ public class ZoomMeetingManager implements LiveSessionProviderStrategy {
                     .header("Authorization", "Bearer " + accessTokenService.getAccessToken(account))
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> !(e instanceof WebClientResponseException.NotFound),
+                            e -> VendorCallLog.failed(ZoomEndpoints.API_BASE_URL, "list past meeting instances", null, e))
                     .block();
             if (resp != null && resp.has("meetings")) {
                 for (JsonNode m : resp.get("meetings")) {
@@ -309,6 +315,8 @@ public class ZoomMeetingManager implements LiveSessionProviderStrategy {
                     .header("Authorization", "Bearer " + token)
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> !(e instanceof WebClientResponseException.NotFound),
+                            e -> VendorCallLog.failed(ZoomEndpoints.API_BASE_URL, "fetch recordings", null, e))
                     .block();
         } catch (Exception e) {
             log.warn("zoom.recordings.fetch.fail meetingId={} reason={}", meetingId,
@@ -386,6 +394,7 @@ public class ZoomMeetingManager implements LiveSessionProviderStrategy {
                         .header("Authorization", "Bearer " + token)
                         .retrieve()
                         .bodyToMono(JsonNode.class)
+                        .doOnError(e -> VendorCallLog.failed(url, "fetch attendance", null, e))
                         .block();
                 if (response == null) break;
                 for (JsonNode p : response.path("participants")) {

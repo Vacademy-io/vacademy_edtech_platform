@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.notification.service;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,6 +11,7 @@ import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.notification.dto.WatiConfig;
 import vacademy.io.admin_core_service.features.notification.dto.WatiContactAttributeRequest;
 import vacademy.io.common.institute.entity.Institute;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.util.List;
 
@@ -21,7 +21,7 @@ import java.util.List;
 public class WatiContactAttributeService {
 
     private final ObjectMapper objectMapper;
-    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate restTemplate = new RestTemplate();
 
     /**
      * Extract WATI configuration from institute settings
@@ -178,12 +178,18 @@ public class WatiContactAttributeService {
             HttpEntity<WatiContactAttributeRequest> entity = new HttpEntity<>(request, headers);
 
             // Make the API call
-            ResponseEntity<String> response = restTemplate.exchange(
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.exchange(
                     url,
                     HttpMethod.POST,
                     entity,
                     String.class
             );
+            } catch (org.springframework.web.client.RestClientException e) {
+                VendorCallLog.failed(url, "update contact attributes", request, e);
+                throw e;
+            }
 
             if (response.getStatusCode().is2xxSuccessful()) {
                 log.info("Successfully updated WATI contact attributes for mobile: {} with {} attributes", 

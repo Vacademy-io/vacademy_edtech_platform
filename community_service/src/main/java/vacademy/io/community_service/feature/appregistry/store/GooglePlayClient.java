@@ -8,7 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.net.URI;
 import java.security.KeyFactory;
@@ -164,7 +166,13 @@ public class GooglePlayClient {
         headers.set("Authorization", "Bearer " + accessToken());
         headers.setContentType(MediaType.APPLICATION_JSON);
         RequestEntity<Object> request = new RequestEntity<>(body, headers, method, URI.create(API_BASE + path));
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(request, String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(API_BASE + path, "google play api call", body, e);
+            throw e;
+        }
         String responseBody = response.getBody();
         return (responseBody == null || responseBody.isBlank()) ? objectMapper.createObjectNode()
                 : objectMapper.readTree(responseBody);
@@ -194,7 +202,13 @@ public class GooglePlayClient {
         RequestEntity<org.springframework.util.MultiValueMap<String, String>> request =
                 new RequestEntity<>(form, headers, HttpMethod.POST, URI.create(TOKEN_URL));
 
-        ResponseEntity<String> response = restTemplate.exchange(request, String.class);
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(request, String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(TOKEN_URL, "fetch access token", null, e);
+            throw e;
+        }
         JsonNode json = objectMapper.readTree(response.getBody());
         String accessToken = json.path("access_token").asText(null);
         if (accessToken == null) {

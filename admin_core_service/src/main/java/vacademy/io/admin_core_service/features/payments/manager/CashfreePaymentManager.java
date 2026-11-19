@@ -13,6 +13,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.common.payment.dto.CashfreeRequestDTO;
 import vacademy.io.common.payment.dto.PaymentInitiationRequestDTO;
 import vacademy.io.common.payment.dto.PaymentResponseDTO;
@@ -102,6 +103,7 @@ public class CashfreePaymentManager implements PaymentServiceStrategy {
                     .bodyValue(orderPayload)
                     .retrieve()
                     .bodyToMono(CashfreeOrderResponse.class)
+                    .doOnError(e -> VendorCallLog.failed(url, "create order", orderPayload, e))
                     .onErrorResume(WebClientResponseException.class, ex -> {
                         log.error("Cashfree API error. Status: {}, Body: {}", ex.getStatusCode(), ex.getResponseBodyAsString());
                         return Mono.error(new VacademyException("Cashfree API error: " + ex.getResponseBodyAsString()));

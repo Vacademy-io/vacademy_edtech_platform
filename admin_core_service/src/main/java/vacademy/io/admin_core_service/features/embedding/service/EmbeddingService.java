@@ -6,8 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.embedding.dto.*;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -66,11 +68,17 @@ public class EmbeddingService {
         HttpEntity<OpenRouterEmbeddingRequest> entity = new HttpEntity<>(openRouterRequest, headers);
 
         try {
-            ResponseEntity<OpenRouterEmbeddingResponse> response = restTemplate.exchange(
-                    OPENROUTER_EMBEDDINGS_URL,
-                    HttpMethod.POST,
-                    entity,
-                    OpenRouterEmbeddingResponse.class);
+            ResponseEntity<OpenRouterEmbeddingResponse> response;
+            try {
+                response = restTemplate.exchange(
+                        OPENROUTER_EMBEDDINGS_URL,
+                        HttpMethod.POST,
+                        entity,
+                        OpenRouterEmbeddingResponse.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(OPENROUTER_EMBEDDINGS_URL, "create embedding", openRouterRequest, e);
+                throw e;
+            }
 
             if (response.getBody() == null) {
                 throw new RuntimeException("Empty response from OpenRouter API");

@@ -8,7 +8,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.notification_service.features.external_communication_log.model.ExternalCommunicationSource;
 import vacademy.io.notification_service.features.external_communication_log.service.ExternalCommunicationLogService;
 import vacademy.io.common.logging.SentryLogger;
@@ -162,7 +164,13 @@ public class WatiService {
             HttpEntity<String> entity = new HttpEntity<>(jsonRequest, headers);
 
             String endpoint = apiUrl + "/api/v1/sendTemplateMessages";
-            ResponseEntity<String> response = restTemplate.exchange(endpoint, HttpMethod.POST, entity, String.class);
+            ResponseEntity<String> response;
+            try {
+                response = restTemplate.exchange(endpoint, HttpMethod.POST, entity, String.class);
+            } catch (RestClientException e) {
+                VendorCallLog.failed(endpoint, "send template messages", entity, e);
+                throw e;
+            }
             boolean httpSuccess = response.getStatusCode().is2xxSuccessful();
             log.info("WATI Bulk Response: status={}, body={}", response.getStatusCode(), response.getBody());
             externalCommunicationLogService.markSuccess(logId, response.getBody());
@@ -311,6 +319,7 @@ public class WatiService {
                     response.getBody());
             return true;
         } catch (Exception e) {
+            VendorCallLog.failed(endpoint, "add contact", body, e);
             // Per-recipient failure: counted and reported ONCE by upsertContacts.
             // A per-recipient Sentry event fanned a single WATI outage into up to
             // one event per recipient (thousands per failing batch).

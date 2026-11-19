@@ -11,6 +11,7 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -57,6 +58,7 @@ public class DocConverterService {
             }
             return false;
         } catch (RestClientException e) {
+            VendorCallLog.failed(API_URL, "check conversion status", null, e);
             log.error("MathPix API status check failed for PDF ID: {}, error: {}", pdfId, e.getMessage());
             return false;
         } catch (IOException e) {
@@ -85,6 +87,7 @@ public class DocConverterService {
             }
             return null;
         } catch (RestClientException e) {
+            VendorCallLog.failed(API_PDF_URL, "fetch converted html", null, e);
             return null;
         }
     }
@@ -109,6 +112,7 @@ public class DocConverterService {
             }
             return null;
         } catch (RestClientException e) {
+            VendorCallLog.failed(API_PDF_URL, "fetch converted markdown", null, e);
             return null;
         }
     }
@@ -153,6 +157,7 @@ public class DocConverterService {
                 log.error("MathPix API start processing failed for URL: {}, status: {}, body: {}", url, response.getStatusCode(), response.getBody());
             }
         } catch (RestClientException e) {
+            VendorCallLog.failed(API_PDF_URL, "start pdf processing", requestBody, e);
             log.error("MathPix API call failed for URL: {}, error: {}", url, e.getMessage());
         }
 

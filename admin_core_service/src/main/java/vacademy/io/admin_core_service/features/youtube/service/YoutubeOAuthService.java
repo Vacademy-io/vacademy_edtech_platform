@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import vacademy.io.admin_core_service.features.audience.service.TokenEncryptionService;
@@ -20,6 +21,7 @@ import vacademy.io.admin_core_service.features.youtube.dto.YoutubeConnectionStat
 import vacademy.io.admin_core_service.features.youtube.entity.InstituteYoutubeCredentials;
 import vacademy.io.admin_core_service.features.youtube.repository.InstituteYoutubeCredentialsRepository;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -228,10 +230,15 @@ public class YoutubeOAuthService {
                 form.add("token", refreshToken);
                 HttpHeaders headers = new HttpHeaders();
                 headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-                restTemplate.exchange("https://oauth2.googleapis.com/revoke",
-                        HttpMethod.POST,
-                        new HttpEntity<>(form, headers),
-                        String.class);
+                try {
+                    restTemplate.exchange("https://oauth2.googleapis.com/revoke",
+                            HttpMethod.POST,
+                            new HttpEntity<>(form, headers),
+                            String.class);
+                } catch (RestClientException e) {
+                    VendorCallLog.failed("https://oauth2.googleapis.com/revoke", "revoke token", form, e);
+                    throw e;
+                }
             } catch (Exception e) {
                 log.warn("[YouTube OAuth] Revoke failed for institute={}: {}",
                         instituteId, e.getMessage());
@@ -256,8 +263,13 @@ public class YoutubeOAuthService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        return restTemplate.exchange(TOKEN_URL, HttpMethod.POST,
-                new HttpEntity<>(form, headers), Map.class).getBody();
+        try {
+            return restTemplate.exchange(TOKEN_URL, HttpMethod.POST,
+                    new HttpEntity<>(form, headers), Map.class).getBody();
+        } catch (RestClientException e) {
+            VendorCallLog.failed(TOKEN_URL, "exchange authorization code", null, e);
+            throw e;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -271,8 +283,13 @@ public class YoutubeOAuthService {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        return restTemplate.exchange(TOKEN_URL, HttpMethod.POST,
-                new HttpEntity<>(form, headers), Map.class).getBody();
+        try {
+            return restTemplate.exchange(TOKEN_URL, HttpMethod.POST,
+                    new HttpEntity<>(form, headers), Map.class).getBody();
+        } catch (RestClientException e) {
+            VendorCallLog.failed(TOKEN_URL, "refresh access token", form, e);
+            throw e;
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -286,8 +303,14 @@ public class YoutubeOAuthService {
                 .build()
                 .toUriString();
 
-        Map<String, Object> body = restTemplate.exchange(url, HttpMethod.GET,
-                new HttpEntity<>(headers), Map.class).getBody();
+        Map<String, Object> body;
+        try {
+            body = restTemplate.exchange(url, HttpMethod.GET,
+                    new HttpEntity<>(headers), Map.class).getBody();
+        } catch (RestClientException e) {
+            VendorCallLog.failed(url, "fetch channel info", null, e);
+            throw e;
+        }
 
         if (body == null) return new ChannelInfo(null, null, null);
         java.util.List<Map<String, Object>> items = (java.util.List<Map<String, Object>>) body.get("items");

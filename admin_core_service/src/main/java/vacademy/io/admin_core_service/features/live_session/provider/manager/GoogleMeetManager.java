@@ -27,6 +27,7 @@ import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.meeting.dto.*;
 import vacademy.io.common.meeting.enums.MeetingProvider;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -487,6 +488,7 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
                                 .map(b -> new SpaceCreateException(resp.statusCode().value(), b)))
                 .bodyToMono(JsonNode.class)
                 .timeout(java.time.Duration.ofSeconds(15)) // don't hang the @Transactional create
+                .doOnError(e -> VendorCallLog.failed(GoogleMeetEndpoints.MEET_API_BASE_URL, "create space", config, e))
                 .block();
     }
 
@@ -519,12 +521,14 @@ public class GoogleMeetManager implements LiveSessionProviderStrategy {
             if (status != null && status == 409) {
                 return CohostResult.ALREADY_COHOST;
             }
+            if (status != null) VendorCallLog.failed(GoogleMeetEndpoints.MEET_API_BASE_URL, "add cohost", null, status, null);
             if (status != null && status == 401) {
                 accessTokenService.evict(account.getId());
             }
             log.warn("google.meet.cohost.fail accountId={} space={} httpStatus={}",
                     account.getId(), spaceName, status);
         } catch (Exception e) {
+            VendorCallLog.failed(GoogleMeetEndpoints.MEET_API_BASE_URL, "add cohost", null, e);
             log.warn("google.meet.cohost.fail accountId={} space={} reason={}",
                     account.getId(), spaceName, e.getMessage());
         }

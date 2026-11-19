@@ -1,13 +1,14 @@
 package vacademy.io.admin_core_service.features.telephony.providers.airtel;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.telephony.spi.dto.ProviderCredentials;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.util.Map;
 
@@ -22,7 +23,7 @@ public class AirtelHttpClient {
 
     static final String DEFAULT_BASE_URL = "https://api.vonage.com/t/vbc.prod";
 
-    private final RestTemplate rest = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate rest = new RestTemplate();
     @Autowired private AirtelVbcTokenService tokenService;
 
     /**
@@ -57,7 +58,12 @@ public class AirtelHttpClient {
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setBearerAuth(bearer);
         // Response is text/plain (no id) — read as String and discard.
-        rest.postForEntity(url, new HttpEntity<>(payload, headers), String.class);
+        try {
+            rest.postForEntity(url, new HttpEntity<>(payload, headers), String.class);
+        } catch (RestClientException e) {
+            VendorCallLog.failed(url, "click2dial call", payload, e);
+            throw e;
+        }
     }
 
     private static String nz(String s) {

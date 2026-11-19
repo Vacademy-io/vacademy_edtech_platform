@@ -14,6 +14,7 @@ import vacademy.io.admin_core_service.features.live_session.provider.dto.zoom.Zo
 import vacademy.io.admin_core_service.features.live_session.provider.dto.zoom.ZoomAccountSummary;
 import vacademy.io.admin_core_service.features.live_session.provider.dto.zoom.ZoomTestConnectionResponse;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 
 import java.util.Date;
 import java.util.List;
@@ -147,6 +148,7 @@ public class ZoomAccountService {
                     .header("Authorization", "Bearer " + token)
                     .retrieve()
                     .bodyToMono(JsonNode.class)
+                    .doOnError(e -> VendorCallLog.failed(ZoomEndpoints.API_BASE_URL, "test connection users/me", null, e))
                     .block();
 
             String email = me != null && me.hasNonNull("email") ? me.get("email").asText() : null;

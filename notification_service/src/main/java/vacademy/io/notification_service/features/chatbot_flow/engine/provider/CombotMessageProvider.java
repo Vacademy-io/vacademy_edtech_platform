@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.notification_service.constants.NotificationConstants;
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
 import vacademy.io.notification_service.institute.InstituteInternalService;
@@ -283,6 +284,7 @@ public class CombotMessageProvider implements ChatbotMessageProvider {
             log.debug("COMBOT/META message sent successfully to {}", LogMask.phone(String.valueOf(payload.get("to"))));
             return extractMessageId(response.getBody());
         } catch (Exception e) {
+            VendorCallLog.failed(url, "send message", request, e);
             log.error("Failed to send message via COMBOT/META: {}", e.getMessage());
             throw e;
         }

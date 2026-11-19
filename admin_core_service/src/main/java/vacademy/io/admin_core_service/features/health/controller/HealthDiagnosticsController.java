@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.health.controller;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,7 +48,7 @@ public class HealthDiagnosticsController extends BaseHealthController {
     @Value("${notification.server.baseurl:http://notification-service:8076}")
     private String notificationServiceUrl;
 
-    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate restTemplate = new RestTemplate();
 
     // ── Read Replica ──────────────────────────────────────────────────────────
 

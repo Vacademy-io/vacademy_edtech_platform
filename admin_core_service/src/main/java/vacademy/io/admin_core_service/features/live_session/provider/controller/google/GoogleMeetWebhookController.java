@@ -30,6 +30,7 @@ import java.util.Map;
 @RequestMapping("/admin-core-service/live-sessions/provider/meeting")
 @RequiredArgsConstructor
 @Slf4j
+// vendor-call-log: receives Google Workspace Events push notifications, makes no call
 public class GoogleMeetWebhookController {
 
     private static final String SPACE_PREFIX = "//meet.googleapis.com/";

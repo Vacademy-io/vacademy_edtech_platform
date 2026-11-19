@@ -11,6 +11,7 @@ import org.springframework.util.StringUtils;
 import vacademy.io.admin_core_service.features.payments.dto.StripeCustomerDTO;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.common.logging.SentryLogger;
 import vacademy.io.common.payment.currency.CurrencyRegistry;
 import vacademy.io.common.payment.dto.PaymentInitiationRequestDTO;
@@ -45,6 +46,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
             return buildCustomerResponse(stripeCustomer);
 
         } catch (StripeException e) {
+            VendorCallLog.failed("api.stripe.com", "create customer", null, e);
             logger.error("StripeException during customer creation: {}", e.getMessage(), e);
             throw new VacademyException("Error creating Stripe customer: " + e.getMessage());
         }
@@ -97,6 +99,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
             return buildPaymentResponseFromIntent(paymentIntent);
 
         } catch (StripeException e) {
+            VendorCallLog.failed("api.stripe.com", "create payment intent", null, e);
             logger.error("Stripe error during payment initiation: {}", e.getMessage(), e);
             throw new VacademyException("Stripe payment failed: " + e.getMessage());
         }
@@ -122,6 +125,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
             return buildCustomerResponse(stripeCustomer);
 
         } catch (StripeException e) {
+            VendorCallLog.failed("api.stripe.com", "create customer", null, e);
             logger.error("StripeException during customer creation for unknown user: {}", e.getMessage(), e);
             throw new VacademyException("Error creating Stripe customer for unknown user: " + e.getMessage());
         }
@@ -146,6 +150,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
                 return null;
             }
         } catch (StripeException e) {
+            VendorCallLog.failed("api.stripe.com", "list customers by email", null, e);
             logger.error("Stripe error while searching for customer by email: {}", e.getMessage(), e);
             // A gateway failure here falls back to creating a new customer; surface it so
             // duplicate-customer creation isn't silently masking Stripe outages.
@@ -187,6 +192,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
                 receiptUrl = charge.getReceiptUrl();
 
             } catch (StripeException e) {
+                VendorCallLog.failed("api.stripe.com", "retrieve charge", null, e);
                 e.printStackTrace();
             }
         }
@@ -233,6 +239,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
             response.put("setupIntentId", setupIntent.getId());
             return response;
         } catch (StripeException e) {
+            VendorCallLog.failed("api.stripe.com", "create setup intent", null, e);
             logger.error("Stripe error creating SetupIntent for customer {}: {}", customerId, e.getMessage(), e);
             throw new VacademyException("Failed to create Stripe SetupIntent: " + e.getMessage());
         }
@@ -256,6 +263,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
                     .build());
             return buildCardSummary(PaymentMethod.retrieve(paymentMethodId));
         } catch (StripeException e) {
+            VendorCallLog.failed("api.stripe.com", "attach payment method", null, e);
             logger.error("Stripe error attaching payment method {} to customer {}: {}", paymentMethodId, customerId,
                     e.getMessage(), e);
             throw new VacademyException("Failed to update Stripe payment method: " + e.getMessage());
@@ -290,6 +298,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
             }
             return buildCardSummary(PaymentMethod.retrieve(defaultPmId));
         } catch (StripeException e) {
+            VendorCallLog.failed("api.stripe.com", "fetch default payment method", null, e);
             logger.warn("Stripe error fetching default payment method for customer {}: {}", customerId,
                     e.getMessage());
             return null;
@@ -317,6 +326,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
             }
             return billing;
         } catch (StripeException e) {
+            VendorCallLog.failed("api.stripe.com", "retrieve customer", null, e);
             logger.warn("Stripe error fetching billing details for customer {}: {}", customerId, e.getMessage());
             return null;
         }
@@ -361,6 +371,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
             }
             Customer.retrieve(customerId).update(params.build());
         } catch (StripeException e) {
+            VendorCallLog.failed("api.stripe.com", "update customer", null, e);
             logger.error("Stripe error updating billing details for customer {}: {}", customerId, e.getMessage(), e);
             throw new VacademyException("Failed to update Stripe billing details: " + e.getMessage());
         }
@@ -564,6 +575,7 @@ public class StripePaymentManager implements PaymentServiceStrategy {
                 Customer customer = Customer.retrieve(invoice.getCustomer());
                 response.put("customerEmail", customer.getEmail());
             } catch (Exception e) {
+                VendorCallLog.failed("api.stripe.com", "retrieve customer", null, e);
                 logger.warn("Could not retrieve customer email from Stripe", e);
             }
         }

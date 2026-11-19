@@ -13,6 +13,7 @@ import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.Map;
 
+// vendor-call-log: names my.exotel.com in error text; calls are recorded in ExotelHttpClient
 @Component
 public class ExotelOutboundCallInitiator implements OutboundCallInitiator {
 

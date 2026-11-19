@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.notification_service.features.firebase_notifications.repository.FcmTokenRepository;
 import vacademy.io.notification_service.features.firebase_notifications.entity.FcmToken;
 
@@ -112,6 +113,10 @@ public class PushNotificationService {
             }
             if (target != firebaseMessaging) {
                 tokenProject.remove(fcmToken); // remembered project no longer takes it — re-learn next time
+            }
+            if (e.getMessagingErrorCode() != MessagingErrorCode.UNREGISTERED
+                    && e.getMessagingErrorCode() != MessagingErrorCode.INVALID_ARGUMENT) {
+                VendorCallLog.failed("fcm.googleapis.com", "send push notification", null, e);
             }
             logger.error("Failed to send notification to token {}: {}", maskToken(fcmToken), e.getMessage());
 

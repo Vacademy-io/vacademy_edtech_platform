@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import vacademy.io.common.external.VendorCallLog;
 import vacademy.io.community_service.feature.session.dto.admin.DeepSeekResponse;
 
 import java.util.*;
@@ -50,12 +52,18 @@ public class DeepSeekApiService {
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
 
         // Make the API call and parse response
-        ResponseEntity<String> response = restTemplate.exchange(
-                apiUrl,
-                HttpMethod.POST,
-                entity,
-                String.class
-        );
+        ResponseEntity<String> response;
+        try {
+            response = restTemplate.exchange(
+                    apiUrl,
+                    HttpMethod.POST,
+                    entity,
+                    String.class
+            );
+        } catch (RestClientException e) {
+            VendorCallLog.failed(apiUrl, "chat completion", requestBody, e);
+            throw e;
+        }
 
         try {
             return objectMapper.readValue(response.getBody(), DeepSeekResponse.class);

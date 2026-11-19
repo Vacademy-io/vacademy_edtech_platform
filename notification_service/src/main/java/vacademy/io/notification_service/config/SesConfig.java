@@ -22,6 +22,7 @@ import org.springframework.context.annotation.Configuration;
  * (SQS_AWS_*). Those IAM credentials must additionally grant the SES verify/get identity
  * actions AND belong to the same AWS account+region that the SES SMTP endpoint sends from.
  */
+// vendor-call-log: builds the SES client; calls are recorded in SesIdentityService
 @Configuration
 @ConditionalOnProperty(name = "aws.ses.verification.enabled", havingValue = "true", matchIfMissing = false)
 public class SesConfig {
