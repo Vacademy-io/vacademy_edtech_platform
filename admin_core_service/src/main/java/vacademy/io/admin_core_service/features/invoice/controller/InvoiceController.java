@@ -97,6 +97,16 @@ public class InvoiceController {
      * thing the frontend needs to call regardless of whether the PDF was ever
      * successfully uploaded the first time.
      */
+    /**
+     * The built-in invoice PDF layout, i.e. what every institute without an INVOICE template of its
+     * own prints. Settings &gt; Invoice shows it and can save it as the institute's own template so
+     * it can be edited; until then it is not in the templates table and so was invisible there.
+     */
+    @GetMapping("/built-in-template")
+    public ResponseEntity<java.util.Map<String, String>> getBuiltInInvoiceTemplate() {
+        return ResponseEntity.ok(java.util.Map.of("html", invoiceService.getBuiltInInvoiceTemplateHtml()));
+    }
+
     @GetMapping("/{invoiceId}/download")
     public ResponseEntity<String> downloadInvoice(@PathVariable String invoiceId) {
         String url = invoiceService.resolveOrRegeneratePdfUrl(invoiceId);
