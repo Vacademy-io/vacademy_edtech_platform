@@ -12,7 +12,7 @@ import { useInvalidateInventory, useLabels, useLabelsToReplace } from '../-share
 import { LABEL_STATUSES, type LabelRow } from '../-shared/inventory-types';
 import { labelCount, MAX_LABELS_PER_PRINT, planReplaceLabels } from '../-shared/label-print';
 import type { TabProps } from './InventoryPage';
-import { ConfirmDialog, InventoryErrorNotice, ItemCell, TOUCH } from './inventory-ui';
+import { ConfirmDialog, InventoryErrorNotice, ItemCell, LabelQuantity, TOUCH } from './inventory-ui';
 import { PrintLabelsDialog } from './PrintLabelsDialog';
 import { ReprintDialog } from './ReprintDialog';
 import { useInventoryWrite } from './use-inventory-write';
@@ -148,7 +148,7 @@ export function LabelsTab({ locationId }: TabProps) {
                                 <ItemCell name={row.item_name} variant={row.variant_name} sku={row.sku} code={row.piece_code ?? row.label_code} />
                             </label>
                             <div className="flex flex-wrap items-center gap-2 text-caption text-muted-foreground">
-                                {!row.piece_id && <span className="tabular-nums">×{row.quantity}</span>}
+                                {!row.piece_id && <LabelQuantity row={row} />}
                                 <CommerceStatusChip kind="labelRequest" value={row.status} />
                                 <span>{row.reason ? t(`inventory.labels.reasons.${row.reason}`) : ''}</span>
                                 <SourceLink row={row} />

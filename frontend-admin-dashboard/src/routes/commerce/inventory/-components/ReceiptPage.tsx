@@ -9,7 +9,7 @@ import { CommercePage } from '@/routes/commerce/-components/CommercePage';
 import { CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
 import { useInventoryAccess, useInventoryLocations, useLabels, useReceipt } from '../-shared/inventory-hooks';
 import type { ReceiptView } from '../-shared/inventory-types';
-import { InventoryErrorNotice, ItemCell, placeLabel, Qty, TOUCH } from './inventory-ui';
+import { InventoryErrorNotice, ItemCell, LabelQuantity, placeLabel, Qty, TOUCH } from './inventory-ui';
 import { PrintLabelsDialog } from './PrintLabelsDialog';
 import { ReprintDialog } from './ReprintDialog';
 import { ReverseReceiptDialog } from './ReverseReceiptDialog';
@@ -165,7 +165,11 @@ function ReceiptLabelsCard({ receipt }: { receipt: ReceiptView }) {
                     <li key={row.id} className="flex items-center justify-between gap-3 py-2">
                         <ItemCell name={row.item_name} variant={row.variant_name} sku={row.sku} code={row.piece_code ?? row.label_code} />
                         <span className="flex shrink-0 items-center gap-2">
-                            {!row.piece_id && <span className="text-caption tabular-nums">×{row.quantity}</span>}
+                            {!row.piece_id && (
+                                <span className="text-caption">
+                                    <LabelQuantity row={row} />
+                                </span>
+                            )}
                             <CommerceStatusChip kind="labelRequest" value={row.status} />
                         </span>
                     </li>

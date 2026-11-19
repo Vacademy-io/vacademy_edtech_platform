@@ -9,9 +9,11 @@ import {
     expandCopies,
     LABEL_PRINTING_CLASS,
     labelCount,
+    labelQuantity,
     labelsNotQueued,
     labelText,
     markPrintedBatches,
+    nextStartPosition,
     openPdf,
     pageRule,
     printLabels,
@@ -56,6 +58,20 @@ describe('what gets printed', () => {
         expect(batches.map((b) => b.request_ids.length)).toEqual([200, 1]);
         expect(batches[0]?.printed_copies).toBeUndefined();
         expect(batches[1]?.printed_copies).toEqual({ r200: 1 });
+    });
+
+    it('the next round on a used A4 sheet starts at the first label this round left free', () => {
+        expect(nextStartPosition(1, 500)).toBe(46);
+        expect(nextStartPosition(46, 500)).toBe(26);
+        expect(nextStartPosition(60, 6)).toBe(1);
+        expect(nextStartPosition(99, 3)).toBe(4);
+    });
+
+    it('a row printing in rounds shows the labels it was queued with and how many are printed', () => {
+        const row = { quantity: 200, original_quantity: 1200, printed_quantity: 1000, status: 'PENDING' };
+        expect(labelQuantity(row)).toEqual({ total: 1200, printed: 1000 });
+        expect(labelQuantity({ ...row, quantity: 1200, status: 'PRINTED', printed_quantity: 1200 })).toEqual({ total: 1200, printed: null });
+        expect(labelQuantity({ quantity: 3, original_quantity: 3, printed_quantity: 0, status: 'PENDING' })).toEqual({ total: 3, printed: null });
     });
 
     it('receipt lines of more than 10,000 counted units say how many got no label', () => {

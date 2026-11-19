@@ -81,6 +81,7 @@ import type {
     TransferView,
     UncountedChoice,
     VariantPick,
+    ZeroWriteOff,
 } from './inventory-types';
 import type { ManagerApproval } from '@/routes/commerce/-shared/commerce-types';
 
@@ -753,7 +754,19 @@ export function normalizeReview(data: unknown): CountReview {
         needs_recount: int(r.needs_recount),
         measured_confirm: r.measured_confirm === true,
         fingerprint: str(r.fingerprint),
+        zero_write_off: zeroWriteOff(r.zero_write_off),
     };
+}
+
+function zeroWriteOff(value: unknown): ZeroWriteOff | null {
+    const r = asRecord(value);
+    if (!r) return null;
+    const items: Record<string, number> = {};
+    Object.entries(asRecord(r.items) ?? {}).forEach(([id, units]) => {
+        const n = num(units);
+        if (n !== null) items[id] = n;
+    });
+    return { items, pieces: strings(r.pieces) };
 }
 
 export const fetchCountReview = async (id: string) => normalizeReview(await get(COMMERCE_STOCK_COUNT_REVIEW(id)));
@@ -767,6 +780,8 @@ export const postCount = async (
         confirm_measured?: boolean;
         /** The `fingerprint` of the review the person looked at (part of the request hash). */
         review_fingerprint?: string;
+        /** ZERO: the review's `zero_write_off`, so a sale since the review still posts (less is written off). */
+        reviewed_zero?: ZeroWriteOff;
     }
 ) => normalizeCount(await post(COMMERCE_STOCK_COUNT_POST(id), body));
 
@@ -801,6 +816,8 @@ function normalizeLabel(r: Rec): LabelRow | null {
         piece_code: str(r.piece_code),
         label_code: str(r.label_code),
         quantity: Math.max(1, int(r.quantity, 1)),
+        original_quantity: Math.max(1, int(r.original_quantity, int(r.quantity, 1))),
+        printed_quantity: Math.max(0, int(r.printed_quantity)),
         reason: str(r.reason),
         reprint_reason: str(r.reprint_reason),
         note: str(r.note),

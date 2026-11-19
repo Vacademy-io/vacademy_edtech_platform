@@ -94,6 +94,7 @@ const review: CountReview = {
     needs_recount: 0,
     measured_confirm: false,
     fingerprint: 'fp-1',
+    zero_write_off: { items: { 'ps-tray': 5 }, pieces: [] },
 };
 
 const renderSheet = (view: CountView) => {
@@ -345,10 +346,11 @@ describe('CountSheet review fingerprint', () => {
         expect(second?.client_request_id).not.toBe(first?.client_request_id);
     });
 
-    it('COUNT_CHANGED on the PIN resend also reads the review again', async () => {
+    it('COUNT_CHANGED on the PIN resend closes the PIN dialog and goes back to the review read again', async () => {
         mocked.postCount
             .mockRejectedValueOnce(serverError(403, 'APPROVAL_REQUIRED: STOCK_COUNT_POST above the limit'))
             .mockRejectedValueOnce(serverError(409, 'COUNT_CHANGED: lines of this count changed since it was reviewed; review it again'));
+        // A PIN dialog that stays open when its resend fails (as the real one does).
         renderSheet(countView());
         await openPost();
         const reads = mocked.fetchCountReview.mock.calls.length;
@@ -356,6 +358,24 @@ describe('CountSheet review fingerprint', () => {
         fireEvent.click(await screen.findByTestId('pin-approve'));
         await waitFor(() => expect(mocked.postCount).toHaveBeenCalledTimes(2));
         await waitFor(() => expect(mocked.fetchCountReview.mock.calls.length).toBeGreaterThan(reads));
+        await waitFor(() => expect(screen.queryByTestId('pin-approve')).toBeNull());
+        expect(await screen.findByTestId('post-count-changed')).toBeTruthy();
+        expect(screen.getByTestId('count-post')).toBeTruthy();
         expect(mocked.postCount).toHaveBeenCalledTimes(2);
+    });
+
+    it('a ZERO post sends back the write-off of the review shown', async () => {
+        mocked.postCount.mockResolvedValueOnce(countView({ status: 'POSTED' }));
+        renderSheet(countView());
+        fireEvent.click(screen.getByTestId('count-open-post'));
+        fireEvent.click(await screen.findByText('inventory.counts.uncountedZERO'));
+        await waitFor(() => expect(screen.getByTestId('count-post')).not.toBeDisabled());
+        fireEvent.click(screen.getByTestId('count-post'));
+        await waitFor(() => expect(mocked.postCount).toHaveBeenCalledTimes(1));
+        expect(mocked.postCount.mock.calls[0]?.[1]).toMatchObject({
+            uncounted: 'ZERO',
+            review_fingerprint: 'fp-1',
+            reviewed_zero: { items: { 'ps-tray': 5 }, pieces: [] },
+        });
     });
 });

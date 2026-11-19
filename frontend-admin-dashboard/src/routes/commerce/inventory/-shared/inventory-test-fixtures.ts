@@ -172,6 +172,8 @@ export const labelRow = (id: string, overrides: Partial<LabelRow> = {}): LabelRo
     created_at: '2026-11-18T05:00:00Z',
     printed_at: null,
     has_price: true,
+    original_quantity: overrides.quantity ?? 2,
+    printed_quantity: 0,
     stock_mode: 'QUANTITY',
     unit: 'PCS',
     qty_scale: 1,

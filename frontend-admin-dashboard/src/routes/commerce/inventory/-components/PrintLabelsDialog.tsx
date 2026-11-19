@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
@@ -23,6 +23,7 @@ import {
     labelsNotQueued,
     markPrintedBatches,
     MAX_LABELS_PER_PRINT,
+    nextStartPosition,
     MAX_RECEIPT_LINE_LABELS,
     printLabels,
     printProblem,
@@ -87,6 +88,9 @@ export function PrintLabelsDialog({
     const [error, setError] = useState<unknown>(null);
     /** After a round that left labels out: those rows (the next print of chosen rows) and how many labels wait. */
     const [rest, setRest] = useState<{ ids: string[]; copies: number } | null>(null);
+    /** One token per print-data answer: "Yes" for that answer keeps its request ids; the next round gets new ones. */
+    const [round, setRound] = useState('');
+    const rounds = useRef(0);
 
     const receiptRows = useLabels({
         sourceType: receiptId ? 'STOCK_RECEIPT' : undefined,
@@ -126,6 +130,8 @@ export function PrintLabelsDialog({
                 return;
             }
             setData(answer);
+            rounds.current += 1;
+            setRound(`${Date.now().toString(36)}-${rounds.current}`);
             await nextFrame();
             await printLabels(current.template);
             setPhase('ask');
@@ -144,7 +150,8 @@ export function PrintLabelsDialog({
         try {
             for (const batch of batches) {
                 await write.run({
-                    scope: `mark-printed:${batch.request_ids[0]}:${batch.request_ids.length}`,
+                    // Per round: a request id left from an unanswered earlier round is never reused here.
+                    scope: `mark-printed:${round}:${batch.request_ids[0]}:${batch.request_ids.length}`,
                     body: batch,
                     send: (id) => markLabelsPrinted({ client_request_id: id, ...batch }),
                     onDone: () => undefined,
@@ -155,6 +162,8 @@ export function PrintLabelsDialog({
             if (data.left_out.length > 0) {
                 // The next round: the labels left out of this print, still waiting.
                 setRest({ ids: data.left_out.map((l) => l.request_id), copies: data.left_out_copies });
+                // On a used A4 sheet the next round starts at the first label this round left free.
+                if (a4) setStartText(String(nextStartPosition(Number(startText), data.total_copies)));
                 setData(null);
                 setPhase('choose');
                 return;
@@ -225,7 +234,12 @@ export function PrintLabelsDialog({
                                 {t('inventory.labels.leftOut', { count: data.left_out_copies, max: MAX_LABELS_PER_PRINT })}
                             </p>
                         )}
-                        <SkippedNote skus={(data?.skipped ?? []).map((x) => x.sku ?? x.request_id)} />
+                        <SkippedNote
+                            skus={(data?.skipped ?? []).filter((x) => x.reason !== 'NOT_PENDING').map((x) => x.sku ?? x.request_id)}
+                        />
+                        <ElsewhereNote
+                            skus={(data?.skipped ?? []).filter((x) => x.reason === 'NOT_PENDING').map((x) => x.sku ?? x.request_id)}
+                        />
                         <p className="text-subtitle text-foreground">{t('inventory.labels.cameOutWell')}</p>
                         <p className="text-body text-muted-foreground">{t('inventory.labels.cameOutWellHelp')}</p>
                         <InventoryErrorNotice error={error} />
@@ -307,6 +321,17 @@ export function PrintLabelsDialog({
                 />
             )}
         </>
+    );
+}
+
+/** "N labels were left out: printed or cancelled elsewhere meanwhile" — the rest of the round printed. */
+function ElsewhereNote({ skus }: { skus: string[] }) {
+    const { t } = useTranslation('commerce');
+    if (skus.length === 0) return null;
+    return (
+        <p className="text-caption text-warning-600" data-testid="labels-elsewhere">
+            {t('inventory.labels.skippedElsewhere', { count: skus.length, items: Array.from(new Set(skus)).join(', ') })}
+        </p>
     );
 }
 

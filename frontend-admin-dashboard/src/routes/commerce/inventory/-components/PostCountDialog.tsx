@@ -22,9 +22,12 @@ import { useInventoryWrite } from './use-inventory-write';
  * counted block Post until counted again or accepted. A large difference on a
  * measured item needs a manager's explicit yes (`confirm_measured`; staff get
  * the PIN dialog, and the PIN is that yes). Every post (the PIN resend too)
- * carries the `fingerprint` of the review shown here: when lines were saved
- * since, the server refuses with `COUNT_CHANGED`; the review is read again and
- * the person checks it before posting again (never re-posted on its own).
+ * carries the `fingerprint` of the review shown here, and a ZERO post also the
+ * review's `zero_write_off`: a sale since the review still posts (less is
+ * written off), but when lines were saved or stock of uncounted items came in
+ * since, the server refuses with `COUNT_CHANGED`. The PIN dialog then closes,
+ * the review is read again and the person checks it before posting again
+ * (never re-posted on its own, never a PIN for the stale review).
  */
 export function PostCountDialog({
     open,
@@ -56,7 +59,12 @@ export function PostCountDialog({
         // carries the same one; after a new review the body differs, so a new id goes.
         // `confirm_measured` stays out of it (the server leaves it out of its hash).
         const fingerprint = review.data?.fingerprint;
-        const body = { uncounted: choice, ...(fingerprint ? { review_fingerprint: fingerprint } : {}) };
+        const zero = choice === 'ZERO' ? review.data?.zero_write_off : null;
+        const body = {
+            uncounted: choice,
+            ...(fingerprint ? { review_fingerprint: fingerprint } : {}),
+            ...(zero ? { reviewed_zero: zero } : {}),
+        };
         const confirm = askMeasured && measuredOk ? { confirm_measured: true } : {};
         try {
             await write.run({
@@ -64,6 +72,7 @@ export function PostCountDialog({
                 body,
                 approvalAt: view.location?.id ?? null,
                 approvalText: t('inventory.approval.count'),
+                endsPin: (code) => code === 'COUNT_CHANGED',
                 send: async (id, approval) => {
                     try {
                         return await postCount(view.id, {

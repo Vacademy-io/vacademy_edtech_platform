@@ -8,8 +8,8 @@ import { PlainSelect } from '@/routes/commerce/-components/CatalogueBits';
 import { DialogButtons, OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { type InventoryError, inventoryErrorKey, readInventoryError } from '../-shared/inventory-errors';
-import type { InventoryLocation } from '../-shared/inventory-types';
-import { unitSign } from '../-shared/label-print';
+import type { InventoryLocation, LabelRow } from '../-shared/inventory-types';
+import { labelQuantity, unitSign } from '../-shared/label-print';
 
 /**
  * Small pieces the inventory screens share: the error sentence, an item cell,
@@ -93,6 +93,18 @@ export function Qty({
  * The unit after a measured quantity: metres in the admin's words ("m" /
  * "मीटर"), any other code as its short sign ("kg"), never a raw code ("MTR").
  */
+/** A label row's count: "×1200", or "×1200 · 1000 printed" while it prints in rounds. */
+export function LabelQuantity({ row }: { row: Pick<LabelRow, 'quantity' | 'original_quantity' | 'printed_quantity' | 'status'> }) {
+    const { t } = useTranslation('commerce');
+    const { total, printed } = labelQuantity(row);
+    return (
+        <span className="tabular-nums" data-testid="label-quantity">
+            ×{total}
+            {printed !== null && ` · ${t('inventory.labels.printedSoFar', { count: printed })}`}
+        </span>
+    );
+}
+
 export const qtyUnit = (unit: string | null | undefined): string | null => {
     const u = (unit ?? '').trim().toUpperCase();
     return u === 'MTR' || u === 'M' ? null : unitSign(unit);

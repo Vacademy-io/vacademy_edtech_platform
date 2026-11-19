@@ -504,6 +504,14 @@ export interface CountReview {
     measured_confirm: boolean;
     /** A hash of the count's lines as reviewed; a post that sends it is refused (`COUNT_CHANGED`) if lines changed since. */
     fingerprint: string | null;
+    /** What "set to zero" writes off as reviewed (items' stock here, pieces nobody scanned); a ZERO post sends it back. */
+    zero_write_off: ZeroWriteOff | null;
+}
+
+/** Uncounted stock "set to zero" writes off: package_session_id → units, and piece ids. */
+export interface ZeroWriteOff {
+    items: Record<string, number>;
+    pieces: string[];
 }
 
 /** A line change the count sheet sends (`PUT …/lines`). */
@@ -535,6 +543,10 @@ export interface LabelRow {
     created_at: string | null;
     printed_at: string | null;
     has_price: boolean;
+    /** Labels the row was queued with (`quantity` is what still waits while it prints in rounds). */
+    original_quantity: number;
+    /** Labels of the row already printed (earlier rounds, or all once PRINTED). */
+    printed_quantity: number;
     stock_mode: string | null;
     unit: string | null;
     qty_scale: number;

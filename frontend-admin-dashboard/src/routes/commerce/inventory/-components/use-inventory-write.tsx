@@ -26,6 +26,12 @@ export interface InventoryWrite<R> {
     approvalAt?: string | null;
     /** What the manager approves, in the screen's words. */
     approvalText?: string;
+    /**
+     * Error codes after which the PIN cannot help (the body itself is out of date, e.g.
+     * `COUNT_CHANGED`): the PIN dialog closes and the form shows its own message, instead of
+     * asking for the PIN again for the same stale body.
+     */
+    endsPin?: (code: string | null) => boolean;
 }
 
 /**
@@ -77,7 +83,17 @@ export function useInventoryWrite(prefix = 'inv') {
                     setPin({
                         locationId: write.approvalAt,
                         description: write.approvalText ?? null,
-                        resend: (approval) => once(approval),
+                        resend: async (approval) => {
+                            try {
+                                await once(approval);
+                            } catch (resendRaw) {
+                                if (write.endsPin?.(readInventoryError(resendRaw).code)) {
+                                    setPin(null);
+                                    return;
+                                }
+                                throw resendRaw;
+                            }
+                        },
                     });
                     return;
                 }

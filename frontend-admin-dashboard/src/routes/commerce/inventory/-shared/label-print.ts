@@ -99,6 +99,22 @@ export function labelsNotQueued(
         .map((l) => ({ item: l.sku ?? l.product_name ?? '—', units: l.qty_received - MAX_RECEIPT_LINE_LABELS }));
 }
 
+/** The next free label of an A4 sheet after `drawn` labels from `start` (1..65): where the next round starts. */
+export const nextStartPosition = (start: number, drawn: number): number =>
+    ((((validStartPosition(start) ? start : 1) - 1 + Math.max(0, drawn)) % A4_POSITIONS) + A4_POSITIONS) % A4_POSITIONS + 1;
+
+/**
+ * What a queue row shows as its quantity: the labels it was queued with, and
+ * how many of them are printed while it prints in rounds (null otherwise).
+ */
+export function labelQuantity(
+    row: Pick<LabelRow, 'quantity' | 'original_quantity' | 'printed_quantity' | 'status'>
+): { total: number; printed: number | null } {
+    const total = Math.max(row.quantity, row.original_quantity);
+    const printed = row.status !== 'PRINTED' && row.printed_quantity > 0 && row.printed_quantity < total ? row.printed_quantity : null;
+    return { total, printed };
+}
+
 /** How many prints of at most 500 labels a number of labels takes. */
 export const printRounds = (count: number): number => Math.max(1, Math.ceil(count / MAX_LABELS_PER_PRINT));
 

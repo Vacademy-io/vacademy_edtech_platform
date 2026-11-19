@@ -69,7 +69,7 @@ vi.mock('../-shared/inventory-api', () => ({
 
 import * as orderApi from '@/routes/commerce/orders/-shared/order-api';
 import * as api from '../-shared/inventory-api';
-import { accessFor, labelRow, place, variantScan, WAREHOUSE } from '../-shared/inventory-test-fixtures';
+import { accessFor, labelRow, networkError, place, variantScan, WAREHOUSE } from '../-shared/inventory-test-fixtures';
 import { LabelsTab } from './LabelsTab';
 import type { ReceiptLine } from '../-shared/inventory-types';
 import { PrintLabelsDialog } from './PrintLabelsDialog';
@@ -433,5 +433,59 @@ describe('labels of more than 500 (item 1)', () => {
         const notes = await screen.findAllByTestId('labels-not-queued', {}, slow);
         expect(notes.map((n) => n.textContent)).toEqual(['inventory.labels.notQueued']);
     });
+
+    it('a round naming a row printed elsewhere prints the rest and says which were left out', async () => {
+        mocked.fetchLabelPrintData.mockResolvedValueOnce({
+            ...round(2, 0, 'lr-2'),
+            skipped: [{ request_id: 'lr-1', sku: 'BOTTLE-1', reason: 'NOT_PENDING' }],
+        });
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={client}>
+                <PrintLabelsDialog open onOpenChange={() => undefined} rows={[labelRow('lr-1'), labelRow('lr-2')]} />
+            </QueryClientProvider>
+        );
+        fireEvent.click(screen.getByTestId('labels-print'));
+        expect((await screen.findByTestId('labels-elsewhere', {}, slow)).textContent).toBe('inventory.labels.skippedElsewhere');
+        expect(screen.queryByTestId('labels-skipped')).toBeNull();
+        expect(screen.getByTestId('labels-mark-printed')).toBeTruthy();
+    });
+
+    it('on A4 the next round starts where this round ended', async () => {
+        mocked.fetchLabelPrintData.mockResolvedValueOnce(round(500, 100, 'lr-1'));
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={client}>
+                <PrintLabelsDialog open onOpenChange={() => undefined} rows={[labelRow('lr-1', { quantity: 600 })]} />
+            </QueryClientProvider>
+        );
+        fireEvent.click(screen.getByText('inventory.labels.templateA4_65'));
+        fireEvent.click(screen.getByTestId('labels-print'));
+        fireEvent.click(await screen.findByTestId('labels-mark-printed', {}, slow));
+        await screen.findByTestId('labels-rest', {}, slow);
+        expect((screen.getByLabelText('inventory.labels.startAt') as HTMLInputElement).value).toBe('46');
+    }, 60_000);
+
+    it('a mark left unanswered in one round is never resent as the next round (fresh request id)', async () => {
+        mocked.fetchLabelPrintData.mockResolvedValueOnce(round(500, 700, 'lr-1')).mockResolvedValueOnce(round(500, 200, 'lr-1'));
+        mocked.markLabelsPrinted.mockRejectedValueOnce(networkError()).mockResolvedValueOnce({ printed: 0, skipped: [], partly: ['lr-1'] });
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={client}>
+                <PrintLabelsDialog open onOpenChange={() => undefined} rows={[labelRow('lr-1', { quantity: 1200 })]} />
+            </QueryClientProvider>
+        );
+        fireEvent.click(screen.getByTestId('labels-print'));
+        fireEvent.click(await screen.findByTestId('labels-mark-printed', {}, slow));
+        await waitFor(() => expect(mocked.markLabelsPrinted).toHaveBeenCalledTimes(1), slow);
+        // No answer: the person prints the round again (a new print-data answer) and says Yes.
+        fireEvent.click(screen.getByText('inventory.labels.printAgain'));
+        fireEvent.click(screen.getByTestId('labels-print'));
+        await waitFor(() => expect(mocked.fetchLabelPrintData).toHaveBeenCalledTimes(2), slow);
+        fireEvent.click(await screen.findByTestId('labels-mark-printed', {}, slow));
+        await waitFor(() => expect(mocked.markLabelsPrinted).toHaveBeenCalledTimes(2), slow);
+        const ids = mocked.markLabelsPrinted.mock.calls.map((call) => call[0].client_request_id);
+        expect(ids[1]).not.toBe(ids[0]);
+    }, 60_000);
 });
 
