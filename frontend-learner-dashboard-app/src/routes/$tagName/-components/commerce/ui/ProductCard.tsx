@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { ProductCard } from '../api/types';
 import { sendCommerceEvent } from '../logic/events';
-import { formatUnits } from '../logic/format';
+import { quantityText } from '../logic/format';
 import { IMAGE_SIZES, mediaChip, ratioClass, thumbUrl } from '../logic/media';
 import { isMeasured, stockView } from '../logic/stock';
 import { hasMessage } from '../i18n';
@@ -29,7 +29,7 @@ export const useCardBadge = (product: ProductCard): { text: string; muted: boole
     if (!code) return null;
     if (code === 'ONLY_N_LEFT') {
         return view.left !== null
-            ? { text: t('badge.ONLY_N_LEFT', { count: formatUnits(view.left, product.qty_scale) }), muted: false }
+            ? { text: t('badge.ONLY_N_LEFT', { count: quantityText(view.left, product.qty_scale, product.unit, t) }), muted: false }
             : { text: t('badge.LOW'), muted: false };
     }
     const key = `badge.${code}`;

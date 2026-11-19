@@ -9,10 +9,10 @@ import { ImageSquare, Minus, Plus, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
 import type { Media, Price } from '../api/types';
 import { CommerceApiError } from '../api/client';
-import { formatMoney, hasCompareAt, percentOff } from '../logic/format';
+import { formatMoney, hasCompareAt, lineAmount, percentOff, unitLabel } from '../logic/format';
 import { imageSource } from '../logic/media';
 import { isMeasured } from '../logic/stock';
-import type { MessageKey, Translate } from '../i18n';
+import type { MessageKey } from '../i18n';
 import { useCommerceSite } from './site';
 
 /* ── theme root ───────────────────────────────────────────────────── */
@@ -192,9 +192,8 @@ export const PriceText: React.FC<{
     const { t } = useCommerceSite();
     const perUnit = isMeasured(scale || 1) && quantity === 1;
     const factor = perUnit ? Math.floor(scale as number) : quantity;
-    const amount = typeof price?.amount === 'number' ? Math.round(price.amount * factor * 100) / 100 : null;
-    const compare =
-        typeof price?.compare_at_amount === 'number' ? Math.round(price.compare_at_amount * factor * 100) / 100 : null;
+    const amount = typeof price?.amount === 'number' ? lineAmount(price.amount, factor) : null;
+    const compare = typeof price?.compare_at_amount === 'number' ? lineAmount(price.compare_at_amount, factor) : null;
     const now = formatMoney(amount, price?.currency);
     if (!now) return <span className={cn('cmx-muted cmx-small', className)}>{t('price.unavailable')}</span>;
     const mrp = hasCompareAt(amount, compare) ? formatMoney(compare, price?.currency) : null;
@@ -319,12 +318,7 @@ export const Busy: React.FC<{ label: string }> = ({ label }) => (
 );
 
 /** Unit names from the API codes (MTR, KG, PCS) in the visitor's language. */
-export const unitLabel = (t: Translate, unit: string | null | undefined, short = false): string => {
-    const code = (unit || '').toUpperCase();
-    if (code === 'MTR' || code === 'M' || code === 'METER' || code === 'METRE') return t(short ? 'unit.MTR.short' : 'unit.MTR');
-    if (code === 'KG' || code === 'KGS') return t(short ? 'unit.KG.short' : 'unit.KG');
-    return t(short ? 'unit.PCS.short' : 'unit.PCS');
-};
+export { unitLabel };
 
 /** True below the desktop breakpoint; false during the first render and on the server. */
 export const useIsNarrow = (maxWidth = 1023.98): boolean => {

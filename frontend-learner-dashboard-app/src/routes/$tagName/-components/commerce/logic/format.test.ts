@@ -1,5 +1,18 @@
 import { describe, expect, it } from 'vitest';
-import { formatMoney, formatUnits, groupIndian, groupWestern, hasCompareAt, lineAmount, perUnitAmount, percentOff } from './format';
+import {
+    formatMoney,
+    formatUnits,
+    groupIndian,
+    groupWestern,
+    hasCompareAt,
+    lineAmount,
+    perUnitAmount,
+    percentOff,
+    quantityText,
+    sumAmounts,
+    unitLabel,
+    unitSign,
+} from './format';
 import { createTranslate } from '../i18n';
 
 describe('Indian digit grouping', () => {
@@ -96,5 +109,56 @@ describe('quantities of measured goods', () => {
         expect(lineAmount(45, 25)).toBe(1125);
         expect(lineAmount(33.33, 3)).toBe(99.99);
         expect(lineAmount(null, 3)).toBeNull();
+    });
+
+    it('works in whole paise, never in floats', () => {
+        // ₹123.40 a metre = ₹12.34 per 10 cm; 3.4 m is 34 base units.
+        expect(lineAmount(12.34, 34)).toBe(419.56);
+        expect(lineAmount(12.34, 25)).toBe(308.5);
+        expect(perUnitAmount(12.34, 10)).toBe(123.4);
+        // A float multiply drifts here (0.30000000000000004, 3.3000000000000003); paise do not.
+        expect(0.1 * 3).not.toBe(0.3);
+        expect(lineAmount(0.1, 3)).toBe(0.3);
+        expect(lineAmount(1.1, 3)).toBe(3.3);
+        expect(lineAmount(0.07, 100)).toBe(7);
+        expect(lineAmount('12.34', 34)).toBe(419.56);
+        expect(sumAmounts([0.1, 0.2])).toBe(0.3);
+        expect(sumAmounts([419.56, 308.5])).toBe(728.06);
+        expect(sumAmounts([1, null])).toBeNull();
+    });
+
+    it('writes a quantity with its unit in the visitor\'s language', () => {
+        const hi = createTranslate('hi');
+        const en = createTranslate('en');
+        expect(quantityText(25, 10, 'MTR', hi)).toBe('2.5 मी');
+        expect(quantityText(25, 10, 'MTR', en)).toBe('2.5 m');
+        expect(quantityText(30, 10, 'mtr', en)).toBe('3 m');
+        expect(quantityText(1500, 1000, 'KGS', en)).toBe('1.5 kg');
+        expect(quantityText(7, 100, 'YD', en)).toBe('0.07 yd');
+        // Pieces read as a plain count.
+        expect(quantityText(2, 1, 'PCS', hi)).toBe('2');
+        expect(quantityText(2, null, null, en)).toBe('2');
+    });
+
+    it('names units, falling back to the code for a unit it has no word for', () => {
+        const hi = createTranslate('hi');
+        const en = createTranslate('en');
+        expect(unitLabel(en, 'MTR')).toBe('metre');
+        expect(unitLabel(hi, 'MTR')).toBe('मीटर');
+        expect(unitLabel(hi, 'METRE', true)).toBe('मी');
+        expect(unitLabel(en, 'KG', true)).toBe('kg');
+        expect(unitLabel(en, 'CM', true)).toBe('cm');
+        expect(unitLabel(hi, 'CMS', true)).toBe('सेमी');
+        expect(unitLabel(en, 'LTR', true)).toBe('l');
+        expect(unitLabel(en, 'YD')).toBe('yd');
+        expect(unitLabel(hi, 'YD', true)).toBe('yd');
+        // "piece" only for pieces.
+        expect(unitLabel(en, 'PCS')).toBe('piece');
+        expect(unitLabel(en, 'NOS')).toBe('piece');
+        expect(unitLabel(en, null)).toBe('piece');
+        expect(unitLabel(en, '')).toBe('piece');
+        expect(unitSign('MTR')).toBe('m');
+        expect(unitSign('MLT')).toBe('ml');
+        expect(unitSign('PCS')).toBeNull();
     });
 });

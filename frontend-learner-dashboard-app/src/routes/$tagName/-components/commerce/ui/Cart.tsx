@@ -9,30 +9,43 @@ import { CheckCircle, Trash, WarningCircle, WhatsappLogo } from '@phosphor-icons
 import { cn } from '@/lib/utils';
 import type { CartPrice, CartPriceLine, CartUnavailableLine } from '../api/types';
 import { sendCommerceEvent } from '../logic/events';
-import { formatMoney, formatUnits } from '../logic/format';
+import { formatMoney, perUnitAmount, quantityText, unitLabel } from '../logic/format';
 import { isMeasured } from '../logic/stock';
 import type { CartLine } from '../state/cart-logic';
 import { useCommerceCart } from '../state/cart-store';
 import type { MessageKey } from '../i18n';
 import { useOnline } from './hooks';
-import { EmptyState, ErrorState, Layer, QuantityStepper, unitLabel } from './primitives';
+import { EmptyState, ErrorState, Layer, QuantityStepper } from './primitives';
 import { CartRecommendations } from './CartRecommendations';
 import { ProductRail } from './ProductCard';
 import { useShopFlag } from './shop-flags';
 import { useCartPrice, useProductRail } from './queries';
 import { ShopLink, useCommerceSite, whatsappLink } from './site';
 
-const quantityText = (
-    line: Pick<CartLine, 'quantity' | 'qtyScale' | 'unit'>,
-    unit: (code: string | null, short: boolean) => string
-): string =>
-    isMeasured(line.qtyScale) ? `${formatUnits(line.quantity, line.qtyScale)} ${unit(line.unit, true)}` : String(line.quantity);
+/**
+ * The quantity a fix offers, on the line's step grid: what is in stock, or the most one order may
+ * hold, rounded DOWN to the step (25 at a step of 10 offers 20, never 30). Null when not even
+ * one step fits.
+ */
+const fixQuantity = (problem: CartUnavailableLine | undefined, line: Pick<CartLine, 'qtyStep'>): number | null => {
+    if (!problem) return null;
+    const step = Math.max(1, Math.floor(line.qtyStep || 1));
+    const limit =
+        typeof problem.available_quantity === 'number'
+            ? problem.available_quantity
+            : typeof problem.max_quantity === 'number'
+              ? problem.max_quantity
+              : null;
+    if (limit === null || limit < step) return null;
+    return Math.floor(limit / step) * step;
+};
 
 const useUnavailableText = () => {
     const { t } = useCommerceSite();
     return (problem: CartUnavailableLine, line: CartLine): string => {
-        const count =
-            typeof problem.available_quantity === 'number' ? formatUnits(problem.available_quantity, line.qtyScale) : null;
+        // Every number carries its unit: "Only 1.5 m available", never a bare "1.5".
+        const amount = (base: number) => quantityText(base, line.qtyScale, line.unit, t);
+        const count = typeof problem.available_quantity === 'number' ? amount(problem.available_quantity) : null;
         switch (problem.reason) {
             case 'INSUFFICIENT_STOCK':
                 return count !== null
@@ -40,11 +53,11 @@ const useUnavailableText = () => {
                     : t('cart.unavailable.INSUFFICIENT_STOCK_PLAIN');
             case 'QUANTITY_STEP':
                 return t('cart.unavailable.QUANTITY_STEP', {
-                    step: formatUnits(problem.qty_step || line.qtyStep, line.qtyScale),
+                    step: amount(problem.qty_step || line.qtyStep),
                 });
             case 'QUANTITY_ABOVE_MAX':
                 return typeof problem.max_quantity === 'number'
-                    ? t('cart.unavailable.QUANTITY_ABOVE_MAX', { max: formatUnits(problem.max_quantity, line.qtyScale) })
+                    ? t('cart.unavailable.QUANTITY_ABOVE_MAX', { max: amount(problem.max_quantity) })
                     : t('cart.unavailable.QUANTITY_INVALID');
             case 'NOT_FOUND':
             case 'NO_PRICE':
@@ -68,20 +81,12 @@ const CartLineRow: React.FC<{
     const setQuantity = useCommerceCart((s) => s.setQuantity);
     const remove = useCommerceCart((s) => s.remove);
     const unavailableText = useUnavailableText();
-    const unit = (code: string | null, short: boolean) => unitLabel(t, code, short);
     const measured = isMeasured(line.qtyScale);
     // The server's line total when it has priced the line; else only the remembered unit price.
     const amount = priced ? formatMoney(priced.net ?? priced.gross, currency) : null;
-    const unitPrice = formatMoney(
-        (priced?.unit_price ?? line.unitPrice) !== null ? (priced?.unit_price ?? line.unitPrice)! * (measured ? line.qtyScale : 1) : null,
-        currency
-    );
-    const fixTo =
-        problem && typeof problem.available_quantity === 'number' && problem.available_quantity >= line.qtyStep
-            ? Math.floor(problem.available_quantity / line.qtyStep) * line.qtyStep
-            : problem && typeof problem.max_quantity === 'number' && problem.max_quantity >= line.qtyStep
-              ? problem.max_quantity
-              : null;
+    // One metre of cloth (the API prices one base unit), worked out in whole paise.
+    const unitPrice = formatMoney(perUnitAmount(priced?.unit_price ?? line.unitPrice, measured ? line.qtyScale : 1), currency);
+    const fixTo = fixQuantity(problem, line);
     return (
         <li className={cn('cmx-line', problem && 'cmx-line--off')}>
             <div className="cmx-img cmx-line__thumb">
@@ -98,7 +103,7 @@ const CartLineRow: React.FC<{
                         onClick={() => {
                             sendCommerceEvent({
                                 name: 'remove_from_cart',
-                                item: { id: priced?.sku || line.variantId, name: line.name, unitPrice: priced?.unit_price ?? line.unitPrice, quantity: line.quantity, qtyScale: line.qtyScale, variant: line.variantLabel },
+                                item: { id: priced?.sku || line.variantId, name: line.name, unitPrice: priced?.unit_price ?? line.unitPrice, quantity: line.quantity, qtyScale: line.qtyScale, unit: line.unit, variant: line.variantLabel },
                                 currency,
                             });
                             remove(line.variantId);
@@ -113,7 +118,7 @@ const CartLineRow: React.FC<{
                 )}
                 {unitPrice && (
                     <p className="cmx-small cmx-muted">
-                        {measured ? t('price.perUnit', { price: unitPrice, unit: unit(line.unit, false) }) : unitPrice}
+                        {measured ? t('price.perUnit', { price: unitPrice, unit: unitLabel(t, line.unit, false) }) : unitPrice}
                     </p>
                 )}
                 {problem && (
@@ -123,7 +128,7 @@ const CartLineRow: React.FC<{
                         </span>
                         {fixTo !== null && (
                             <button type="button" className="cmx-link" onClick={() => setQuantity(line.variantId, fixTo)}>
-                                {t('cart.fix.setTo', { count: formatUnits(fixTo, line.qtyScale) })}
+                                {t('cart.fix.setTo', { count: quantityText(fixTo, line.qtyScale, line.unit, t) })}
                             </button>
                         )}
                     </p>
@@ -139,7 +144,7 @@ const CartLineRow: React.FC<{
                             step={line.qtyStep}
                             min={line.qtyStep}
                             max={null}
-                            display={quantityText(line, unit)}
+                            display={quantityText(line.quantity, line.qtyScale, line.unit, t)}
                             onChange={(next) => setQuantity(line.variantId, next)}
                         />
                     )}
@@ -319,11 +324,10 @@ export const CartSummary: React.FC<{ view: ReturnType<typeof useCartView>; onNav
 }) => {
     const { t, config, absoluteUrl } = useCommerceSite();
     const { cart, price, pending, error, refetch } = view;
-    const unit = (code: string | null, short: boolean) => unitLabel(t, code, short);
     const total = formatMoney(price?.totals?.total, price?.currency);
     const orderText = [
         t('cart.whatsappText'),
-        ...cart.lines.map((l) => `• ${l.name}${l.variantLabel ? ` (${l.variantLabel})` : ''} × ${quantityText(l, unit)} — ${absoluteUrl(`p/${l.slug}`)}`),
+        ...cart.lines.map((l) => `• ${l.name}${l.variantLabel ? ` (${l.variantLabel})` : ''} × ${quantityText(l.quantity, l.qtyScale, l.unit, t)} — ${absoluteUrl(`p/${l.slug}`)}`),
     ].join('\n');
     const whatsapp = whatsappLink(config.whatsappNumber, orderText);
     const online = useOnline();
@@ -463,7 +467,7 @@ const useViewCartEvent = (view: ReturnType<typeof useCartView>, shown: boolean):
         sent.current = true;
         sendCommerceEvent({
             name: 'view_cart',
-            items: cart.lines.map((l) => ({ id: l.variantId, name: l.name, unitPrice: l.unitPrice, quantity: l.quantity, qtyScale: l.qtyScale, variant: l.variantLabel })),
+            items: cart.lines.map((l) => ({ id: l.variantId, name: l.name, unitPrice: l.unitPrice, quantity: l.quantity, qtyScale: l.qtyScale, unit: l.unit, variant: l.variantLabel })),
             value: price.totals?.total,
             currency: price.currency,
         });

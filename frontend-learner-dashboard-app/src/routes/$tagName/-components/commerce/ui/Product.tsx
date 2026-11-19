@@ -25,7 +25,7 @@ import { readSearchParam, withSearchParams } from '../../../-utils/catalogue-url
 import type { Price, ProductDetail, Stock, Variant } from '../api/types';
 import { COMMERCE_STALE_MS } from '../api/client';
 import type { CommerceReassuranceItem } from '../config';
-import { formatMoney, formatUnits, lineAmount, perUnitAmount } from '../logic/format';
+import { formatMoney, formatUnits, lineAmount, perUnitAmount, quantityText, unitLabel } from '../logic/format';
 import { IMAGE_SIZES, orderGallery, ratioClass, thumbUrl } from '../logic/media';
 import { leadImageUrl, productHead } from '../edge/commerce-edge';
 import { sendCommerceEvent } from '../logic/events';
@@ -37,30 +37,34 @@ import { useCommerceCart } from '../state/cart-store';
 import { Gallery } from './Gallery';
 import { ShopHead, useEdgePage } from './Head';
 import { OptionPicker } from './Options';
-import { EmptyState, ErrorState, Layer, PriceText, ProductImage, QuantityStepper, isNotFound, shouldRetry, unitLabel } from './primitives';
+import { EmptyState, ErrorState, Layer, PriceText, ProductImage, QuantityStepper, isNotFound, shouldRetry } from './primitives';
 import { ProductRail } from './ProductCard';
 import { useProduct, useProductRail } from './queries';
 import { ShopLink, useCommerceSite, whatsappLink } from './site';
 
 /* ── stock line ───────────────────────────────────────────────────── */
 
-const StockLine: React.FC<{ stock: Stock | null | undefined; product: ProductDetail }> = ({ stock, product }) => {
+const StockLine: React.FC<{
+    stock: Stock | null | undefined;
+    product: ProductDetail;
+    /** Less is left than the smallest amount sold (0.4 m of a cloth cut in steps of 0.5 m). */
+    soldOut?: boolean;
+}> = ({ stock, product, soldOut }) => {
     const { t } = useCommerceSite();
     const view = stockView(stock);
     const measured = isMeasured(product.qty_scale);
     let text = '';
     let tone = 'cmx-ok';
-    if (view.kind === 'out') {
+    if (view.kind === 'out' || soldOut) {
         text = t('product.stock.out');
         tone = 'cmx-bad';
     } else if (view.kind === 'single') {
         text = t('product.stock.single');
         tone = '';
     } else if (view.kind === 'low' && view.left !== null) {
-        const count = formatUnits(view.left, product.qty_scale);
         text = measured
-            ? t('product.stock.lowMeasured', { count, unit: unitLabel(t, product.unit, true) })
-            : t('product.stock.low', { count });
+            ? t('product.stock.lowMeasured', { count: quantityText(view.left, product.qty_scale, product.unit, t) })
+            : t('product.stock.low', { count: formatUnits(view.left, product.qty_scale) });
         tone = '';
     } else if (view.kind === 'made_to_order') {
         text = view.leadTimeDays ? t('product.stock.mtoDays', { days: view.leadTimeDays }) : t('product.stock.mto');
@@ -89,18 +93,51 @@ const LengthPicker: React.FC<{
     const scale = Math.max(1, product.qty_scale);
     const unitShort = unitLabel(t, product.unit, true);
     const presets = useMemo(() => lengthChoices(config.lengthPresets, scale, rules), [config.lengthPresets, scale, rules]);
+    const presetKey = presets.map((p) => p.quantity).join(',');
     const isPreset = presets.some((p) => p.quantity === quantity);
     const [custom, setCustom] = useState(!isPreset && presets.length > 0);
+    // The "other length" box follows the quantity: a new variant that starts at a length no chip
+    // offers opens the box, a typed length that is a preset presses its chip. Keyed on the preset
+    // numbers, so a background refetch does not close a box the shopper just opened.
+    useEffect(() => {
+        setCustom(!isPreset && presets.length > 0);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quantity, presetKey]);
     const [text, setText] = useState(formatUnits(quantity, scale));
+    const [notice, setNotice] = useState<string | null>(null);
     const inputId = useId();
     useEffect(() => setText(formatUnits(quantity, scale)), [quantity, scale]);
+    useEffect(() => {
+        if (!notice) return;
+        const timer = setTimeout(() => setNotice(null), 4000);
+        return () => clearTimeout(timer);
+    }, [notice]);
     const perUnit = formatMoney(perUnitAmount(price?.amount, scale), price?.currency);
+    const lengthText = (base: number) => quantityText(base, scale, product.unit, t);
+    /** The typed text in base units; null when it is not a positive number. */
+    const typedBase = (value: string): number | null => {
+        const trimmed = value.trim().replace(',', '.');
+        const units = trimmed === '' ? Number.NaN : Number(trimmed);
+        return Number.isFinite(units) && units > 0 ? units * scale : null;
+    };
     const commit = () => {
-        const wanted = Math.round(Number(text.replace(',', '.')) * scale);
-        const next = clampQuantity(Number.isFinite(wanted) && wanted > 0 ? wanted : rules.step, rules);
+        const wanted = typedBase(text);
+        const next = clampQuantity(wanted ?? rules.step, rules);
         onChange(next);
         setText(formatUnits(next, scale));
+        // A length moved onto the step or under the stock limit is said, never changed silently.
+        if (wanted === null || Math.abs(wanted - next) > 1e-6) setNotice(t('product.length.changed', { length: lengthText(next) }));
     };
+    // The price under the box is for the length typed when it can be bought as typed, else for
+    // the length that will be added.
+    const typed = typedBase(text);
+    const typedOk =
+        typed !== null &&
+        Math.abs(typed - Math.round(typed)) < 1e-6 &&
+        Math.round(typed) % rules.step === 0 &&
+        (rules.max === null || typed <= rules.max);
+    const priced = typedOk ? Math.round(typed as number) : quantity;
+    const pricedAmount = formatMoney(lineAmount(price?.amount, priced), price?.currency);
     return (
         <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
             <legend className="cmx-option__label">
@@ -156,7 +193,17 @@ const LengthPicker: React.FC<{
                     <span className="cmx-small cmx-muted">
                         {t('product.length.step', { step: formatUnits(rules.step, scale), unit: unitShort })}
                     </span>
+                    {pricedAmount && (
+                        <p className="cmx-small m-0 basis-full tabular-nums" data-testid="cmx-length-total">
+                            {t('product.length.total', { length: lengthText(priced), price: pricedAmount })}
+                        </p>
+                    )}
                 </div>
+            )}
+            {notice && (
+                <p className="cmx-small m-0 font-medium" role="status">
+                    {notice}
+                </p>
             )}
         </fieldset>
     );
@@ -508,9 +555,15 @@ export const ProductTemplate: React.FC<{
     // A new variant starts at the smallest quantity (one unit of length for cloth, when the step allows).
     // Keyed on the numbers, not on the rules object: a background refetch of the same product
     // must not throw away the quantity the shopper chose.
+    // Less left than one step: nothing can be bought, the quantity is 0 and the button is off.
+    const soldOut = view.kind === 'out' || rules.max === 0;
     useEffect(() => {
+        if (rules.max === 0) {
+            setQuantity(0);
+            return;
+        }
         const start = measured && scale % rules.step === 0 ? scale : rules.step;
-        setQuantity(clampQuantity(start, rules) || rules.step);
+        setQuantity(clampQuantity(start, rules));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [variant?.id, measured, scale, rules.step, rules.max]);
 
@@ -551,6 +604,7 @@ export const ProductTemplate: React.FC<{
         unitPrice: p?.amount,
         quantity: base,
         qtyScale: scale,
+        unit: product?.unit,
         variant: v?.label,
         category: categoryRef?.name,
     });
@@ -589,8 +643,9 @@ export const ProductTemplate: React.FC<{
 
     const has = (section: string) => sections.includes(section);
     const category = (product.collections || []).find((c) => (c.kind || '').toUpperCase() === 'CATEGORY');
-    const canBuy = !!variant && view.purchasable && quantity > 0 && typeof price?.amount === 'number';
-    const total = formatMoney(lineAmount(price?.amount, measured ? quantity : 1), price?.currency);
+    const canBuy = !!variant && view.purchasable && !soldOut && quantity > 0 && typeof price?.amount === 'number';
+    // Nothing to buy, no amount: a price is never drawn as zero.
+    const total = soldOut ? null : formatMoney(lineAmount(price?.amount, measured ? quantity : 1), price?.currency);
     const whatsapp = whatsappLink(config.whatsappNumber, t('product.whatsappText', { name: product.name, url: absoluteUrl(`p/${product.slug}`) }));
     const badges = (product.badges || []).filter((code) => code !== 'ONLY_N_LEFT' && hasMessage(`badge.${code}`));
 
@@ -635,7 +690,7 @@ export const ProductTemplate: React.FC<{
             disabled={!canBuy}
         >
             {/* The bar already shows the amount beside the button: no second copy inside it. */}
-            {view.kind === 'out' ? t('product.stock.out') : measured && total && !compact ? t('product.addToCartPrice', { price: total }) : t('product.addToCart')}
+            {soldOut ? t('product.stock.out') : measured && total && !compact ? t('product.addToCartPrice', { price: total }) : t('product.addToCart')}
         </button>
     );
 
@@ -686,7 +741,7 @@ export const ProductTemplate: React.FC<{
                                     {hasMessage(`badge.${code}`) ? t(`badge.${code}` as 'badge.NEW') : code}
                                 </span>
                             ))}
-                            <StockLine stock={stock} product={product} />
+                            <StockLine stock={stock} product={product} soldOut={soldOut} />
                         </div>
                     )}
                     {has('provenance') && product.origin && (
@@ -696,12 +751,12 @@ export const ProductTemplate: React.FC<{
                         </p>
                     )}
                     {has('options') && options.length > 0 && <OptionPicker options={options} variants={variants} selection={selection} onSelect={select} />}
-                    {has('length') && measured && view.purchasable && (
+                    {has('length') && measured && view.purchasable && !soldOut && (
                         <LengthPicker product={product} price={price} rules={rules} quantity={quantity} onChange={setQuantity} />
                     )}
                     {has('buyBox') && (
                         <div ref={buyRef} className="flex flex-col gap-3">
-                            {!measured && !piece && view.purchasable && (
+                            {!measured && !piece && view.purchasable && !soldOut && (
                                 <div className="flex items-center gap-3">
                                     <span className="cmx-option__label mb-0">{t('product.qty')}</span>
                                     <QuantityStepper
@@ -717,7 +772,7 @@ export const ProductTemplate: React.FC<{
                             )}
                             {buyButton()}
                             {whatsapp && (
-                                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={cn('cmx-btn cmx-btn--lg cmx-btn--block', view.kind === 'out' ? 'cmx-btn--primary' : 'cmx-btn--outline')}>
+                                <a href={whatsapp} target="_blank" rel="noopener noreferrer" className={cn('cmx-btn cmx-btn--lg cmx-btn--block', soldOut ? 'cmx-btn--primary' : 'cmx-btn--outline')}>
                                     <WhatsappLogo size={20} aria-hidden="true" />
                                     {t('product.askWhatsapp')}
                                 </a>

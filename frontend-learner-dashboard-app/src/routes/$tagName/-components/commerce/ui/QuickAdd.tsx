@@ -60,7 +60,7 @@ export const QuickAddSheet: React.FC<{ product: ProductCard; to: string; open: b
         }
         sendCommerceEvent({
             name: 'add_to_cart',
-            item: { id: variant.sku || variant.id, name: detail.name, unitPrice: price?.amount, quantity: rules.step, qtyScale: detail.qty_scale, variant: variant.label },
+            item: { id: variant.sku || variant.id, name: detail.name, unitPrice: price?.amount, quantity: rules.step, qtyScale: detail.qty_scale, unit: detail.unit, variant: variant.label },
             currency: price?.currency,
         });
         if (addMode) addMode.onAdded(product.id);

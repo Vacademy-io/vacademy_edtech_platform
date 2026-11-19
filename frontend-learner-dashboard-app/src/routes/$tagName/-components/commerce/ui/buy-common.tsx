@@ -11,7 +11,7 @@ import type { CheckoutConfig, OrderView, OtpVerified } from '../api/types';
 import type { MessageKey } from '../i18n';
 import { TIMELINE_STEPS, stateName, timelineIndex } from '../logic/checkout';
 import { formatDate } from '../logic/dates';
-import { formatMoney, formatUnits } from '../logic/format';
+import { formatMoney, quantityText } from '../logic/format';
 import { challengeToken } from '../logic/turnstile';
 import {
     browserLocalStorage,
@@ -22,7 +22,7 @@ import {
     sessionKey,
     type ShopperSession,
 } from '../state/session';
-import { shouldRetry, unitLabel } from './primitives';
+import { shouldRetry } from './primitives';
 import { useCommerceSite } from './site';
 
 /* ── settings ─────────────────────────────────────────────────────── */
@@ -248,15 +248,14 @@ export const OrderBody: React.FC<{ view: OrderView }> = ({ view }) => {
         <div className="flex flex-col gap-4">
             <ul className="cmx-rows" aria-label={t('order.items')}>
                 {(view.lines || []).map((line, index) => {
-                    const scale = Math.max(1, Math.floor(line.qty_scale || 1));
-                    const quantity = scale > 1 ? `${formatUnits(line.quantity, scale)} ${unitLabel(t, line.unit, true)}` : String(line.quantity);
+                    const quantity = quantityText(line.quantity, line.qty_scale, line.unit, t);
                     return (
                         <li key={line.line_ref || index} className="flex items-start justify-between gap-3 py-3">
                             <div className="min-w-0">
                                 <p className="font-medium">{line.name}</p>
                                 {line.variant_label && <p className="cmx-small cmx-muted">{line.variant_label}</p>}
                                 <p className="cmx-small cmx-muted">{t('order.qty', { qty: quantity })}</p>
-                                {!!line.qty_cancelled && <p className="cmx-small cmx-bad">{t('order.lineCancelled', { qty: line.qty_cancelled })}</p>}
+                                {!!line.qty_cancelled && <p className="cmx-small cmx-bad">{t('order.lineCancelled', { qty: quantityText(line.qty_cancelled, line.qty_scale, line.unit, t) })}</p>}
                             </div>
                             <span className="shrink-0 font-semibold tabular-nums">{money(line.line_total)}</span>
                         </li>

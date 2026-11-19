@@ -302,6 +302,7 @@ export const OrderPage: React.FC = () => {
                 unitPrice: line.unit_price,
                 quantity: line.quantity,
                 qtyScale: line.qty_scale,
+                unit: line.unit,
                 variant: line.variant_label,
             })),
             value: view.totals?.total,
