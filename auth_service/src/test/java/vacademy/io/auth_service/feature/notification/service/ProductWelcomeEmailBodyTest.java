@@ -77,4 +77,30 @@ class ProductWelcomeEmailBodyTest {
         String ink = ProductWelcomeEmailBody.readable("#FFE600", 4.5);
         assertTrue(ProductWelcomeEmailBody.contrastOnWhite(ink) >= 4.5);
     }
+
+    @Test
+    void listsTheVideoTutorialsUnderTheButton() {
+        java.util.List<ProductWelcomeEmailBody.Link> videos = java.util.List.of(
+                new ProductWelcomeEmailBody.Link("Start to finish", "https://gradewise.example/tutorials/", "2:04"),
+                new ProductWelcomeEmailBody.Link("Create a test <fast>", "https://gradewise.example/tutorials/#create", null),
+                new ProductWelcomeEmailBody.Link("Not a safe link", "javascript:alert(1)", "0:10"),
+                new ProductWelcomeEmailBody.Link(" ", "https://gradewise.example/x", null));
+        String html = ProductWelcomeEmailBody.build("Gradewise", "#D61C28", null, "Asha", "Sunrise Academy",
+                "asha42", "p", "https://app.gradewise.example/login", null, null, videos);
+        assertTrue(html.contains("Watch the video tutorials"));
+        assertTrue(html.contains("Short videos that show each step in Gradewise."));
+        assertTrue(html.contains("href=\"https://gradewise.example/tutorials/\"") && html.contains(">2:04<"));
+        assertTrue(html.contains("Create a test &lt;fast&gt;"));
+        assertFalse(html.contains("javascript:") || html.contains("Not a safe link"));
+        assertFalse(html.contains("https://gradewise.example/x"));
+        assertTrue(html.indexOf("Open Gradewise") < html.indexOf("Watch the video tutorials"), "videos come after the button");
+    }
+
+    @Test
+    void noVideosMeansNoVideoSection() {
+        assertFalse(mail("Asha", "Sunrise Academy", "p", "#D61C28", null).contains("Watch the video tutorials"));
+        String onlyBad = ProductWelcomeEmailBody.build("Gradewise", "#D61C28", null, "Asha", "W", "u", "p", null, null,
+                null, java.util.List.of(new ProductWelcomeEmailBody.Link("X", "http://plain.example", null)));
+        assertFalse(onlyBad.contains("Watch the video tutorials"));
+    }
 }

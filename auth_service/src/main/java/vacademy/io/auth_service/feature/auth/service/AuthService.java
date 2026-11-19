@@ -69,6 +69,8 @@ public class AuthService {
     private String adminCoreServiceBaseUrl;
     @Autowired
     private NotificationService notificationService;
+    @Autowired(required = false)
+    private vacademy.io.auth_service.feature.selfsignup.service.ProductWelcomeLinksClient welcomeLinksClient;
     @Autowired
     private UserPermissionRepository userPermissionRepository;
     @Autowired
@@ -615,7 +617,8 @@ public class AuthService {
                             ? ownProduct.getLogoUrl() : null;
             return ProductWelcomeEmailBody.build(ownProduct.getDisplayName().trim(), ownProduct.getThemeColor(), logo,
                     user.getFullName(), instituteName, user.getUsername(), user.getPassword(),
-                    normalizePortalUrl(loginUrl), ownProduct.getContactEmail(), ownProduct.getWebsiteUrl());
+                    normalizePortalUrl(loginUrl), ownProduct.getContactEmail(), ownProduct.getWebsiteUrl(),
+                    welcomeLinksClient == null ? java.util.List.of() : welcomeLinksClient.get(ownProduct.getProductKey()));
         } catch (Exception e) {
             log.warn("Product welcome for {} could not be built, sending the institute welcome: {}",
                     ownProduct.getProductKey(), e.getMessage());

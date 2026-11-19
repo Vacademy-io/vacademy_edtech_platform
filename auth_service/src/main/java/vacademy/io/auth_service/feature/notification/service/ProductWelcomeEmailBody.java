@@ -28,6 +28,18 @@ public final class ProductWelcomeEmailBody {
     private ProductWelcomeEmailBody() {
     }
 
+    /** A link the mail lists under the sign-in details, like one of the product's video tutorials. */
+    public record Link(String title, String url, String subtitle) {
+    }
+
+    /** The welcome without a list of links. */
+    public static String build(String productName, String themeHex, String logoUrl, String fullName,
+            String workspaceName, String username, String password, String loginUrl, String contactEmail,
+            String websiteUrl) {
+        return build(productName, themeHex, logoUrl, fullName, workspaceName, username, password, loginUrl,
+                contactEmail, websiteUrl, List.of());
+    }
+
     /**
      * @param productName   the product's display name; required
      * @param themeHex      the product theme as #RRGGBB, else a neutral dark grey
@@ -39,10 +51,11 @@ public final class ProductWelcomeEmailBody {
      * @param loginUrl      where the button goes, or null for no button
      * @param contactEmail  footer email, or null to omit
      * @param websiteUrl    footer website, or null to omit
+     * @param videos        the product's video tutorials, listed under the button; https links only, empty for none
      */
     public static String build(String productName, String themeHex, String logoUrl, String fullName,
             String workspaceName, String username, String password, String loginUrl, String contactEmail,
-            String websiteUrl) {
+            String websiteUrl, List<Link> videos) {
         String theme = themeHex != null && themeHex.trim().matches("^#[0-9A-Fa-f]{6}$") ? themeHex.trim() : NEUTRAL;
         String big = readable(theme, 3.0);
         String ink = readable(theme, 4.5);
@@ -78,6 +91,8 @@ public final class ProductWelcomeEmailBody {
                         + ";color:#FFFFFF;padding:13px 28px;border-radius:10px;font-size:15px;font-weight:700;"
                         + "text-decoration:none;\">Open " + name + "</a></td></tr>"
                 : "";
+
+        String videoList = videos(videos, name, big, ink, body, muted);
 
         List<String> contact = new ArrayList<>();
         if (StringUtils.hasText(contactEmail)) {
@@ -124,6 +139,7 @@ public final class ProductWelcomeEmailBody {
                 </table>
                 </td></tr>
                 {{button}}
+                {{videos}}
                 <tr><td style="padding:0 32px 28px;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:{{note}};border:1px solid {{border}};border-radius:10px;"><tr><td style="padding:14px 16px;font-size:13px;line-height:20px;color:{{body}};">
                 &#128274; <b style="color:{{ink}};">Keep these details private.</b> {{name}} will never ask for your password on a call, chat or email.
@@ -142,6 +158,7 @@ public final class ProductWelcomeEmailBody {
                 .replace("{{header}}", header)
                 .replace("{{contact}}", contactRow)
                 .replace("{{button}}", button)
+                .replace("{{videos}}", videoList)
                 .replace("{{rows}}", rows)
                 .replace("{{theme}}", theme)
                 .replace("{{big}}", big)
@@ -154,6 +171,37 @@ public final class ProductWelcomeEmailBody {
                 .replace("{{name}}", name)
                 .replace("{{intro}}", intro)
                 .replace("{{greeting}}", greeting);
+    }
+
+    /** "Watch the video tutorials": one row per video, the whole row is the link. Empty when there are none. */
+    private static String videos(List<Link> videos, String name, String big, String ink, String body, String muted) {
+        if (videos == null || videos.isEmpty()) return "";
+        StringBuilder rows = new StringBuilder();
+        int shown = 0;
+        for (Link v : videos) {
+            if (v == null || !StringUtils.hasText(v.title()) || v.url() == null || !v.url().trim().startsWith("https://")) {
+                continue;
+            }
+            String href = esc(v.url().trim());
+            String cell = "border-top:" + (shown == 0 ? "0" : "1px solid #F3F4F6") + ";";
+            rows.append("<tr><td style=\"padding:11px 14px;").append(cell).append("\">")
+                    .append("<a href=\"").append(href).append("\" style=\"text-decoration:none;color:").append(ink)
+                    .append(";font-size:14px;line-height:20px;font-weight:600;\">")
+                    .append("<span style=\"display:inline-block;width:22px;height:22px;line-height:22px;border-radius:50%;background:")
+                    .append(big).append(";color:#FFFFFF;font-size:9px;text-align:center;vertical-align:middle;margin-right:10px;\">&#9654;</span>")
+                    .append(esc(v.title().trim())).append("</a></td>")
+                    .append("<td align=\"right\" style=\"padding:11px 14px;").append(cell).append("font-size:12px;color:")
+                    .append(muted).append(";white-space:nowrap;\">")
+                    .append(StringUtils.hasText(v.subtitle()) ? esc(v.subtitle().trim()) : "").append("</td></tr>");
+            shown++;
+        }
+        if (shown == 0) return "";
+        return "<tr><td style=\"padding:0 32px 24px;\">"
+                + "<div style=\"font-size:16px;line-height:22px;font-weight:700;color:" + big + ";\">Watch the video tutorials</div>"
+                + "<div style=\"margin:2px 0 12px;font-size:13px;line-height:19px;color:" + body + ";\">Short videos that show each step in "
+                + name + ".</div>"
+                + "<table role=\"presentation\" width=\"100%\" cellpadding=\"0\" cellspacing=\"0\" style=\"border:1px solid #E5E7EB;border-radius:12px;\">"
+                + rows + "</table></td></tr>";
     }
 
     private static String row(String label, String value, String ink, String body) {
