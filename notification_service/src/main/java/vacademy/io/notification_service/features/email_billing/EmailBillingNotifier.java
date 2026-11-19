@@ -6,16 +6,22 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
+import vacademy.io.common.auth.entity.User;
+import vacademy.io.notification_service.features.announcements.client.AuthServiceClient;
 import vacademy.io.notification_service.institute.InstituteInfoDTO;
 import vacademy.io.notification_service.institute.InstituteInternalService;
 import vacademy.io.notification_service.service.EmailService;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Tells an institute about its email allowance: at 80% and 100% of the free emails, and when
- * emails stop because it is out of credits (at most once every 6 hours). Sent as FREE mail to the
- * institute's contact address, so the notice itself is never blocked.
+ * emails stop because it is out of credits (at most once every 6 hours). Sent as FREE mail, so the
+ * notice itself is never blocked, to the institute's contact address, or when it has none to up to
+ * five of its admins (many institutes never filled in a contact address).
  */
 @Component
 @Slf4j
@@ -27,6 +33,11 @@ public class EmailBillingNotifier {
     private final EmailBillingSettings settings;
     private final InstituteInternalService instituteService;
     private final EmailService emailService;
+    private final AuthServiceClient authServiceClient;
+
+    /** Admin accounts our own staff hold inside customer institutes; never notice recipients. */
+    static final Set<String> INTERNAL_DOMAINS = Set.of("vidyayatan.com", "vacademy.com", "vacademy.io", "vacademy.ai");
+    static final int MAX_ADMIN_RECIPIENTS = 5;
 
     /** Admin dashboard used when the institute has no admin domain of its own. */
     @Value("${email.billing.dashboard-base-url:https://dash.vacademy.io}")
@@ -35,11 +46,13 @@ public class EmailBillingNotifier {
     static final String USAGE_PATH = "/settings?selectedTab=emailUsage";
 
     public EmailBillingNotifier(JdbcTemplate jdbc, EmailBillingSettings settings,
-            InstituteInternalService instituteService, @Lazy EmailService emailService) {
+            InstituteInternalService instituteService, @Lazy EmailService emailService,
+            AuthServiceClient authServiceClient) {
         this.jdbc = jdbc;
         this.settings = settings;
         this.instituteService = instituteService;
         this.emailService = emailService;
+        this.authServiceClient = authServiceClient;
     }
 
     @EventListener
@@ -99,14 +112,15 @@ public class EmailBillingNotifier {
     private void send(String instituteId, String subject, String line1, String line2) {
         try {
             InstituteInfoDTO info = instituteService.getInstituteByInstituteId(instituteId);
-            String to = info != null ? info.getEmail() : null;
-            if (to == null || to.isBlank()) {
-                log.info("No contact email for institute {}; email billing notice '{}' not sent", instituteId, subject);
+            List<String> recipients = recipients(instituteId, info);
+            if (recipients.isEmpty()) {
+                log.info("No contact or admin email for institute {}; email billing notice '{}' not sent",
+                        instituteId, subject);
                 return;
             }
-            String name = info.getInstituteName() != null ? info.getInstituteName() : "your institute";
+            String name = info != null && info.getInstituteName() != null ? info.getInstituteName() : "your institute";
             // A white-label institute reads its own admin domain, never ours.
-            String base = info.getAdminPortalUrl() != null && !info.getAdminPortalUrl().isBlank()
+            String base = info != null && info.getAdminPortalUrl() != null && !info.getAdminPortalUrl().isBlank()
                     ? info.getAdminPortalUrl().trim() : defaultDashboardUrl;
             if (!base.startsWith("http")) {
                 base = "https://" + base;
@@ -114,11 +128,33 @@ public class EmailBillingNotifier {
             String usageUrl = base.replaceAll("/+$", "") + USAGE_PATH;
             String body = "<p>Hello " + escape(name) + ",</p><p>" + escape(line1) + "</p><p>" + escape(line2)
                     + "</p><p><a href=\"" + usageUrl + "\">See email usage and credits</a></p>";
-            emailService.sendHtmlEmail(to.trim(), subject, SOURCE, body, instituteId, null, null, "UTILITY_EMAIL",
-                    null, null, null, null, EmailBillingClass.FREE);
+            for (String to : recipients) {
+                emailService.sendHtmlEmail(to, subject, SOURCE, body, instituteId, null, null, "UTILITY_EMAIL",
+                        null, null, null, null, EmailBillingClass.FREE);
+            }
         } catch (Exception e) {
             log.warn("Email billing notice '{}' to institute {} failed: {}", subject, instituteId, e.getMessage());
         }
+    }
+
+    /** The contact address; without one, up to five admins, never our own staff accounts. */
+    List<String> recipients(String instituteId, InstituteInfoDTO info) {
+        if (info != null && info.getEmail() != null && !info.getEmail().isBlank()) {
+            return List.of(info.getEmail().trim());
+        }
+        List<String> out = new ArrayList<>();
+        for (User admin : authServiceClient.getUsersByRole(instituteId, "ADMIN")) {
+            String email = admin.getEmail() == null ? "" : admin.getEmail().trim().toLowerCase(Locale.ROOT);
+            int at = email.lastIndexOf('@');
+            if (at < 1 || INTERNAL_DOMAINS.contains(email.substring(at + 1)) || out.contains(email)) {
+                continue;
+            }
+            out.add(email);
+            if (out.size() == MAX_ADMIN_RECIPIENTS) {
+                break;
+            }
+        }
+        return out;
     }
 
     private static String escape(String s) {
