@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.commerce.returns.service;
 
 import org.springframework.stereotype.Component;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceReceiptService;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CheckoutDtos;
 import vacademy.io.admin_core_service.features.commerce.order.dto.StaffOrderDtos;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrder;
@@ -94,6 +95,8 @@ public class CommerceOrderReturnsView {
         detail.setReturns(returnService.summaries(returns));
         detail.setRefunds(refundService.summaries(refundRepository.findByOrderIdOrderByCreatedAtAsc(order.getId())));
         detail.setExchangeOfOrderId(order.getExchangeOfOrderId());
+        detail.setAmountDue(CommerceReceiptService.amountDue(order.getTotal(), order.getAmountPaid(),
+                returnCreditNotRaised(returns)));
         if (detail.getOrder() != null) {
             row(detail.getOrder(), order, lines, returns);
         }
@@ -109,6 +112,20 @@ public class CommerceOrderReturnsView {
             }
             detail.setNextActions(actions);
         }
+    }
+
+    /**
+     * Credit of received (or closed) returns that did not become money owed back: on an order
+     * left on credit it lowers what is due ({@link CommerceReceiptService#amountDue}).
+     */
+    static BigDecimal returnCreditNotRaised(List<CommerceReturn> returns) {
+        BigDecimal sum = BigDecimal.ZERO.setScale(2);
+        for (CommerceReturn r : returns) {
+            if (ReturnStatus.RECEIVED.name().equals(r.getStatus()) || ReturnStatus.CLOSED.name().equals(r.getStatus())) {
+                sum = sum.add(nz(r.getCreditTotal()).subtract(nz(r.getDueRaised())));
+            }
+        }
+        return sum;
     }
 
     /** The rows of a staff list page gain the open due and both states. */

@@ -733,6 +733,8 @@ public class CommerceOrderQueryService {
                     .timeline(timeline)
                     .shipments(shipments)
                     .refundDue(order.getRefundDue())
+                    .amountDue(vacademy.io.admin_core_service.features.commerce.order.desk.CommerceReceiptService
+                            .amountDue(order.getTotal(), order.getAmountPaid(), null))
                     .stockShort(order.getStockShort())
                     .codAmount(order.getCodAmount())
                     .codRemittanceId(order.getCodRemittanceId())

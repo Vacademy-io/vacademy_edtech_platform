@@ -129,6 +129,12 @@ public final class StaffOrderDtos {
         private List<ReturnDtos.ReturnSummary> returns;
         private List<RefundDtos.RefundSummary> refunds;
         private String exchangeOfOrderId;
+        /**
+         * What the order still owes: total less paid less the credit of goods returned that was not
+         * owed back as money (a return on an order left on credit lowers the due). The most
+         * "Record receipt" accepts.
+         */
+        private BigDecimal amountDue;
         // Buyer messages (WP-33): newest first, at most 100; addresses masked.
         private List<vacademy.io.admin_core_service.features.commerce.notify.dto.NotificationSettingsDtos.DeliveryView>
                 notifications;

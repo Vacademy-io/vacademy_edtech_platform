@@ -260,6 +260,17 @@ public interface CommerceOrderRepository extends JpaRepository<CommerceOrder, St
             """, nativeQuery = true)
     Optional<String> findLiveInvoiceId(@Param("instituteId") String instituteId, @Param("orderId") String orderId);
 
+    /**
+     * Credit given for goods returned on the order that did not become money owed back: per
+     * received (or closed) return, {@code credit_total - due_raised}. On a staff order left on
+     * credit this lowers what is still due (a return cannot refund money that was never paid).
+     */
+    @Query(value = """
+            SELECT COALESCE(SUM(r.credit_total - r.due_raised), 0) FROM commerce_return r
+            WHERE r.order_id = :orderId AND r.status IN ('RECEIVED', 'CLOSED')
+            """, nativeQuery = true)
+    java.math.BigDecimal sumReturnCreditNotRaised(@Param("orderId") String orderId);
+
     /** The credit notes of an order, oldest first. */
     @Query(value = """
             SELECT cn.id FROM commerce_credit_note cn

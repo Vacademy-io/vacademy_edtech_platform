@@ -89,6 +89,44 @@ class CommerceReceiptServiceTest {
         verify(staffOrders).settlePaid(f.order, f.lines);
     }
 
+    /**
+     * F1: a credit order of 1000 with goods worth 300 returned before any payment (the return's
+     * credit was not owed back as money) owes 700: a receipt of 1000 is refused, 700 settles it.
+     */
+    @Test
+    void aReturnBeforePaymentLowersWhatIsDue() {
+        f.order.setTotal(new BigDecimal("1000.00"));
+        f.order.setAmountPaid(BigDecimal.ZERO.setScale(2));
+        f.order.setPaymentStatus("UNPAID");
+        f.tenders.clear();
+        f.tender("CREDIT", "PENDING", "1000.00");
+        org.mockito.Mockito.when(f.orderRepository.sumReturnCreditNotRaised(ORDER))
+                .thenReturn(new BigDecimal("300.00"));
+
+        assertEquals(new BigDecimal("700.00"), CommerceReceiptService.amountDue(f.order.getTotal(),
+                f.order.getAmountPaid(), new BigDecimal("300.00")));
+        ConflictException above = assertThrows(ConflictException.class, () -> receive("1000.00"));
+        assertEquals("RECEIPT_ABOVE_DUE", code(above));
+        assertEquals("RECEIPT_ABOVE_DUE: 700.00 is due on this order", above.getMessage());
+        assertThrows(ConflictException.class, () -> receive("700.01"));
+        assertEquals(0, f.order.getAmountPaid().signum(), "a refused receipt changes nothing");
+
+        receive("700.00");
+        assertEquals(new BigDecimal("700.00"), f.order.getAmountPaid());
+        assertEquals("PAID", f.order.getPaymentStatus());
+        assertEquals(0, sum("PENDING").signum(), "no credit is left pending");
+        assertEquals(new BigDecimal("700.00"), sum("RECEIVED"));
+        verify(staffOrders).settlePaid(f.order, f.lines);
+    }
+
+    @Test
+    void theDueIsNeverBelowZero() {
+        assertEquals(new BigDecimal("0.00"), CommerceReceiptService.amountDue(new BigDecimal("1000.00"),
+                new BigDecimal("800.00"), new BigDecimal("300.00")));
+        assertEquals(new BigDecimal("1000.00"), CommerceReceiptService.amountDue(new BigDecimal("1000.00"),
+                null, null));
+    }
+
     @Test
     void refusals() {
         assertEquals("RECEIPT_ABOVE_DUE", code(assertThrows(ConflictException.class, () -> receive("760.01"))));
