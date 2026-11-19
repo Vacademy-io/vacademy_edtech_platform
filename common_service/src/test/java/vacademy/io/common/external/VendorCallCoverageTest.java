@@ -25,6 +25,15 @@ class VendorCallCoverageTest {
     }
 
     @Test
+    void aVendorAddressFromASettingCounts() {
+        assertEquals("${telephony.plivo.base-url}", VendorCallCoverage.vendorUse(
+                "class P { @Value(\"${telephony.plivo.base-url}\") String base; }"));
+        assertNotNull(VendorCallCoverage.vendorUse("@Value(\"${meta.whatsapp.api.base.url:x}\") String u;"));
+        assertNull(VendorCallCoverage.vendorUse("@Value(\"${razorpay.webhook.secret}\") String s;"));
+        assertNull(VendorCallCoverage.vendorUse("@Value(\"${bbb.server.url}\") String s;"));
+    }
+
+    @Test
     void commentsAndOtherHostsDoNotCount() {
         assertNull(VendorCallCoverage.vendorUse("// see https://api.plivo.com/docs\nclass A {}"));
         assertNull(VendorCallCoverage.vendorUse("/** https://api.razorpay.com */ class A {}"));

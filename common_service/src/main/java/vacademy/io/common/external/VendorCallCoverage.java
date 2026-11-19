@@ -13,7 +13,8 @@ import java.util.stream.Stream;
 /**
  * The build guard behind "no failed vendor call goes unrecorded": each service's test runs
  * {@link #unrecorded(Path)} over its sources and fails on any file that talks to an integrated
- * vendor (names one of its hosts, or uses its SDK) without calling {@link VendorCallLog#failed}.
+ * vendor (names one of its hosts, reads its address from a setting, or uses its SDK) without
+ * calling {@link VendorCallLog#failed}.
  *
  * <p>A file that names a vendor but makes no call itself (a DTO, a constants class, a client
  * whose failures another class records) says so in a comment:
@@ -33,6 +34,20 @@ public final class VendorCallCoverage {
             "import com.razorpay.", "import com.stripe.", "import com.google.firebase.messaging.",
             "import com.amazonaws.services.simpleemail.", "import software.amazon.awssdk.services.ses.",
             "import software.amazon.awssdk.services.sesv2.", "import org.springframework.mail.javamail.");
+
+    /**
+     * Vendors whose address comes from configuration: a {@code @Value} key naming one of these
+     * and an address ("telephony.plivo.base-url", "meta.whatsapp.api.base.url") marks a client.
+     */
+    private static final java.util.Set<String> VENDOR_WORDS = java.util.Set.of(
+            "plivo", "exotel", "aavtaar", "airtel", "vonage", "razorpay", "cashfree", "stripe", "phonepe",
+            "paypal", "eway", "wati", "whatsapp", "meta", "facebook", "zoom", "zoho", "google", "youtube",
+            "firebase", "github", "cloudflare", "fx", "openrouter", "isoquant", "sarvam", "anthropic", "openai",
+            "gemini", "mathpix", "docconverter", "cloudconvert", "serper", "fal", "runpod", "deepseek",
+            "pexels", "pixabay");
+    private static final java.util.Set<String> ADDRESS_WORDS = java.util.Set.of(
+            "url", "uri", "base", "baseurl", "endpoint", "host", "api");
+    private static final Pattern VALUE_KEY = Pattern.compile("@Value\\(\"\\$\\{([A-Za-z0-9._-]+)");
 
     private VendorCallCoverage() {
     }
@@ -62,6 +77,13 @@ public final class VendorCallCoverage {
             if (code.contains(sdk)) return sdk.substring("import ".length(), sdk.length() - 1);
         }
         if (code.contains("package vacademy.io.common.external;")) return null;
+        Matcher k = VALUE_KEY.matcher(code);
+        while (k.find()) {
+            List<String> parts = List.of(k.group(1).toLowerCase(java.util.Locale.ROOT).split("[._-]"));
+            if (parts.stream().anyMatch(VENDOR_WORDS::contains) && parts.stream().anyMatch(ADDRESS_WORDS::contains)) {
+                return "${" + k.group(1) + "}";
+            }
+        }
         Matcher s = STRING.matcher(code);
         while (s.find()) {
             Matcher h = HOST.matcher(s.group(1));
