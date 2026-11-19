@@ -34,7 +34,6 @@ import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.C
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountPostRequest;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountReview;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountRow;
-import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.ZeroWriteOff;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountView;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.CountsAnswer;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.LineCountAnswer;
@@ -44,6 +43,7 @@ import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.R
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.ReviewPiece;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.ReviewTotals;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.UncountedItem;
+import vacademy.io.admin_core_service.features.commerce.stock.dto.StockOpsDtos.ZeroWriteOff;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockCount;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockCountLine;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockLocation;
@@ -708,6 +708,13 @@ public class StockCountService {
                 levelRepository.insertIfMissing(UUID.randomUUID().toString(), instituteId, locationId, variant);
             }
         }
+        // Read committed: every statement sees its own moment. Without the locks the incoming
+        // figures are read BEFORE the stock levels, so stock that comes in between the two reads looks
+        // as if it came in after the review, and a ZERO post bound to this review is refused (never
+        // the other way round). Under the post's locks they are read after the locked levels, which no
+        // other posting can change meanwhile.
+        Map<String, Integer> incomingEarly = lock ? null
+                : readRepository.incomingSince(instituteId, locationId, null, count.getStartedAt());
         Map<String, Integer> levels = lock
                 ? readRepository.lockScopeLevels(instituteId, locationId, count.getScopeCollectionId(), countedTracked)
                 : readRepository.scopeLevels(instituteId, locationId, count.getScopeCollectionId(), countedTracked);
@@ -919,11 +926,13 @@ public class StockCountService {
         List<String> zeroPieces = new ArrayList<>(StockCountMath.pieceSets(pieceHere, scanned.keySet(),
                 scannedVariants, UncountedChoice.ZERO).missing());
         zeroPieces.sort(null);
-        // What had come in of each uncounted item since the count started, in this snapshot: a post
-        // whose figure is higher had stock come in after the review (even if a sale hid it on hand).
-        Map<String, Integer> incoming = new TreeMap<>(readRepository.incomingSince(instituteId, locationId,
-                zeroItems.keySet(), count.getStartedAt()));
-        zeroItems.keySet().forEach(variant -> incoming.putIfAbsent(variant, 0));
+        // What had come in of each uncounted item since the count started: a post whose figure is
+        // higher had stock come in after the review (even if a sale hid it on hand).
+        Map<String, Integer> incomingRead = lock
+                ? readRepository.incomingSince(instituteId, locationId, zeroItems.keySet(), count.getStartedAt())
+                : incomingEarly;
+        Map<String, Integer> incoming = new TreeMap<>();
+        zeroItems.keySet().forEach(variant -> incoming.put(variant, incomingRead.getOrDefault(variant, 0)));
         ZeroWriteOff zeroWriteOff = new ZeroWriteOff(zeroItems, zeroPieces, incoming);
         String print = sha256(fingerprint.toString());
         String zero = zeroHash(zeroWriteOff);
