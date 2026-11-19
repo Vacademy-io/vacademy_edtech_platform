@@ -85,6 +85,8 @@ interface Backend {
     shopHosts?: string;
     /** These lookups never answer (a saturated backend): only an abort ends them. */
     hang?: Array<'branding' | 'catalogue'>;
+    /** Extra headers on the static shell (the asset server's validators). */
+    shellHeaders?: Record<string, string>;
 }
 
 /** A request that only its abort signal can end, as against a backend that has stopped answering. */
@@ -158,7 +160,7 @@ const run = async (url: string, backend: Backend, userAgent = BROWSER) => {
         },
         next: async () => {
             shellServed += 1;
-            return new Response(INDEX_HTML, { headers: { 'content-type': 'text/html; charset=utf-8' } });
+            return new Response(INDEX_HTML, { headers: { 'content-type': 'text/html; charset=utf-8', ...backend.shellHeaders } });
         },
     });
     return { response, html: response.status === 301 ? '' : await response.text(), calls, shellServed, passThrough };
@@ -429,6 +431,70 @@ describe('a platform host the deployment names', () => {
             expect(html, path).toBe(INDEX_HTML);
             expect(calls, path).toEqual([]);
         }
+    });
+});
+
+describe('review follow-ups', () => {
+    const VALIDATORS = { etag: '"index-abc"', 'last-modified': 'Thu, 19 Nov 2026 10:00:00 GMT' };
+
+    it('serves shop pages without the shell\'s ETag, so a revisit is never a stale 304', async () => {
+        for (const path of ['/p/red-saree', '/p/nope', '/c/sarees']) {
+            const { response } = await run(`https://shop.example${path}`, { shopHosts: SHOP_HOST, globalSettings: SHOP_SETTINGS, shellHeaders: VALIDATORS });
+            expect(response.headers.get('etag'), path).toBeNull();
+            expect(response.headers.get('last-modified'), path).toBeNull();
+            expect(response.headers.get('content-type'), path).toContain('text/html');
+        }
+    });
+
+    it('marks a listed platform host noindex, and only that host', async () => {
+        const review = 'shop-review.vacademy.io';
+        for (const path of ['/p/red-saree', '/p/nope', '/c/sarees']) {
+            const staging = await run(`https://${review}${path}`, { shopHosts: `shop.example ${review}`, globalSettings: SHOP_SETTINGS });
+            expect(staging.response.headers.get('x-robots-tag'), path).toBe('noindex');
+            const real = await run(`https://shop.example${path}`, { shopHosts: `shop.example ${review}`, globalSettings: SHOP_SETTINGS });
+            expect(real.response.headers.get('x-robots-tag'), path).toBeNull();
+        }
+    });
+
+    it('never enables a host through a wildcard, a scheme or a port, and says so once', async () => {
+        const review = 'shop-review.vacademy.io';
+        const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+        try {
+            for (const hosts of ['*', '*.vacademy.io', `https://${review}`, `${review}:443`, `${review}.`, `.vacademy.io`, `${review};other.example`]) {
+                warn.mockClear();
+                for (let i = 0; i < 2; i++) {
+                    const { response, html, calls } = await run(`https://${review}/p/red-saree`, { shopHosts: hosts, globalSettings: SHOP_SETTINGS });
+                    expect(response.status, hosts).toBe(200);
+                    expect(html, hosts).toBe(INDEX_HTML);
+                    expect(calls, hosts).toEqual([]);
+                }
+                expect(warn, hosts).toHaveBeenCalledTimes(1);
+                expect(String(warn.mock.calls[0]?.[0]), hosts).toContain('COMMERCE_SHOP_HOSTS');
+            }
+            // A clean list is not warned about.
+            warn.mockClear();
+            await run(`https://${review}/p/red-saree`, { shopHosts: `shop.example, ${review}`, globalSettings: SHOP_SETTINGS });
+            expect(warn).not.toHaveBeenCalled();
+        } finally {
+            warn.mockRestore();
+        }
+    });
+
+    it('leaves the home preview to the app on a listed host', async () => {
+        const { response, html, calls } = await run('https://shop.example/home-preview', { shopHosts: SHOP_HOST, globalSettings: SHOP_SETTINGS, redirects: { '/home-preview': { status_code: 301, to_path: '/shop' } } });
+        expect(response.status).toBe(200);
+        expect(html).toBe(INDEX_HTML);
+        expect(calls).toEqual([]);
+    });
+
+    it('asks for a path that holds a literal percent sign so the resolver decodes it only once', async () => {
+        // "/x%2541" is the address "/x%41": a percent sign, then "41". The resolver decodes once.
+        const redirects = { '/x%2541': { status_code: 301, to_path: '/p/red-saree' }, '/xa': { status_code: 301, to_path: '/shop' } };
+        const { response, calls } = await run('https://shop.example/x%2541', { shopHosts: SHOP_HOST, globalSettings: SHOP_SETTINGS, redirects });
+        expect(response.status).toBe(301);
+        expect(response.headers.get('location')).toBe('https://shop.example/p/red-saree');
+        const asked = calls.find((c) => c.url.includes('/redirects/resolve'))!;
+        expect(new URL(asked.url).searchParams.get('path')).toBe('/x%2541');
     });
 });
 

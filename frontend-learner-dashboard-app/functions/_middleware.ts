@@ -25,10 +25,10 @@ import {
   injectHead,
   leadImageUrl,
   looksLikeCommercePath,
-  normalizeRedirectPath,
   preloadImageTag,
   productHead,
   redirectDecision,
+  redirectLookupPath,
   seedTag,
   type EdgeHead,
   type EdgeShop,
@@ -317,7 +317,7 @@ const normRoute = (r?: string) => (r || "").replace(/^\//, "").toLowerCase();
 const APP_ROUTE_SEGMENTS = new Set([
   "account-deletion", "admission", "ai-settings", "assessment", "assignment", "audience-response",
   "auth-transfer", "booking-manage", "booking-response", "change-password", "chat", "courses",
-  "dashboard", "delete-user", "downloads", "enquiry-response", "homework", "institute-selection",
+  "dashboard", "delete-user", "downloads", "enquiry-response", "home-preview", "homework", "institute-selection",
   "kyc-complete", "leaderboard", "learner-invitation-response", "learning-centre", "live-class-guest",
   "login", "logout", "m", "my-files", "my-mentors", "my-reports", "parent", "pay", "payment-result",
   "planning", "privacy-policy", "product-pages", "profile", "referral", "register", "reports",
@@ -1006,12 +1006,32 @@ const COMMERCE_LOOKUP_TIMEOUT_MS = 1500;
 function commerceShopHosts(env: unknown): Set<string> {
   const raw = (env as { COMMERCE_SHOP_HOSTS?: unknown } | null | undefined)?.COMMERCE_SHOP_HOSTS;
   if (typeof raw !== "string" || !raw.trim()) return new Set();
-  return new Set(
-    raw
-      .split(/[\s,]+/)
-      .map((h) => h.trim().toLowerCase().replace(/^www\./, ""))
-      .filter(Boolean)
-  );
+  const hosts = raw
+    .split(/[\s,]+/)
+    .map((h) => h.trim().toLowerCase().replace(/^www\./, ""))
+    .filter(Boolean);
+  warnMalformedShopHosts(raw, hosts);
+  return new Set(hosts);
+}
+
+/** The variable value already warned about, so each value is logged once per worker instance. */
+let shopHostsWarnedFor: string | null = null;
+
+/**
+ * An entry that cannot be a host name (a scheme, a port, a path, a wildcard, a trailing dot, a
+ * semicolon) matches no request, so that host stays off. Safe, but silent; this says so once.
+ */
+function warnMalformedShopHosts(raw: string, hosts: string[]): void {
+  if (shopHostsWarnedFor === raw) return;
+  shopHostsWarnedFor = raw;
+  const malformed = hosts.filter((h) => !/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/.test(h));
+  if (malformed.length) {
+    console.warn(
+      `COMMERCE_SHOP_HOSTS: ${malformed.length} entr${malformed.length === 1 ? "y is" : "ies are"} not a plain host name ` +
+        `and match${malformed.length === 1 ? "es" : ""} nothing: ${malformed.map((h) => JSON.stringify(h)).join(", ")}. ` +
+        'Write each host as "shop.example.org", separated by commas or spaces.'
+    );
+  }
 }
 
 /**
@@ -1083,11 +1103,16 @@ async function shopSitemapEntries(
   return out;
 }
 
-/** The SPA shell with a shop page's head written in. Any failure returns the shell untouched. */
+/**
+ * The SPA shell with a shop page's head written in. Any failure returns the shell untouched.
+ * `noindex` (a listed platform host: a staging copy of a shop) adds `x-robots-tag: noindex`, so
+ * search engines keep the shop's own domain as the only copy.
+ */
 async function withCommerceHead(
   context: Parameters<PagesFunction>[0],
   head: EdgeHead,
-  status: number
+  status: number,
+  noindex = false
 ): Promise<Response> {
   const response = await context.next();
   const contentType = response.headers.get("content-type") || "";
@@ -1099,8 +1124,12 @@ async function withCommerceHead(
     return response;
   }
   const headers = new Headers(response.headers);
-  headers.delete("content-length");
-  headers.delete("content-encoding");
+  // These described index.html's bytes, not this page's. With index.html's ETag a revisit would
+  // be answered 304 and the browser would show its old copy: an old price, a product since gone.
+  for (const name of ["etag", "last-modified", "content-length", "content-encoding", "content-range"]) {
+    headers.delete(name);
+  }
+  if (noindex) headers.set("x-robots-tag", "noindex");
   return new Response(html, { status, headers });
 }
 
@@ -1147,6 +1176,8 @@ async function commerceResponse(
       return null;
     }
     const productLike = looksLikeCommercePath(segs);
+    // A platform host is listed only as a staging copy of a shop: its pages are not for search.
+    const stagingCopy = isVacademyHost(hostname.toLowerCase());
 
     const backendBase = getBackendBase(hostname);
     const { domain, subdomain } = parseDomainParts(hostname);
@@ -1174,7 +1205,8 @@ async function commerceResponse(
         withCommerceHead(
           context,
           { title: page.siteName, description: page.siteName, lang: locale, tags: [], resources: [] },
-          404
+          404,
+          stagingCopy
         );
       if (target.route.kind === "product") {
         const { status, body: product } = await shopApiGet<ProductDetail>(
@@ -1196,7 +1228,7 @@ async function commerceResponse(
           ...(preload ? [preload] : []),
           seedTag({ kind: "product", slug: product.slug, locale, data: product })
         );
-        return withCommerceHead(context, head, 200);
+        return withCommerceHead(context, head, 200, stagingCopy);
       }
       if (target.route.kind === "collection") {
         const slug = target.route.slug;
@@ -1218,7 +1250,7 @@ async function commerceResponse(
         const plain = Array.from(url.searchParams.keys()).every((key) => key === LOCALE_PARAM || key.startsWith("utm_"));
         const preload = plain ? preloadImageTag(list.body?.data?.[0]?.image, IMAGE_SIZES.card) : null;
         if (preload) head.resources.push(preload);
-        return withCommerceHead(context, head, 200);
+        return withCommerceHead(context, head, 200, stagingCopy);
       }
       return null;
     }
@@ -1239,7 +1271,7 @@ async function commerceResponse(
     ) {
       return null;
     }
-    const path = normalizeRedirectPath(url.pathname, url.search);
+    const path = redirectLookupPath(url.pathname, url.search);
     const { body } = await shopApiGet<unknown>(
       backendBase, branding.instituteId, shop, "/commerce/v1/redirects/resolve", { path }, 300
     );

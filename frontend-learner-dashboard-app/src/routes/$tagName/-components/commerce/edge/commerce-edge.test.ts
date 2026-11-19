@@ -19,6 +19,7 @@ import {
     preloadImageTag,
     productHead,
     redirectDecision,
+    redirectLookupPath,
     seedTag,
     shownPrice,
     type EdgeShop,
@@ -529,6 +530,21 @@ describe('redirects from the old site', () => {
         expect(asciiLocation('/p/50%zz')).toBe('/p/50%25zz');
         expect(asciiLocation('/p/\uD800x')).toBe('/p/%EF%BF%BDx');
         expect(asciiLocation('/p/caf\u00e9')).toBe('/p/caf%C3%A9');
+    });
+
+    it('encodes a tab or another control character, so the header never carries one', () => {
+        expect(asciiLocation('/p/a\tb')).toBe('/p/a%09b');
+        expect(asciiLocation('/p/a\u0000b\u007f')).toBe('/p/a%00b%7F');
+        expect(redirectDecision({ status_code: 301, to_path: '/p/a\tb' }, '/old')).toEqual({ status: 301, location: '/p/a%09b' });
+    });
+
+    it('asks the resolver with the percent signs of the decoded path written as %25', () => {
+        expect(redirectLookupPath('/X%2541/')).toBe('/x%2541');
+        expect(redirectLookupPath('/hi/%E0%A4%B2/', '?a=%E0%A4%B2')).toBe('/hi/ल?a=%E0%A4%B2');
+        expect(redirectLookupPath('/100%25', '?')).toBe('/100%25');
+        // A malformed escape is kept as sent, and its percent sign written as %25.
+        expect(redirectLookupPath('/a%zz')).toBe('/a%25zz');
+        expect(redirectLookupPath('/product/red-saree/')).toBe('/product/red-saree');
     });
 
     it('still finds a loop when the target is written in Devanagari and the request is encoded', () => {

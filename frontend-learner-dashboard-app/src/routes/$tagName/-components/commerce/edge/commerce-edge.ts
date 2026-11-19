@@ -505,6 +505,17 @@ export const normalizeRedirectPath = (pathname: string, search = ''): string => 
     return `${path}${search && search !== '?' ? search : ''}`;
 };
 
+/**
+ * The `path` the edge asks the resolver for: the request in the stored normal form, with each `%`
+ * of the decoded path written as `%25`. The resolver decodes the path once more; without this, a
+ * path that holds a literal `%41` once decoded (the request `/%2541`) would be decoded twice and
+ * looked up as `/a`. The query string is passed as the browser sent it.
+ */
+export const redirectLookupPath = (pathname: string, search = ''): string => {
+    const normal = normalizeRedirectPath(pathname);
+    return `${normal.replace(/%/g, '%25')}${search && search !== '?' ? search : ''}`;
+};
+
 export type RedirectDecision = { status: 301; location: string } | { status: 410 } | null;
 
 const UTF8 = new TextEncoder();
