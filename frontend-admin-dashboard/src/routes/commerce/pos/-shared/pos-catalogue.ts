@@ -63,6 +63,18 @@ export function searchCatalogue(index: CatalogueIndex, text: string, locale: 'hi
         .map((entry) => entry.item);
 }
 
+/**
+ * The catalogue with one item as the server has it now (read again after a `QUANTITY_STEP`); the
+ * same object when the item is not in it.
+ */
+export function replaceCatalogueItem(catalogue: PosCatalogue, item: CatalogueItem): PosCatalogue {
+    if (!catalogue.items.some((entry) => entry.variant_id === item.variant_id)) return catalogue;
+    return {
+        ...catalogue,
+        items: catalogue.items.map((entry) => (entry.variant_id === item.variant_id ? item : entry)),
+    };
+}
+
 export const catalogueCacheKey = (instituteId: string, registerId: string) =>
     `commerce.pos.catalogue.${instituteId}.${registerId}`;
 

@@ -1,4 +1,5 @@
-import type { CartState } from './pos-cart';
+import { type CartState, refreshLines } from './pos-cart';
+import type { CatalogueItem } from './pos-types';
 
 /**
  * Bills put aside at the counter ("Hold bill"), kept in this device's
@@ -134,4 +135,20 @@ export function dropHeld(
     const next = readHeld(instituteId, registerId, options).filter((b) => b.id !== id);
     write(instituteId, registerId, next);
     return next;
+}
+
+/**
+ * The item as the server has it now (after a `QUANTITY_STEP`): every held bill's lines of it take
+ * its current sale step, so a recalled bill's length box uses it. True when a bill changed.
+ */
+export function refreshHeldItem(instituteId: string, registerId: string, item: CatalogueItem): boolean {
+    const bills = readHeld(instituteId, registerId);
+    let changed = false;
+    const next = bills.map((bill) => {
+        const lines = refreshLines(bill.cart.lines, item);
+        if (lines === bill.cart.lines) return bill;
+        changed = true;
+        return { ...bill, cart: { ...bill.cart, lines } };
+    });
+    return changed && write(instituteId, registerId, next);
 }

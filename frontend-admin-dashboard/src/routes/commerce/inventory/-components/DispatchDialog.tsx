@@ -8,6 +8,7 @@ import { dispatchTransfer } from '../-shared/inventory-api';
 import { readInventoryError } from '../-shared/inventory-errors';
 import { useInvalidateInventory, useInventoryAccess } from '../-shared/inventory-hooks';
 import type { DispatchBody, TransferView } from '../-shared/inventory-types';
+import { promisedOnlineText } from '../-shared/transfer-lines';
 import { InventoryErrorNotice, TOUCH, useInventoryErrorText } from './inventory-ui';
 import { EWAY_HINT_ABOVE, useChallanPrint, valueText } from './transfer-ui';
 import { useInventoryWrite } from './use-inventory-write';
@@ -83,12 +84,8 @@ export function DispatchDialog({
         } catch (e) {
             const read = readInventoryError(e);
             if (read.code === 'PROMISED_ONLINE') {
-                const units = Number(read.values.count);
-                setPromised(
-                    access.isManager && units > 0
-                        ? t('inventory.transfers.promisedOnline', { count: units })
-                        : errorText(read)
-                );
+                const question = promisedOnlineText(read.values, t);
+                setPromised(access.isManager && question ? question : errorText(read));
                 return;
             }
             setError(e);

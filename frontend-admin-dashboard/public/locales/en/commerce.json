@@ -2909,6 +2909,8 @@
             "ewayBill": "E-way bill number",
             "ewayHint": "Value above ₹50,000: an e-way bill may be needed.",
             "promisedOnline": "{{count}} units are kept for online orders. Send them anyway?",
+            "promisedOnlineMeasured": "{{quantity}} is kept for online orders. Send it anyway?",
+            "mixedUnits": "Mixed units",
             "shortReason": "Why is it short?",
             "overdue": "On the way for more than {{days}} days",
             "sent": "Sent",

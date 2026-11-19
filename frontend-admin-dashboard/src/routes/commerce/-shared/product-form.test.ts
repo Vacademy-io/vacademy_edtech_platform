@@ -19,7 +19,9 @@ import {
     translationHasText,
     translationIsComplete,
     valuesToProductRequest,
+    variantPriceLabels,
 } from './product-form';
+import { localeT } from './en-t';
 
 const t = ((key: string) => key) as unknown as TFunction;
 const schema = buildProductSchema(t);
@@ -623,5 +625,34 @@ describe('goods sold by measure are priced per unit', () => {
         expect(baseToPerUnit(0.07, 100)).toBe(7);
         expect(baseToPerUnit(null, 10)).toBeNull();
         expect(perUnitToBase(450, 1)).toBe(450);
+    });
+});
+
+describe('round 2: the variant price labels name the unit, never the code', () => {
+    const en = localeT('en');
+    const hi = localeT('hi');
+
+    it('reads "per m" / "प्रति मीटर" for cloth, the sign for other measures, plain for pieces', () => {
+        expect(variantPriceLabels({ sold_as: 'MEASURED', unit: 'MTR' }, en)).toEqual({
+            price: 'Price per m (₹, with tax)',
+            mrp: 'MRP per m (₹)',
+        });
+        expect(variantPriceLabels({ sold_as: 'MEASURED', unit: '' }, en).price).toBe('Price per m (₹, with tax)');
+        const hindi = variantPriceLabels({ sold_as: 'MEASURED', unit: 'MTR' }, hi);
+        expect(hindi.price).toContain('प्रति मीटर');
+        expect(hindi.mrp).toContain('प्रति मीटर');
+        expect(variantPriceLabels({ sold_as: 'MEASURED', unit: 'KGS' }, en).price).toBe('Price per kg (₹, with tax)');
+        expect(variantPriceLabels({ sold_as: 'MEASURED', unit: 'LTR' }, en).mrp).toBe('MRP per l (₹)');
+        expect(variantPriceLabels({ sold_as: 'QUANTITY', unit: 'PCS' }, en)).toEqual({
+            price: en('products.variants.price'),
+            mrp: en('products.variants.mrp'),
+        });
+        for (const labels of [
+            variantPriceLabels({ sold_as: 'MEASURED', unit: 'MTR' }, en),
+            variantPriceLabels({ sold_as: 'MEASURED', unit: 'MTR' }, hi),
+        ]) {
+            expect(labels.price).not.toContain('MTR');
+            expect(labels.mrp).not.toContain('MTR');
+        }
     });
 });

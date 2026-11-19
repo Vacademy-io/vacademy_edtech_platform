@@ -11,10 +11,15 @@ import {
     type DraftState,
     linesMissingReason,
     linesWithoutLength,
+    promisedOnlineText,
     receiveFromView,
     toReceiveBody,
     toTransferLines,
+    transferRowQuantity,
 } from './transfer-lines';
+import { localeT } from '@/routes/commerce/-shared/en-t';
+import { readInventoryError } from './inventory-errors';
+import { serverError } from './inventory-test-fixtures';
 
 const bottle: DraftItem = {
     package_session_id: 'ps-bottle',
@@ -188,5 +193,38 @@ describe('receive sheet', () => {
         const state = receiveFromView(view);
         expect(applyReceive(state, { type: 'SET_RECEIVED', lineId: 'l1', quantity: 11 }).refusal).toBe('quantityRange');
         expect(applyReceive(state, { type: 'SET_RECEIVED', lineId: 'l1', quantity: -1 }).refusal).toBe('quantityRange');
+    });
+});
+
+describe('round 2: the transfers list and the dispatch question in metres', () => {
+    const en = localeT('en');
+    const hi = localeT('hi');
+
+    it('a list row sums in the unit its lines share, and says "Mixed units" otherwise', () => {
+        expect(transferRowQuantity({ qty_sent: 237, unit: 'MTR', qty_scale: 10 }, en)).toBe('23.7 m');
+        expect(transferRowQuantity({ qty_sent: 237, unit: 'MTR', qty_scale: 10 }, hi)).toBe('23.7 मीटर');
+        expect(transferRowQuantity({ qty_sent: 2500, unit: 'KGS', qty_scale: 1000 }, en)).toBe('2.5 kg');
+        expect(transferRowQuantity({ qty_sent: 12, unit: null, qty_scale: 1 }, en)).toBe('12');
+        expect(transferRowQuantity({ qty_sent: 12 }, en)).toBe('12');
+        expect(transferRowQuantity({ qty_sent: 242, mixed_units: true }, en)).toBe('Mixed units');
+        expect(transferRowQuantity({ qty_sent: 242, mixed_units: true }, hi)).toBe('अलग-अलग इकाइयाँ');
+    });
+
+    it('PROMISED_ONLINE for a cloth reads "2.5 m", not "25 units"; pieces keep the count', () => {
+        const cloth = readInventoryError(
+            serverError(
+                409,
+                'PROMISED_ONLINE: 25 unit(s) of COTTON-1 are held or sold online (qty_scale 10, unit MTR); a manager may send them anyway'
+            )
+        ).values;
+        expect(cloth).toEqual({ count: '25', sku: 'COTTON-1', qty_scale: '10', unit: 'MTR' });
+        expect(promisedOnlineText(cloth, en)).toBe('2.5 m is kept for online orders. Send it anyway?');
+        expect(promisedOnlineText(cloth, hi)).toContain('2.5 मीटर');
+        expect(promisedOnlineText(cloth, en)).not.toContain('25');
+
+        const bottles = readInventoryError(serverError(409, 'PROMISED_ONLINE: 3 unit(s) of BOTTLE-1 are held or sold online'))
+            .values;
+        expect(promisedOnlineText(bottles, en)).toBe('3 units are kept for online orders. Send them anyway?');
+        expect(promisedOnlineText({ count: '' }, en)).toBeNull();
     });
 });

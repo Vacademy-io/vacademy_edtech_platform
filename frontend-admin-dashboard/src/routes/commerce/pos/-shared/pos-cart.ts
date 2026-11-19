@@ -111,6 +111,11 @@ export type CartEvent =
     | { type: 'MARK_LINE'; lineRef: string; mark: LineMark | null }
     /** The server's price moved (quote `changes`): take it and say so on the line. */
     | { type: 'SET_PRICE'; lineRef: string; unitPrice: number }
+    /**
+     * The item as the server has it now (read again after a `QUANTITY_STEP`): its lines take the
+     * current sale step, so the length box and the line's words use it. Quantities are kept.
+     */
+    | { type: 'REFRESH_ITEM'; item: CatalogueItem }
     | { type: 'CLEAR_MARKS' }
     /**
      * Empties the bill. `keepExchange` (Clear bill, Hold bill) keeps an unused exchange credit on the
@@ -348,6 +353,10 @@ export function cartStep(state: CartState, event: CartEvent): CartResult {
                 )
             );
         }
+        case 'REFRESH_ITEM': {
+            const lines = refreshLines(state.lines, event.item);
+            return done(lines === state.lines ? state : { ...state, lines });
+        }
         case 'CLEAR_MARKS':
             return done({ ...state, lines: state.lines.map((l) => (l.mark ? { ...l, mark: null } : l)) });
         case 'CLEAR':
@@ -360,6 +369,21 @@ export function cartStep(state: CartState, event: CartEvent): CartResult {
 }
 
 export const cartReducer = (state: CartState, event: CartEvent): CartState => cartStep(state, event).state;
+
+/**
+ * Lines of the item take its current sale step (a held bill or a cached catalogue may keep an old
+ * one); the same array when nothing changes. Piece lines and other items are left alone.
+ */
+export function refreshLines(lines: CartLine[], item: CatalogueItem): CartLine[] {
+    const step = item.qty_step > 0 ? item.qty_step : 1;
+    let changed = false;
+    const next = lines.map((line) => {
+        if (line.variantId !== item.variant_id || isPieceLine(line) || line.qtyStep === step) return line;
+        changed = true;
+        return { ...line, qtyStep: step };
+    });
+    return changed ? next : lines;
+}
 
 const amount2 = (value: number): string => (Math.round(value * 100) / 100).toFixed(2);
 

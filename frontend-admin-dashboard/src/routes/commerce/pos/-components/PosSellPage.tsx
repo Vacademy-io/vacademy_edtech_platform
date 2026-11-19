@@ -11,7 +11,7 @@ import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
 import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
 import { todayIso } from '@/routes/commerce/orders/-shared/order-format';
 import { buzz, useScanInput } from '@/routes/commerce/orders/-shared/use-scan-input';
-import { scanAtRegister } from '../-shared/pos-api';
+import { fetchCatalogue, scanAtRegister } from '../-shared/pos-api';
 import {
     type CartEvent,
     type CartExchange,
@@ -29,11 +29,12 @@ import {
     indexCatalogue,
     lookupCode,
     readCachedCatalogue,
+    replaceCatalogueItem,
     searchCatalogue,
     writeCachedCatalogue,
 } from '../-shared/pos-catalogue';
 import { LINE_STOCK_CODES, type PosError, REQUOTE_CODES, readPosError } from '../-shared/pos-errors';
-import { type HeldBill, dropHeld, holdBill, readHeld, takeHeld } from '../-shared/pos-held-bills';
+import { type HeldBill, dropHeld, holdBill, readHeld, refreshHeldItem, takeHeld } from '../-shared/pos-held-bills';
 import { readExchange, useAttemptStore, writeExchange } from '../-shared/pos-session-store';
 import {
     invalidatePos,
@@ -47,7 +48,7 @@ import {
     useQuote,
 } from '../-shared/pos-hooks';
 import { toPaise } from '../-shared/pos-tenders';
-import type { BillBookRequest, CatalogueItem, ScanPiece, SessionView } from '../-shared/pos-types';
+import type { BillBookRequest, CatalogueItem, PosCatalogue, ScanPiece, SessionView } from '../-shared/pos-types';
 import { PosAddCreditDialog } from './PosAddCreditDialog';
 import { PosCartLines } from './PosCartLines';
 import { PosCustomerPanel, customerProblem } from './PosCustomerPanel';
@@ -297,6 +298,44 @@ export function PosBillingWorkspace({
         [quoteData]
     );
 
+    // ── A QUANTITY_STEP: this till holds an old sale step for the item (a held bill, the device's
+    // catalogue copy). Read the item again from the server, once per item and step, and give the
+    // bill, the held bills and both catalogue copies its step, so the length box uses it. ──
+    const stepRefreshed = useRef(new Set<string>());
+    const refreshStep = async (lineRef: string | null | undefined) => {
+        if (isBook || !lineRef || !online) return;
+        const line = cartRef.current.lines.find((l) => l.lineRef === lineRef);
+        if (!line) return;
+        const key = `${line.variantId}:${line.qtyStep}`;
+        if (stepRefreshed.current.has(key)) return;
+        stepRefreshed.current.add(key);
+        let fresh: CatalogueItem | null = null;
+        try {
+            const answer = line.sku ? await scanAtRegister(registerId, line.sku) : null;
+            if (answer?.item.variant_id === line.variantId) fresh = answer.item;
+            if (!fresh) {
+                const all = await fetchCatalogue(registerId);
+                queryClient.setQueryData<PosCatalogue>(posKeys.catalogue(registerId), all);
+                fresh = all.items.find((entry) => entry.variant_id === line.variantId) ?? null;
+            }
+        } catch {
+            // Not read now: the quote keeps the line marked, and the next QUANTITY_STEP of a new step tries again.
+            stepRefreshed.current.delete(key);
+            return;
+        }
+        if (!fresh) return;
+        const item = fresh;
+        apply({ type: 'REFRESH_ITEM', item });
+        refreshHeldItem(instituteId, registerId, item);
+        queryClient.setQueryData<PosCatalogue>(posKeys.catalogue(registerId), (old) =>
+            old ? replaceCatalogueItem(old, item) : old
+        );
+        const copy = readCachedCatalogue(instituteId, registerId);
+        if (copy) writeCachedCatalogue(instituteId, registerId, replaceCatalogueItem(copy, item));
+    };
+    const refreshStepRef = useRef(refreshStep);
+    refreshStepRef.current = refreshStep;
+
     // A quote that names a moved price or an unsellable line marks the line.
     useEffect(() => {
         if (!quote.data || quote.isPlaceholderData) return;
@@ -316,6 +355,7 @@ export function PosBillingWorkspace({
             const reason = refused.get(line.lineRef);
             if (reason !== undefined) {
                 apply({ type: 'MARK_LINE', lineRef: line.lineRef, mark: { code: reason || 'UNAVAILABLE', source: 'quote' } });
+                if (reason === 'QUANTITY_STEP') void refreshStepRef.current(line.lineRef);
             } else if (line.mark?.source === 'quote') {
                 apply({ type: 'MARK_LINE', lineRef: line.lineRef, mark: null });
             }
@@ -351,6 +391,7 @@ export function PosBillingWorkspace({
     // ── What the server refused: re-quote, mark the line, or a field. ──
     const onRefused = (error: PosError): boolean => {
         const code = error.code ?? '';
+        if (code === 'QUANTITY_STEP') void refreshStep(error.lineRef);
         if (REQUOTE_CODES.has(code)) {
             void queryClient.invalidateQueries({ queryKey: posKeys.catalogue(registerId) });
             void quote.refetch();

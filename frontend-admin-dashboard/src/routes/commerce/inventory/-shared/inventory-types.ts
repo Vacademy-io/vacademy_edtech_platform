@@ -294,7 +294,14 @@ export interface TransferRow {
     to: PlaceRef | null;
     document_number: string | null;
     line_count: number;
+    /** Base units summed over the lines: read with `qty_scale` and `unit` only when every line shares them. */
     qty_sent: number;
+    /** The unit every line shares (a measured item's code, e.g. MTR); absent for pieces or mixed units. */
+    unit?: string | null;
+    /** The scale every line shares (1 for pieces); absent when the lines mix units. */
+    qty_scale?: number | null;
+    /** True when the lines mix units or scales: their base units do not add up to one figure. */
+    mixed_units?: boolean;
     created_at: string | null;
     dispatched_at: string | null;
     received_at: string | null;

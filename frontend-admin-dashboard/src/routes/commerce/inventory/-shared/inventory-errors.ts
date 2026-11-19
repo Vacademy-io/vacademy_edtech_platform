@@ -96,12 +96,21 @@ export const isUncertainStatus = (status: number | null): boolean =>
 const isInventoryError = (value: unknown): value is InventoryError =>
     !!value && typeof value === 'object' && 'invKey' in (value as object) && 'uncertain' in (value as object);
 
-/** `LABEL_NO_PRICE: SKU-1 has no price yet` → `SKU-1`; `PROMISED_ONLINE: 3 unit(s) of SKU-1 …` → 3, SKU-1. */
+/**
+ * `LABEL_NO_PRICE: SKU-1 has no price yet` → `SKU-1`; `PROMISED_ONLINE: 3 unit(s) of SKU-1 …` → 3, SKU-1.
+ * A measured item's count is in base units; the server then adds `(qty_scale 10, unit MTR)` (every
+ * item it names shares them), read as `qty_scale` and `unit` so the screen says "2.5 m".
+ */
 function valuesOf(code: string | null, message: string): Record<string, string> {
     if (code === 'LABEL_NO_PRICE') return { sku: /^(\S+)/.exec(message)?.[1] ?? '' };
     if (code === 'PROMISED_ONLINE') {
         const match = /(\d+)\s+unit\S*\s+of\s+(\S+)/i.exec(message);
-        return { count: match?.[1] ?? '', sku: match?.[2] ?? '' };
+        const measure = /qty_scale\s+(\d+),\s*unit\s+([A-Za-z]+)/.exec(message);
+        return {
+            count: match?.[1] ?? '',
+            sku: match?.[2] ?? '',
+            ...(measure ? { qty_scale: measure[1], unit: measure[2] } : {}),
+        };
     }
     return {};
 }

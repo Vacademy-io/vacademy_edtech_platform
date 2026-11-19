@@ -10,7 +10,7 @@ import {
     type StockPolicy,
     type VariantRequest,
 } from './catalogue-types';
-import { decimalsFor, isPieceUnit, lengthInputText, parseLength, unitSign } from './units';
+import { decimalsFor, isPieceUnit, lengthInputText, parseLength, unitSign, unitWord } from './units';
 import { type Combination, combinationKey, duplicateSkus } from './variant-combinations';
 
 /**
@@ -423,6 +423,27 @@ export function taxUnitWarning(
     const classSign = unitSign(taxClassUnit);
     if (classSign === itemSign) return null;
     return classSign === null ? 'pieces' : 'mismatch';
+}
+
+/**
+ * The price and MRP labels of a variant row: per the unit's word for measured
+ * goods ("Price per m (₹, with tax)", "प्रति मीटर दाम …", "MRP per kg (₹)"),
+ * never the stored code ("MTR"); counted goods, and a measure whose unit counts
+ * pieces (refused on save), keep the plain labels.
+ */
+export function variantPriceLabels(
+    values: Pick<ProductFormValues, 'sold_as' | 'unit'>,
+    t: TFunction
+): { price: string; mrp: string } {
+    const word =
+        values.sold_as === 'MEASURED' ? unitWord(values.unit.trim() || DEFAULT_MEASURE_UNIT, t) : null;
+    if (!word) {
+        return { price: t('products.variants.price'), mrp: t('products.variants.mrp') };
+    }
+    return {
+        price: t('products.variants.pricePerUnit', { unit: word }),
+        mrp: t('products.variants.mrpPerUnit', { unit: word }),
+    };
 }
 
 // ─── Validation ──────────────────────────────────────────────────────────────

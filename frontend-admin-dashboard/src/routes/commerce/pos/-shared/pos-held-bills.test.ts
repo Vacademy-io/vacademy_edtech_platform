@@ -1,8 +1,17 @@
 /** Contract §7.2: held bills on this device, at most 10, oldest dropped, storage failures read as empty. */
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cartReducer, emptyCart } from './pos-cart';
-import { HELD_MAX_AGE_MS, MAX_HELD, clearHeld, dropHeld, holdBill, readHeld, takeHeld } from './pos-held-bills';
-import { item } from './pos-test-fixtures';
+import {
+    HELD_MAX_AGE_MS,
+    MAX_HELD,
+    clearHeld,
+    dropHeld,
+    holdBill,
+    readHeld,
+    refreshHeldItem,
+    takeHeld,
+} from './pos-held-bills';
+import { hose, item } from './pos-test-fixtures';
 
 const cart = (n: number) =>
     cartReducer(emptyCart(), { type: 'ADD_VARIANT', item: item({ variant_id: `ps-${n}`, sku: `S-${n}` }) });
@@ -83,5 +92,18 @@ describe('held bills', () => {
     it('a corrupt copy reads as nothing held', () => {
         localStorage.setItem('commerce.pos.held.inst-1.reg-1', '{not json');
         expect(readHeld('inst-1', 'reg-1')).toEqual([]);
+    });
+});
+
+describe('refreshHeldItem (round 2)', () => {
+    it("a held bill's line of the item takes its current step; nothing is written when no bill has it", () => {
+        const roll = cartReducer(emptyCart(), { type: 'ADD_VARIANT', item: hose({ qty_step: 1 }) });
+        holdBill('inst-1', 'reg-1', roll);
+        holdBill('inst-1', 'reg-1', cart(1));
+        expect(refreshHeldItem('inst-1', 'reg-1', hose())).toBe(true);
+        const bills = readHeld('inst-1', 'reg-1');
+        expect(bills[0]?.cart.lines[0]?.qtyStep).toBe(5);
+        expect(bills[1]?.cart.lines[0]?.qtyStep).toBe(1);
+        expect(refreshHeldItem('inst-1', 'reg-1', hose())).toBe(false);
     });
 });

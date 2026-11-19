@@ -9,6 +9,7 @@ import {
     emptyCart,
     lineGross,
     lineGrossPaise,
+    refreshLines,
     toQuoteRequest,
     toSaleRequest,
 } from './pos-cart';
@@ -215,5 +216,22 @@ describe('requests', () => {
         expect(body.exchange).toEqual({ return_id: 'r-1', remainder_refund: { method: 'CASH', reference: null } });
         expect(body).not.toHaveProperty('client_request_id');
         expect(body).not.toHaveProperty('approval');
+    });
+});
+
+describe('REFRESH_ITEM (round 2: the step after a QUANTITY_STEP)', () => {
+    it('lines of the item take its current step and keep their length; other lines and a same step are untouched', () => {
+        const before = run([
+            { type: 'ADD_VARIANT', item: hose({ qty_step: 1 }) },
+            { type: 'SET_QUANTITY', lineRef: 'l1', quantity: 23 },
+            { type: 'ADD_VARIANT', item: item() },
+        ]);
+        expect(before.lines[0]?.qtyStep).toBe(1);
+        const after = cartReducer(before, { type: 'REFRESH_ITEM', item: hose() });
+        expect(after.lines[0]?.qtyStep).toBe(5);
+        expect(after.lines[0]?.quantity).toBe(23);
+        expect(after.lines[1]).toBe(before.lines[1]);
+        expect(cartReducer(after, { type: 'REFRESH_ITEM', item: hose() })).toBe(after);
+        expect(refreshLines(after.lines, item({ variant_id: 'ps-other' }))).toBe(after.lines);
     });
 });

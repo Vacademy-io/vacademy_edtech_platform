@@ -6,6 +6,7 @@ import {
     indexCatalogue,
     lookupCode,
     readCachedCatalogue,
+    replaceCatalogueItem,
     searchCatalogue,
     writeCachedCatalogue,
 } from './pos-catalogue';
@@ -82,5 +83,19 @@ describe('pos catalogue', () => {
         vi.stubGlobal('localStorage', throwing);
         expect(writeCachedCatalogue('inst-1', 'reg-1', catalogue())).toBe(false);
         expect(readCachedCatalogue('inst-1', 'reg-1')).toBeNull();
+    });
+});
+
+describe('replaceCatalogueItem (round 2)', () => {
+    it('swaps in the item as the server has it now; an item not in the copy changes nothing', () => {
+        const copy: PosCatalogue = {
+            register_id: 'reg-1',
+            location_id: 'loc-1',
+            generated_at: null,
+            truncated: false,
+            items: [hose({ qty_step: 1 })],
+        };
+        expect(replaceCatalogueItem(copy, hose()).items[0]?.qty_step).toBe(5);
+        expect(replaceCatalogueItem(copy, hose({ variant_id: 'ps-x' }))).toBe(copy);
     });
 });

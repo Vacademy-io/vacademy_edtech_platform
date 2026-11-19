@@ -50,7 +50,9 @@ vi.mock('../-shared/pos-api', () => ({
 import * as api from '../-shared/pos-api';
 import { CommerceGate } from '@/routes/commerce/-components/CommercePage';
 import { hose, item, piece, quote, scarf, session } from '../-shared/pos-test-fixtures';
-import type { CartExchange } from '../-shared/pos-cart';
+import { type CartExchange, cartStep, emptyCart } from '../-shared/pos-cart';
+import { readCachedCatalogue } from '../-shared/pos-catalogue';
+import { holdBill, readHeld } from '../-shared/pos-held-bills';
 import { PosBillBookPage } from './PosBillBookPage';
 import { PosSellPage } from './PosSellPage';
 
@@ -333,6 +335,43 @@ describe('PosSellPage: measured goods fix round (WP-44 W6, W8)', () => {
         expect(await screen.findByTestId('pos-line-l2')).toBeTruthy();
         await waitFor(() => expect(screen.queryByTestId('pos-line-l1')).toBeNull());
         expect(await lengthBox()).toBeTruthy();
+    });
+
+    it('round 2: a QUANTITY_STEP reads the item again; the bill, a held bill and the catalogue copy take the new step', async () => {
+        // This till still has the hose at 0.1 m steps; the server now sells it in 0.5 m steps.
+        mocked.fetchCatalogue.mockResolvedValue({
+            register_id: 'reg-1',
+            location_id: 'loc-1',
+            generated_at: null,
+            truncated: false,
+            items: [item(), hose({ qty_step: 1 })],
+        });
+        mocked.scanAtRegister.mockResolvedValue({ kind: 'VARIANT', item: hose(), piece: null });
+        mocked.quoteBill.mockResolvedValue({
+            ...quote(460, [{ ref: 'l1', net: 460 }]),
+            unavailable: [{ line_ref: 'l1', reason: 'QUANTITY_STEP' }],
+        });
+        const heldCart = cartStep(emptyCart(), { type: 'ADD_VARIANT', item: hose({ qty_step: 1 }) }).state;
+        expect(holdBill('inst-1', 'reg-1', heldCart, new Date(), 'sess-1')).not.toBeNull();
+
+        renderSell();
+        await screen.findByTestId('pos-scan');
+        await catalogueLoaded();
+        scanInto('V-HOSE');
+        const input = await lengthBox();
+        fireEvent.change(input, { target: { value: '2.3' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+        await waitFor(() => expect(screen.queryByTestId('pos-length-total')).toBeNull());
+
+        await waitFor(() => expect(mocked.scanAtRegister).toHaveBeenCalledWith('reg-1', 'HSE-1'), { timeout: 2000 });
+        await waitFor(() => expect(readHeld('inst-1', 'reg-1')[0]?.cart.lines[0]?.qtyStep).toBe(5));
+        await waitFor(() =>
+            expect(readCachedCatalogue('inst-1', 'reg-1')?.items.find((i) => i.variant_id === 'ps-hose')?.qty_step).toBe(5)
+        );
+        // The bill's line now has the 0.5 m step: its length box says 2.3 m is off the step.
+        fireEvent.click(screen.getByRole('button', { name: /2\.3 orders\.units\.metre/ }));
+        expect(await screen.findByText('pos.length.problems.quantityStep')).toBeTruthy();
+        expect(mocked.scanAtRegister).toHaveBeenCalledTimes(1);
     });
 
     it('W8: a paper bill takes 2.3 m of a roll sold in 0.5 m steps (recorded as written)', async () => {

@@ -11,6 +11,7 @@ import { PlainSelect } from '@/routes/commerce/-components/CatalogueBits';
 import { CommerceEmptyState, CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
 import { useInventoryAccess, useTransfers } from '../-shared/inventory-hooks';
 import { TRANSFER_DIRECTIONS, TRANSFER_STATUSES, type TransferDirection, type TransferRow } from '../-shared/inventory-types';
+import { transferRowQuantity } from '../-shared/transfer-lines';
 import { ChallanSeriesCard } from './ChallanSeriesCard';
 import type { TabProps } from './InventoryPage';
 import { InventoryErrorNotice, placeLabel, TOUCH } from './inventory-ui';
@@ -86,7 +87,9 @@ export function TransfersTab(props: TabProps) {
             {
                 id: 'qty',
                 header: t('inventory.transfers.quantity'),
-                cell: ({ row }) => <span className="block text-end tabular-nums">{row.original.qty_sent}</span>,
+                cell: ({ row }) => (
+                    <span className="block text-end tabular-nums">{transferRowQuantity(row.original, t)}</span>
+                ),
             },
             {
                 id: 'created',

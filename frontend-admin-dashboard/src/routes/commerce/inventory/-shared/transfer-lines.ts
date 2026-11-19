@@ -1,8 +1,11 @@
+import type { TFunction } from 'i18next';
+import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { typedBoxProblem } from '@/routes/commerce/-shared/units';
 import type {
     ReceiveTransferBody,
     ShortfallReason,
     TransferLineBody,
+    TransferRow,
     TransferView,
 } from './inventory-types';
 
@@ -311,4 +314,34 @@ export function toReceiveBody(state: ReceiveState): Omit<ReceiveTransferBody, 'c
             ...(l.received < l.sent && l.reason ? { shortfall_reason: l.reason } : {}),
         })),
     };
+}
+
+/**
+ * The quantity cell of the transfers list: the lines' sum in the unit they
+ * share ("23.7 m", or "12" for pieces); "Mixed units" when they do not share
+ * one, since 237 base units of cloth and 5 bottles add up to nothing.
+ */
+export function transferRowQuantity(
+    row: Pick<TransferRow, 'qty_sent' | 'unit' | 'qty_scale' | 'mixed_units'>,
+    t: TFunction
+): string {
+    if (row.mixed_units) return t('inventory.transfers.mixedUnits');
+    return formatQuantity(row.qty_sent, row.qty_scale ?? 1, row.unit, t);
+}
+
+/**
+ * The manager's question when a dispatch would take stock kept for online
+ * orders: "2.5 m are kept …" for a measured item (the server names its scale
+ * and unit), "3 units are kept …" otherwise. Null when the count is unreadable.
+ */
+export function promisedOnlineText(values: Record<string, string>, t: TFunction): string | null {
+    const units = Number(values.count);
+    if (!Number.isFinite(units) || units <= 0) return null;
+    const scale = Number(values.qty_scale);
+    if (Number.isInteger(scale) && scale > 1) {
+        return t('inventory.transfers.promisedOnlineMeasured', {
+            quantity: formatQuantity(units, scale, values.unit, t),
+        });
+    }
+    return t('inventory.transfers.promisedOnline', { count: units });
 }
