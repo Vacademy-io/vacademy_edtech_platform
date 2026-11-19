@@ -90,8 +90,13 @@ const answerFor = (quantity: number) => ({
         unavailable('linen', 'QUANTITY_ABOVE_MAX', { max_quantity: 25, qty_step: 10 }),
         unavailable('grey', 'INSUFFICIENT_STOCK', { available_quantity: 15 }),
         unavailable('white', 'QUANTITY_STEP', { qty_step: 5 }),
+        // 0.4 m left of a cloth cut in steps of 0.5 m: floored, nothing (an older server's answer).
+        unavailable('brown', 'INSUFFICIENT_STOCK', { available_quantity: 0, qty_step: 5 }),
+        // The same case as the server answers it now.
+        unavailable('black', 'OUT_OF_STOCK', { qty_step: 5 }),
     ],
-    changes: [],
+    // ₹12.34 → ₹13.01 per 10 cm: the notice names the price of a metre.
+    changes: [{ line_ref: 'cotton', variant_id: 'cotton', type: 'PRICE_CHANGED', reason: null, old_unit_price: 12.34, new_unit_price: 13.01 }],
     discounts: [],
     coupon: null,
     shipping: { basis: 'FLAT', charge: 0, charge_before_free: 0, free: true, free_above: null, remaining_for_free: null },
@@ -159,6 +164,8 @@ beforeEach(() => {
                 line('linen', 'Linen cloth', 30, 10),
                 line('grey', 'Grey cloth', 25, 5),
                 line('white', 'White cloth', 23, 5),
+                line('brown', 'Brown cloth', 5, 5),
+                line('black', 'Black cloth', 10, 5),
             ],
         },
     });
@@ -205,6 +212,34 @@ describe('a cloth line in the cart', () => {
 
         const white = rowOf('White cloth')!;
         expect(white.querySelector('[role="status"]')?.textContent).toContain('मात्रा 0.5 मी के गुणज में होनी चाहिए');
+    });
+
+    it('shows a line with less than one step left as sold out, with remove as the fix', async () => {
+        await render(<CartPage />);
+        await settle(() => !!rowOf('Brown cloth')?.querySelector('[role="status"]'));
+        for (const name of ['Brown cloth', 'Black cloth']) {
+            const row = rowOf(name)!;
+            const said = row.querySelector('[role="status"]')?.textContent || '';
+            expect(said, name).toContain('स्टॉक में नहीं');
+            // Never "Only 0 m available", and no "set to" fix.
+            expect(said, name).not.toContain('केवल');
+            expect(said, name).not.toContain('कर दें');
+            const fixes = Array.from(row.querySelectorAll<HTMLButtonElement>('button.cmx-link'));
+            expect(fixes.map((b) => b.textContent), name).toEqual(['हटाएँ']);
+        }
+        const remove = rowOf('Brown cloth')!.querySelector<HTMLButtonElement>('button.cmx-link')!;
+        await act(async () => remove.click());
+        expect(useCommerceCart.getState().cart.lines.map((l) => l.variantId)).not.toContain('brown');
+        expect(rowOf('Brown cloth')).toBeUndefined();
+    });
+
+    it('names a changed price per metre', async () => {
+        await render(<CartPage />);
+        await settle(() => !!container.querySelector('.cmx-note--warn'));
+        const notice = container.querySelector('.cmx-note--warn')!.textContent || '';
+        expect(notice).toContain('₹123.40');
+        expect(notice).toContain('₹130.10');
+        expect(notice).not.toContain('₹12.34');
     });
 });
 

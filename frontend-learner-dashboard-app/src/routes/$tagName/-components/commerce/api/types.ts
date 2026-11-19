@@ -187,6 +187,7 @@ export interface PriceBand {
 
 export interface Facets {
     attributes: Facet[] | null;
+    /** Per display unit: a metre for goods sold by length (a card's `price.amount` stays per base unit). */
     price: { min: number | null; max: number | null; bands: PriceBand[] | null } | null;
     availability: { in_stock: number; out_of_stock: number } | null;
 }
@@ -387,6 +388,7 @@ export interface ProductListParams {
     q?: string;
     collection?: string;
     filters?: Record<string, string[]>;
+    /** Rupees per display unit (per metre for goods sold by length), as the price sort and bands. */
     priceMin?: number | null;
     priceMax?: number | null;
     /** true = only what can be bought now; undefined = everything, in stock first. */

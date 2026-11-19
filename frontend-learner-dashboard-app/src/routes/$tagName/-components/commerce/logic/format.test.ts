@@ -4,7 +4,9 @@ import {
     formatUnits,
     groupIndian,
     groupWestern,
+    PIECE_UNIT_CODES,
     hasCompareAt,
+    isPieceUnit,
     lineAmount,
     perUnitAmount,
     percentOff,
@@ -160,5 +162,16 @@ describe('quantities of measured goods', () => {
         expect(unitSign('MTR')).toBe('m');
         expect(unitSign('MLT')).toBe('ml');
         expect(unitSign('PCS')).toBeNull();
+    });
+
+    it('has one piece-code list, the same as the server and the admin', () => {
+        const en = createTranslate('en');
+        expect([...PIECE_UNIT_CODES]).toEqual(['PCS', 'NOS', 'PC', 'NO', 'PIECE', 'PIECES']);
+        for (const code of [...PIECE_UNIT_CODES, 'pcs', ' Nos ', 'piece', '', null, undefined]) {
+            expect(isPieceUnit(code), String(code)).toBe(true);
+            expect(unitSign(code), String(code)).toBeNull();
+            expect(unitLabel(en, code), String(code)).toBe('piece');
+        }
+        for (const code of ['MTR', 'KG', 'YD', 'PAIR', 'SET']) expect(isPieceUnit(code), code).toBe(false);
     });
 });

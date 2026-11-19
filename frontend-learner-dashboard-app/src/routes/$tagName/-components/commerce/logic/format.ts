@@ -103,8 +103,16 @@ export const sumAmounts = (amounts: readonly (number | null)[]): number | null =
 
 const unitCode = (unit: string | null | undefined): string => (unit || '').trim().toUpperCase();
 
-/** Codes that count pieces: no sign after the number. */
-const PIECE_CODES = new Set(['', 'PCS', 'PC', 'NOS', 'NO', 'PIECE', 'PIECES']);
+/**
+ * Unit codes that count pieces: no sign after the number. One list with the server
+ * (`CommerceUnits`) and the admin (`-shared/units.ts`); a product sold by length or weight never
+ * carries one of these.
+ */
+export const PIECE_UNIT_CODES = ['PCS', 'NOS', 'PC', 'NO', 'PIECE', 'PIECES'] as const;
+const PIECE_CODES = new Set<string>(['', ...PIECE_UNIT_CODES]);
+
+/** True for a blank unit or a piece code ("pcs", "Nos", "PIECE"). */
+export const isPieceUnit = (unit: string | null | undefined): boolean => PIECE_CODES.has(unitCode(unit));
 
 /** The sign printed after a quantity, in every language (analytics, plain text). */
 const UNIT_SIGNS: Record<string, string> = {
@@ -131,7 +139,7 @@ const UNIT_SIGNS: Record<string, string> = {
  */
 export const unitSign = (unit: string | null | undefined): string | null => {
     const code = unitCode(unit);
-    if (PIECE_CODES.has(code)) return null;
+    if (isPieceUnit(code)) return null;
     return UNIT_SIGNS[code] ?? code.toLowerCase();
 };
 

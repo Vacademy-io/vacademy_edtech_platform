@@ -30,6 +30,7 @@ import { IMAGE_SIZES, orderGallery, ratioClass, thumbUrl } from '../logic/media'
 import { leadImageUrl, productHead } from '../edge/commerce-edge';
 import { sendCommerceEvent } from '../logic/events';
 import { activeVariant, initialSelection, selectValue, type Selection } from '../logic/options';
+import { checkLength } from '../logic/length';
 import { clampQuantity, isMeasured, lengthChoices, quantityRules, stockView, type QuantityRules } from '../logic/stock';
 import { hasMessage } from '../i18n';
 import { apiPathTo } from '../routes';
@@ -87,6 +88,7 @@ const LengthPicker: React.FC<{
     price: Price | null | undefined;
     rules: QuantityRules;
     quantity: number;
+    /** A length that can be bought, in base units; 0 while the typed length cannot be bought. */
     onChange(quantity: number): void;
 }> = ({ product, price, rules, quantity, onChange }) => {
     const { t, config } = useCommerceSite();
@@ -96,48 +98,55 @@ const LengthPicker: React.FC<{
     const presetKey = presets.map((p) => p.quantity).join(',');
     const isPreset = presets.some((p) => p.quantity === quantity);
     const [custom, setCustom] = useState(!isPreset && presets.length > 0);
-    // The "other length" box follows the quantity: a new variant that starts at a length no chip
-    // offers opens the box, a typed length that is a preset presses its chip. Keyed on the preset
-    // numbers, so a background refetch does not close a box the shopper just opened.
-    useEffect(() => {
-        setCustom(!isPreset && presets.length > 0);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [quantity, presetKey]);
     const [text, setText] = useState(formatUnits(quantity, scale));
-    const [notice, setNotice] = useState<string | null>(null);
+    // The quantity the shopper's own typing produced: that change must not rewrite the box.
+    const typed = useRef<number | null>(null);
     const inputId = useId();
-    useEffect(() => setText(formatUnits(quantity, scale)), [quantity, scale]);
+    const problemId = `${inputId}-problem`;
+    // The box and the chips follow the quantity: a new variant that starts at a length no chip
+    // offers opens the box, a chip or a picked length shows in it. Keyed on the preset numbers,
+    // so a background refetch does not close a box the shopper just opened.
     useEffect(() => {
-        if (!notice) return;
-        const timer = setTimeout(() => setNotice(null), 4000);
-        return () => clearTimeout(timer);
-    }, [notice]);
+        if (typed.current !== null && typed.current === quantity) return;
+        typed.current = null;
+        setCustom(!isPreset && presets.length > 0);
+        setText(formatUnits(quantity, scale));
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [quantity, presetKey, scale]);
     const perUnit = formatMoney(perUnitAmount(price?.amount, scale), price?.currency);
     const lengthText = (base: number) => quantityText(base, scale, product.unit, t);
-    /** The typed text in base units; null when it is not a positive number. */
-    const typedBase = (value: string): number | null => {
-        const trimmed = value.trim().replace(',', '.');
-        const units = trimmed === '' ? Number.NaN : Number(trimmed);
-        return Number.isFinite(units) && units > 0 ? units * scale : null;
+    const check = checkLength(text, scale, rules);
+    // Every keystroke decides the button: a length that cannot be bought as typed buys nothing
+    // (never one step, never a rounded length).
+    const type = (value: string) => {
+        setText(value);
+        const next = checkLength(value, scale, rules);
+        const base = next.kind === 'ok' ? next.base : 0;
+        typed.current = base;
+        onChange(base);
     };
+    // Enter or leaving the box: a typed length a chip offers presses that chip.
     const commit = () => {
-        const wanted = typedBase(text);
-        const next = clampQuantity(wanted ?? rules.step, rules);
-        onChange(next);
-        setText(formatUnits(next, scale));
-        // A length moved onto the step or under the stock limit is said, never changed silently.
-        if (wanted === null || Math.abs(wanted - next) > 1e-6) setNotice(t('product.length.changed', { length: lengthText(next) }));
+        if (check.kind !== 'ok') return;
+        setText(formatUnits(check.base, scale));
+        if (presets.some((p) => p.quantity === check.base)) setCustom(false);
     };
-    // The price under the box is for the length typed when it can be bought as typed, else for
-    // the length that will be added.
-    const typed = typedBase(text);
-    const typedOk =
-        typed !== null &&
-        Math.abs(typed - Math.round(typed)) < 1e-6 &&
-        Math.round(typed) % rules.step === 0 &&
-        (rules.max === null || typed <= rules.max);
-    const priced = typedOk ? Math.round(typed as number) : quantity;
-    const pricedAmount = formatMoney(lineAmount(price?.amount, priced), price?.currency);
+    const pick = (base: number) => {
+        typed.current = null;
+        onChange(base);
+    };
+    // The smallest whole-unit length that can be cut, as an example ("1 m", "1.2 m" at a 0.3 m step).
+    const example = lengthText(Math.ceil(scale / rules.step) * rules.step);
+    const choices = check.kind === 'step' ? check.choices : check.kind === 'max' && check.max > 0 ? [check.max] : [];
+    const problem =
+        check.kind === 'format'
+            ? t('product.length.format', { example })
+            : check.kind === 'step'
+              ? t('product.length.offStep', { step: lengthText(rules.step) })
+              : check.kind === 'max'
+                ? t('product.length.max', { max: lengthText(check.max) })
+                : null;
+    const pricedAmount = check.kind === 'ok' ? formatMoney(lineAmount(price?.amount, check.base), price?.currency) : null;
     return (
         <fieldset className="m-0 flex flex-col gap-3 border-0 p-0">
             <legend className="cmx-option__label">
@@ -156,7 +165,7 @@ const LengthPicker: React.FC<{
                                 aria-pressed={!custom && quantity === preset.quantity}
                                 onClick={() => {
                                     setCustom(false);
-                                    onChange(preset.quantity);
+                                    pick(preset.quantity);
                                 }}
                             >
                                 <span>
@@ -176,16 +185,18 @@ const LengthPicker: React.FC<{
                     <label htmlFor={inputId} className="cmx-sr">
                         {t('product.length.customLabel', { unit: unitLabel(t, product.unit) })}
                     </label>
+                    {/* Text, not a number box: a number box reads "2,5" and Hindi digits as empty. */}
                     <input
                         id={inputId}
                         className="cmx-input w-28"
-                        type="number"
+                        type="text"
                         inputMode="decimal"
-                        min={rules.step / scale}
-                        max={rules.max !== null ? rules.max / scale : undefined}
-                        step={rules.step / scale}
+                        autoComplete="off"
+                        enterKeyHint="done"
                         value={text}
-                        onChange={(e) => setText(e.target.value)}
+                        aria-invalid={problem ? true : undefined}
+                        aria-describedby={problem ? problemId : undefined}
+                        onChange={(e) => type(e.target.value)}
                         onBlur={commit}
                         onKeyDown={(e) => e.key === 'Enter' && commit()}
                     />
@@ -195,15 +206,22 @@ const LengthPicker: React.FC<{
                     </span>
                     {pricedAmount && (
                         <p className="cmx-small m-0 basis-full tabular-nums" data-testid="cmx-length-total">
-                            {t('product.length.total', { length: lengthText(priced), price: pricedAmount })}
+                            {t('product.length.total', { length: lengthText(check.kind === 'ok' ? check.base : quantity), price: pricedAmount })}
                         </p>
                     )}
+                    {problem && (
+                        <div className="flex basis-full flex-wrap items-center gap-2">
+                            <p id={problemId} className="cmx-small cmx-bad m-0 font-medium" role="status">
+                                {problem}
+                            </p>
+                            {choices.map((base) => (
+                                <button key={base} type="button" className="cmx-chip" data-length-choice="" onClick={() => pick(base)}>
+                                    {lengthText(base)}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
-            )}
-            {notice && (
-                <p className="cmx-small m-0 font-medium" role="status">
-                    {notice}
-                </p>
             )}
         </fieldset>
     );
@@ -549,7 +567,9 @@ export const ProductTemplate: React.FC<{
     const view = stockView(stock);
     const scale = Math.max(1, product?.qty_scale || 1);
     const measured = isMeasured(scale);
-    const rules = useMemo(() => quantityRules(product?.qty_step || 1, stock), [product?.qty_step, stock]);
+    // Goods sold by length stop at the most one order may hold (25 m by default), in base units.
+    const lineMax = measured ? config.maxOrderQuantity * scale : null;
+    const rules = useMemo(() => quantityRules(product?.qty_step || 1, stock, lineMax), [product?.qty_step, stock, lineMax]);
     const piece = (product?.stock_mode || '').toUpperCase() === 'PIECE' || view.kind === 'single';
     const [quantity, setQuantity] = useState(1);
     // A new variant starts at the smallest quantity (one unit of length for cloth, when the step allows).
@@ -645,7 +665,7 @@ export const ProductTemplate: React.FC<{
     const category = (product.collections || []).find((c) => (c.kind || '').toUpperCase() === 'CATEGORY');
     const canBuy = !!variant && view.purchasable && !soldOut && quantity > 0 && typeof price?.amount === 'number';
     // Nothing to buy, no amount: a price is never drawn as zero.
-    const total = soldOut ? null : formatMoney(lineAmount(price?.amount, measured ? quantity : 1), price?.currency);
+    const total = soldOut || quantity <= 0 ? null : formatMoney(lineAmount(price?.amount, measured ? quantity : 1), price?.currency);
     const whatsapp = whatsappLink(config.whatsappNumber, t('product.whatsappText', { name: product.name, url: absoluteUrl(`p/${product.slug}`) }));
     const badges = (product.badges || []).filter((code) => code !== 'ONLY_N_LEFT' && hasMessage(`badge.${code}`));
 

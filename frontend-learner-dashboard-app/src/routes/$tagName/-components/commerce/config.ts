@@ -117,6 +117,12 @@ export interface CommerceConfig {
     reassurance: CommerceReassuranceItem[];
     /** Preset lengths for goods sold by length, in whole units (metres). */
     lengthPresets: number[];
+    /**
+     * The most of one product sold by length in one order, in whole units (25 = 25 m): the same
+     * number as the server's `maxOrderQuantity` (COMMERCE_SETTING, default 25). The product page
+     * caps a length at it; the cart's answer stays the authority.
+     */
+    maxOrderQuantity: number;
     popularSearches: string[];
     /** A category shows in the menu only with at least this many products in stock. */
     minInStock: number;
@@ -218,6 +224,9 @@ const parseCartRecommendations = (value: unknown): CartRecommendations | null =>
 };
 
 export const DEFAULT_COMMERCE_LOCALES = ['hi', 'en'];
+/** The server's default and bounds for `maxOrderQuantity` (StorefrontSettings). */
+export const DEFAULT_MAX_ORDER_QUANTITY = 25;
+const MAX_MAX_ORDER_QUANTITY = 10_000;
 export const DEFAULT_PAGE_SIZE = 24;
 
 const disabled = (): CommerceConfig => ({
@@ -229,6 +238,7 @@ const disabled = (): CommerceConfig => ({
     dispatchPromise: '',
     reassurance: [],
     lengthPresets: [],
+    maxOrderQuantity: DEFAULT_MAX_ORDER_QUANTITY,
     popularSearches: [],
     minInStock: 0,
     media: { leadTag: '', tagLabels: {} },
@@ -279,6 +289,7 @@ export const parseCommerceConfig = (globalSettings: unknown): CommerceConfig => 
     const announcementText = announcement ? text(announcement.text, 200) : '';
     const pageSize = Number(raw.pageSize);
     const minInStock = Number(raw.minInStock);
+    const maxOrderQuantity = Number(raw.maxOrderQuantity);
     return {
         // A shop without a usable key cannot call the API, so it is off, not half on.
         enabled: raw.enabled === true && keyOk,
@@ -301,6 +312,10 @@ export const parseCommerceConfig = (globalSettings: unknown): CommerceConfig => 
             .map(Number)
             .filter((n) => Number.isFinite(n) && n > 0 && n <= 1000)
             .slice(0, 8),
+        maxOrderQuantity:
+            Number.isInteger(maxOrderQuantity) && maxOrderQuantity >= 1 && maxOrderQuantity <= MAX_MAX_ORDER_QUANTITY
+                ? maxOrderQuantity
+                : DEFAULT_MAX_ORDER_QUANTITY,
         popularSearches: list(raw.popularSearches)
             .map((s) => text(s, 40))
             .filter(Boolean)

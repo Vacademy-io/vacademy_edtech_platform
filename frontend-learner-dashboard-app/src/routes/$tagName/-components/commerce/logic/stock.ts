@@ -43,12 +43,20 @@ export interface QuantityRules {
     max: number | null;
 }
 
-/** The step from the product, and the ceiling from low stock when the API told us the number. */
-export const quantityRules = (qtyStep: number, stock: Stock | null | undefined): QuantityRules => {
+/**
+ * The step from the product, and the ceiling: low stock when the API told us the number, and
+ * the most one order line may hold (`lineMax`, base units: the shop's per-order maximum × the
+ * product's scale, 25 m = 250 at scale 10). Both are floored to the step. Only stock can make the
+ * product sold out (max 0); a line maximum below one step is left to the cart to refuse.
+ */
+export const quantityRules = (qtyStep: number, stock: Stock | null | undefined, lineMax: number | null = null): QuantityRules => {
     const step = Math.max(1, Math.floor(qtyStep || 1));
     const view = stockView(stock);
-    const max = view.left !== null ? Math.floor(view.left / step) * step : null;
-    return { step, max: max !== null && max >= step ? max : view.left !== null ? 0 : null };
+    const fromStock = view.left !== null ? Math.floor(view.left / step) * step : null;
+    if (fromStock !== null && fromStock < step) return { step, max: 0 };
+    const fromLine = lineMax !== null && Number.isFinite(lineMax) ? Math.floor(lineMax / step) * step : null;
+    const caps = [fromStock, fromLine !== null && fromLine >= step ? fromLine : null].filter((n): n is number => n !== null);
+    return { step, max: caps.length ? Math.min(...caps) : null };
 };
 
 /**

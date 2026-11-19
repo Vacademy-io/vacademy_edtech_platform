@@ -26,6 +26,15 @@ describe('parseCommerceConfig', () => {
         expect(config.checkout).toBe(false);
         expect(config.redirects).toBe(false);
         expect(config.reassurance).toEqual([]);
+        // The server's default per-order maximum.
+        expect(config.maxOrderQuantity).toBe(25);
+    });
+
+    it('reads the per-order maximum within the server bounds', () => {
+        const read = (maxOrderQuantity: unknown) => parseCommerceConfig({ commerce: { enabled: true, publishableKey: KEY, maxOrderQuantity } }).maxOrderQuantity;
+        expect(read(40)).toBe(40);
+        expect(read(10000)).toBe(10000);
+        for (const bad of [0, -3, 2.5, 10001, 'many', null]) expect(read(bad), String(bad)).toBe(25);
     });
 
     it('reads what a seller sets and drops what is malformed', () => {

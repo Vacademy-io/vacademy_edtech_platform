@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 /**
  * The length picker of goods sold by length: preset chips priced for their length, a typed length
- * priced in whole paise, a length moved onto the step said out loud, nothing to buy when less is
- * left than one step, and the "other length" box that follows the quantity when the variant
- * changes. Also the "only N left" card badge with its unit.
+ * priced in whole paise, a length that cannot be cut refused with the nearest lengths offered as
+ * chips (never rounded), a comma or Hindi digits read as typed, blank or 0 buying nothing, the
+ * per-order maximum, nothing to buy when less is left than one step, and the "other length" box
+ * that follows the quantity when the variant changes. Also the "only N left" card badge with its unit.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -147,22 +148,27 @@ const click = async (element: Element | null | undefined) => {
     });
 };
 
-/** Types into a React-controlled input and presses Enter. */
-const typeLength = async (input: HTMLInputElement, text: string) => {
+/** Types into a React-controlled input, then presses Enter unless told not to. */
+const typeLength = async (input: HTMLInputElement, text: string, enter = true) => {
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
     await act(async () => {
         setter.call(input, text);
         input.dispatchEvent(new Event('input', { bubbles: true }));
     });
+    if (!enter) return;
     await act(async () => {
         input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
     });
 };
 
 const buyButton = () => container.querySelector<HTMLButtonElement>('.cmx-btn--primary.cmx-btn--block');
-const chips = () => Array.from(container.querySelectorAll<HTMLButtonElement>('fieldset .cmx-chip'));
-const lengthInput = () => container.querySelector<HTMLInputElement>('fieldset input[type="number"]');
-const status = (text: string) => Array.from(container.querySelectorAll('[role="status"]')).find((el) => el.textContent === text);
+/** The preset chips and "other length"; not the lengths offered for a refused one. */
+const chips = () => Array.from(container.querySelectorAll<HTMLButtonElement>('fieldset .cmx-chip:not([data-length-choice])'));
+/** The nearest lengths offered for a refused one. */
+const choices = () => Array.from(container.querySelectorAll<HTMLButtonElement>('fieldset [data-length-choice]'));
+const lengthInput = () => container.querySelector<HTMLInputElement>('fieldset input[inputmode="decimal"]');
+const fieldsetStatus = () => container.querySelector('fieldset [role="status"]')?.textContent ?? null;
+const cartLines = () => useCommerceCart.getState().cart.lines;
 
 const renderProduct = async (slug: string) => {
     await render(<ProductTemplate slug={slug} sections={BUILT_IN_TEMPLATES.product} />);
@@ -212,24 +218,119 @@ describe('the length picker', () => {
         // No chip is pressed for a length no chip offers; the box stays open.
         expect(chips().slice(0, 3).every((chip) => chip.getAttribute('aria-pressed') === 'false')).toBe(true);
         expect(lengthInput()).toBeTruthy();
-        // Nothing was moved, so nothing is said.
-        expect(status('3.4 मी कर दिया गया')).toBeUndefined();
+        // A length that can be cut as typed: nothing is said.
+        expect(fieldsetStatus()).toBeNull();
+        expect(lengthInput()!.type).toBe('text');
         await click(buyButton());
         const line = useCommerceCart.getState().cart.lines[0]!;
         expect(line.quantity).toBe(34);
         expect(line.qtyScale).toBe(10);
     });
 
-    it('says when a typed length was moved onto the step', async () => {
+    it('refuses a length off the step and offers the two nearest as chips, never rounding', async () => {
         product = LINEN;
         await renderProduct('linen-cloth');
         await click(chips()[3]);
-        // 2.3 m is not on the 0.5 m grid: 2.5 m, and the shopper is told.
+        // 2.3 m is not on the 0.5 m grid: refused, nothing to buy, the box keeps what was typed.
         await typeLength(lengthInput()!, '2.3');
-        expect(status('2.5 मी कर दिया गया')).toBeTruthy();
-        expect(buyButton()!.textContent).toBe('कार्ट में डालें · ₹500');
-        // 2.5 m is a preset: its chip is pressed now.
+        expect(lengthInput()!.value).toBe('2.3');
+        expect(lengthInput()!.getAttribute('aria-invalid')).toBe('true');
+        expect(fieldsetStatus()).toBe('0.5 मी के गुणज में ही मिलता है। लंबाई चुनें:');
+        expect(choices().map((chip) => chip.textContent)).toEqual(['2 मी', '2.5 मी']);
+        expect(buyButton()!.disabled).toBe(true);
+        expect(buyButton()!.textContent).toBe('कार्ट में डालें');
+        expect(container.querySelector('[data-testid="cmx-length-total"]')).toBeNull();
+        await click(buyButton());
+        expect(cartLines()).toHaveLength(0);
+        // One tap on 2.5 m: it is a preset, so its chip is pressed and the button prices it.
+        await click(choices()[1]);
         expect(chips()[1]!.getAttribute('aria-pressed')).toBe('true');
+        expect(buyButton()!.textContent).toBe('कार्ट में डालें · ₹500');
+        expect(choices()).toHaveLength(0);
+        await click(buyButton());
+        expect(cartLines()[0]!.quantity).toBe(25);
+    });
+
+    it('reads a comma as the point, Hindi digits and trailing zeros; refuses only real extra decimals', async () => {
+        await renderProduct('cotton-cloth');
+        await click(chips()[3]);
+        // A comma keypad: 2,5 is 2.5 m.
+        await typeLength(lengthInput()!, '2,5', false);
+        expect(buyButton()!.textContent).toBe('कार्ट में डालें · ₹308.50');
+        // A Hindi keyboard: ३.४ is 3.4 m.
+        await typeLength(lengthInput()!, '३.४', false);
+        expect(buyButton()!.textContent).toBe('कार्ट में डालें · ₹419.56');
+        expect(container.querySelector('[data-testid="cmx-length-total"]')?.textContent).toBe('3.4 मी का मूल्य: ₹419.56');
+        // 2.50 is 2.5 m (trailing zero within the scale).
+        await typeLength(lengthInput()!, '2.50', false);
+        expect(buyButton()!.textContent).toBe('कार्ट में डालें · ₹308.50');
+        expect(fieldsetStatus()).toBeNull();
+        // 2.55 cannot be cut at 10 cm: refused with 2.5 m and 2.6 m offered.
+        await typeLength(lengthInput()!, '2.55', false);
+        expect(buyButton()!.disabled).toBe(true);
+        expect(choices().map((chip) => chip.textContent)).toEqual(['2.5 मी', '2.6 मी']);
+        await click(choices()[1]);
+        expect(lengthInput()!.value).toBe('2.6');
+        expect(buyButton()!.textContent).toBe('कार्ट में डालें · ₹320.84');
+        await click(buyButton());
+        expect(cartLines()[0]!.quantity).toBe(26);
+    });
+
+    it('buys nothing for a blank box or 0, never one step', async () => {
+        await renderProduct('cotton-cloth');
+        await click(chips()[3]);
+        await typeLength(lengthInput()!, '');
+        expect(buyButton()!.disabled).toBe(true);
+        expect(buyButton()!.textContent).toBe('कार्ट में डालें');
+        // A blank box says nothing and keeps blank (not "0.1").
+        expect(fieldsetStatus()).toBeNull();
+        expect(lengthInput()!.value).toBe('');
+        await typeLength(lengthInput()!, '0');
+        expect(buyButton()!.disabled).toBe(true);
+        expect(fieldsetStatus()).toBe('लंबाई लिखें, जैसे 1 मी');
+        await click(buyButton());
+        expect(cartLines()).toHaveLength(0);
+        await typeLength(lengthInput()!, '1.5');
+        expect(buyButton()!.disabled).toBe(false);
+        expect(buyButton()!.textContent).toBe('कार्ट में डालें · ₹185.10');
+    });
+
+    it('stops at the most one order may hold, in metres and floored to the step', async () => {
+        await renderProduct('cotton-cloth');
+        await click(chips()[3]);
+        // The default per-order maximum is 25 m (250 base units at scale 10), never 25 base units.
+        await typeLength(lengthInput()!, '25');
+        expect(buyButton()!.textContent).toBe('कार्ट में डालें · ₹3,085');
+        await typeLength(lengthInput()!, '30');
+        expect(buyButton()!.disabled).toBe(true);
+        expect(fieldsetStatus()).toBe('अधिकतम 25 मी ले सकते हैं');
+        expect(choices().map((chip) => chip.textContent)).toEqual(['25 मी']);
+        await click(choices()[0]);
+        await click(buyButton());
+        expect(cartLines()[0]!.quantity).toBe(250);
+    });
+
+    it('floors the per-order maximum to the step and reads the site setting', async () => {
+        // Sold in steps of 3 m; the shop allows 25 m an order: 24 m is the most.
+        product = { ...LINEN, qty_step: 30 };
+        await renderProduct('linen-cloth');
+        // No preset is on a 3 m grid: the box is open from the start, at 3 m.
+        expect(chips()).toHaveLength(0);
+        expect(lengthInput()!.value).toBe('3');
+        await typeLength(lengthInput()!, '30');
+        expect(fieldsetStatus()).toBe('अधिकतम 24 मी ले सकते हैं');
+        expect(choices().map((chip) => chip.textContent)).toEqual(['24 मी']);
+        await act(async () => root?.unmount());
+        document.body.innerHTML = '';
+        // A shop with 10 m an order.
+        product = COTTON;
+        await render(<ProductTemplate slug="cotton-cloth" sections={BUILT_IN_TEMPLATES.product} />, {
+            commerce: { ...SETTINGS.commerce, maxOrderQuantity: 10 },
+        });
+        await settle(() => chips().length === 4);
+        await click(chips()[3]);
+        await typeLength(lengthInput()!, '12');
+        expect(fieldsetStatus()).toBe('अधिकतम 10 मी ले सकते हैं');
     });
 
     it('sells nothing when less is left than one step', async () => {

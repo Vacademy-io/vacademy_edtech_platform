@@ -40,13 +40,27 @@ const fixQuantity = (problem: CartUnavailableLine | undefined, line: Pick<CartLi
     return Math.floor(limit / step) * step;
 };
 
+/**
+ * The reason a shopper reads. Less left than one step (0.4 m of a cloth cut in steps of 0.5 m) is
+ * sold out, as on the product page, never "Only 0 m available": the server says OUT_OF_STOCK for
+ * it, and an INSUFFICIENT_STOCK whose floored number is below one step reads the same.
+ */
+const shownReason = (problem: CartUnavailableLine, line: Pick<CartLine, 'qtyStep'>): string => {
+    const step = Math.max(1, Math.floor(line.qtyStep || 1));
+    if (problem.reason === 'INSUFFICIENT_STOCK' && typeof problem.available_quantity === 'number' && problem.available_quantity < step) {
+        return 'OUT_OF_STOCK';
+    }
+    return problem.reason;
+};
+
 const useUnavailableText = () => {
     const { t } = useCommerceSite();
     return (problem: CartUnavailableLine, line: CartLine): string => {
         // Every number carries its unit: "Only 1.5 m available", never a bare "1.5".
         const amount = (base: number) => quantityText(base, line.qtyScale, line.unit, t);
         const count = typeof problem.available_quantity === 'number' ? amount(problem.available_quantity) : null;
-        switch (problem.reason) {
+        const reason = shownReason(problem, line);
+        switch (reason) {
             case 'INSUFFICIENT_STOCK':
                 return count !== null
                     ? t('cart.unavailable.INSUFFICIENT_STOCK', { count })
@@ -63,7 +77,7 @@ const useUnavailableText = () => {
             case 'NO_PRICE':
             case 'OUT_OF_STOCK':
             case 'QUANTITY_INVALID':
-                return t(`cart.unavailable.${problem.reason}` as MessageKey);
+                return t(`cart.unavailable.${reason}` as MessageKey);
             default:
                 return t('cart.unavailable.generic');
         }
@@ -87,6 +101,16 @@ const CartLineRow: React.FC<{
     // One metre of cloth (the API prices one base unit), worked out in whole paise.
     const unitPrice = formatMoney(perUnitAmount(priced?.unit_price ?? line.unitPrice, measured ? line.qtyScale : 1), currency);
     const fixTo = fixQuantity(problem, line);
+    // Nothing of it can be bought now: the way forward is to take it out of the cart.
+    const soldOut = !!problem && shownReason(problem, line) === 'OUT_OF_STOCK';
+    const removeLine = () => {
+        sendCommerceEvent({
+            name: 'remove_from_cart',
+            item: { id: priced?.sku || line.variantId, name: line.name, unitPrice: priced?.unit_price ?? line.unitPrice, quantity: line.quantity, qtyScale: line.qtyScale, unit: line.unit, variant: line.variantLabel },
+            currency,
+        });
+        remove(line.variantId);
+    };
     return (
         <li className={cn('cmx-line', problem && 'cmx-line--off')}>
             <div className="cmx-img cmx-line__thumb">
@@ -100,14 +124,7 @@ const CartLineRow: React.FC<{
                     <button
                         type="button"
                         className="cmx-icon-btn -me-2 -mt-2 shrink-0"
-                        onClick={() => {
-                            sendCommerceEvent({
-                                name: 'remove_from_cart',
-                                item: { id: priced?.sku || line.variantId, name: line.name, unitPrice: priced?.unit_price ?? line.unitPrice, quantity: line.quantity, qtyScale: line.qtyScale, unit: line.unit, variant: line.variantLabel },
-                                currency,
-                            });
-                            remove(line.variantId);
-                        }}
+                        onClick={removeLine}
                         aria-label={t('cart.remove', { name: line.name })}
                     >
                         <Trash size={18} aria-hidden="true" />
@@ -126,9 +143,14 @@ const CartLineRow: React.FC<{
                         <span>
                             {unavailableText(problem, line)} · {t('cart.notInTotal')}
                         </span>
-                        {fixTo !== null && (
+                        {fixTo !== null && !soldOut && (
                             <button type="button" className="cmx-link" onClick={() => setQuantity(line.variantId, fixTo)}>
                                 {t('cart.fix.setTo', { count: quantityText(fixTo, line.qtyScale, line.unit, t) })}
+                            </button>
+                        )}
+                        {soldOut && (
+                            <button type="button" className="cmx-link" onClick={removeLine}>
+                                {t('cart.fix.remove')}
                             </button>
                         )}
                     </p>
@@ -289,8 +311,9 @@ export const CartLines: React.FC<{
                         <WarningCircle size={18} aria-hidden="true" className="mt-0.5 shrink-0" />
                         {t('cart.change.price', {
                             name: line.name,
-                            old: formatMoney((change.old_unit_price as number) * scale, price?.currency),
-                            new: formatMoney((change.new_unit_price as number) * scale, price?.currency),
+                            // Per metre in whole paise, as everywhere else (no float multiply).
+                            old: formatMoney(perUnitAmount(change.old_unit_price, scale), price?.currency),
+                            new: formatMoney(perUnitAmount(change.new_unit_price, scale), price?.currency),
                         })}
                     </p>
                 );
