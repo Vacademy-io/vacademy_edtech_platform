@@ -19,6 +19,9 @@ on:
 
 jobs:
   build-and-deploy:
+    permissions:
+      contents: read
+      actions: read
     runs-on: [ubuntu-latest]
     steps:
       - name: Checkout source
@@ -40,6 +43,12 @@ jobs:
           echo "${JAVA_TOKEN}" | docker login ghcr.io -u ${ACCESS_GITHUB_USERNAME} --password-stdin
           mkdir -p ~/.m2
           echo "<settings><servers><server><id>github</id><username>${ACCESS_GITHUB_USERNAME}</username><password>${JAVA_TOKEN}</password></server></servers></settings>" > ~/.m2/settings.xml
+
+      - name: Wait for common_service to be published
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/wait-for-common-library.sh
 
       - name: Build Project
         working-directory: ./community_service
