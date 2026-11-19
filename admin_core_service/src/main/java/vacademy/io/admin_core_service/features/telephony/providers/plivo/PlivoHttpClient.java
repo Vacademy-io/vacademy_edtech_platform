@@ -1,6 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.plivo;
 
-import vacademy.io.common.external.ExternalCallLog;
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -134,7 +134,7 @@ public class PlivoHttpClient {
         conn.setRequestProperty("Authorization", "Basic " + basicToken(creds));
         conn.setConnectTimeout(8_000);
         conn.setReadTimeout(30_000);
-        return ExternalCallLog.openStream(conn);
+        return conn.getInputStream();
     }
 
     private String requireAuthId(ProviderCredentials creds) {

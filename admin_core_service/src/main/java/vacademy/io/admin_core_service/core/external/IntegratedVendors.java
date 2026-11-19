@@ -1,4 +1,4 @@
-package vacademy.io.common.external;
+package vacademy.io.admin_core_service.core.external;
 
 import java.util.List;
 import java.util.Locale;
@@ -11,8 +11,8 @@ import java.util.stream.Collectors;
  * check) is not an integration.
  *
  * <p>Same list in ai_service/app/services/integrated_vendors.py,
- * voice_bot_service/app/vendor_failures.py and the portal's format.ts (INTEGRATED_VENDORS).
- * Add a new integration to all four; {@code IntegratedVendorListsInSyncTest} fails until you do.
+ * voice_bot_service/app/vendor_failures.py and the portal's src/lib/integrated-vendors.ts.
+ * Add a new integration to all four.
  */
 public final class IntegratedVendors {
 
@@ -32,13 +32,10 @@ public final class IntegratedVendors {
             "api.razorpay.com", "api.cashfree.com", "sandbox.cashfree.com", "api.stripe.com", "api.phonepe.com",
             "api-preprod.phonepe.com", "api.paypal.com", "api-m.paypal.com", "api.sandbox.paypal.com",
             "api-m.sandbox.paypal.com", "ewaypayments.com", "wati.io", "graph.facebook.com", "api.zoom.us",
-            "zoom.us", "zohoapis.in", "zohoapis.com", "zoho.in", "api.cloudflare.com", "open.er-api.com",
-            "fcm.googleapis.com", "firebase.googleapis.com", "androidpublisher.googleapis.com",
-            "api.appstoreconnect.apple.com", "api.github.com", "manage.devcenter.microsoft.com",
-            "login.microsoftonline.com");
+            "zoom.us", "zohoapis.in", "zohoapis.com", "zoho.in", "api.cloudflare.com", "open.er-api.com");
 
-    /** Vendors that log under a name rather than a host: ai_service's Serper rows and SDK calls. */
-    public static final List<String> NAMES = List.of("serper", "aws-ses", "email-smtp");
+    /** Vendors that log under a name rather than a host (ai_service's Serper logging). */
+    public static final List<String> NAMES = List.of("serper");
 
     public static boolean isIntegrated(String host) {
         String h = host == null ? "" : host.trim().toLowerCase(Locale.ROOT);

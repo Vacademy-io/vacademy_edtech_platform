@@ -1,7 +1,5 @@
 package vacademy.io.assessment_service.features.open_evaluation.auth;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -86,7 +84,7 @@ public class AdminCoreApiKeyClient {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(connectTimeoutMs);
         factory.setReadTimeout(readTimeoutMs);
-        return ExternalCallLog.attach(new RestTemplate(factory));
+        return new RestTemplate(factory);
     }
 
     public Optional<ApiKeyVerifyResponse> verify(String keyHash) {

@@ -1,6 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.exotel;
 
-import vacademy.io.common.external.ExternalCallLog;
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -210,7 +210,7 @@ public class ExotelHttpClient {
         conn.setRequestProperty("Authorization", "Basic " + basic);
         conn.setConnectTimeout(8_000);
         conn.setReadTimeout(30_000);
-        return ExternalCallLog.openStream(conn);
+        return conn.getInputStream();
     }
 
     private HttpHeaders basicAuthHeaders(ProviderCredentials creds) {

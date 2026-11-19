@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.payments.service;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -1225,7 +1223,7 @@ public class RazorpayWebHookService {
                     .POST(HttpRequest.BodyPublishers.ofString(invoiceRequest.toString()))
                     .build();
 
-            HttpResponse<String> response = ExternalCallLog.send(client, request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200 || response.statusCode() == 201) {
                 JSONObject invoiceResponse = new JSONObject(response.body());

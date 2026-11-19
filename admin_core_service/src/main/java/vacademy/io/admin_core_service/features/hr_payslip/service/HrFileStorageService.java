@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.hr_payslip.service;
 
-// external-call-log: not a vendor (downloads our own media files from S3)
-
 import com.itextpdf.styledxmlparser.jsoup.Jsoup;
 import com.itextpdf.styledxmlparser.jsoup.nodes.Document;
 import com.itextpdf.styledxmlparser.jsoup.nodes.Entities;

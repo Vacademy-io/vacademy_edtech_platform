@@ -1,7 +1,5 @@
 package vacademy.io.notification_service.features.announcements.config;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -16,6 +14,6 @@ public class RestTemplateConfig {
         factory.setConnectTimeout(5000); // 5 seconds
         factory.setReadTimeout(10000);   // 10 seconds
         
-        return ExternalCallLog.attach(new RestTemplate(factory));
+        return new RestTemplate(factory);
     }
 }

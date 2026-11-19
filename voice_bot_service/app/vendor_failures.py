@@ -76,8 +76,6 @@ INTEGRATED_DOMAINS = (
     "api-preprod.phonepe.com", "api.paypal.com", "api-m.paypal.com", "api.sandbox.paypal.com",
     "api-m.sandbox.paypal.com", "ewaypayments.com", "wati.io", "graph.facebook.com", "api.zoom.us",
     "zoom.us", "zohoapis.in", "zohoapis.com", "zoho.in", "api.cloudflare.com", "open.er-api.com",
-    "fcm.googleapis.com", "firebase.googleapis.com", "androidpublisher.googleapis.com",
-    "api.appstoreconnect.apple.com", "api.github.com", "manage.devcenter.microsoft.com", "login.microsoftonline.com",
 )
 
 

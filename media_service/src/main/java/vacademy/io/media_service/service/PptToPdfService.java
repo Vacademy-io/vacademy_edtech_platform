@@ -1,7 +1,5 @@
 package vacademy.io.media_service.service;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -36,7 +34,7 @@ public class PptToPdfService {
     @Autowired
     private FileService fileService;
 
-    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public byte[] convertPptToPdf(MultipartFile file) {

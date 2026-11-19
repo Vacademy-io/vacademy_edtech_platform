@@ -1,7 +1,5 @@
 package vacademy.io.common.institute;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -80,7 +78,7 @@ public class OriginInstituteResolver {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(2000);
         factory.setReadTimeout(2000);
-        return ExternalCallLog.attach(new RestTemplate(factory));
+        return new RestTemplate(factory);
     }
 
     private record CacheEntry(String instituteId, long expiresAt) {

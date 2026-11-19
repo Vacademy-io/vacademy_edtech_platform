@@ -1,7 +1,5 @@
 package vacademy.io.community_service.feature.bbb;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
@@ -66,7 +64,7 @@ public class BbbHealthCheckService {
     private String adminCoreBaseUrl;
 
     public BbbHealthCheckService() {
-        this.restTemplate = ExternalCallLog.attach(new RestTemplate());
+        this.restTemplate = new RestTemplate();
     }
 
     // -----------------------------------------------------------------------

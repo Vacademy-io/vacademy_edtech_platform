@@ -1,6 +1,6 @@
 package vacademy.io.admin_core_service.features.audience.scheduler;
 
-import vacademy.io.common.external.ExternalCallLog;
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

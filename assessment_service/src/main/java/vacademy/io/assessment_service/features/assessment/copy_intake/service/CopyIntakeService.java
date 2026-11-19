@@ -1,7 +1,5 @@
 package vacademy.io.assessment_service.features.assessment.copy_intake.service;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -1160,7 +1158,7 @@ public class CopyIntakeService {
 
     private String fileUrl(String fileId) {
         try {
-            String url = ExternalCallLog.attach(WebClient.builder())
+            String url = WebClient.builder()
                     .baseUrl(mediaServiceUrl)
                     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .build()

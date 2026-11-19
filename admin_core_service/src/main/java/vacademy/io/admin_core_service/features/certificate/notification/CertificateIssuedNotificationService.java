@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.certificate.notification;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -139,7 +137,7 @@ public class CertificateIssuedNotificationService {
                     .timeout(Duration.ofSeconds(30))
                     .GET()
                     .build();
-            HttpResponse<byte[]> res = ExternalCallLog.send(client, req, HttpResponse.BodyHandlers.ofByteArray());
+            HttpResponse<byte[]> res = client.send(req, HttpResponse.BodyHandlers.ofByteArray());
             if (res.statusCode() >= 200 && res.statusCode() < 300) {
                 return res.body();
             }

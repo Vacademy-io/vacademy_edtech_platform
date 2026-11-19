@@ -1,7 +1,5 @@
 package vacademy.io.auth_service.feature.login_link.auth;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -70,7 +68,7 @@ public class AdminCoreLoginLinksKeyVerifier implements ApiKeyVerifier {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(1000);
         factory.setReadTimeout(3000);
-        this.restTemplate = ExternalCallLog.attach(new RestTemplate(factory));
+        this.restTemplate = new RestTemplate(factory);
     }
 
     @Override

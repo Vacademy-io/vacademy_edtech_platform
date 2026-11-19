@@ -1,7 +1,5 @@
 package vacademy.io.auth_service.core.config;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,7 +64,7 @@ public class OAuthReturnUrlPolicy {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(2000);
         factory.setReadTimeout(2000);
-        return ExternalCallLog.attach(new RestTemplate(factory));
+        return new RestTemplate(factory);
     }
 
     /** @param alsoAllowed hosts the caller trusts for this login, such as a product's return hosts */

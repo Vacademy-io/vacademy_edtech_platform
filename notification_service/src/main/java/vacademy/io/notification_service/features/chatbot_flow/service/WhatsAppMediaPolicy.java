@@ -1,7 +1,5 @@
 package vacademy.io.notification_service.features.chatbot_flow.service;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -75,7 +73,7 @@ public class WhatsAppMediaPolicy {
         var factory = new org.springframework.http.client.SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(3000);
         factory.setReadTimeout(5000);
-        this.probeClient = ExternalCallLog.attach(new RestTemplate(factory));
+        this.probeClient = new RestTemplate(factory);
     }
 
     /** A media send that has passed every rule Meta enforces. */

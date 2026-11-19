@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.assignment_ai_evaluation.service;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -115,7 +113,7 @@ public class AssignmentCopyPdfBuilder {
                 .GET()
                 .build();
         try {
-            HttpResponse<InputStream> response = ExternalCallLog.send(httpClient, request, HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() / 100 != 2) {
                 throw new VacademyException("Could not download \"" + file.name() + "\" (HTTP " + response.statusCode() + ")");
             }

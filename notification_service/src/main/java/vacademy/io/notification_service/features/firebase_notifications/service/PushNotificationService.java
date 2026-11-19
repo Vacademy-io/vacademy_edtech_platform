@@ -1,7 +1,5 @@
 package vacademy.io.notification_service.features.firebase_notifications.service;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 
 import com.google.firebase.messaging.*;
 import org.slf4j.Logger;
@@ -109,11 +107,6 @@ public class PushNotificationService {
             logger.debug("Successfully sent message to token {}: {}", maskToken(fcmToken), response);
 
         } catch (FirebaseMessagingException e) {
-            // A token whose app was uninstalled is Firebase's normal answer, not a failure of Firebase.
-            if (e.getMessagingErrorCode() != com.google.firebase.messaging.MessagingErrorCode.UNREGISTERED) {
-                ExternalCallLog.sdkFailure("fcm.googleapis.com", "messages.send",
-                        e.getHttpResponse() == null ? null : e.getHttpResponse().getStatusCode(), e, null);
-            }
             if (allowOtherProjects && isOtherProjectsToken(e) && sendViaOtherProject(target, fcmToken, message)) {
                 return;
             }

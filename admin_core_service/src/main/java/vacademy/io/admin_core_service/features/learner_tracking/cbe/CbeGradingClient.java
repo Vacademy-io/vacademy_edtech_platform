@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.learner_tracking.cbe;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -52,7 +50,7 @@ public class CbeGradingClient {
                 .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
-        this.webClient = ExternalCallLog.attach(WebClient.builder())
+        this.webClient = WebClient.builder()
                 .clientConnector(new JdkClientHttpConnector(jdkClient))
                 .baseUrl(aiServiceUrl.replaceAll("/$", "") + "/ai-service")
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)

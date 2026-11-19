@@ -1,7 +1,5 @@
 package vacademy.io.assessment_service.features.assessment.service;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
@@ -27,7 +25,7 @@ public class DocConverterService {
     private static final String APP_ID = "vacademy_8e6a90_950081";
     private static final String APP_KEY = "b27375705e35a88b52f041c5f8eba2dda6a23f36350300d39854c8301b1a9de4";
 
-    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate restTemplate = new RestTemplate();
 
     public Boolean isConversionCompleted(String pdfId) {
         HttpHeaders headers = new HttpHeaders();
