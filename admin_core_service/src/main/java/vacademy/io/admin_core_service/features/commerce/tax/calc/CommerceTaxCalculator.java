@@ -152,6 +152,13 @@ public class CommerceTaxCalculator {
      * fully returned invoice add up to the invoice to the paisa, round-off included. A part of a
      * line takes its share of the line net by quantity and backs the tax out at the stored rate.
      *
+     * <p>No note credits more than is left of the invoice: its total is at most the invoice total
+     * (the lines' net plus the invoice round-off) less every earlier note's total, and never below
+     * zero. A part note normally carries no round-off; when its lines come to more than is left
+     * (a bill rounded down, most of it returned in small base units), the difference is a
+     * negative round-off on that note, so the lines and the tax still mirror the invoice and the
+     * note that completes the invoice takes exactly what remains.
+     *
      * @param invoiceLines     every line of the invoice
      * @param head             the tax head stored on the invoice
      * @param invoiceRoundOff  the round-off stored on the invoice
@@ -189,6 +196,13 @@ public class CommerceTaxCalculator {
         BigDecimal roundOff = completes
                 ? nz(invoiceRoundOff).subtract(nz(roundOffCreditedBefore))
                 : ZERO;
+        BigDecimal left = leftToCredit(invoiceLines, invoiceRoundOff, roundOffCreditedBefore);
+        if (net.add(roundOff).compareTo(left) > 0) {
+            roundOff = left.subtract(net);
+        }
+        if (net.add(roundOff).signum() < 0) {
+            roundOff = net.negate();
+        }
         return CreditResult.builder()
                 .taxHead(head)
                 .lines(out)
@@ -202,6 +216,21 @@ public class CommerceTaxCalculator {
                 .roundOff(roundOff)
                 .total(net.add(roundOff))
                 .build();
+    }
+
+    /**
+     * What is left to credit on the invoice: its total (every line's net plus its round-off) less
+     * the totals of the earlier notes (their lines' net plus their round-off), never below zero.
+     */
+    static BigDecimal leftToCredit(List<CreditLineInput> invoiceLines, BigDecimal invoiceRoundOff,
+                                   BigDecimal roundOffCreditedBefore) {
+        BigDecimal invoiceTotal = nz(invoiceRoundOff);
+        BigDecimal creditedBefore = nz(roundOffCreditedBefore);
+        for (CreditLineInput line : invoiceLines) {
+            invoiceTotal = invoiceTotal.add(nz(line.getNet()));
+            creditedBefore = creditedBefore.add(nz(line.getNetCreditedBefore()));
+        }
+        return invoiceTotal.subtract(creditedBefore).max(ZERO);
     }
 
     private static CreditLineResult remainderOfLine(CreditLineInput line) {

@@ -549,6 +549,54 @@ class CommerceTaxCalculatorTest {
         assertEquals(0, invoice.getTotal().compareTo(first.getTotal().add(second.getTotal())));
     }
 
+    /**
+     * Money MINOR-1: a ribbon at 0.35 a cm (scale 100), 3.47 m billed 121.45 and rounded down to
+     * 121.00. Crediting 3.46 m would be 121.10, more than was paid: the note is capped at 121.00
+     * (round-off -0.10, lines and tax as before), and the last 1 cm is a 0.00 note, never -0.10.
+     */
+    @Test
+    void noCreditNoteIsWorthMoreThanIsLeftOfTheInvoice() {
+        TaxLineInput ribbon = TaxLineInput.builder().lineRef("ribbon").lineType(TaxLineType.ITEM)
+                .description("Ribbon").unitPrice(new BigDecimal("0.35")).quantity(347).qtyScale(100).unit("MTR")
+                .taxClass(TestTaxData.flatClassTest()).build();
+        TaxRequest request = regular(ribbon);
+        request.setRoundTotalTo(RoundTotalTo.RUPEE);
+        TaxResult invoice = calculator.calculate(request);
+        assertMoney("121.00", invoice.getTotal());
+        assertMoney("-0.45", invoice.getRoundOff());
+        TaxLineResult line = invoice.getLines().get(0);
+
+        CreditResult first = calculator.credit(List.of(creditLine(line, 0, null, 346)), invoice.getTaxHead(),
+                invoice.getRoundOff(), BigDecimal.ZERO);
+        CreditLineResult firstLine = first.getLines().get(0);
+        assertFalse(first.isCompletesInvoice());
+        assertMoney("121.10", firstLine.getNet());
+        assertEquals(0, firstLine.getTaxableValue().add(firstLine.getTaxAmount()).compareTo(firstLine.getNet()),
+                "the line and its tax are not cut");
+        assertMoney("-0.10", first.getRoundOff());
+        assertMoney("121.00", first.getTotal());
+
+        CreditResult last = calculator.credit(List.of(creditLine(line, 346, firstLine, 1)), invoice.getTaxHead(),
+                invoice.getRoundOff(), first.getRoundOff());
+        assertTrue(last.isCompletesInvoice());
+        assertMoney("0.35", last.getLines().get(0).getNet());
+        assertMoney("-0.35", last.getRoundOff());
+        assertMoney("0.00", last.getTotal());
+        assertEquals(0, invoice.getTotal().compareTo(first.getTotal().add(last.getTotal())));
+        assertEquals(0, invoice.getRoundOff().compareTo(first.getRoundOff().add(last.getRoundOff())));
+
+        // A note written before the cap (121.10, no round-off) leaves nothing: the last note is 0.00, not -0.10.
+        CreditResult afterOld = calculator.credit(List.of(creditLine(line, 346, firstLine, 1)), invoice.getTaxHead(),
+                invoice.getRoundOff(), BigDecimal.ZERO);
+        assertMoney("0.00", afterOld.getTotal());
+
+        // A small part is not touched: 1 m of it is 35.00, no round-off.
+        CreditResult small = calculator.credit(List.of(creditLine(line, 0, null, 100)), invoice.getTaxHead(),
+                invoice.getRoundOff(), BigDecimal.ZERO);
+        assertMoney("35.00", small.getTotal());
+        assertMoney("0.00", small.getRoundOff());
+    }
+
     @Test
     void creditingMoreThanWasInvoicedIsRefused() {
         TaxLineResult line = calculator.calculate(regular(item("a", "100.00", 2, TestTaxData.zeroClassTest())))

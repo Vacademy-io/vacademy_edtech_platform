@@ -2403,6 +2403,54 @@ class CommerceStockOpsDatabaseProofIT {
         assertEquals(Set.of(1200, 30), new HashSet<>(done.stream().map(LabelDtos.LabelRow::originalQuantity).toList()));
     }
 
+    /**
+     * Round 2 (frontend MI-3): the transfers list names a cloth transfer's sum in its unit and scale
+     * (25 base units = 2.5 m), a transfer of cloth and cups as mixed; a dispatch that would take
+     * cloth kept for online orders names the cloth's scale and unit, so the screen says 2.5 m.
+     */
+    @Test
+    @Order(23)
+    void r2_theTransfersListAndPromisedOnlineReadMetres() throws Exception {
+        TransferView clothOnly = draft(w1, l1, l2, List.of(qty(cloth, 25)));
+        TransferView mixed = draft(w1, l1, l2, List.of(qty(cloth, 5), qty(cup, 1)));
+        List<StockOpsDtos.TransferRow> rows = body(transfers.list(admin, inst, "DRAFT", null, null, null, 0, 200))
+                .transfers();
+        StockOpsDtos.TransferRow clothRow = rows.stream().filter(r -> r.id().equals(clothOnly.id())).findFirst()
+                .orElseThrow();
+        assertEquals(25, clothRow.qtySent());
+        assertEquals("MTR", clothRow.unit());
+        assertEquals(10, clothRow.qtyScale());
+        assertNull(clothRow.mixedUnits());
+        String clothJson = json.writeValueAsString(clothRow);
+        assertTrue(clothJson.contains("\"qty_scale\":10") && clothJson.contains("\"unit\":\"MTR\"")
+                && !clothJson.contains("mixed_units"), clothJson);
+        StockOpsDtos.TransferRow mixedRow = rows.stream().filter(r -> r.id().equals(mixed.id())).findFirst()
+                .orElseThrow();
+        assertEquals(6, mixedRow.qtySent());
+        assertEquals(Boolean.TRUE, mixedRow.mixedUnits());
+        assertNull(mixedRow.qtyScale());
+        assertNull(mixedRow.unit());
+        assertTrue(rows.stream().filter(r -> !r.id().equals(clothOnly.id()) && !r.id().equals(mixed.id()))
+                .allMatch(r -> Boolean.TRUE.equals(r.mixedUnits()) || r.qtyScale() != null), "every row says its unit");
+        note("transfers list: cloth row " + clothRow.qtySent() + " at scale " + clothRow.qtyScale() + " "
+                + clothRow.unit() + "; cloth + cup row mixed=" + mixedRow.mixedUnits());
+
+        int free = slots(cloth);
+        assertTrue(free > 0, "cloth sells online");
+        List<StockHold> held = stockHoldService.hold(inst, Map.of(cloth, free), StockHoldKind.PURCHASE);
+        stockHoldService.attach(held, "shopper-" + run, null, "clothlog-" + run);
+        long before = movements();
+        RuntimeException refused = assertThrows(RuntimeException.class, () -> dispatch(w1, clothOnly.id()));
+        assertTrue(refused.getMessage().startsWith("PROMISED_ONLINE: ")
+                && refused.getMessage().contains("unit(s) of CLOTH-")
+                && refused.getMessage().contains(" (qty_scale 10, unit MTR); "), refused.getMessage());
+        assertEquals(before, movements(), "rolled back");
+        note("promised online, cloth: " + refused.getMessage());
+        stockHoldService.releaseForOrder("clothlog-" + run);
+        body(transfers.cancel(manager, inst, clothOnly.id(), new StockOpsDtos.CancelRequest(key(), null)));
+        body(transfers.cancel(manager, inst, mixed.id(), new StockOpsDtos.CancelRequest(key(), null)));
+    }
+
     private static String refusal(RuntimeException e) {
         if (e instanceof CommerceAccessDeniedException denied) {
             return denied.getCode();

@@ -224,23 +224,69 @@ public class StockTransferService {
                             Sort.by(Sort.Direction.DESC, "createdAt").and(Sort.by(Sort.Direction.DESC, "id"))));
             Map<String, StockLocation> places = locations(instituteId);
             Map<String, long[]> totals = new HashMap<>();
+            Map<String, RowMeasure> measures = new HashMap<>();
             List<String> ids = rows.getContent().stream().map(StockTransfer::getId).toList();
             if (!ids.isEmpty()) {
                 for (StockTransferLineRepository.LineTotals t : lineRepository.totals(instituteId, ids)) {
                     totals.put(t.getTransferId(), new long[]{nz(t.getLineCount()), nz(t.getQtySent())});
+                    measures.put(t.getTransferId(), rowMeasure(t.getMeasureKinds(), t.getUnit(), t.getQtyScale()));
                 }
             }
             List<TransferRow> out = new ArrayList<>();
             for (StockTransfer t : rows.getContent()) {
                 long[] sum = totals.getOrDefault(t.getId(), new long[]{0, 0});
+                RowMeasure measure = measures.getOrDefault(t.getId(), RowMeasure.PIECES);
                 out.add(new TransferRow(t.getId(), t.getTransferNumber(), t.getStatus(),
                         place(places.get(t.getFromLocationId()), t.getFromLocationId(), null),
                         place(places.get(t.getToLocationId()), t.getToLocationId(), null), t.getDocumentNumber(),
                         sum[0], sum[1], text(t.getCreatedAt()), text(t.getDispatchedAt()), text(t.getReceivedAt()),
-                        overdue(t, days)));
+                        overdue(t, days), measure.unit(), measure.qtyScale(), measure.mixedUnits()));
             }
             return new TransfersAnswer(out, pageNo, pageSize, rows.getTotalElements());
         });
+    }
+
+    /** What a list row's units are: the measured unit and scale its lines share, or mixed. */
+    record RowMeasure(String unit, Integer qtyScale, Boolean mixedUnits) {
+        static final RowMeasure PIECES = new RowMeasure(null, 1, null);
+        static final RowMeasure MIXED = new RowMeasure(null, null, Boolean.TRUE);
+    }
+
+    /**
+     * One kind of unit on every line: pieces (scale 1, no unit) or one measured unit and scale
+     * ("MTR", 10); more than one kind is mixed (the base units add up to no quantity).
+     */
+    static RowMeasure rowMeasure(Long kinds, String unit, Integer qtyScale) {
+        if (kinds != null && kinds > 1) {
+            return RowMeasure.MIXED;
+        }
+        int scale = qtyScale == null || qtyScale < 1 ? 1 : qtyScale;
+        if (scale == 1) {
+            return RowMeasure.PIECES;
+        }
+        return new RowMeasure(unit == null || unit.isBlank() ? null : unit.trim(), scale, null);
+    }
+
+    /**
+     * {@code " (qty_scale 10, unit MTR)"} when every item short of its online promise is measured
+     * in one unit and scale, so the screen can say "2.5 m" for the base units; otherwise nothing.
+     */
+    static String shortfallMeasure(Collection<String> packageSessionIds, Map<String, ItemFacts> facts) {
+        String unit = null;
+        Integer scale = null;
+        for (String id : packageSessionIds) {
+            ItemFacts item = facts.get(id);
+            if (item == null || item.qtyScale() <= 1 || item.unit() == null || item.unit().isBlank()) {
+                return "";
+            }
+            String itemUnit = item.unit().trim().toUpperCase(Locale.ROOT);
+            if (scale != null && (scale != item.qtyScale() || !unit.equals(itemUnit))) {
+                return "";
+            }
+            unit = itemUnit;
+            scale = item.qtyScale();
+        }
+        return scale == null ? "" : " (qty_scale " + scale + ", unit " + unit + ")";
     }
 
     // ================================================================== create, update, cancel
@@ -543,7 +589,8 @@ public class StockTransferService {
             throw new ConflictException("PROMISED_ONLINE: " + units + " unit(s) of "
                     + (item == null ? first.getKey() : item.sku())
                     + (shortfall.size() > 1 ? " and other items" : "")
-                    + " are held or sold online; a manager may send them anyway");
+                    + " are held or sold online" + shortfallMeasure(shortfall.keySet(), facts)
+                    + "; a manager may send them anyway");
         }
 
         LocalDate today = documentClock.today(instituteId);

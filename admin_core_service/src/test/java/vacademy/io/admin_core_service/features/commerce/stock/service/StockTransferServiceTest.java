@@ -363,4 +363,42 @@ class StockTransferServiceTest {
         assertEquals("TRANSFER_EMPTY", code(() -> service.dispatch(INST, staffAtL2, "t-1", send(null, null))));
         verify(ledger, never()).postAll(any());
     }
+
+    // ------------------------------------------------------------------ round 2: units on the list and in PROMISED_ONLINE
+
+    private static ItemFacts measured(String variant, String unit, int scale) {
+        return new ItemFacts(variant, "pkg-" + variant, "SKU-" + variant, "Item " + variant, Map.of(), "One size",
+                "QUANTITY", "TRACKED", "ACTIVE", "ACTIVE", unit, scale, 1, null, null, null, "5208", null);
+    }
+
+    /** A list row names its sum only in the unit every line shares: 23.7 m, 12 pieces, or mixed. */
+    @Test
+    void aListRowNamesTheUnitItsLinesShare() {
+        StockTransferService.RowMeasure cloth = StockTransferService.rowMeasure(1L, "MTR", 10);
+        assertEquals("MTR", cloth.unit());
+        assertEquals(10, cloth.qtyScale());
+        assertEquals(null, cloth.mixedUnits());
+        StockTransferService.RowMeasure pieces = StockTransferService.rowMeasure(1L, null, 1);
+        assertEquals(null, pieces.unit());
+        assertEquals(1, pieces.qtyScale());
+        StockTransferService.RowMeasure mixed = StockTransferService.rowMeasure(2L, "MTR", 10);
+        assertEquals(Boolean.TRUE, mixed.mixedUnits());
+        assertEquals(null, mixed.qtyScale());
+        assertEquals(null, mixed.unit());
+        assertEquals(null, StockTransferService.rowMeasure(1L, " ", 10).unit(), "an old blank unit names none");
+    }
+
+    /** PROMISED_ONLINE of a cloth carries its scale and unit, so the screen says 2.5 m, not 25 units. */
+    @Test
+    void promisedOnlineNamesTheScaleAndUnitWhenTheItemsShareThem() {
+        Map<String, ItemFacts> facts = Map.of("cotton", measured("cotton", "MTR", 10),
+                "linen", measured("linen", "mtr", 10), "rice", measured("rice", "KGS", 1000),
+                "bottle", item("bottle", "QUANTITY", "TRACKED", "ACTIVE"));
+        assertEquals(" (qty_scale 10, unit MTR)", StockTransferService.shortfallMeasure(List.of("cotton"), facts));
+        assertEquals(" (qty_scale 10, unit MTR)",
+                StockTransferService.shortfallMeasure(List.of("cotton", "linen"), facts));
+        assertEquals("", StockTransferService.shortfallMeasure(List.of("cotton", "rice"), facts), "two units");
+        assertEquals("", StockTransferService.shortfallMeasure(List.of("bottle"), facts), "pieces: the count");
+        assertEquals("", StockTransferService.shortfallMeasure(List.of("cotton", "bottle"), facts));
+    }
 }

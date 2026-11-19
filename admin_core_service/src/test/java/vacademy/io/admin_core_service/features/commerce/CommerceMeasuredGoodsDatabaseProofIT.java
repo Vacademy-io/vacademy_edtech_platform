@@ -1207,6 +1207,81 @@ class CommerceMeasuredGoodsDatabaseProofIT {
         closeEven(s);
     }
 
+    /**
+     * Round 2, money MINOR-1: a ribbon at 0.35 a cm (scale 100). 3.47 m is 121.45, billed 121.00
+     * (round-off -0.45). 3.46 m back is worth 121.10 by its line, more than was paid: the note is
+     * capped at 121.00 and the cash refund goes through; the last 1 cm is a 0.00 note, never -0.10.
+     */
+    @Test
+    @Order(13)
+    void r2_aCreditNeverPassesWhatIsLeftOfTheBill() {
+        String ribbon = variantOf(product("satin-ribbon", "Satin ribbon", "RIBBON", "0.35", "QUANTITY", "MTR", 100,
+                1));
+        receive(ribbon, 400, "0.2000");
+        snapshotLoader.evict(inst);
+        String s = open("500.00");
+        PosDtos.Quote quoted = quote(s, List.of(line("l1", ribbon, 347)), null);
+        same("121.00", quoted.totals().total(), "121.45 rounded to the rupee");
+        PosSaleService.Outcome sold = sell(s, List.of(line("l1", ribbon, 347)), List.of(cash("121.00")));
+        String order = sold.answer().sale().orderId();
+        String ribbonLine = text("SELECT id FROM commerce_order_line WHERE order_id = ? AND line_type = 'ITEM'", order);
+        String invoiceId = text("SELECT id FROM invoice WHERE commerce_order_id = ? AND cancelled_at IS NULL", order);
+        same("121.00", money("SELECT total_amount FROM invoice WHERE id = ?", invoiceId), "invoice total");
+
+        BigDecimal drawer = expected(s);
+        PosReturnService.Outcome most = posReturns.create(cashier, inst, new PosDtos.ReturnRequest(key(), s, order,
+                List.of(new PosDtos.ReturnLine(ribbonLine, 346, "RESALEABLE", null)), "DEFECTIVE", null, null,
+                new PosDtos.Settle("REFUND", "CASH", null), null));
+        same("121.00", most.answer().credit(), "capped at what is left of the bill");
+        same("121.00", most.answer().refund().amount(), "the whole bill back in cash");
+        CommerceCreditNote first = creditNoteRepository.findById(most.answer().creditNoteId()).orElseThrow();
+        same("-0.10", first.getRoundOff(), "the cut is the note's round-off");
+        same("121.10", money("SELECT amount FROM commerce_credit_note_line WHERE credit_note_id = ?", first.getId()),
+                "the line keeps its share");
+        assertEquals(0, drawer.subtract(amount("121.00")).compareTo(expected(s)), "121.00 left the drawer");
+
+        PosReturnService.Outcome last = posReturns.create(cashier, inst, new PosDtos.ReturnRequest(key(), s, order,
+                List.of(new PosDtos.ReturnLine(ribbonLine, 1, "RESALEABLE", null)), "DEFECTIVE", null, null,
+                new PosDtos.Settle("REFUND", "CASH", null), null));
+        same("0.00", last.answer().credit(), "nothing is left to credit");
+        CommerceCreditNote closing = creditNoteRepository.findById(last.answer().creditNoteId()).orElseThrow();
+        same("0.00", closing.getTotal(), "never a negative note");
+        same("121.00", money("SELECT SUM(total) FROM commerce_credit_note WHERE invoice_id = ?", invoiceId),
+                "the notes add up to the invoice");
+        same("-0.45", money("SELECT SUM(round_off) FROM commerce_credit_note WHERE invoice_id = ?", invoiceId),
+                "and so do their round-offs");
+        note("ribbon 3.47 m billed 121.00: 3.46 m credited " + first.getTotal() + " (round-off " + first.getRoundOff()
+                + "), last 1 cm " + closing.getTotal());
+        closeEven(s);
+    }
+
+    /**
+     * Round 2, money MINOR-2: 1.2 m back from 3.4 m sold at 123.40 / m less 19.56 (400.00) is
+     * credited 141.18; the credit note row shows its 6.90 share of the discount, so it adds up.
+     */
+    @Test
+    @Order(14)
+    void r2_aCreditNoteRowShowsItsShareOfTheDiscount() {
+        String money = rupee();
+        String s = open("500.00");
+        PosSaleService.Outcome sold = sales.sale(cashier, inst, new PosDtos.SaleRequest(key(), s,
+                List.of(new PosDtos.SaleLine("l1", cotton, 34, null, amount("19.56"), null)), null, null,
+                List.of(cash("400.00")), null, null, null, null, null, "Proof discount", null));
+        String order = sold.answer().sale().orderId();
+        String clothLine = text("SELECT id FROM commerce_order_line WHERE order_id = ? AND line_type = 'ITEM'", order);
+        PosReturnService.Outcome back = posReturns.create(cashier, inst, new PosDtos.ReturnRequest(key(), s, order,
+                List.of(new PosDtos.ReturnLine(clothLine, 12, "RESALEABLE", null)), "DEFECTIVE", null, null,
+                new PosDtos.Settle("REFUND", "CASH", null), null));
+        same("141.18", back.answer().credit(), "400.00 x 12 / 34");
+        CommerceCreditNote note = creditNoteRepository.findById(back.answer().creditNoteId()).orElseThrow();
+        String html = CommerceDocumentHtml.build(pdfService.creditNoteView(note));
+        assertTrue(html.contains("<td class=\"num\">1.2 m</td><td class=\"num\">" + money + "123.40 / m</td>"
+                + "<td class=\"num\">" + money + "6.90</td>"), html);
+        assertTrue(html.contains(money + "141.18"), html);
+        note("discounted credit note row: 1.2 m | " + money + "123.40 / m | " + money + "6.90 | " + money + "141.18");
+        closeEven(s);
+    }
+
     private static void assertInstanceOf(Class<?> type, Object value) {
         assertTrue(type.isInstance(value), "expected " + type.getSimpleName() + ", got " + value);
     }

@@ -166,9 +166,16 @@ public final class StockOpsDtos {
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
+    /**
+     * One transfer of the list. {@code qtySent} is base units over all lines: read it with
+     * {@code qtyScale} (1 for pieces) and {@code unit} (a measured item's code), which are present
+     * only when every line shares them; {@code mixedUnits} is true when they do not, and the sum
+     * names no quantity.
+     */
     public record TransferRow(String id, String transferNumber, String status, PlaceRef from, PlaceRef to,
                               String documentNumber, long lineCount, long qtySent, String createdAt,
-                              String dispatchedAt, String receivedAt, boolean overdue) {
+                              String dispatchedAt, String receivedAt, boolean overdue, String unit,
+                              Integer qtyScale, Boolean mixedUnits) {
     }
 
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)

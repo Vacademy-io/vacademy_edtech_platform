@@ -376,6 +376,30 @@ class CommerceInvoiceServiceTest {
         verify(invoices).saveAndFlush(any(Invoice.class));
     }
 
+    /**
+     * Round 2 (money MINOR-1): a part note capped at the bill's total (3.46 m of 3.47 m of a ribbon
+     * billed 121.00) leaves the last 1 cm without a note. The invoice is still the order's live
+     * document, so the last unit can come back; it is not "credited in full".
+     */
+    @Test
+    void anInvoiceWhoseTotalIsCreditedWithUnitsLeftIsStillLive() {
+        Invoice capped = new Invoice();
+        capped.setId("inv-capped");
+        capped.setInstituteId(INST);
+        capped.setDocumentType("TAX_INVOICE");
+        capped.setTotalAmount(new BigDecimal("121.00"));
+        when(mappings.findCommerceDocumentsByPaymentLogIds(anyCollection())).thenReturn(List.of(capped));
+        when(creditNotes.hasCreditNotes(INST, "inv-capped")).thenReturn(true);
+        when(creditNotes.creditedTotal(INST, "inv-capped")).thenReturn(new BigDecimal("121.00"));
+        when(creditNotes.hasUnitsLeft(INST, "inv-capped")).thenReturn(true);
+
+        CommerceInvoiceService.Issued issued = service.issue(INST, request(TaxMode.REGULAR));
+
+        assertTrue(issued.alreadyExisted());
+        assertEquals("inv-capped", issued.invoice().getId());
+        assertEquals("inv-capped", service.liveDocument(INST, List.of("log-1")).orElseThrow().getId());
+    }
+
     @Test
     void afterAB2bReissueTheOrderStillHasItsLiveInvoice() {
         Invoice credited = new Invoice();

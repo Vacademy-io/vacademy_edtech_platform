@@ -175,10 +175,15 @@ public class CommerceInvoiceService {
         return out;
     }
 
+    /**
+     * Credited in full: the notes reach the invoice total and every unit has a note. A capped part
+     * note can reach the total with units still to come back; their return still needs this invoice.
+     */
     private boolean isFullyCredited(String instituteId, Invoice invoice) {
         return creditNoteService.hasCreditNotes(instituteId, invoice.getId())
                 && creditNoteService.creditedTotal(instituteId, invoice.getId())
-                        .compareTo(invoice.getTotalAmount()) >= 0;
+                        .compareTo(invoice.getTotalAmount()) >= 0
+                && !creditNoteService.hasUnitsLeft(instituteId, invoice.getId());
     }
 
     private Invoice issueNew(String instituteId, CommerceInvoiceRequest request, List<String> logIds,
