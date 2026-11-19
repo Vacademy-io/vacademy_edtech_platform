@@ -5,13 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.ParameterizedTypeReference;
+import io.netty.channel.ChannelOption;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.common.payment.currency.CurrencyRegistry;
@@ -21,6 +24,7 @@ import vacademy.io.common.payment.enums.PaymentStatusEnum;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HashMap;
@@ -32,7 +36,16 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
 
     private static final Logger logger = LoggerFactory.getLogger(PhonePePaymentManager.class);
     private final WebClient webClient;
+    /**
+     * Same as {@link #webClient} with a 5 s connect and 10 s response timeout, for the status
+     * read-back that confirms webhooks ({@link #checkPaymentStatusWithTimeouts}). Checkout and
+     * the other calls keep using {@link #webClient} unchanged.
+     */
+    private final WebClient boundedWebClient;
     private final ObjectMapper objectMapper;
+
+    static final int CHECK_CONNECT_TIMEOUT_MS = 5_000;
+    static final Duration CHECK_RESPONSE_TIMEOUT = Duration.ofSeconds(10);
 
     /**
      * V2 OAuth access tokens are reusable until they expire, so cache them per
@@ -51,6 +64,11 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
     }
 
     public PhonePePaymentManager(WebClient.Builder webClientBuilder, ObjectMapper objectMapper) {
+        this.boundedWebClient = webClientBuilder.clone()
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.create()
+                        .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CHECK_CONNECT_TIMEOUT_MS)
+                        .responseTimeout(CHECK_RESPONSE_TIMEOUT)))
+                .build();
         this.webClient = webClientBuilder.build();
         this.objectMapper = objectMapper;
     }
@@ -222,7 +240,7 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
             throw new VacademyException("PhonePe API Base URL is missing.");
         }
 
-        String token = getAccessToken(data);
+        String token = getAccessToken(data, webClient);
         long amountInPaise = CurrencyRegistry.toMinorUnits(request.getAmount(), request.getCurrency());
 
         PhonePeRequestDTO phonePeRequest = request.getPhonePeRequest();
@@ -287,17 +305,18 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
      * (COMPLETED / FAILED / PENDING). Never throws — returns a FAILED-state DTO on
      * error so the caller (PaymentService) can proceed without NPEs.
      */
-    private PhonePeStatusResponseDTO checkPaymentStatusV2(String merchantOrderId, Map<String, Object> data) {
+    private PhonePeStatusResponseDTO checkPaymentStatusV2(String merchantOrderId, Map<String, Object> data,
+            WebClient client) {
         try {
             String payBaseUrl = resolvePayBaseUrl(data);
             if (!StringUtils.hasText(payBaseUrl)) {
                 throw new VacademyException("PhonePe API Base URL is missing.");
             }
-            String token = getAccessToken(data);
+            String token = getAccessToken(data, client);
             String url = payBaseUrl + "/checkout/v2/order/" + merchantOrderId + "/status";
             logger.info("Calling PhonePe V2 status API: {}", url);
 
-            PhonePeStatusResponseDTO status = webClient.get()
+            PhonePeStatusResponseDTO status = client.get()
                     .uri(url)
                     .header("Authorization", "O-Bearer " + token)
                     .retrieve()
@@ -322,7 +341,7 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
      * Returns a valid V2 OAuth access token, fetching and caching a new one when
      * the cached token is absent or within 60s of expiry.
      */
-    private String getAccessToken(Map<String, Object> data) {
+    private String getAccessToken(Map<String, Object> data, WebClient client) {
         String clientId = trimToNull((String) data.get("clientId"));
         String clientSecret = trimToNull((String) data.get("clientSecret"));
         String clientVersion = trimToNull((String) data.get("clientVersion"));
@@ -348,7 +367,7 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
         form.add("client_secret", clientSecret);
         form.add("grant_type", "client_credentials");
 
-        Map<String, Object> tokenResponse = webClient.post()
+        Map<String, Object> tokenResponse = client.post()
                 .uri(oauthUrl)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .body(BodyInserters.fromFormData(form))
@@ -506,11 +525,25 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
 
     public PhonePeStatusResponseDTO checkPaymentStatus(String merchantTransactionId,
             Map<String, Object> paymentGatewaySpecificData) {
+        return checkPaymentStatus(merchantTransactionId, paymentGatewaySpecificData, webClient);
+    }
+
+    /**
+     * {@link #checkPaymentStatus}, with a 5 s connect and 10 s response timeout on each call
+     * (token and status), for confirming webhooks with the gateway.
+     */
+    public PhonePeStatusResponseDTO checkPaymentStatusWithTimeouts(String merchantTransactionId,
+            Map<String, Object> paymentGatewaySpecificData) {
+        return checkPaymentStatus(merchantTransactionId, paymentGatewaySpecificData, boundedWebClient);
+    }
+
+    private PhonePeStatusResponseDTO checkPaymentStatus(String merchantTransactionId,
+            Map<String, Object> paymentGatewaySpecificData, WebClient client) {
         logger.info("Checking PhonePe payment status for transaction: {}", merchantTransactionId);
 
         // V2 (OAuth) institutes use the /checkout/v2/order/{id}/status endpoint.
         if (StringUtils.hasText((String) paymentGatewaySpecificData.get("clientVersion"))) {
-            return checkPaymentStatusV2(merchantTransactionId, paymentGatewaySpecificData);
+            return checkPaymentStatusV2(merchantTransactionId, paymentGatewaySpecificData, client);
         }
 
         try {
@@ -538,7 +571,7 @@ public class PhonePePaymentManager implements PaymentServiceStrategy {
             String url = baseUrl + endpoint;
             logger.info("Calling PhonePe Status API: {}", url);
 
-            PhonePeResponseWrapperDTO<PhonePeStatusResponseDTO> response = webClient.get()
+            PhonePeResponseWrapperDTO<PhonePeStatusResponseDTO> response = client.get()
                     .uri(url)
                     .header("X-VERIFY", checksum)
                     .header("X-MERCHANT-ID", merchantId)

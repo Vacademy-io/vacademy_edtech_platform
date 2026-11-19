@@ -42,6 +42,14 @@ import { useCouponsEnabled } from "@/components/common/coupon/use-coupons-enable
 import { useCheckoutCoupon } from "@/components/common/coupon/use-checkout-coupon";
 import { CouponInput } from "@/components/common/coupon/CouponInput";
 import { invitePaymentEntryFor } from "../-services/course-levels-service";
+import {
+  isExistingAccountWithoutSession,
+  sendExistingAccountToSignIn,
+} from "@/lib/auth/existing-account-sign-in";
+
+// Where a signed-in enrollment lands (CourseDetailsPage onSuccess); an account that has to
+// sign in itself is sent back here after signing in.
+const AFTER_ENROLLMENT_ROUTE = "/study-library/courses";
 
 interface EnrollmentPaymentDialogProps {
   open: boolean;
@@ -1516,6 +1524,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         throw new Error(paymentResponse.message || paymentResponse.ex || t("enrollmentPaymentDialog.completeEnrollmentFailed"));
       }
 
+      // Enrolled, but the account already existed and signs in itself.
+      if (isExistingAccountWithoutSession(paymentResponse)) {
+        await sendExistingAccountToSignIn({ email, phone, redirect: AFTER_ENROLLMENT_ROUTE });
+        return;
+      }
+
       // Try to get credentials from register response and login
       const username = paymentResponse?.user?.username || paymentResponse?.user_details?.username || paymentResponse?.username;
       const password = paymentResponse?.user?.password || paymentResponse?.user_details?.password || paymentResponse?.password;
@@ -1649,6 +1663,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
             custom_field_values: [],
           },
         });
+
+        // Enrolled, but the account already existed and signs in itself.
+        if (isExistingAccountWithoutSession(result)) {
+          await sendExistingAccountToSignIn({ email, phone, redirect: AFTER_ENROLLMENT_ROUTE });
+          return;
+        }
 
         if (result.accessToken && result.refreshToken) {
           onSuccess({
@@ -1899,6 +1919,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
           custom_field_values: [],
         },
       });
+
+      // Enrolled, but the account already existed and signs in itself.
+      if (isExistingAccountWithoutSession(result)) {
+        await sendExistingAccountToSignIn({ email, phone, redirect: AFTER_ENROLLMENT_ROUTE });
+        return;
+      }
 
       // Check for successful payment
       if (result.accessToken && result.refreshToken) {

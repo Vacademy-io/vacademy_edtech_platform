@@ -213,12 +213,16 @@ jobs:
               NAVANA_ENV="NAVANA_API_KEY=$NAVANA_API_KEY"
             fi
 
+            # ADMIN_CORE_BASE is the in-cluster admin-core Service: the bot's
+            # /admin-core-service/internal/voice-bot/* calls stay inside the
+            # cluster instead of leaving through the public host. PUBLIC_BASE
+            # stays public (Plivo connects to it).
             kubectl set env deployment/"$DEPLOYMENT_NAME" \
               --namespace "$NAMESPACE" \
               ${EXTRA_ENV:+"$EXTRA_ENV"} \
               ${NAVANA_ENV:+"$NAVANA_ENV"} \
               PUBLIC_BASE=https://backend-stage.vacademy.io/voice-bot-service \
-              ADMIN_CORE_BASE=https://backend-stage.vacademy.io \
+              ADMIN_CORE_BASE=http://admin-core-service:8072 \
               VOICE_BOT_CLIENT_NAME=${{ vars.VOICE_BOT_CLIENT_NAME || 'voice_bot_service' }} \
               VOICE_BOT_CLIENT_SECRET=${{ secrets.VOICE_BOT_CLIENT_SECRET }} \
               SARVAM_API_KEY=${{ secrets.SARVAM_API_KEY }} \

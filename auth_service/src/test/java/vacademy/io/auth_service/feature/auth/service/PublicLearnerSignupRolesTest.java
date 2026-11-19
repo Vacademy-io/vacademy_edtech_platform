@@ -45,6 +45,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -59,6 +60,7 @@ class PublicLearnerSignupRolesTest {
 
     private static final String INSTITUTE = "inst-1";
     private static final String OTHER_INSTITUTE = "inst-2";
+    private static final String SUPER_ADMIN_ID = "super-admin-id";
 
     @Mock UserRepository userRepository;
     @Mock RoleRepository roleRepository;
@@ -113,6 +115,8 @@ class PublicLearnerSignupRolesTest {
         ReflectionTestUtils.setField(manager, "oAuth2VendorToUserDetailService", oAuth2VendorToUserDetailService);
         ReflectionTestUtils.setField(manager, "applicationName", "auth_service");
         ReflectionTestUtils.setField(manager, "adminCoreServiceBaseUrl", "http://admin-core.test");
+        ReflectionTestUtils.setField(manager, "trustedLoginEligibility",
+                new TrustedLoginEligibility(userRoleRepository, institutePolicyService, SUPER_ADMIN_ID::equals));
     }
 
     private void policy(boolean learnersCreateCourses) {
@@ -120,6 +124,8 @@ class PublicLearnerSignupRolesTest {
                 .allowLearnersToCreateCourses(learnersCreateCourses).build();
         when(institutePolicyService.fetchSignupPolicy(INSTITUTE)).thenReturn(policy);
         when(institutePolicyService.fetchSignupPolicyCached(INSTITUTE)).thenReturn(policy);
+        when(institutePolicyService.fetchSignupPolicyAnswerCached(INSTITUTE))
+                .thenReturn(new InstitutePolicyService.SignupPolicyAnswer(policy, true));
     }
 
     private static UserDTO body(String email, List<String> roles) {
@@ -358,6 +364,7 @@ class PublicLearnerSignupRolesTest {
 
         assertEquals("access", response.getAccessToken());
         assertEquals("refresh", response.getRefreshToken());
+        assertNull(response.getAccountExists());
         assertEquals(Set.of("STUDENT"), rolesInToken());
         assertEquals("existing-id", body.getId());
         assertEquals(List.of("STUDENT"), body.getRoles());
@@ -366,18 +373,132 @@ class PublicLearnerSignupRolesTest {
     }
 
     @Test
-    void existingAccountHoldingOtherRolesIsAnsweredAsBeforeAndGainsNothingOutsideTheLearnerSet() {
-        // Out of this commit's scope by the owner's decision: what an existing account is
-        // answered with. Only the role names that may be ADDED are narrowed.
+    void existingAccountHoldingOtherRolesIsEnrolledButNotSignedInAndGainsNothingOutsideTheLearnerSet() {
+        // A TEACHER role counts as staff here: it is not in an institute where the account is
+        // also a learner who may create courses.
         for (String heldRole : List.of("ADMIN", "TEACHER", "EVALUATOR", "My Custom Role")) {
-            org.mockito.Mockito.clearInvocations(userRoleRepository, jwtService);
+            org.mockito.Mockito.clearInvocations(userRoleRepository, jwtService, internalClientUtils,
+                    refreshTokenService);
             existing("other@example.com", held("STUDENT", INSTITUTE, "ACTIVE"),
                     held(heldRole, OTHER_INSTITUTE, "ACTIVE"));
+            UserDTO body = body("other@example.com", List.of("ADMIN", "STUDENT", "EVALUATOR"));
 
-            assertEquals("access", manager.registerLearner(request(INSTITUTE,
-                    body("other@example.com", List.of("ADMIN", "STUDENT", "EVALUATOR")))).getAccessToken(), heldRole);
+            var response = manager.registerLearner(request(INSTITUTE, body));
+
+            assertNull(response.getAccessToken(), heldRole);
+            assertNull(response.getRefreshToken(), heldRole);
+            assertEquals(Boolean.TRUE, response.getAccountExists(), heldRole);
             assertEquals(Set.of("STUDENT"), rolesAddedToExistingUser(), heldRole);
+            verify(internalClientUtils).makeHmacRequest(any(), any(), any(), eq(AuthConstants.ADD_LEARNER), eq(body));
+            verify(refreshTokenService, never()).createRefreshToken(any(), any());
+            verify(jwtService, never()).generateToken(any(User.class), anyList(), anyList());
         }
+    }
+
+    @Test
+    void existingStaffAccountPayingOnACataloguePageIsEnrolledButNotSignedIn() {
+        // EnrollmentPaymentDialog after payment: the enrollment must still go through.
+        existing("admin@example.com", held("ADMIN", OTHER_INSTITUTE, "ACTIVE"));
+        LearnerEnrollRequestDTO request = request(INSTITUTE, body("admin@example.com", List.of("STUDENT")));
+        request.setLearnerPackageSessionEnroll(new LearnerPackageSessionsEnrollDTO());
+
+        var response = manager.registerLearner(request);
+
+        assertNull(response.getAccessToken());
+        assertNull(response.getRefreshToken());
+        assertEquals(Boolean.TRUE, response.getAccountExists());
+        verify(internalClientUtils).makeHmacRequest(any(), any(), any(), eq(AuthConstants.LEARNER_ENROLL_PATH),
+                eq(request));
+    }
+
+    @Test
+    void existingStaffAccountKeepsItsOAuthLink() {
+        existing("admin@example.com", held("STUDENT", INSTITUTE, "ACTIVE"), held("ADMIN", OTHER_INSTITUTE, "ACTIVE"));
+        LearnerEnrollRequestDTO request = request(INSTITUTE, body("admin@example.com", List.of("STUDENT")));
+        request.setSubjectId("github-subject");
+        request.setVendorId("github");
+
+        var response = manager.registerLearner(request);
+
+        assertNull(response.getAccessToken());
+        verify(oAuth2VendorToUserDetailService, never()).verifyEmail(any(), any(), any());
+    }
+
+    @Test
+    void existingLearnerOAuthLinkIsUnchanged() {
+        existing("learner@example.com", held("STUDENT", INSTITUTE, "ACTIVE"));
+        LearnerEnrollRequestDTO request = request(INSTITUTE, body("learner@example.com", List.of("STUDENT")));
+        request.setSubjectId("github-subject");
+        request.setVendorId("github");
+
+        assertEquals("access", manager.registerLearner(request).getAccessToken());
+        verify(oAuth2VendorToUserDetailService).verifyEmail("github-subject", "github", "learner@example.com");
+    }
+
+    @Test
+    void existingParentIsSignedIn() {
+        existing("parent@example.com", held("PARENT", INSTITUTE, "ACTIVE"));
+        var response = manager.registerLearner(request(INSTITUTE, body("parent@example.com", List.of("STUDENT"))));
+        assertEquals("access", response.getAccessToken());
+        assertNull(response.getAccountExists());
+    }
+
+    @Test
+    void existingLearnerWhoseStaffAccessWasRevokedIsSignedIn() {
+        existing("former@example.com", held("STUDENT", INSTITUTE, "ACTIVE"), held("ADMIN", OTHER_INSTITUTE, "DISABLED"));
+        assertEquals("access", manager.registerLearner(
+                request(INSTITUTE, body("former@example.com", List.of("STUDENT")))).getAccessToken());
+    }
+
+    @Test
+    void existingCourseCreatingLearnerIsSignedInWhereTheInstituteAllowsIt() {
+        policy(true);
+        existing("creator@example.com", held("STUDENT", INSTITUTE, "ACTIVE"), held("TEACHER", INSTITUTE, "ACTIVE"));
+        assertEquals("access", manager.registerLearner(
+                request(INSTITUTE, body("creator@example.com", List.of("STUDENT", "TEACHER")))).getAccessToken());
+    }
+
+    @Test
+    void existingCourseCreatingLearnerIsNotSignedInWhereTheInstituteForbidsIt() {
+        policy(false);
+        existing("creator@example.com", held("STUDENT", INSTITUTE, "ACTIVE"), held("TEACHER", INSTITUTE, "ACTIVE"));
+        assertNull(manager.registerLearner(
+                request(INSTITUTE, body("creator@example.com", List.of("STUDENT")))).getAccessToken());
+    }
+
+    @Test
+    void existingCourseCreatingLearnerIsSignedInWhenThePolicyCannotBeRead() {
+        when(institutePolicyService.fetchSignupPolicyAnswerCached(INSTITUTE))
+                .thenReturn(new InstitutePolicyService.SignupPolicyAnswer(null, false));
+        existing("creator@example.com", held("STUDENT", INSTITUTE, "ACTIVE"), held("TEACHER", INSTITUTE, "ACTIVE"));
+        assertEquals("access", manager.registerLearner(
+                request(INSTITUTE, body("creator@example.com", List.of("STUDENT")))).getAccessToken());
+    }
+
+    @Test
+    void existingSuperAdminAccountIsNotSignedIn() {
+        User account = User.builder().id(SUPER_ADMIN_ID).username("platform").email("platform@example.com")
+                .fullName("Platform").isRootUser(true).build();
+        when(userRepository.findFirstByEmailOrderByCreatedAtDesc("platform@example.com")).thenReturn(Optional.of(account));
+        when(userRoleRepository.findByUser(account)).thenReturn(List.of(held("STUDENT", INSTITUTE, "ACTIVE")));
+
+        var response = manager.registerLearner(request(INSTITUTE, body("platform@example.com", List.of("STUDENT"))));
+
+        assertNull(response.getAccessToken());
+        assertEquals(Boolean.TRUE, response.getAccountExists());
+    }
+
+    @Test
+    void existingStaffAccountFoundByPhoneIsNotSignedIn() {
+        when(instituteSettingsService.getUserIdentifier(any())).thenReturn("PHONE");
+        User byPhone = User.builder().id("phone-id").username("byphone").mobileNumber("919999999999")
+                .fullName("By Phone").isRootUser(true).build();
+        when(userRepository.findLatestUserByMobileNumber(anyString())).thenReturn(Optional.of(byPhone));
+        when(userRoleRepository.findByUser(byPhone)).thenReturn(List.of(held("ADMIN", INSTITUTE, "ACTIVE")));
+        UserDTO body = body("someone@example.com", List.of("STUDENT"));
+        body.setMobileNumber("+91 99999 99999");
+
+        assertNull(manager.registerLearner(request(INSTITUTE, body)).getAccessToken());
     }
 
     @Test

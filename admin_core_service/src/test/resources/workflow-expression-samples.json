@@ -1,0 +1,197 @@
+[
+ {
+  "expr": "#ctx['instituteId']",
+  "active": true
+ },
+ {
+  "expr": "#ctx['user']['email']",
+  "active": true
+ },
+ {
+  "expr": "#ctx['item']['name']",
+  "active": true
+ },
+ {
+  "expr": "#ctx['students']",
+  "active": true
+ },
+ {
+  "expr": "#ctx['students'].size() > 0",
+  "active": true
+ },
+ {
+  "expr": "#ctx['statusList'].contains('ACTIVE')",
+  "active": true
+ },
+ {
+  "expr": "T(java.util.Arrays).asList('ACTIVE')",
+  "active": true
+ },
+ {
+  "expr": "T(java.util.Collections).singletonList('RUN')",
+  "active": true
+ },
+ {
+  "expr": "T(java.util.Collections).emptyList()",
+  "active": true
+ },
+ {
+  "expr": "T(java.time.LocalDate).now().toString()",
+  "active": true
+ },
+ {
+  "expr": "T(java.time.ZonedDateTime).now(T(java.time.ZoneId).of('Asia/Kolkata'))",
+  "active": true
+ },
+ {
+  "expr": "T(java.time.LocalDate).now(T(java.time.ZoneId).of('Asia/Kolkata')).getDayOfWeek().getValue()",
+  "active": true
+ },
+ {
+  "expr": "T(java.time.temporal.ChronoUnit).DAYS.between(T(java.time.LocalDate).of(2026,1,1), T(java.time.LocalDate).of(2026,1,8))",
+  "active": true
+ },
+ {
+  "expr": "T(java.time.LocalDate).now().with(T(java.time.temporal.TemporalAdjusters).previousOrSame(T(java.time.DayOfWeek).MONDAY))",
+  "active": true
+ },
+ {
+  "expr": "T(java.time.LocalTime).parse('09:30').plusMinutes(15).toString()",
+  "active": true
+ },
+ {
+  "expr": "T(java.time.format.DateTimeFormatter).ofPattern('dd MMM yyyy').format(T(java.time.LocalDate).of(2026,11,19))",
+  "active": true
+ },
+ {
+  "expr": "T(java.time.Instant).now().toString()",
+  "active": true
+ },
+ {
+  "expr": "T(java.time.Year).now().getValue()",
+  "active": true
+ },
+ {
+  "expr": "new java.text.SimpleDateFormat('yyyy-MM-dd').format(new java.util.Date())",
+  "active": true
+ },
+ {
+  "expr": "T(java.util.Date).from(T(java.time.Instant).now())",
+  "active": true
+ },
+ {
+  "expr": "T(java.sql.Time).valueOf('10:15:00').toLocalTime()",
+  "active": true
+ },
+ {
+  "expr": "T(java.sql.Date).valueOf('2026-11-19').toLocalDate()",
+  "active": true
+ },
+ {
+  "expr": "T(java.lang.Math).floorMod(-3, 7)",
+  "active": true
+ },
+ {
+  "expr": "T(java.lang.Math).round(2.6)",
+  "active": true
+ },
+ {
+  "expr": "T(java.lang.Integer).parseInt('42')",
+  "active": true
+ },
+ {
+  "expr": "T(Integer).valueOf('7')",
+  "active": true
+ },
+ {
+  "expr": "T(java.lang.Double).parseDouble('3.5')",
+  "active": true
+ },
+ {
+  "expr": "T(String).valueOf(12)",
+  "active": true
+ },
+ {
+  "expr": "T(java.lang.String).join(',', T(java.util.Arrays).asList('a','b'))",
+  "active": true
+ },
+ {
+  "expr": "new java.math.BigDecimal('10.50').setScale(1, T(java.math.RoundingMode).HALF_UP).stripTrailingZeros().toPlainString()",
+  "active": true
+ },
+ {
+  "expr": "T(org.springframework.util.StringUtils).hasText(#ctx['name'])",
+  "active": true
+ },
+ {
+  "expr": "T(java.util.Locale).ENGLISH.toString()",
+  "active": true
+ },
+ {
+  "expr": "T(java.util.Base64).getEncoder().encodeToString('abc'.getBytes())",
+  "active": true
+ },
+ {
+  "expr": "new java.util.HashSet(T(java.util.Arrays).asList('x','y')).size()",
+  "active": true
+ },
+ {
+  "expr": "new java.util.HashMap().isEmpty()",
+  "active": true
+ },
+ {
+  "expr": "#ctx['name'] != null ? #ctx['name'].toString().trim().toUpperCase() : 'Learner'",
+  "active": true
+ },
+ {
+  "expr": "#ctx['user']?.email ?: ''",
+  "active": true
+ },
+ {
+  "expr": "#ctx['students'].![#this['email']]",
+  "active": true
+ },
+ {
+  "expr": "#ctx['students'].?[#this['day'] > 1]",
+  "active": true
+ },
+ {
+  "expr": "#ctx['students'].![{'userId': #this['id'], 'to': (#this['phone'] != null ? #this['phone'] : ''), 'templateName': 'welcome_day_1'}]",
+  "active": true
+ },
+ {
+  "expr": "#ctx['lmsConfig']['apiUrl'] + '/users'",
+  "active": true
+ },
+ {
+  "expr": "#ctx['authServiceBaseUrl'] + '/internal/user/get-users-of-roles-of-institute'",
+  "active": true
+ },
+ {
+  "expr": "'email:batch:' + #ctx['instituteId'] + ':' + T(java.time.LocalDate).now().toString()",
+  "active": true
+ },
+ {
+  "expr": "#ctx['title'].replace('{{name}}', #ctx['name']).substring(0, 5).indexOf('a') >= 0",
+  "active": true
+ },
+ {
+  "expr": "(#ctx['weekdayTitles'] != null && #ctx['weekdayTitles'][#ctx['todayDow']] != null) ? #ctx['weekdayTitles'][#ctx['todayDow']].toString() : #ctx['defaultTitle']",
+  "active": true
+ },
+ {
+  "expr": "#{ ctx.channel == 'EMAIL' || ctx.channel == 'BOTH' }",
+  "active": true,
+  "parses": false
+ },
+ {
+  "expr": "#283618",
+  "active": true,
+  "parses": false
+ },
+ {
+  "expr": "#ctx['students'].![{...#this, 'day': 1}]",
+  "active": true,
+  "parses": false
+ }
+]

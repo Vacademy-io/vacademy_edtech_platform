@@ -4530,6 +4530,16 @@ public class InvoiceService {
     /**
      * Get invoice by ID
      */
+    /**
+     * The institute an invoice was issued under, for access checks before acting on it by id.
+     * Any document type, as the actions it guards accept any.
+     */
+    public String getInvoiceInstituteId(String invoiceId) {
+        return invoiceRepository.findById(invoiceId)
+                .map(Invoice::getInstituteId)
+                .orElseThrow(() -> new VacademyException("Invoice not found: " + invoiceId));
+    }
+
     public InvoiceDTO getInvoiceById(String invoiceId) {
         Invoice invoice = invoiceRepository.findById(invoiceId)
                 .orElseThrow(() -> new VacademyException("Invoice not found: " + invoiceId));

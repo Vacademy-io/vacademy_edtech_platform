@@ -1,6 +1,8 @@
 package vacademy.io.common.auth.filter;
 
 import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,6 +40,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
      * returning a bodyless 403.
      */
     public static final String AUTH_FAILURE_REASON = "vacademy.authFailureReason";
+
+    /**
+     * AUTH_FAILURE_REASON value for a bearer that is not a token signed with this platform's
+     * key (bad signature) or not a JWT at all. Clients refresh their session once on it. The
+     * status stays 403; only the body's error code differs.
+     */
+    public static final String TOKEN_INVALID = "TOKEN_INVALID";
 
     // ── Session-limit enforcement caches (no external dependency) ──
     private record CacheEntry(boolean value, long expiresAt) {
@@ -241,6 +250,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         } catch (ExpiredTokenException exception) {
             // Expired Vacademy token detected by the explicit isTokenExpired check.
             throw new VacademyException(exception.getMessage());
+        } catch (SignatureException | MalformedJwtException exception) {
+            // Not signed with a key this service accepts, or not a JWT. Same as the catch-all
+            // below (permitAll routes still serve), but the reason is recorded so a refused
+            // request says TOKEN_INVALID and the client can refresh its session.
+            if (request.getAttribute(AUTH_FAILURE_REASON) == null) {
+                request.setAttribute(AUTH_FAILURE_REASON, TOKEN_INVALID);
+            }
+            log.debug("JWT processing skipped (token not valid here): {}", exception.getClass().getSimpleName());
         } catch (Exception exception) {
             // Unrecognised / external JWT (e.g. BBB HS512 token) — skip auth silently.
             // SecurityContext stays empty; Spring Security rules (permitAll vs

@@ -33,8 +33,10 @@ import java.util.Map;
  * Auth model mirrors {@link vacademy.io.admin_core_service.features.white_label.controller.WhiteLabelController}:
  * not under /admin/* (so institute admins can call it) but every endpoint asserts
  * the caller belongs to the target instituteId via {@link InstituteAccessValidator}.
- * Reading the (masked) list is open to any member; every write needs the institute
- * ADMIN role ({@code requireAdminAccess}, root/support users pass). Deactivating a
+ * With security.institute-guards.enforce on, reading the (masked) list needs institute staff
+ * and every write needs the institute ADMIN role, the root flag is not consulted and platform
+ * super admins on the allowlist pass; with it off (default) the previous checks apply
+ * ({@code validateUserAccess} / {@code requireAdminAccess}) and refusals are only logged. Deactivating a
  * gateway stops checkout on every invite link that uses it, so a teacher or
  * counsellor must not be able to do it.
  *
@@ -58,7 +60,7 @@ public class InstitutePaymentGatewayAdminController {
     public ResponseEntity<List<PaymentGatewayMappingDTO>> list(
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.guardStaff("paymentGateways.list", user, instituteId);
         return ResponseEntity.ok(paymentGatewayMappingService.listForInstitute(instituteId));
     }
 
@@ -78,7 +80,7 @@ public class InstitutePaymentGatewayAdminController {
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId,
             @RequestBody PaymentGatewayMappingUpsertRequest request) {
-        instituteAccessValidator.requireAdminAccess(user, instituteId);
+        instituteAccessValidator.guardAdmin("paymentGateways.create", user, instituteId);
         return ResponseEntity.ok(paymentGatewayMappingService.createMapping(instituteId, request));
     }
 
@@ -99,7 +101,7 @@ public class InstitutePaymentGatewayAdminController {
             @RequestParam("instituteId") String instituteId,
             @PathVariable("mappingId") String mappingId,
             @RequestBody PaymentGatewayMappingUpsertRequest request) {
-        instituteAccessValidator.requireAdminAccess(user, instituteId);
+        instituteAccessValidator.guardAdmin("paymentGateways.update", user, instituteId);
         return ResponseEntity.ok(paymentGatewayMappingService.updateMapping(instituteId, mappingId, request));
     }
 
@@ -116,7 +118,7 @@ public class InstitutePaymentGatewayAdminController {
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId,
             @PathVariable("mappingId") String mappingId) {
-        instituteAccessValidator.requireAdminAccess(user, instituteId);
+        instituteAccessValidator.guardAdmin("paymentGateways.deactivate", user, instituteId);
         paymentGatewayMappingService.deactivateMapping(instituteId, mappingId);
         return ResponseEntity.ok(Map.of("status", "INACTIVE", "id", mappingId));
     }
@@ -135,7 +137,7 @@ public class InstitutePaymentGatewayAdminController {
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId,
             @PathVariable("mappingId") String mappingId) {
-        instituteAccessValidator.requireAdminAccess(user, instituteId);
+        instituteAccessValidator.guardAdmin("paymentGateways.activate", user, instituteId);
         return ResponseEntity.ok(paymentGatewayMappingService.activateMapping(instituteId, mappingId));
     }
 
@@ -145,7 +147,7 @@ public class InstitutePaymentGatewayAdminController {
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId,
             @PathVariable("mappingId") String mappingId) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.guardStaff("paymentGateways.usage", user, instituteId);
         return ResponseEntity.ok(paymentGatewayMappingService.usageFor(instituteId, mappingId));
     }
 }

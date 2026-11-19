@@ -44,8 +44,9 @@ public class CommunityApplicationSecurityConfig {
             "/community-service/public/v1/onboarding/**",
             // Public plan builder (rate card + quote) - open for the pricing page
             "/community-service/public/v1/pricing/**",
-            // BBB server health check & management
-            "/community-service/bbb/**",
+            // /community-service/bbb/** (pool health check and start/stop) is NOT listed: it
+            // needs a signed-in platform super admin (Super Admin portal); the scheduled
+            // jobs run in-process and never call it over HTTP.
             // External uptime monitor for per-client deployments (Vet Education etc.).
             //
             // ONLY the read-only status view is open — it returns the cached result of

@@ -40,15 +40,20 @@ public class CashfreeWebHookService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private PaymentWebhookVerifier webhookVerifier;
+
     /**
      * Process Cashfree webhook callbacks.
      *
      * @param payload          Raw JSON sent by Cashfree
-     * @param signatureHeader  Signature header (name depends on Cashfree config)
+     * @param signatureHeader  x-webhook-signature header
+     * @param timestampHeader  x-webhook-timestamp header
      * @param instituteIdParam Optional instituteId from query param
      */
     public ResponseEntity<String> processWebHook(String payload,
                                                  String signatureHeader,
+                                                 String timestampHeader,
                                                  String instituteIdParam) {
         log.info("Received Cashfree webhook payload.");
         String webhookId = null;
@@ -57,14 +62,10 @@ public class CashfreeWebHookService {
             // Step 1: Save webhook for audit
             webhookId = webHookService.saveWebhook(PaymentGateway.CASHFREE.name(), payload, null);
 
-            // TODO: Implement signature verification using institute-specific secret when needed.
-            // Map<String, Object> gatewayData =
-            //         institutePaymentGatewayMappingService.findInstitutePaymentGatewaySpecifData(
-            //                 PaymentGateway.CASHFREE.name(), instituteId);
-            // String webhookSecret = (String) gatewayData.get("webhookSecret");
-            // verifySignature(payload, signatureHeader, webhookSecret);
-
-            return processVerifiedPayload(webhookId, payload, instituteIdParam);
+            // The order is read back from Cashfree before any status change (see
+            // PaymentWebhookVerifier); the signature is checked and logged there too.
+            return processVerifiedPayload(webhookId, payload, instituteIdParam,
+                    new SignatureHeaders(signatureHeader, timestampHeader));
 
         } catch (Exception e) {
             String detailedMessage = WebHookErrorUtils.describeException(e);
@@ -77,9 +78,9 @@ public class CashfreeWebHookService {
     }
 
     /**
-     * Manually re-runs a previously persisted Cashfree webhook by id. Signature
-     * check for Cashfree is currently a no-op so reprocess simply re-runs the
-     * parsing and payment-log update pipeline.
+     * Manually re-runs a previously persisted Cashfree webhook by id. Headers are
+     * not stored, so there is no signature to check; the order read-back
+     * (PaymentWebhookVerifier) runs as on live delivery.
      */
     public ResponseEntity<String> reprocessWebhook(String webhookId) {
         log.info("Manual reprocess requested for Cashfree webhookId={}", webhookId);
@@ -106,7 +107,7 @@ public class CashfreeWebHookService {
 
         try {
             // instituteIdParam is null on reprocess — service will fall back to order_tags.instituteId
-            return processVerifiedPayload(webhookId, payload, null);
+            return processVerifiedPayload(webhookId, payload, null, null);
         } catch (Exception e) {
             String detailedMessage = WebHookErrorUtils.describeException(e);
             log.error("Manual reprocess failed for Cashfree webhookId={}: {}", webhookId, detailedMessage, e);
@@ -120,7 +121,8 @@ public class CashfreeWebHookService {
      * instituteId, map status, update payment logs, finalize webhook row.
      * Shared between live webhook delivery and manual reprocess.
      */
-    private ResponseEntity<String> processVerifiedPayload(String webhookId, String payload, String instituteIdParam)
+    private ResponseEntity<String> processVerifiedPayload(String webhookId, String payload, String instituteIdParam,
+            SignatureHeaders signatureHeaders)
             throws Exception {
         // Step 2: Parse payload
         JsonNode root = objectMapper.readTree(payload);
@@ -182,8 +184,42 @@ public class CashfreeWebHookService {
         PaymentStatusEnum mappedStatus = mapStatus(status);
 
         // Step 5: Update payment logs
+        boolean checkAfterApply = false;
         if (mappedStatus == PaymentStatusEnum.PAID || mappedStatus == PaymentStatusEnum.FAILED) {
-            paymentLogService.updatePaymentLogsByOrderId(orderId, mappedStatus.name(), instituteId);
+            PaymentWebhookVerifier.Mode mode = webhookVerifier.cashfreeMode();
+            if (mode != PaymentWebhookVerifier.Mode.ENFORCE) {
+                // Log mode: applied exactly as before; the gateway read-back runs after the
+                // webhook is processed, off this thread, and only writes log lines.
+                paymentLogService.updatePaymentLogsByOrderId(orderId, mappedStatus.name(), instituteId);
+                checkAfterApply = true;
+            } else {
+                PaymentWebhookVerifier.Outcome outcome;
+                try {
+                    outcome = webhookVerifier.verifyCashfree(orderId, mappedStatus);
+                    if (signatureHeaders != null) {
+                        webhookVerifier.checkCashfreeSignature(
+                                outcome.instituteId() != null ? outcome.instituteId() : instituteId,
+                                signatureHeaders.timestamp(), signatureHeaders.signature(), payload, orderId);
+                    }
+                    webhookVerifier.report(PaymentGateway.CASHFREE.name(), mode, webhookId, orderId, mappedStatus,
+                            outcome, instituteId);
+                } catch (Exception e) {
+                    log.warn("WEBHOOK_VERIFY vendor=CASHFREE orderId={} check failed: {}", orderId, e.getMessage());
+                    outcome = new PaymentWebhookVerifier.Outcome(PaymentWebhookVerifier.Result.FETCH_ERROR, null, null);
+                }
+
+                if (!outcome.ok()) {
+                    webHookService.updateWebHook(webhookId, payload, orderId, eventType);
+                    webHookService.updateWebHookStatus(webhookId, WebHookStatus.FAILED,
+                            "Not applied, gateway check: " + outcome.result().code());
+                    if (outcome.retryable()) {
+                        return ResponseEntity.status(503).body("Payment could not be confirmed yet");
+                    }
+                    return ResponseEntity.ok("IGNORED");
+                }
+                paymentLogService.updatePaymentLogsForWebhook(orderId, PaymentGateway.CASHFREE.name(),
+                        mappedStatus.name(), outcome.instituteId());
+            }
             log.info("Cashfree webhook updated payment log(s) for orderId={} to {}", orderId, mappedStatus.name());
         } else {
             log.info("Cashfree status {} treated as PAYMENT_PENDING for orderId={} (no update)", status, orderId);
@@ -192,6 +228,18 @@ public class CashfreeWebHookService {
         // Step 6: Mark webhook as processed
         webHookService.updateWebHook(webhookId, payload, orderId, root.path("type").asText(null));
         webHookService.updateWebHookStatus(webhookId, WebHookStatus.PROCESSED, null);
+
+        if (checkAfterApply) {
+            try {
+                webhookVerifier.checkCashfreeAfterApply(webhookId, orderId, mappedStatus, instituteId,
+                        signatureHeaders != null,
+                        signatureHeaders != null ? signatureHeaders.signature() : null,
+                        signatureHeaders != null ? signatureHeaders.timestamp() : null,
+                        payload);
+            } catch (Exception e) {
+                log.warn("WEBHOOK_VERIFY vendor=CASHFREE orderId={} check not started: {}", orderId, e.getMessage());
+            }
+        }
 
         return ResponseEntity.ok("SUCCESS");
     }
@@ -209,5 +257,8 @@ public class CashfreeWebHookService {
         }
         return PaymentStatusEnum.PAYMENT_PENDING;
     }
-}
 
+    /** Cashfree's signature headers of a live delivery (none on reprocess). */
+    private record SignatureHeaders(String signature, String timestamp) {
+    }
+}

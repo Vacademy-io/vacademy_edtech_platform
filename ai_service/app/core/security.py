@@ -1,9 +1,11 @@
 import base64
 import logging
+import threading
+import time
 from typing import Optional, Annotated
 
 from fastapi import Depends, HTTPException, status, Request, Header
-from jose import jwt, JWTError
+from jose import jwt, JWTError, ExpiredSignatureError
 import httpx
 
 from ..config import get_settings, Settings
@@ -34,27 +36,70 @@ def _extract_bearer(auth_header: Optional[str]) -> Optional[str]:
     return auth_header[len("Bearer "):]
 
 
+def _key_bytes(secret: str) -> bytes:
+    """
+    Mirrors the Java side (common_service JwtService.keyFor): the secret STRING
+    is BASE64-decoded to bytes before use. We pad to a valid base64 length first.
+    """
+    missing_padding = len(secret) % 4
+    if missing_padding:
+        secret = secret + "=" * (4 - missing_padding)
+    return base64.b64decode(secret)
+
+
+def _decode_with(token: str, secret: str, settings: Settings) -> dict:
+    return jwt.decode(
+        token,
+        _key_bytes(secret),
+        algorithms=[settings.jwt_algorithm],
+        options={"verify_aud": False, "verify_iss": False},
+    )
+
+
+# One INFO line per user per hour when a token verifies only with the previous key,
+# so the sessions still on it can be counted before that key is removed.
+_PREVIOUS_KEY_LOG_INTERVAL_S = 3600
+_PREVIOUS_KEY_LOG_MAX_ENTRIES = 50_000
+_previous_key_logged_at: dict = {}
+_previous_key_log_lock = threading.Lock()
+
+
+def _note_previous_key_use(claims: dict) -> None:
+    user_id = str(claims.get("user") or "-")
+    now = time.monotonic()
+    with _previous_key_log_lock:
+        last = _previous_key_logged_at.get(user_id)
+        if last is not None and now - last < _PREVIOUS_KEY_LOG_INTERVAL_S:
+            return
+        if len(_previous_key_logged_at) >= _PREVIOUS_KEY_LOG_MAX_ENTRIES:
+            _previous_key_logged_at.clear()
+        _previous_key_logged_at[user_id] = now
+    logger.info("Token verified with JWT_SECRET_KEY_PREVIOUS (user=%s)", user_id)
+
+
 def _decode_jwt_token(token: str, settings: Settings) -> Optional[dict]:
     """
     Verify the HS256 signature and return the JWT claims, or None if invalid.
 
-    Mirrors the Java side (common_service JwtService.getSignInKey): the secret
-    STRING is BASE64-decoded to bytes before use. We pad to a valid base64
-    length first. This does not mutate the cached settings object.
+    Accepts JWT_SECRET_KEY and, when set, JWT_SECRET_KEY_PREVIOUS (verification
+    only), like common_service JwtService. This does not mutate the cached
+    settings object.
     """
     try:
-        secret = settings.jwt_secret_key
-        missing_padding = len(secret) % 4
-        if missing_padding:
-            secret = secret + "=" * (4 - missing_padding)
-        secret_bytes = base64.b64decode(secret)
-        return jwt.decode(
-            token,
-            secret_bytes,
-            algorithms=[settings.jwt_algorithm],
-            options={"verify_aud": False, "verify_iss": False},
-        )
+        return _decode_with(token, settings.jwt_secret_key, settings)
     except Exception as e:
+        previous = (getattr(settings, "jwt_secret_key_previous", "") or "").strip()
+        # Only a signature mismatch can be fixed by the other key; an expired or
+        # malformed token stays rejected.
+        if previous and previous != settings.jwt_secret_key and isinstance(e, JWTError) \
+                and not isinstance(e, ExpiredSignatureError):
+            try:
+                claims = _decode_with(token, previous, settings)
+            except Exception:
+                claims = None
+            if claims is not None:
+                _note_previous_key_use(claims)
+                return claims
         logger.error(f"JWT Validation failed: {e}")
         return None
 

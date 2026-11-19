@@ -264,6 +264,10 @@ class Settings(BaseSettings):
     # and get_settings() logs a WARNING when JWT_SECRET_KEY is unset or still
     # equals that public value.
     jwt_secret_key: str = os.getenv("JWT_SECRET_KEY", _LEGACY_JWT_SECRET_FALLBACK)
+    # Optional second key, accepted for verification only (never for signing), same as
+    # common_service JwtService. Unset = one key, as before. Lets JWT_SECRET_KEY change
+    # without signing anyone out.
+    jwt_secret_key_previous: str = os.getenv("JWT_SECRET_KEY_PREVIOUS", "").strip()
     jwt_algorithm: str = "HS256"
     # Voice sockets verify any token they are given. Flip this on once every
     # client ships one, and unauthenticated calls are refused outright.

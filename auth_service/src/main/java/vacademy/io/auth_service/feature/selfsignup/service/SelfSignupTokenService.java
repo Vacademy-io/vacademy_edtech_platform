@@ -4,14 +4,11 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import vacademy.io.common.auth.service.JwtService;
 import vacademy.io.common.exceptions.VacademyException;
 
-import java.security.Key;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -51,7 +48,7 @@ public class SelfSignupTokenService {
                 .setClaims(claims)
                 .setIssuedAt(new Date(now))
                 .setExpiration(new Date(now + TTL_MILLIS))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .signWith(JwtService.signingKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -64,7 +61,7 @@ public class SelfSignupTokenService {
             throw new VacademyException(HttpStatus.UNAUTHORIZED, "Please verify your email again");
         }
         try {
-            Claims claims = Jwts.parserBuilder().setSigningKey(getKey()).build().parseClaimsJws(token).getBody();
+            Claims claims = JwtService.parseSignedClaims(token);
             if (!PURPOSE.equals(claims.get("purpose", String.class))) {
                 throw new VacademyException(HttpStatus.UNAUTHORIZED, "Please verify your email again");
             }
@@ -72,9 +69,5 @@ public class SelfSignupTokenService {
         } catch (JwtException | IllegalArgumentException e) {
             throw new VacademyException(HttpStatus.UNAUTHORIZED, "Your verification has expired. Please verify your email again");
         }
-    }
-
-    private Key getKey() {
-        return Keys.hmacShaKeyFor(Decoders.BASE64.decode(JwtService.secretKey));
     }
 }

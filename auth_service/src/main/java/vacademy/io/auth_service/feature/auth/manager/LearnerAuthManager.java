@@ -19,6 +19,7 @@ import org.springframework.util.StringUtils;
 import vacademy.io.auth_service.feature.auth.constants.AuthConstants;
 import vacademy.io.auth_service.feature.auth.repository.PortalUserLookupRepository;
 import vacademy.io.auth_service.feature.auth.service.LearnerPortalAccessGuard;
+import vacademy.io.auth_service.feature.auth.service.TrustedLoginEligibility;
 import vacademy.io.auth_service.feature.auth.dto.ActiveSessionDTO;
 import vacademy.io.auth_service.feature.auth.dto.AuthRequestDto;
 import vacademy.io.auth_service.feature.auth.dto.JwtResponseDto;
@@ -133,6 +134,9 @@ public class LearnerAuthManager {
         @Autowired
         private PortalUserLookupRepository portalUserLookupRepository;
 
+        @Autowired
+        private TrustedLoginEligibility trustedLoginEligibility;
+
         public JwtResponseDto registerLearner(LearnerEnrollRequestDTO learnerEnrollRequestDTO) {
                 if (learnerEnrollRequestDTO == null) {
                         throw new VacademyException("Invalid Request");
@@ -150,7 +154,7 @@ public class LearnerAuthManager {
                                 learnerEnrollRequestDTO.getVendorId(),
                                 learnerEnrollRequestDTO.getLearnerPackageSessionEnroll() != null,
                                 userDTO.getEmail() != null);
-                User user;
+                AuthService.AccountResult account;
                 // Custom field values sent with the enrollment, for the username strategy.
                 if (learnerEnrollRequestDTO.getLearnerPackageSessionEnroll() != null) {
                         userDTO.setUsernameFieldValues(CustomFieldValueDTO.toValueMap(
@@ -182,19 +186,20 @@ public class LearnerAuthManager {
                                         isOauth2Signup);
 
                         // user = authService.createUser(userDTO, instituteId, deliverPassword);
-                        user = authService.createUserForLearnerSelfSignup(userDTO, instituteId, deliverPassword);
+                        account = authService.createOrGetLearnerForSelfSignup(userDTO, instituteId, deliverPassword);
                         log.debug("User createUser completed: userId={}, username={} (may be null if creation failed)",
-                                        user != null ? user.getId() : null,
-                                        user != null ? user.getUsername() : null);
+                                        account != null && account.user() != null ? account.user().getId() : null,
+                                        account != null && account.user() != null ? account.user().getUsername() : null);
                 } else {
                         log.debug("No instituteId provided. Creating user with notifications enabled by default");
                         // user = authService.createUser(userDTO, null, true);
-                        user = authService.createUserForLearnerSelfSignup(userDTO, instituteId, true);
+                        account = authService.createOrGetLearnerForSelfSignup(userDTO, instituteId, true);
                         log.debug("User createUser (no institute) completed: userId={}, username={}",
-                                        user != null ? user.getId() : null,
-                                        user != null ? user.getUsername() : null);
+                                        account != null && account.user() != null ? account.user().getId() : null,
+                                        account != null && account.user() != null ? account.user().getUsername() : null);
                 }
 
+                User user = account != null ? account.user() : null;
                 if (user != null) {
                         userDTO.setId(user.getId());
                         userDTO.setUsername(user.getUsername());
@@ -252,8 +257,31 @@ public class LearnerAuthManager {
                         }
                 }
 
+                // An account that already existed and holds staff/admin access (or is a
+                // super-admin) is enrolled above as usual, but is not signed in from this public
+                // form, and its OAuth link is left as it is: it signs in with its own password or
+                // OTP. Checked after the enrollment so a paid enrollment is never lost to it.
+                boolean withholdSession = false;
+                if (account != null && !account.created() && user != null) {
+                        List<String> nonLearnerAccess;
+                        try {
+                                nonLearnerAccess = trustedLoginEligibility.nonLearnerAccess(user);
+                        } catch (Exception e) {
+                                // Fail open: an infrastructure error must never cost an ordinary
+                                // learner the sign-in this form has always given.
+                                log.error("REGISTER_EXISTING_ACCOUNT_CHECK_FAILED: user={} (signed in as before): {}",
+                                                user.getId(), e.getMessage());
+                                nonLearnerAccess = List.of();
+                        }
+                        if (!nonLearnerAccess.isEmpty()) {
+                                withholdSession = true;
+                                log.info("REGISTER_EXISTING_ACCOUNT_NO_SESSION: user={} roles={}", user.getId(),
+                                                nonLearnerAccess);
+                        }
+                }
+
                 // Verify email if data is available
-                if (learnerEnrollRequestDTO.getSubjectId() != null &&
+                if (!withholdSession && learnerEnrollRequestDTO.getSubjectId() != null &&
                                 learnerEnrollRequestDTO.getVendorId() != null &&
                                 user != null && user.getEmail() != null) {
                         log.debug("Verifying vendor email mapping for subjectId={}, vendorId={}, emailPresent=true",
@@ -263,6 +291,10 @@ public class LearnerAuthManager {
                                         learnerEnrollRequestDTO.getSubjectId(),
                                         learnerEnrollRequestDTO.getVendorId(),
                                         user.getEmail());
+                }
+
+                if (withholdSession) {
+                        return JwtResponseDto.builder().accountExists(true).build();
                 }
 
                 RefreshToken refreshToken = refreshTokenService.createRefreshToken(
@@ -751,6 +783,11 @@ public class LearnerAuthManager {
         @Value("${security.trusted-login.enabled:false}")
         private boolean trustedLoginEnabled;
 
+        // Username-only join links: refuse accounts with staff/admin access or super-admins.
+        // Off by default; either way TRUSTED_LOGIN_WOULD_BLOCK is logged for such accounts.
+        @Value("${security.trusted-login.block-staff-accounts:false}")
+        private boolean trustedLoginBlockStaffAccounts;
+
         /**
          * Emergency login by username without OTP verification.
          * 
@@ -853,11 +890,39 @@ public class LearnerAuthManager {
                                         "This login link is invalid or has expired.");
                 }
 
+                if (refuseNonLearnerOnTrustedLogin(user)) {
+                        throw new VacademyException(HttpStatus.UNAUTHORIZED,
+                                        "This login link is invalid or has expired.");
+                }
+
                 // Log successful login for audit
                 log.warn("TRUSTED_LOGIN_SUCCESS: User {} (id={}) logged in via trusted endpoint from IP {}",
                                 username, user.getId(), requestIP);
 
                 return issueTrustedLoginTokens(user);
+        }
+
+        /**
+         * True when the username-only path must refuse this account: it has staff/admin access
+         * or is a super-admin, and the block is switched on. Such accounts are logged in both
+         * modes, so the effect can be measured before the switch is turned on. A failed lookup
+         * never refuses (logged at ERROR), with the switch on or off.
+         */
+        private boolean refuseNonLearnerOnTrustedLogin(User user) {
+                List<String> nonLearnerAccess;
+                try {
+                        nonLearnerAccess = trustedLoginEligibility.nonLearnerAccess(user);
+                } catch (Exception e) {
+                        log.error("TRUSTED_LOGIN_ELIGIBILITY_CHECK_FAILED: user={} enforced={} (allowed): {}",
+                                        user.getId(), trustedLoginBlockStaffAccounts, e.getMessage());
+                        return false;
+                }
+                if (nonLearnerAccess.isEmpty()) {
+                        return false;
+                }
+                log.info("TRUSTED_LOGIN_WOULD_BLOCK: user={} roles={} enforced={}", user.getId(), nonLearnerAccess,
+                                trustedLoginBlockStaffAccounts);
+                return trustedLoginBlockStaffAccounts;
         }
 
         private JwtResponseDto issueTrustedLoginTokens(User user) {

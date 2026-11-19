@@ -784,7 +784,14 @@ public class AuthService {
      */
     @Transactional
     public User createUserForLearnerSelfSignup(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail) {
-        return createOrGetLearner(registerRequest, instituteId, sendWelcomeMail, null, true).user();
+        return createOrGetLearnerForSelfSignup(registerRequest, instituteId, sendWelcomeMail).user();
+    }
+
+    /** Same as {@link #createUserForLearnerSelfSignup}, and says whether this call created the account. */
+    @Transactional
+    public AccountResult createOrGetLearnerForSelfSignup(UserDTO registerRequest, String instituteId,
+                                                         boolean sendWelcomeMail) {
+        return createOrGetLearner(registerRequest, instituteId, sendWelcomeMail, null, true);
     }
 
     private AccountResult createOrGetLearner(UserDTO registerRequest, String instituteId, boolean sendWelcomeMail,

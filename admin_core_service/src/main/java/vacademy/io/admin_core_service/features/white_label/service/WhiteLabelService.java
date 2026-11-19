@@ -2,10 +2,12 @@ package vacademy.io.admin_core_service.features.white_label.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
+import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.domain_routing.dto.DomainRoutingUpsertRequest;
 import vacademy.io.admin_core_service.features.domain_routing.entity.InstituteDomainRouting;
 import vacademy.io.admin_core_service.features.domain_routing.enums.PhoneCountryGeoMode;
@@ -80,6 +82,17 @@ public class WhiteLabelService {
     private String vacademyBaseDomain;
 
     private static final String ROLE_NAME_ADMIN = "ADMIN";
+
+    /**
+     * Off by default: custom-domain setup keeps accepting any root user. On: only an ADMIN of
+     * the institute (or a legacy staff-table member) or a platform super admin on the
+     * allowlist. Switch on after confirming no operations account relies on the root flag.
+     */
+    @Value("${white-label.domain-access.require-membership:false}")
+    private boolean requireMembershipForDomains;
+
+    @Autowired
+    private InstituteAccessValidator instituteAccessValidator;
 
     private final InstituteRepository instituteRepository;
     private final InstituteDomainRoutingRepository routingRepository;
@@ -609,10 +622,16 @@ public class WhiteLabelService {
             return false;
         }
 
-        // 1) Root users bypass all institute membership checks. Matches the convention
-        // used elsewhere in the codebase (e.g.
-        // StudentListManager#applyFacultyAccessFilter).
-        if (user.isRootUser()) {
+        // 1) With white-label.domain-access.require-membership off (the default), root
+        // users bypass all institute membership checks, matching the convention used
+        // elsewhere (e.g. StudentListManager#applyFacultyAccessFilter). With it on, the
+        // root flag is not consulted; platform super admins on the SUPER_ADMIN_USER_IDS
+        // allowlist pass instead, and everyone else needs steps 2 or 3.
+        if (requireMembershipForDomains) {
+            if (instituteAccessValidator != null && instituteAccessValidator.isPlatformSuperAdmin(user)) {
+                return true;
+            }
+        } else if (user.isRootUser()) {
             return true;
         }
 
