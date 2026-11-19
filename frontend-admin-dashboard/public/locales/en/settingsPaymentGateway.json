@@ -29,7 +29,9 @@
         "webhookUrlCopied": "Webhook URL copied",
         "loadFailed": "Failed to load payment gateways",
         "gatewayDeactivated": "{{vendor}} deactivated",
-        "deactivateFailed": "Failed to deactivate gateway"
+        "deactivateFailed": "Failed to deactivate gateway",
+        "gatewayActivated": "{{vendor}} activated",
+        "activateFailed": "Failed to activate gateway"
     },
     "dialog": {
         "createTitle": "Add payment gateway",
@@ -53,7 +55,9 @@
         "cancel": "Cancel",
         "saving": "Saving…",
         "addGatewayButton": "Add Gateway",
-        "saveChanges": "Save changes"
+        "saveChanges": "Save changes",
+        "saveAndActivate": "Save & activate",
+        "inactiveNotice": "{{vendor}} is inactive, so learners can't pay through it. Saving will switch it back on."
     },
     "mappingCard": {
         "editCredentials": "Edit credentials",
@@ -61,14 +65,20 @@
         "unknownVendor": "Unknown vendor — no schema available.",
         "notSet": "Not set",
         "webhookUrlLabel": "Webhook URL",
-        "copyWebhookUrl": "Copy webhook URL"
+        "copyWebhookUrl": "Copy webhook URL",
+        "activateGateway": "Activate",
+        "activating": "Activating…",
+        "inactiveNotice": "Learners can't pay through this gateway while it is inactive. Click Activate to switch it back on with the saved keys."
     },
     "deleteDialog": {
         "title": "Deactivate gateway?",
-        "description": "{{vendor}} will be marked inactive and learners won't be able to pay through it. You can add it again later.",
+        "description": "{{vendor}} will be marked inactive and learners won't be able to pay through it. You can switch it back on from this page any time.",
         "cancel": "Cancel",
         "deactivating": "Deactivating…",
-        "deactivate": "Deactivate"
+        "deactivate": "Deactivate",
+        "usageLoading": "Checking which invite links use it…",
+        "usageSummary": "Live invite links on {{vendor}}: {{active}} ({{paid}} paid). Learners can't pay on the paid ones until you activate it again.",
+        "usageNone": "No live invite link takes payment through {{vendor}} right now."
     },
     "vendors": {
         "stripe": {

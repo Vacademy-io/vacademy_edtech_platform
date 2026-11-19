@@ -148,6 +148,7 @@ const RESOURCE_GROUPS: { group: string; options: MultiSelectOption[] }[] = [
         group: 'Finance',
         options: [
             { value: 'PAYMENT_PLAN', label: 'Payment plan' },
+            { value: 'PAYMENT_GATEWAY', label: 'Payment gateway' },
             { value: 'FEE_PLAN', label: 'Fee plan (CPO)' },
             { value: 'PAYMENT', label: 'Payment' },
             { value: 'INVOICE', label: 'Invoice' },

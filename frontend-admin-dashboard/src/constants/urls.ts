@@ -1622,6 +1622,10 @@ export const INSTITUTE_PAYMENT_GATEWAYS = (instituteId: string) =>
     `${BASE_URL}/admin-core-service/v1/institute/payment-gateways?instituteId=${instituteId}`;
 export const INSTITUTE_PAYMENT_GATEWAY_BY_ID = (instituteId: string, mappingId: string) =>
     `${BASE_URL}/admin-core-service/v1/institute/payment-gateways/${mappingId}?instituteId=${instituteId}`;
+export const INSTITUTE_PAYMENT_GATEWAY_ACTIVATE = (instituteId: string, mappingId: string) =>
+    `${BASE_URL}/admin-core-service/v1/institute/payment-gateways/${mappingId}/activate?instituteId=${instituteId}`;
+export const INSTITUTE_PAYMENT_GATEWAY_USAGE = (instituteId: string, mappingId: string) =>
+    `${BASE_URL}/admin-core-service/v1/institute/payment-gateways/${mappingId}/usage?instituteId=${instituteId}`;
 
 // Institute Mobile App (Android + iOS) self-service registration
 // The config resource — GET to read it (fill the form), PUT to save it (no build).

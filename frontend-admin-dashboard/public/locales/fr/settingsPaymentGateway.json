@@ -29,7 +29,9 @@
         "webhookUrlCopied": "URL du webhook copiée",
         "loadFailed": "Échec du chargement des passerelles de paiement",
         "gatewayDeactivated": "{{vendor}} désactivé",
-        "deactivateFailed": "Échec de la désactivation de la passerelle"
+        "deactivateFailed": "Échec de la désactivation de la passerelle",
+        "gatewayActivated": "{{vendor}} activé",
+        "activateFailed": "Échec de l'activation de la passerelle"
     },
     "dialog": {
         "createTitle": "Ajouter une passerelle de paiement",
@@ -53,7 +55,9 @@
         "cancel": "Annuler",
         "saving": "Enregistrement…",
         "addGatewayButton": "Ajouter la passerelle",
-        "saveChanges": "Enregistrer les modifications"
+        "saveChanges": "Enregistrer les modifications",
+        "saveAndActivate": "Enregistrer et activer",
+        "inactiveNotice": "{{vendor}} est inactif, les apprenants ne peuvent donc pas payer via cette passerelle. L'enregistrement la réactivera."
     },
     "mappingCard": {
         "editCredentials": "Modifier les identifiants",
@@ -61,14 +65,20 @@
         "unknownVendor": "Prestataire inconnu — aucun modèle disponible.",
         "notSet": "Non défini",
         "webhookUrlLabel": "URL du webhook",
-        "copyWebhookUrl": "Copier l'URL du webhook"
+        "copyWebhookUrl": "Copier l'URL du webhook",
+        "activateGateway": "Activer",
+        "activating": "Activation…",
+        "inactiveNotice": "Les apprenants ne peuvent pas payer via cette passerelle tant qu'elle est inactive. Cliquez sur Activer pour la réactiver avec les clés enregistrées."
     },
     "deleteDialog": {
         "title": "Désactiver la passerelle ?",
-        "description": "{{vendor}} sera marqué comme inactif et les apprenants ne pourront plus payer via cette passerelle. Vous pourrez l'ajouter à nouveau plus tard.",
+        "description": "{{vendor}} sera marqué comme inactif et les apprenants ne pourront plus payer via cette passerelle. Vous pourrez la réactiver depuis cette page à tout moment.",
         "cancel": "Annuler",
         "deactivating": "Désactivation…",
-        "deactivate": "Désactiver"
+        "deactivate": "Désactiver",
+        "usageLoading": "Vérification des liens d'invitation qui l'utilisent…",
+        "usageSummary": "Liens d'invitation actifs sur {{vendor}} : {{active}} ({{paid}} payants). Les apprenants ne pourront pas payer sur les liens payants tant que vous ne l'aurez pas réactivée.",
+        "usageNone": "Aucun lien d'invitation actif ne passe par {{vendor}} pour le paiement en ce moment."
     },
     "vendors": {
         "stripe": {

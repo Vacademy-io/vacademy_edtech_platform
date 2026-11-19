@@ -1,7 +1,9 @@
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import {
     INSTITUTE_PAYMENT_GATEWAYS,
+    INSTITUTE_PAYMENT_GATEWAY_ACTIVATE,
     INSTITUTE_PAYMENT_GATEWAY_BY_ID,
+    INSTITUTE_PAYMENT_GATEWAY_USAGE,
 } from '@/constants/urls';
 
 export type PaymentVendor =
@@ -75,4 +77,33 @@ export const deactivatePaymentGateway = async (
     await authenticatedAxiosInstance.delete(
         INSTITUTE_PAYMENT_GATEWAY_BY_ID(instituteId, mappingId)
     );
+};
+
+/** Switches a deactivated gateway back on with its stored keys (same mapping id). */
+export const activatePaymentGateway = async (
+    instituteId: string,
+    mappingId: string
+): Promise<PaymentGatewayMapping> => {
+    const res = await authenticatedAxiosInstance.put<PaymentGatewayMapping>(
+        INSTITUTE_PAYMENT_GATEWAY_ACTIVATE(instituteId, mappingId)
+    );
+    return res.data;
+};
+
+export interface PaymentGatewayUsage {
+    vendor: PaymentVendor;
+    /** Live invite links whose checkout goes through this gateway. */
+    active_invites: number;
+    /** Of those, links selling a non-free plan: payment stops on these if the gateway is off. */
+    paid_active_invites: number;
+}
+
+export const getPaymentGatewayUsage = async (
+    instituteId: string,
+    mappingId: string
+): Promise<PaymentGatewayUsage> => {
+    const res = await authenticatedAxiosInstance.get<PaymentGatewayUsage>(
+        INSTITUTE_PAYMENT_GATEWAY_USAGE(instituteId, mappingId)
+    );
+    return res.data;
 };
