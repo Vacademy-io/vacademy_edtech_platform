@@ -341,7 +341,12 @@ public class MoneyReportRepository {
             FROM pos_session s
             JOIN pos_register r ON r.id = s.register_id""";
 
-    /** Σ total of the live invoices of the POS orders of these sessions. */
+    /**
+     * Σ total of the live invoices of the POS orders of these sessions. A bill reissued with the
+     * buyer's GSTIN has two live invoices (the first, credited in full by the reissue, and the new
+     * one): only the new one is the bill, so an invoice replaced by a reissue is left out (its
+     * credit note carries the key {@code REISSUE:<invoice id>}, CommerceInvoiceService.reissueAsB2b).
+     */
     public BigDecimal liveInvoicesOfSessions(String instituteId, List<String> sessionIds) {
         if (sessionIds.isEmpty()) {
             return BigDecimal.ZERO;
@@ -356,7 +361,12 @@ public class MoneyReportRepository {
                   AND i.document_type IS NOT NULL
                   AND i.cancelled_at IS NULL
                   AND o.institute_id = :instituteId
-                  AND o.pos_session_id IN (:sessionIds)""", p, BigDecimal.class);
+                  AND o.pos_session_id IN (:sessionIds)
+                  AND NOT EXISTS (
+                      SELECT 1 FROM commerce_credit_note n
+                      WHERE n.institute_id = :instituteId
+                        AND n.invoice_id = i.id
+                        AND n.client_request_id = 'REISSUE:' || i.id)""", p, BigDecimal.class);
         return sum == null ? BigDecimal.ZERO : sum;
     }
 
