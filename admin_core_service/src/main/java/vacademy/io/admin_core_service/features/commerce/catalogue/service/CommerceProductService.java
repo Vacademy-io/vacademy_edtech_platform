@@ -38,6 +38,7 @@ import vacademy.io.admin_core_service.features.commerce.catalogue.repository.Com
 import vacademy.io.admin_core_service.features.commerce.catalogue.repository.CommerceVariantOptionValueRepository;
 import vacademy.io.admin_core_service.features.commerce.catalogue.repository.CommerceVariantRepository;
 import vacademy.io.admin_core_service.features.commerce.common.CommercePackageTypes;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.document.service.DocumentClock;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockLocation;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLocationRepository;
@@ -593,6 +594,16 @@ public class CommerceProductService {
                 && movementRepository.existsForPackage(instituteId, product.getPackageId())) {
             throw new ConflictException("STOCK_EXISTS: unit, qty_scale and stock mode cannot change once stock has "
                     + "moved for this item");
+        }
+        // Lengths, weights and volumes print with log10(qty_scale) decimals, so the scale is a power
+        // of ten; a one-of-a-kind item is one piece. Checked only when the request touches either.
+        if (stockMode != null || qtyScale != null) {
+            String effectiveMode = stockMode != null ? stockMode : product.getStockMode();
+            int effectiveScale = qtyScale != null ? qtyScale
+                    : product.getQtyScale() == null ? 1 : product.getQtyScale();
+            require(CommerceUnits.allowedScale(effectiveScale), "VALIDATION: qty_scale is 1, 10, 100 or 1000");
+            require(!StockMode.PIECE.name().equals(effectiveMode) || effectiveScale == 1,
+                    "VALIDATION: a one-of-a-kind item is counted in pieces (qty_scale 1)");
         }
         if (stockMode != null) {
             product.setStockMode(stockMode);
@@ -1403,6 +1414,9 @@ public class CommerceProductService {
                 .variantCount(variants.size())
                 .minPrice(min)
                 .maxPrice(max)
+                .unit(product.getUnit())
+                .qtyScale(product.getQtyScale())
+                .qtyStep(product.getQtyStep())
                 .currency(currency)
                 .updatedAt(product.getUpdatedAt())
                 .build();

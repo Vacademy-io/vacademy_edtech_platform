@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.commerce.stock.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.document.dto.DocumentSeriesDTO;
 import vacademy.io.admin_core_service.features.commerce.document.entity.CommerceDocumentSeries;
 import vacademy.io.admin_core_service.features.commerce.document.enums.DocumentChannel;
@@ -35,6 +36,7 @@ import vacademy.io.admin_core_service.features.commerce.stock.repository.StockOp
 import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -364,7 +366,12 @@ public class StockOverviewService {
         return new Export(csv.getBytes(StandardCharsets.UTF_8), "stock-movements-" + from + "-" + to + ".csv");
     }
 
-    private String csv(String instituteId, List<ExportRow> rows, boolean withCost) {
+    /**
+     * The movements CSV. Quantities are in display units ("2.5" metres of a scale-10 cloth, "3" for
+     * pieces), the {@code unit} column holds the unit's sign ("m"; empty for pieces) and
+     * {@code unit_cost} is the cost of one display unit (4 decimals for a measured item).
+     */
+    String csv(String instituteId, List<ExportRow> rows, boolean withCost) {
         Set<String> variants = new HashSet<>();
         Set<String> pieces = new HashSet<>();
         Map<String, Set<String>> references = new HashMap<>();
@@ -380,8 +387,8 @@ public class StockOverviewService {
         Map<String, ItemFacts> facts = readRepository.itemFacts(instituteId, variants);
         Map<String, ReferenceLabel> labels = readRepository.referenceLabels(instituteId, references, pieces);
         StringBuilder out = new StringBuilder();
-        out.append("date_time,location_code,sku,item,piece_code,type,qty_in,qty_out,balance_after,reference,reason,"
-                + "note,actor_user_id");
+        out.append("date_time,location_code,sku,item,unit,piece_code,type,qty_in,qty_out,balance_after,reference,"
+                + "reason,note,actor_user_id");
         if (withCost) {
             out.append(",unit_cost");
         }
@@ -393,24 +400,28 @@ public class StockOverviewService {
                     : labels.get(row.referenceType() + ":" + row.referenceId());
             String time = row.createdAt() == null ? "" : row.createdAt().atZone(ZoneId.systemDefault())
                     .withZoneSameInstant(INDIA).format(EXPORT_TIME);
+            int scale = item == null ? 1 : Math.max(1, item.qtyScale());
+            String sign = item == null ? null : CommerceUnits.sign(item.unit());
             List<String> cells = new ArrayList<>(List.of(time, nz(row.locationCode()),
                     item == null ? "" : nz(item.sku()), item == null ? "" : nz(item.productName()),
-                    piece == null ? "" : nz(piece.label()), nz(row.type()),
-                    row.quantityDelta() > 0 ? String.valueOf(row.quantityDelta()) : "",
-                    row.quantityDelta() < 0 ? String.valueOf(-row.quantityDelta()) : "",
-                    String.valueOf(row.balanceAfter()),
+                    nz(sign), piece == null ? "" : nz(piece.label()), nz(row.type()),
+                    row.quantityDelta() > 0 ? CommerceUnits.number(row.quantityDelta(), scale) : "",
+                    row.quantityDelta() < 0 ? CommerceUnits.number(-(long) row.quantityDelta(), scale) : "",
+                    CommerceUnits.number(row.balanceAfter(), scale),
                     reference != null && reference.label() != null ? reference.label() : nz(row.referenceId()),
                     nz(row.reason()), nz(row.note()), nz(row.actorUserId())));
             if (withCost) {
                 BigDecimal cost = row.unitCost();
-                cells.add(cost == null ? "" : cost.toPlainString());
+                cells.add(cost == null ? "" : scale == 1 ? cost.toPlainString()
+                        : cost.multiply(BigDecimal.valueOf(scale)).setScale(4, RoundingMode.HALF_UP).toPlainString());
             }
             for (int i = 0; i < cells.size(); i++) {
                 if (i > 0) {
                     out.append(',');
                 }
                 // Numbers and times are written by this code; only text cells can carry a formula.
-                boolean text = i == 1 || i == 2 || i == 3 || i == 4 || i == 9 || i == 10 || i == 11 || i == 12;
+                boolean text = i == 1 || i == 2 || i == 3 || i == 4 || i == 5 || i == 10 || i == 11 || i == 12
+                        || i == 13;
                 out.append(cell(cells.get(i), text));
             }
             out.append("\r\n");

@@ -764,10 +764,22 @@ public class CommerceReturnService {
         if (returns.isEmpty()) {
             return out;
         }
+        // Units as the offers count them: a measured line (2.5 m) is one item, a counted line its
+        // quantity. The order lines give the scale (one batch read).
+        List<CommerceReturnLine> returnLines = returnLineRepository.findByReturnIdIn(returns.stream()
+                .map(CommerceReturn::getId).toList());
+        Map<String, Integer> scaleByOrderLine = new HashMap<>();
+        Set<String> orderLineIds = new LinkedHashSet<>();
+        returnLines.forEach(line -> orderLineIds.add(line.getOrderLineId()));
+        orderLineIds.remove(null);
+        if (!orderLineIds.isEmpty()) {
+            for (CommerceOrderLine ol : orderLineRepository.findAllById(orderLineIds)) {
+                scaleByOrderLine.put(ol.getId(), ol.getQtyScale() == null ? 1 : ol.getQtyScale());
+            }
+        }
         Map<String, Integer> units = new HashMap<>();
-        for (CommerceReturnLine line : returnLineRepository.findByReturnIdIn(returns.stream()
-                .map(CommerceReturn::getId).toList())) {
-            units.merge(line.getReturnId(), line.getQuantity(), Integer::sum);
+        for (CommerceReturnLine line : returnLines) {
+            units.merge(line.getReturnId(), summaryUnits(line, scaleByOrderLine), Integer::sum);
         }
         Map<String, String> numbers = new HashMap<>();
         for (CommerceReturn r : returns) {
@@ -782,6 +794,13 @@ public class CommerceReturnService {
                     .build());
         }
         return out;
+    }
+
+    /** One return line in a summary's {@code units}: 1 for a measured line, else its quantity. */
+    static int summaryUnits(CommerceReturnLine line, Map<String, Integer> scaleByOrderLine) {
+        int quantity = line.getQuantity() == null ? 0 : line.getQuantity();
+        Integer scale = line.getOrderLineId() == null ? null : scaleByOrderLine.get(line.getOrderLineId());
+        return scale != null && scale > 1 && quantity > 0 ? 1 : quantity;
     }
 
     /** The return as it is now (its own transaction), with the caller's next actions. */

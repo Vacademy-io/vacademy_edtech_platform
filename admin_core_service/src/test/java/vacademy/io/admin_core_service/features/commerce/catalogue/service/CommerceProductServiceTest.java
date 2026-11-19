@@ -11,6 +11,7 @@ import vacademy.io.admin_core_service.features.commerce.stock.repository.StockMo
 import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxClassService;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductRequest;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductResponse;
+import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductSummaryResponse;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.ProductTranslationDTO;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.VariantRequest;
 import vacademy.io.admin_core_service.features.commerce.catalogue.dto.VariantResponse;
@@ -525,6 +526,55 @@ class CommerceProductServiceTest {
         assertEquals(10, products.get(0).getQtyScale());
         // The same values again are not a change.
         service.update(INSTITUTE, ACTOR, packageId, measure("MTR", 10, null));
+    }
+
+    /** D2: a power-of-ten scale, and a one-of-a-kind item is counted in pieces. */
+    @Test
+    void theScaleIsAPowerOfTenAndAOneOfAKindItemIsCountedInPieces() {
+        service.save(INSTITUTE, ACTOR, sariRequest("DRAFT"));
+        String packageId = products.get(0).getPackageId();
+
+        InvalidRequestException piece = assertThrows(InvalidRequestException.class,
+                () -> service.update(INSTITUTE, ACTOR, packageId, measure("MTR", 10, "PIECE")));
+        assertEquals("VALIDATION: a one-of-a-kind item is counted in pieces (qty_scale 1)", piece.getMessage());
+        InvalidRequestException four = assertThrows(InvalidRequestException.class,
+                () -> service.update(INSTITUTE, ACTOR, packageId, measure("MTR", 4, "QUANTITY")));
+        assertEquals("VALIDATION: qty_scale is 1, 10, 100 or 1000", four.getMessage());
+        assertEquals(1, products.get(0).getQtyScale(), "nothing was written");
+
+        for (int scale : new int[] {10, 100, 1000}) {
+            service.update(INSTITUTE, ACTOR, packageId, measure("MTR", scale, "QUANTITY"));
+            assertEquals(scale, products.get(0).getQtyScale());
+        }
+        // A one-of-a-kind item on a measured product: refused by the effective scale.
+        assertThrows(InvalidRequestException.class,
+                () -> service.update(INSTITUTE, ACTOR, packageId, measure(null, null, "PIECE")));
+        // Neither field in the request: the product is left as it is.
+        ProductRequest brandOnly = new ProductRequest();
+        brandOnly.setBrand("Test brand");
+        service.update(INSTITUTE, ACTOR, packageId, brandOnly);
+        assertEquals(1000, products.get(0).getQtyScale());
+        assertEquals("QUANTITY", products.get(0).getStockMode());
+        // Back to counted pieces: scale 1 with PIECE is fine.
+        service.update(INSTITUTE, ACTOR, packageId, measure("PCS", 1, "PIECE"));
+        assertEquals("PIECE", products.get(0).getStockMode());
+    }
+
+    @Test
+    void aProductSummaryCarriesItsUnitScaleAndStep() {
+        ProductRequest cloth = sariRequest("DRAFT");
+        cloth.setUnit("MTR");
+        cloth.setQtyScale(10);
+        cloth.setQtyStep(5);
+        service.save(INSTITUTE, ACTOR, cloth);
+        when(productRepository.search(eq(INSTITUTE), any(), any(), any(), eq(false), any()))
+                .thenAnswer(inv -> new org.springframework.data.domain.PageImpl<>(List.copyOf(products)));
+
+        ProductSummaryResponse summary = service.list(INSTITUTE, null, null, null, 0, 20).getContent().get(0);
+
+        assertEquals("MTR", summary.getUnit());
+        assertEquals(10, summary.getQtyScale());
+        assertEquals(5, summary.getQtyStep());
     }
 
     private static ProductRequest measure(String unit, Integer qtyScale, String stockMode) {

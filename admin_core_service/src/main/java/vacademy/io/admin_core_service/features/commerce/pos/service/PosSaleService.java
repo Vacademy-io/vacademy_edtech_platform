@@ -493,6 +493,24 @@ public class PosSaleService {
         }
     }
 
+    /**
+     * A sale line must be a whole number of the item's sale step (0.5 m of a cloth sold in steps of
+     * 5 base units): 400 {@code QUANTITY_STEP} before anything is priced or written. The quote
+     * keeps listing the line as unavailable instead.
+     */
+    static void requireSteps(List<CleanLine> lines, Map<String, CartVariant> variants) {
+        for (CleanLine line : lines) {
+            CartVariant variant = variants.get(line.variantId());
+            if (variant == null) {
+                continue;
+            }
+            int step = Math.max(1, variant.qtyStep());
+            if (line.quantity() % step != 0) {
+                throw CommerceOrderService.stepRefusal(line.lineRef(), step, variant.qtyScale(), variant.unit());
+            }
+        }
+    }
+
     /** The bill discount in rupees: AMOUNT as given; PERCENT of the goods after line discounts, rounded. */
     static BigDecimal billDiscountAmount(Clean clean, Map<String, CartVariant> variants) {
         if (clean.billDiscountKind() == null) {
@@ -716,6 +734,7 @@ public class PosSaleService {
         }
         Map<String, CartVariant> variants = variants(instituteId, clean);
         requirePieces(clean.lines(), variants);
+        requireSteps(clean.lines(), variants);
         Priced priced = price(instituteId, session.getLocationId(), clean, variants);
         CommerceOrderService.CartPrice price = priced.price();
         if (price.view().getUnavailable() != null && !price.view().getUnavailable().isEmpty()) {

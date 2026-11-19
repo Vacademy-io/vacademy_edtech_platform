@@ -243,6 +243,7 @@ public final class ReturnDtos {
         private String status;
         private String reason;
         private String locationId;
+        /** Items returned: a measured line (a length of cloth) counts 1, a counted line its quantity. */
         private Integer units;
         private BigDecimal creditTotal;
         private BigDecimal refunded;

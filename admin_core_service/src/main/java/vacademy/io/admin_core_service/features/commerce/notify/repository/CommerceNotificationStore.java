@@ -260,10 +260,13 @@ public class CommerceNotificationStore {
         return rows.isEmpty() ? Map.of() : rows.get(0);
     }
 
-    /** The item lines: name, variant, quantity and line total, in line order. */
+    /**
+     * The item lines: name, variant, quantity (base units), qty_scale, unit and line total, in line
+     * order.
+     */
     public List<Map<String, Object>> itemLines(String orderId) {
-        return jdbc.queryForList("SELECT name_snapshot, variant_label, quantity, line_total FROM commerce_order_line "
-                + "WHERE order_id = ? AND line_type = 'ITEM' ORDER BY line_no", orderId);
+        return jdbc.queryForList("SELECT name_snapshot, variant_label, quantity, qty_scale, unit, line_total "
+                + "FROM commerce_order_line WHERE order_id = ? AND line_type = 'ITEM' ORDER BY line_no", orderId);
     }
 
     /** The institute's name, or null. */

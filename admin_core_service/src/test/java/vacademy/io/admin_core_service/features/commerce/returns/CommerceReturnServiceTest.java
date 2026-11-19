@@ -757,4 +757,35 @@ class CommerceReturnServiceTest {
         assertEquals(0, new BigDecimal("525.00").compareTo(preview.getCreditEstimate()));
         verify(f.desk, never()).authorize(any(), anyString(), any(), any());
     }
+
+    /** A measured line counts as one item in a return's summary (2.5 m of cloth + 2 bottles = 3). */
+    @Test
+    void aMeasuredLineCountsAsOneItemInTheReturnSummary() {
+        CommerceReturn ret = new CommerceReturn();
+        ret.setId("ret-9");
+        ret.setOrderId(ORDER);
+        CommerceReturnLine cloth = new CommerceReturnLine();
+        cloth.setReturnId("ret-9");
+        cloth.setOrderLineId("ol-cloth");
+        cloth.setQuantity(25);
+        CommerceReturnLine bottles = new CommerceReturnLine();
+        bottles.setReturnId("ret-9");
+        bottles.setOrderLineId("ol-bottle");
+        bottles.setQuantity(2);
+        when(lineRepository.findByReturnIdIn(anyList())).thenReturn(List.of(cloth, bottles));
+        CommerceOrderLine clothLine = new CommerceOrderLine();
+        clothLine.setId("ol-cloth");
+        clothLine.setQtyScale(10);
+        CommerceOrderLine bottleLine = new CommerceOrderLine();
+        bottleLine.setId("ol-bottle");
+        bottleLine.setQtyScale(1);
+        when(orderLineRepository.findAllById(any())).thenReturn(List.of(clothLine, bottleLine));
+
+        List<ReturnDtos.ReturnSummary> summaries = service.summaries(List.of(ret));
+
+        assertEquals(3, summaries.get(0).getUnits());
+        // An order line that cannot be read counts as before (its quantity).
+        when(orderLineRepository.findAllById(any())).thenReturn(List.of());
+        assertEquals(27, service.summaries(List.of(ret)).get(0).getUnits());
+    }
 }

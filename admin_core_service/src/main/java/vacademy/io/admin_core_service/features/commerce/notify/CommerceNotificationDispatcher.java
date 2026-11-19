@@ -13,6 +13,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.customer.CommercePhones;
 import vacademy.io.admin_core_service.features.commerce.notify.entity.CommerceNotificationDelivery;
 import vacademy.io.admin_core_service.features.commerce.notify.entity.CommerceNotificationSetting;
@@ -382,7 +383,7 @@ public class CommerceNotificationDispatcher {
         if (trigger.itemsTable() && CommerceNotificationDelivery.EMAIL.equals(d.channel())) {
             for (Map<String, Object> line : store.itemLines(d.orderId())) {
                 items.add(new CommerceNotificationEmailRenderer.Item(text(line.get("name_snapshot")),
-                        text(line.get("variant_label")), text(line.get("quantity")),
+                        text(line.get("variant_label")), itemQuantity(line),
                         CommerceNotificationValues.money(decimal(line.get("line_total")), currency)));
             }
         }
@@ -693,6 +694,19 @@ public class CommerceNotificationDispatcher {
             return new BigDecimal(n.toString());
         }
         return BigDecimal.ZERO;
+    }
+
+    /**
+     * The quantity cell of an email item: "2.5 m" for 25 base units of a scale-10 MTR line, the
+     * stored count for a counted line.
+     */
+    public static String itemQuantity(Map<String, Object> line) {
+        Object quantity = line.get("quantity");
+        int scale = line.get("qty_scale") instanceof Number n ? n.intValue() : 1;
+        if (!(quantity instanceof Number number) || !CommerceUnits.measured(scale)) {
+            return text(quantity);
+        }
+        return CommerceUnits.shortQuantity(number.longValue(), scale, text(line.get("unit")));
     }
 
     private static String text(Object value) {

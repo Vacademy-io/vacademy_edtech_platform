@@ -138,6 +138,35 @@ class CommerceDocumentHtmlTest {
         assertFalse(plain.contains("Composition"));
     }
 
+    /** A measured line prints its length in metres and its rate per metre; a counted line keeps "2 PCS". */
+    @Test
+    void aMeasuredLinePrintsMetresAndTheRatePerMetre() throws Exception {
+        String money = CommercePdfRenderer.unicodeFontAvailable() ? "₹" : "Rs. ";
+        DocumentView view = DocumentView.builder()
+                .documentType(DocumentType.INVOICE).number("CC/2627-00043").date(LocalDate.of(2026, 11, 19))
+                .orderNumber("ORD-1002").sellerName("Test Seller TEST").sellerStateCode("09").buyerName("Buyer TEST")
+                .currency("INR")
+                .lines(List.of(
+                        DocumentView.Line.builder().description("Cotton cloth").quantity(25).qtyScale(10).unit("MTR")
+                                .unitPrice(new BigDecimal("12.34")).discount(BigDecimal.ZERO)
+                                .amount(new BigDecimal("308.50")).build(),
+                        DocumentView.Line.builder().description("Steel bottle").quantity(2).qtyScale(1).unit("PCS")
+                                .unitPrice(new BigDecimal("250.00")).discount(BigDecimal.ZERO)
+                                .amount(new BigDecimal("500.00")).build()))
+                .total(new BigDecimal("808.50"))
+                .build();
+
+        String html = CommerceDocumentHtml.build(view);
+
+        assertWellFormed(html);
+        assertTrue(html.contains("<td class=\"num\">2.5 m</td>"), html);
+        assertTrue(html.contains("<td class=\"num\">" + money + "123.40 / m</td>"));
+        assertTrue(html.contains("<td class=\"num\">" + money + "308.50</td>"));
+        assertFalse(html.contains("MTR"), "the stored code is not printed for a measured line");
+        assertTrue(html.contains("<td class=\"num\">2 PCS</td>"), "a counted line prints as before");
+        assertTrue(html.contains("<td class=\"num\">" + money + "250.00</td>"), "a counted rate has no unit");
+    }
+
     @Test
     void theDocumentIsDrawnAsAPdf() {
         byte[] pdf = new CommercePdfRenderer().render(

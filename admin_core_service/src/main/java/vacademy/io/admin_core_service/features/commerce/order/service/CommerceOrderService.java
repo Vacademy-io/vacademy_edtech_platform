@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import vacademy.io.admin_core_service.features.commerce.order.checkout.CommerceOrderPaymentService;
 import vacademy.io.admin_core_service.features.commerce.order.checkout.CommerceOrderWriter;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.document.service.CommerceSellerLookup;
 import vacademy.io.admin_core_service.features.commerce.document.service.DocumentClock;
 import vacademy.io.admin_core_service.features.commerce.order.cod.CodEligibility;
@@ -136,8 +137,46 @@ public class CommerceOrderService {
     @Lazy
     private CommerceOrderWriter orderWriter;
 
-    /** The stored snapshot and the public view of one priced cart. */
-    public record CartPrice(CartPriceSnapshot snapshot, CartPriceDtos.CartPrice view) {
+    /**
+     * The stored snapshot and the public view of one priced cart, and the variants it was priced
+     * from by id (for callers that word a refusal in the item's unit; not part of any answer).
+     */
+    public record CartPrice(CartPriceSnapshot snapshot, CartPriceDtos.CartPrice view,
+                            Map<String, CartVariant> variants) {
+
+        public CartPrice {
+            variants = variants == null ? Map.of() : variants;
+        }
+
+        public CartPrice(CartPriceSnapshot snapshot, CartPriceDtos.CartPrice view) {
+            this(snapshot, view, Map.of());
+        }
+    }
+
+    /**
+     * The till's and the staff order's answer to a line that is not on its sale step: 400
+     * {@code QUANTITY_STEP} naming the line and the step in display units ("line L1 is sold in
+     * steps of 0.5 m"). The online cart keeps its unavailable reason instead.
+     */
+    public static InvalidRequestException stepRefusal(String lineRef, int qtyStep, int qtyScale, String unit) {
+        return new InvalidRequestException(REASON_QUANTITY_STEP + ": line " + lineRef + " is sold in steps of "
+                + CommerceUnits.shortQuantity(Math.max(1, qtyStep), qtyScale, unit));
+    }
+
+    /** Throws {@link #stepRefusal} for the first line of a priced cart refused as {@code QUANTITY_STEP}. */
+    public static void requireOnStep(CartPrice priced) {
+        if (priced == null || priced.view() == null || priced.view().getUnavailable() == null) {
+            return;
+        }
+        for (CartPriceDtos.UnavailableLine line : priced.view().getUnavailable()) {
+            if (!REASON_QUANTITY_STEP.equals(line.getReason())) {
+                continue;
+            }
+            CartVariant variant = line.getVariantId() == null ? null : priced.variants().get(line.getVariantId());
+            int step = line.getQtyStep() != null ? line.getQtyStep() : variant == null ? 1 : variant.qtyStep();
+            throw stepRefusal(line.getLineRef(), step, variant == null ? 1 : variant.qtyScale(),
+                    variant == null ? null : variant.unit());
+        }
     }
 
     /**
@@ -372,8 +411,9 @@ public class CommerceOrderService {
                 : rule.codCharge().setScale(2, RoundingMode.HALF_UP);
 
         if (priced.isEmpty()) {
-            return empty(instituteId, request, settings, unavailable, changes, pincode, placeState, placeSource,
-                    codCharge, rule);
+            CartPrice none = empty(instituteId, request, settings, unavailable, changes, pincode, placeState,
+                    placeSource, codCharge, rule);
+            return new CartPrice(none.snapshot(), none.view(), byId);
         }
 
         // 4. Discounts, then delivery.
@@ -497,7 +537,7 @@ public class CommerceOrderService {
                         .codCharge(tax.getCodCharge()).roundOff(tax.getRoundOff()).total(tax.getTotal())
                         .lineCount(priced.size()).build())
                 .build();
-        return new CartPrice(snapshot, view);
+        return new CartPrice(snapshot, view, byId);
     }
 
     // ------------------------------------------------------------------ request

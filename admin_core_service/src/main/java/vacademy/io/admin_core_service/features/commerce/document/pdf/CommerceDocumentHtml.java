@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.commerce.document.pdf;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.document.enums.DocumentType;
 import vacademy.io.admin_core_service.features.commerce.document.service.AmountInWords;
 import vacademy.io.admin_core_service.features.commerce.tax.calc.TaxRateRow;
@@ -159,10 +160,11 @@ public final class CommerceDocumentHtml {
         int index = 1;
         for (DocumentView.Line line : lines) {
             int scale = Math.max(1, line.getQtyScale());
-            BigDecimal quantity = BigDecimal.valueOf(line.getQuantity())
-                    .divide(BigDecimal.valueOf(scale), 3, RoundingMode.HALF_UP).stripTrailingZeros();
+            // A measured line prints in its display unit ("2.5 m") with the rate per unit ("/ m").
+            String quantity = CommerceUnits.quantity(line.getQuantity(), scale, line.getUnit());
             BigDecimal price = line.getUnitPrice() == null ? null
                     : line.getUnitPrice().multiply(BigDecimal.valueOf(scale));
+            String rateSuffix = price == null ? "" : CommerceUnits.rateSuffix(scale, line.getUnit());
             out.append("<tr><td>").append(index++).append("</td><td>").append(esc(line.getDescription()));
             if (line.getSku() != null) {
                 out.append("<div class=\"small\">SKU ").append(esc(line.getSku())).append("</div>");
@@ -171,9 +173,8 @@ public final class CommerceDocumentHtml {
             if (tax) {
                 out.append("<td>").append(esc(line.getHsnCode())).append("</td>");
             }
-            out.append("<td class=\"num\">").append(quantity.toPlainString())
-                    .append(line.getUnit() == null ? "" : " " + esc(line.getUnit())).append("</td>")
-                    .append("<td class=\"num\">").append(amount(price, money)).append("</td>")
+            out.append("<td class=\"num\">").append(esc(quantity)).append("</td>")
+                    .append("<td class=\"num\">").append(amount(price, money)).append(esc(rateSuffix)).append("</td>")
                     .append("<td class=\"num\">").append(amountOrDash(line.getDiscount(), money)).append("</td>");
             if (tax) {
                 out.append("<td class=\"num\">").append(amount(line.getTaxableValue(), money)).append("</td>")

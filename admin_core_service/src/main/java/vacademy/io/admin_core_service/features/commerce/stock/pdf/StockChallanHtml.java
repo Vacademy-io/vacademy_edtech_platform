@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.commerce.stock.pdf;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.document.pdf.CommerceDocumentHtml;
 import vacademy.io.admin_core_service.features.commerce.document.pdf.CommercePdfRenderer;
 
@@ -108,7 +109,9 @@ public final class StockChallanHtml {
             }
             out.append("</td><td>").append(esc(line.hsnCode())).append("</td><td class=\"num\">")
                     .append(esc(quantity(line.quantity(), scale, line.unit()))).append("</td><td class=\"num\">")
-                    .append(perDisplayUnit == null ? "-" : money + indian(perDisplayUnit)).append("</td><td class=\"num\">")
+                    .append(perDisplayUnit == null ? "-"
+                            : money + indian(perDisplayUnit) + esc(CommerceUnits.rateSuffix(scale, line.unit())))
+                    .append("</td><td class=\"num\">")
                     .append(value == null ? "-" : money + indian(value)).append("</td></tr>");
         }
         out.append("<tr><td colspan=\"6\" class=\"num\"><b>Total value</b></td><td class=\"num\"><b>")
@@ -163,12 +166,9 @@ public final class StockChallanHtml {
         return text != null && text.codePoints().anyMatch(cp -> cp >= 0x0900 && cp <= 0x097F);
     }
 
-    /** {@code 15} base units of a scale-10 item in MTR: "1.5 MTR". */
+    /** {@code 15} base units of a scale-10 item in MTR: "1.5 m"; a counted item "5 PCS" (see {@link CommerceUnits}). */
     public static String quantity(int baseUnits, int qtyScale, String unit) {
-        BigDecimal shown = BigDecimal.valueOf(baseUnits)
-                .divide(BigDecimal.valueOf(Math.max(qtyScale, 1)), 3, RoundingMode.HALF_UP).stripTrailingZeros();
-        String number = shown.scale() < 0 ? shown.setScale(0).toPlainString() : shown.toPlainString();
-        return unit == null || unit.isBlank() ? number : number + " " + unit;
+        return CommerceUnits.quantity(baseUnits, qtyScale, unit);
     }
 
     /** Indian digit grouping with two decimals: 1234567.5 gives "12,34,567.50". */

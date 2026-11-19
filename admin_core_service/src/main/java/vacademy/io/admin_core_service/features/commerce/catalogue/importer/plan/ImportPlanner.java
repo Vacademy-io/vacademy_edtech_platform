@@ -17,6 +17,7 @@ import vacademy.io.admin_core_service.features.commerce.catalogue.importer.plan.
 import vacademy.io.admin_core_service.features.commerce.catalogue.importer.plan.ImportReferenceData.TaxClassInfo;
 import vacademy.io.admin_core_service.features.commerce.catalogue.importer.plan.ImportReferenceData.ValueInfo;
 import vacademy.io.admin_core_service.features.commerce.catalogue.importer.plan.ImportReferenceData.VariantInfo;
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -214,6 +215,17 @@ public class ImportPlanner {
                 : existing != null && existing.qtyScale() != null ? existing.qtyScale() : 1;
         String effectiveStockMode = stockMode != null ? stockMode
                 : existing != null ? existing.stockMode() : StockMode.QUANTITY.name();
+        // The product rules of the editor: a power-of-ten scale, and scale 1 for a one-of-a-kind item.
+        if (qtyScale != null || stockMode != null) {
+            ImportRow scaleRow = at.get(QTY_SCALE) != null ? at.get(QTY_SCALE)
+                    : at.get(STOCK_MODE) != null ? at.get(STOCK_MODE) : first;
+            if (!CommerceUnits.allowedScale(effectiveQtyScale)) {
+                plan.error(scaleRow, QTY_SCALE, "QTY_SCALE_INVALID", "qty_scale is 1, 10, 100 or 1000");
+            } else if (StockMode.PIECE.name().equals(effectiveStockMode) && effectiveQtyScale > 1) {
+                plan.error(scaleRow, QTY_SCALE, "QTY_SCALE_INVALID",
+                        "a one-of-a-kind item (stock_mode PIECE) is counted in pieces: qty_scale must be 1");
+            }
+        }
 
         String originCode = p.get(ORIGIN_LOCATION_CODE);
         if (originCode != null) {

@@ -40,7 +40,9 @@ class StockChallanHtmlTest {
         assertTrue(html.contains("Steel &lt;bottle&gt; &amp; cup"));
         assertFalse(html.contains("कप"), "a Devanagari item name prints its SKU");
         assertTrue(html.contains(">ST1<"), "a Devanagari place name prints its code");
-        assertTrue(html.contains("1.5 MTR"));
+        assertTrue(html.contains("1.5 m<"));
+        assertTrue(html.contains("255.00 / m<"), "a measured rate is per metre");
+        assertTrue(html.contains("2 PCS<") && html.contains("1,200.00<"), "a counted line prints as before");
         assertTrue(StockChallanHtml.build(challan("EXT/77")).contains("STOCK TRANSFER NOTE"));
     }
 

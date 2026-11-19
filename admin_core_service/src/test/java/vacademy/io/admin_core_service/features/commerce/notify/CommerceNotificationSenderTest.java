@@ -271,6 +271,31 @@ class CommerceNotificationSenderTest {
         assertEquals(f.dispatcher.recipientHash("asha.verma@example.com"), f.row(id).recipientHash);
     }
 
+    /** A measured line's quantity reads in metres ("2.5 m"), a counted line keeps its count. */
+    @Test
+    void theEmailItemQuantityIsInDisplayUnits() {
+        f.order.customerEmail = "buyer@example.com";
+        f.order.put();
+        f.store.lines.put(DispatcherFixture.ORDER, List.of(
+                Map.of("name_snapshot", "Cotton cloth", "variant_label", "White", "quantity", 25, "qty_scale", 10,
+                        "unit", "MTR", "line_total", new BigDecimal("308.50")),
+                Map.of("name_snapshot", "Steel bottle", "variant_label", "Plain", "quantity", 2, "qty_scale", 1,
+                        "unit", "PCS", "line_total", new BigDecimal("500.00"))));
+        String id = due("ORDER_CONFIRMED", "EMAIL");
+        assertEquals(CommerceNotificationDispatcher.Result.SENT, send(id));
+
+        String html = f.sent.get(0).getOptions().getEmailBody();
+        assertTrue(html.contains(">2.5 m<"), html);
+        assertFalse(html.contains(">25<"), "not the stored base units");
+        assertTrue(html.contains(">2<"), html);
+        assertEquals("2.5 m", CommerceNotificationDispatcher.itemQuantity(Map.of("quantity", 25, "qty_scale", 10,
+                "unit", "MTR")));
+        assertEquals("2", CommerceNotificationDispatcher.itemQuantity(Map.of("quantity", 2, "qty_scale", 1,
+                "unit", "PCS")));
+        assertEquals("3", CommerceNotificationDispatcher.itemQuantity(Map.of("quantity", 3)),
+                "a row without the scale prints as before");
+    }
+
     // ================================================================== answers (§6.3)
 
     private String sendOne(UnifiedSendResponse response) {

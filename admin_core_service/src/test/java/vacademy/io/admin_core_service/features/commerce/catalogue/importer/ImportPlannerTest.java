@@ -312,6 +312,20 @@ class ImportPlannerTest {
                 "the unchanged unit is not an error");
     }
 
+    /** D2 in the importer: a power-of-ten scale, and a one-of-a-kind item at scale 1. */
+    @Test
+    void aScaleThatIsNotAPowerOfTenOrAMeasuredPieceIsARowError() {
+        assertError(only(row(2, HANDLE, "cloth", NAME_EN, "Cotton cloth", UNIT, "MTR", QTY_SCALE, "4")), 2,
+                QTY_SCALE, "QTY_SCALE_INVALID");
+        assertError(only(row(2, HANDLE, "cloth", NAME_EN, "Cotton cloth", UNIT, "MTR", QTY_SCALE, "10",
+                STOCK_MODE, "PIECE")), 2, QTY_SCALE, "QTY_SCALE_INVALID");
+        for (String scale : List.of("1", "10", "100", "1000")) {
+            ProductPlan ok = only(row(2, HANDLE, "cloth", NAME_EN, "Cotton cloth", UNIT, "MTR", QTY_SCALE, scale,
+                    SKU, "CC-1", PRICE, "100"));
+            assertFalse(ok.hasErrors(), scale + ": " + ok.getIssues());
+        }
+    }
+
     @Test
     void originLocationRules() {
         assertError(only(row(2, HANDLE, "k", NAME_EN, "K", ORIGIN_LOCATION_CODE, "NOWHERE")), 2, ORIGIN_LOCATION_CODE, "UNKNOWN_LOCATION");

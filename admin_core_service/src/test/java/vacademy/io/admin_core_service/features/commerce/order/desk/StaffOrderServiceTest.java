@@ -20,6 +20,7 @@ import vacademy.io.admin_core_service.features.commerce.security.CommerceRole;
 import vacademy.io.admin_core_service.features.commerce.shipment.service.CommerceShipmentService;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceCounterService;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceStockSettings;
+import vacademy.io.admin_core_service.features.commerce.storefront.service.StorefrontSnapshotLoader;
 import vacademy.io.admin_core_service.features.user_subscription.entity.UserPlan;
 import vacademy.io.admin_core_service.features.user_subscription.service.PaymentLogService;
 import vacademy.io.admin_core_service.features.user_subscription.service.UserPlanService;
@@ -184,6 +185,33 @@ class StaffOrderServiceTest {
                 INST, request().restOnCredit(true).build()))));
         verify(f.writer, never()).writeStaff(any());
         verify(counterService, never()).nextNumber(anyString(), anyString());
+    }
+
+    /** D4: a line off its sale step is a 400 QUANTITY_STEP in metres, not the general CART_CHANGED. */
+    @Test
+    void aLineOffItsStepIsRefusedWithTheStepInMetresBeforeAnythingIsWritten() {
+        StorefrontSnapshotLoader.CartVariant linen = new StorefrontSnapshotLoader.CartVariant("ps-l1", "pkg-l1",
+                "LINEN-1", "linen-cloth", true, true, true, false, "tc-1", "MTR", 10, 5, null, 100, null,
+                Map.of("en", "Linen cloth"), new BigDecimal("20.00"), null, "INR");
+        CartPriceDtos.CartPrice offStep = CartPriceDtos.CartPrice.builder().unavailable(List.of(
+                CartPriceDtos.UnavailableLine.builder().lineRef("L1").variantId("ps-l1").reason("QUANTITY_STEP")
+                        .qtyStep(5).build())).build();
+        when(orderService.priceCart(eq(INST), any(CartPriceRequest.class), any(CommerceOrderService.StaffPricing.class)))
+                .thenReturn(new CommerceOrderService.CartPrice(null, offStep, Map.of("ps-l1", linen)));
+
+        InvalidRequestException refused = assertThrows(InvalidRequestException.class, () -> service.create(manager,
+                INST, request().lines(List.of(StaffOrderRequest.Line.builder().variantId("ps-l1").quantity(23)
+                        .build())).restOnCredit(true).build()));
+
+        assertEquals("QUANTITY_STEP: line L1 is sold in steps of 0.5 m", refused.getMessage());
+        verify(f.writer, never()).writeStaff(any());
+        verify(counterService, never()).nextNumber(anyString(), anyString());
+
+        // Without the variant at hand the step still names the line (in base units).
+        when(orderService.priceCart(eq(INST), any(CartPriceRequest.class), any(CommerceOrderService.StaffPricing.class)))
+                .thenReturn(new CommerceOrderService.CartPrice(null, offStep));
+        assertEquals("QUANTITY_STEP: line L1 is sold in steps of 5", assertThrows(InvalidRequestException.class,
+                () -> service.create(manager, INST, request().restOnCredit(true).build())).getMessage());
     }
 
     @Test

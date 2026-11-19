@@ -220,7 +220,11 @@ public class CommerceDocumentPdfService {
 
     // ------------------------------------------------------------------ views
 
-    DocumentView invoiceView(Invoice invoice) {
+    /**
+     * The printable view of an invoice, read only. Public so the measured-goods proof can render
+     * the HTML ({@link CommerceDocumentHtml#build}) without storing a PDF.
+     */
+    public DocumentView invoiceView(Invoice invoice) {
         CommerceInvoiceSnapshot snapshot = CommerceInvoiceService.readSnapshot(invoice);
         TaxResult tax = snapshot.getTax();
         Map<String, CommerceInvoiceLineExtra> extras = extrasByRef(snapshot);
@@ -273,7 +277,11 @@ public class CommerceDocumentPdfService {
                 .build();
     }
 
-    DocumentView creditNoteView(CommerceCreditNote note) {
+    /**
+     * The printable view of a credit note, read only. Public so the measured-goods proof can render
+     * the HTML ({@link CommerceDocumentHtml#build}) without storing a PDF.
+     */
+    public DocumentView creditNoteView(CommerceCreditNote note) {
         Invoice invoice = invoiceRepository.findById(note.getInvoiceId())
                 .orElseThrow(() -> new IllegalStateException("credit note " + note.getId() + " has no invoice"));
         CommerceInvoiceSnapshot snapshot = CommerceInvoiceService.readSnapshot(invoice);
