@@ -110,6 +110,32 @@ class VendorCallLogTest {
         }
     }
 
+    /** Firebase keeps the answer on getHttpResponse(). */
+    public static final class HttpResponse {
+        public Integer getStatusCode() {
+            return 429;
+        }
+
+        public String getContent() {
+            return "{\"error\":{\"status\":\"RESOURCE_EXHAUSTED\"}}";
+        }
+    }
+
+    static final class FirebaseLikeException extends RuntimeException {
+        public HttpResponse getHttpResponse() {
+            return new HttpResponse();
+        }
+    }
+
+    @Test
+    void firebaseStyleResponseIsRead() throws Exception {
+        VendorCallLog.failed("fcm.googleapis.com", "send push", null, new FirebaseLikeException());
+        VendorCallLog.Failure f = next();
+        assertEquals(429, f.httpStatus());
+        assertEquals("RESOURCE_EXHAUSTED",
+                JSON.readTree(f.response()).path("body").path("error").path("status").asText());
+    }
+
     @Test
     void sdkExceptionStatusIsReadAndItsMessageCleaned() throws Exception {
         VendorCallLog.failed("api.stripe.com", "create payment intent", null, new SdkException());

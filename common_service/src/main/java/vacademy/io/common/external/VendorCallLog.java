@@ -205,6 +205,15 @@ public final class VendorCallLog {
             if (v instanceof Integer i) return i > 0 ? i : null;
             if (v instanceof org.springframework.http.HttpStatusCode c) return c.value();
         } catch (Exception ignored) {
+            // not an exception that carries a status this way
+        }
+        try {
+            // Firebase: e.getHttpResponse().getStatusCode()
+            Object http = t.getClass().getMethod("getHttpResponse").invoke(t);
+            if (http != null && http.getClass().getMethod("getStatusCode").invoke(http) instanceof Integer i) {
+                return i > 0 ? i : null;
+            }
+        } catch (Exception ignored) {
             // not an exception that carries a status
         }
         return null;
@@ -213,10 +222,19 @@ public final class VendorCallLog {
     private static byte[] reflectBody(Throwable t) {
         try {
             Object v = t.getClass().getMethod("getResponseBodyAsByteArray").invoke(t);
-            return v instanceof byte[] b ? b : null;
+            if (v instanceof byte[] b) return b;
         } catch (Exception ignored) {
-            return null;
+            // not this way
         }
+        try {
+            // Firebase: e.getHttpResponse().getContent()
+            Object http = t.getClass().getMethod("getHttpResponse").invoke(t);
+            Object v = http == null ? null : http.getClass().getMethod("getContent").invoke(http);
+            if (v instanceof String s) return s.getBytes(StandardCharsets.UTF_8);
+        } catch (Exception ignored) {
+            // not this way
+        }
+        return null;
     }
 
     private static String describe(Throwable error) {
