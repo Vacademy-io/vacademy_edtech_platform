@@ -26,9 +26,14 @@ export function refundCap(detail: CapDetail, returnView?: CapReturn | null): num
     return Number.isFinite(cap) ? Math.max(0, round2(cap)) : 0;
 }
 
-/** What the customer still owes on the order: total − paid, floored at 0. */
-export function receiptDue(detail: Pick<StaffOrderDetail, 'order'>): number {
-    return Math.max(0, round2((detail.order.total ?? 0) - (detail.order.amount_paid ?? 0)));
+/**
+ * What the customer still owes on the order: the server's `amount_due` (net of
+ * goods returned before payment, the figure the receipt is checked against);
+ * total − paid only when the server sent no `amount_due`. Floored at 0.
+ */
+export function receiptDue(detail: Pick<StaffOrderDetail, 'order' | 'amount_due'>): number {
+    const due = detail.amount_due ?? (detail.order.total ?? 0) - (detail.order.amount_paid ?? 0);
+    return Math.max(0, round2(due));
 }
 
 /** Field check for a typed amount against a cap: null = fine. */

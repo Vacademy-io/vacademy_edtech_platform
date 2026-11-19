@@ -6,33 +6,23 @@
  * one table (GSTR-1 sheets, day book documents and money, documents issued),
  * the GSTR-1 `check` block, `warnings`, `next_cursor` for registers and
  * `as_of` (when the read replica answered). Every money figure, every total
- * and every check comes from the server: the screens never add money.
+ * and every check comes from the server: the screens never add money. Shapes
+ * follow `report/dto/ReportDtos.java` key for key.
  *
  * `reports-api.ts` normalises the wire into these shapes, so a screen never
  * meets `undefined` where a list is expected.
  */
 
-/** Column types of `export/ReportTable.java` (contract §6.1) plus the two the screens print specially. */
-export const REPORT_COLUMN_TYPES = [
-    'TEXT',
-    'MONEY',
-    'QTY',
-    'DATE',
-    'TIME',
-    'INT',
-    'PERCENT',
-    /** A rate per display unit ("₹123.40 / m"). */
-    'RATE',
-    /** A place of supply ("<code>-<state name>", or a bare state code). */
-    'STATE',
-] as const;
+/** Column types of `export/ReportTable.java` (`ReportTable.Type`), the only ones the server sends. */
+export const REPORT_COLUMN_TYPES = ['TEXT', 'MONEY', 'QTY', 'DATE', 'TIME', 'INT', 'PERCENT'] as const;
 export type ReportColumnType = (typeof REPORT_COLUMN_TYPES)[number];
 
+/** A column as `ReportDtos.ColumnDto` sends it: `{key, label, label_hi, type}`. */
 export interface ReportColumn {
     key: string;
-    /** Label in the admin's language (the server's label table, en or hi); null when not sent. */
-    label: string | null;
+    /** The server's English label (`label`). */
     labelEn: string | null;
+    /** The server's Hindi label (`label_hi`). */
     labelHi: string | null;
     type: ReportColumnType;
 }
@@ -40,36 +30,46 @@ export interface ReportColumn {
 export type ReportCell = unknown;
 export type ReportRow = Record<string, ReportCell>;
 
+/** `ReportDtos.Warning`: `{code, message, ref}`. */
 export interface ReportWarning {
     code: string;
     message: string;
     /** The document or row the warning is about (a number, an HSN), when it has one. */
     ref: string | null;
-    /** How many rows it covers, when the server counts them for us. */
-    count: number | null;
+    /**
+     * The server lists at most 100 warnings per code and folds the rest into one
+     * `{code, message: "and N more", ref: null}`: N here, null on a normal warning.
+     */
+    more: number | null;
 }
 
+/** `ReportDtos.Section`: `{key, label, label_hi, columns, rows, totals}`. */
 export interface ReportSection {
     key: string;
-    /** The server's title for the block, if it sends one (the screen has its own words for known keys). */
-    title: string | null;
+    labelEn: string | null;
+    labelHi: string | null;
     columns: ReportColumn[];
     rows: ReportRow[];
     totals: ReportRow | null;
 }
 
-/** One line of the GSTR-1 check (contract §2.5): sections total vs documents total. */
+/** One line of the GSTR-1 check (`Gstr1Builder.check`): sections total vs documents total for one column. */
 export interface ReportCheckLine {
+    /** A column key of the sheets (`taxable_value`, `cgst`, `sgst`, `igst`, `cess`). */
     key: string;
     sections: ReportCell;
     documents: ReportCell;
     difference: ReportCell;
 }
 
+/** `check` of an answer: `{rule, columns?: [...], difference, ...figures}`. */
 export interface ReportCheck {
+    /** The rule as the server words it (English). */
+    rule: string | null;
     /** The overall difference as the server sent it (0.00 when the sections add up). */
     difference: ReportCell;
-    lines: ReportCheckLine[];
+    /** GSTR-1 only: one line per checked column (`check.columns`). */
+    columns: ReportCheckLine[];
 }
 
 export interface ReportAnswer {
@@ -84,7 +84,7 @@ export interface ReportAnswer {
     check: ReportCheck | null;
     warnings: ReportWarning[];
     nextCursor: string | null;
-    /** When the figures were read (ISO time). */
+    /** When the figures were read (India ISO time with offset). */
     asOf: string | null;
 }
 

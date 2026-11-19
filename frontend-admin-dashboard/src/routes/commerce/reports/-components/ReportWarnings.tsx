@@ -1,23 +1,26 @@
 import { useTranslation } from 'react-i18next';
 import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
 import type { ReportWarning } from '../-shared/report-types';
-import { REPORT_WARNING_CODES } from '../-shared/report-keys';
+import { REPORT_WARNING_CODES, SERIOUS_WARNING_CODES } from '../-shared/report-keys';
 
 const KNOWN = new Set<string>(REPORT_WARNING_CODES);
-/** Warnings that mean the figures cannot be filed as they are: error colour. */
-const SERIOUS = new Set<string>(['GSTR1_DOES_NOT_ADD_UP', 'SERIES_GAP']);
+const SERIOUS = new Set<string>(SERIOUS_WARNING_CODES);
 const MAX_REFS = 5;
 
 export interface WarningGroup {
     code: string;
-    /** Rows covered: the server's counts, else one per warning sent. */
+    /** Rows covered: one per warning sent, plus the N of the server's "and N more" fold. */
     count: number;
     refs: string[];
     message: string;
     serious: boolean;
 }
 
-/** One line per code, in the order the server sent them. Counting rows, not adding money. */
+/**
+ * One line per code, in the order the server sent them. The server lists at
+ * most 100 per code and folds the rest into "and N more" (no ref): that one
+ * adds N. Counting rows, not adding money.
+ */
 export function groupWarnings(warnings: ReportWarning[]): WarningGroup[] {
     const groups = new Map<string, WarningGroup>();
     warnings.forEach((w) => {
@@ -28,7 +31,7 @@ export function groupWarnings(warnings: ReportWarning[]): WarningGroup[] {
             message: w.message,
             serious: SERIOUS.has(w.code),
         };
-        group.count += w.count ?? 1;
+        group.count += w.more ?? 1;
         if (w.ref && !group.refs.includes(w.ref)) group.refs.push(w.ref);
         groups.set(w.code, group);
     });

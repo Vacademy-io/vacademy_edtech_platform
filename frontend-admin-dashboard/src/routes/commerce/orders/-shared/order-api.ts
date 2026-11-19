@@ -282,6 +282,7 @@ export function normalizeDetail(data: unknown): StaffOrderDetail {
         refund_committed: num(r.refund_committed),
         amount_refunded: num(r.amount_refunded),
         refund_open: num(r.refund_open),
+        amount_due: num(r.amount_due),
         returns: records(r.returns).map(normalizeReturnSummary),
         refunds: records(r.refunds).map(normalizeRefundSummary),
         exchange_of_order_id: str(r.exchange_of_order_id),

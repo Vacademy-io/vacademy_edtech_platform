@@ -1,7 +1,9 @@
 /**
- * WP-51 contract §7.3: "2.5 m"; "₹123.40 / m"; the India date of
- * 2026-10-31T18:30:00Z is 1 November; place of supply "23-…". Also the range
- * rules and defaults of the report page (§3.1) and the error map (§6.3).
+ * WP-51 contract §7.3 on the server's cell types: QTY a number, TIME India
+ * wall text printed as sent, `*_text` columns in place of the raw ones,
+ * totals typed by column; the India date of 2026-10-31T18:30:00Z (as_of) is
+ * 1 November. Also the range rules and defaults of the report page (§3.1) and
+ * the error map (§6.3).
  */
 import { AxiosError, type AxiosResponse } from 'axios';
 import { describe, expect, it } from 'vitest';
@@ -13,16 +15,16 @@ import {
     formatIndiaDate,
     formatIndiaTime,
     formatQuantityCell,
-    formatRateCell,
+    formatWallTime,
     indiaDay,
     indiaToday,
     isZeroFigure,
     monthRange,
-    placeOfSupplyText,
 } from './report-format';
+import { columnLabel, screenColumns, totalType } from './report-columns';
+import type { ReportColumn } from './report-types';
 import { rangeProblem, resolveReportFilters, validateReportsSearch } from './report-search';
 
-const t = ((key: string) => (key === 'states.23' ? 'Test State' : key === 'orders.units.metre' ? 'm' : key)) as never;
 
 const serverError = (status: number, message: string) =>
     new AxiosError(message, String(status), undefined, undefined, {
@@ -34,19 +36,57 @@ const serverError = (status: number, message: string) =>
     } as unknown as AxiosResponse);
 
 describe('report cells', () => {
-    it('a measured quantity reads in display units: "2.5 m"', () => {
-        expect(formatQuantityCell({ base: 25, qty_scale: 10, unit: 'MTR' })).toBe('2.5 m');
-        expect(formatQuantityCell({ base: 59, qty_scale: 10, unit: 'MTR' }, t)).toBe('5.9 m');
-        expect(formatQuantityCell('1.2 m')).toBe('1.2 m');
-        expect(formatQuantityCell({ base: 12, qty_scale: 1, unit: 'PCS' })).toBe('12');
-        expect(cellText('QTY', { base: 25, qty_scale: 10, unit: 'MTR' })).toBe('2.5 m');
+    it('a QTY cell is the server number in display units; the unit is in the *_text column', () => {
+        expect(formatQuantityCell(5.9)).toBe('5.9');
+        expect(formatQuantityCell('4.7')).toBe('4.7');
+        expect(cellText('QTY', 1.3)).toBe('1.3');
+        expect(cellText('TEXT', '5.9 m')).toBe('5.9 m');
+        expect(cellText('TEXT', '₹123.40 / m')).toBe('₹123.40 / m');
     });
 
-    it('a rate per display unit reads "₹123.40 / m"', () => {
-        expect(formatRateCell({ unit_price: 12.34, qty_scale: 10, unit: 'MTR' })).toBe('₹123.40 / m');
-        expect(formatRateCell({ amount: 123.4, unit: 'MTR' })).toBe('₹123.40 / m');
-        expect(formatRateCell('₹123.40 / m')).toBe('₹123.40 / m');
-        expect(formatRateCell({ amount: 45, unit: 'PCS' })).toBe('₹45.00');
+    it('a TIME cell is India wall text printed as it is: never shifted by 5:30', () => {
+        expect(formatWallTime('2026-11-19 10:30')).toBe('19 Nov 2026, 10:30');
+        expect(cellText('TIME', '2026-11-19 23:59')).toBe('19 Nov 2026, 23:59');
+        expect(cellText('TIME', '2026-11-19 00:05')).toBe('19 Nov 2026, 00:05');
+        // A date-only event: the server's "—" as sent.
+        expect(cellText('TIME', '—')).toBe('—');
+    });
+
+    it('a *_text column hides its raw companion; labels are label / label_hi', () => {
+        const c = (key: string, type: ReportColumn['type'], labelEn: string, labelHi: string | null = null): ReportColumn => ({
+            key,
+            type,
+            labelEn,
+            labelHi,
+        });
+        const shown = screenColumns([
+            c('rate', 'PERCENT', 'Rate %'),
+            c('quantity', 'QTY', 'Quantity'),
+            c('quantity_text', 'TEXT', 'Quantity with unit'),
+            c('rate_per_unit', 'MONEY', 'Rate per unit'),
+            c('rate_text', 'TEXT', 'Rate per unit (as printed)'),
+            c('net_units', 'QTY', 'Net units'),
+            c('net_text', 'TEXT', 'Net (with unit)'),
+            c('average_rate', 'MONEY', 'Average rate per unit'),
+            c('average_rate_text', 'TEXT', 'Average rate'),
+        ]).map((col) => col.key);
+        expect(shown).toEqual(['rate', 'quantity_text', 'rate_text', 'net_text', 'average_rate_text']);
+        expect(columnLabel(c('due', 'MONEY', 'Due', 'बकाया'), 'hi')).toBe('बकाया');
+        expect(columnLabel(c('due', 'MONEY', 'Due', 'बकाया'), 'en')).toBe('Due');
+        expect(columnLabel(c('due', 'MONEY', 'Due'), 'hi')).toBe('Due');
+    });
+
+    it('a total is typed by its column; a key that is no column is a count unless the server names it as money', () => {
+        const own: ReportColumn[] = [{ key: 'orders', type: 'INT', labelEn: 'Orders', labelHi: null }];
+        const all: ReportColumn[] = [{ key: 'net', type: 'MONEY', labelEn: 'Net received', labelHi: null }];
+        expect(totalType('orders', own, all)).toBe('INT');
+        expect(totalType('net', own, all)).toBe('MONEY');
+        ['credit_notes', 'closed_sessions', 'open_sessions', 'red_flag_orders', 'remittances', 'sessions', 'products', 'count', 'outstanding_count'].forEach(
+            (key) => expect(totalType(key, own)).toBe('INT')
+        );
+        ['documents_value', 'documents_total', 'cash_at_tills', 'cancelled_total', 'outstanding_amount', 'net_money'].forEach((key) =>
+            expect(totalType(key, own)).toBe('MONEY')
+        );
     });
 
     it('the India date of 2026-10-31T18:30:00Z is 1 November', () => {
@@ -60,13 +100,6 @@ describe('report cells', () => {
         expect(formatIndiaDate('2026-11-01')).toBe('1 Nov 2026');
         expect(formatIndiaTime('2026-11-01')).toBe('—');
         expect(indiaToday(new Date('2026-11-19T20:00:00Z'))).toBe('2026-11-20');
-    });
-
-    it('place of supply reads "23-Test State"', () => {
-        expect(placeOfSupplyText('23', t)).toBe('23-Test State');
-        expect(placeOfSupplyText(23, t)).toBe('23-Test State');
-        expect(placeOfSupplyText('23-Test State', t)).toBe('23-Test State');
-        expect(cellText('STATE', '23', t)).toMatch(/^23-/);
     });
 
     it('a zero figure is compared, never added', () => {

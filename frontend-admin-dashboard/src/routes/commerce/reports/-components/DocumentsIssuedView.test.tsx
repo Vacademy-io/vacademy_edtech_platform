@@ -1,7 +1,10 @@
 /**
- * WP-51 contract §7.3, documents issued: system numbers and paper bill books
- * are two blocks; the pages "not entered" are listed under their book
- * ("not entered: 102"); a series with a gap is drawn in the error colour.
+ * WP-51 contract §7.3, documents issued, on the server's answer
+ * (`GstReportService.documentsIssued`): blocks `system` and `bill_books`
+ * headed by the server's labels; "dated in another period" is a column of
+ * `system`; the pages "not entered" are listed under their book by `prefix`
+ * ("BK: not entered: 102"); a series whose `gap` is not "none" is in the
+ * error colour.
  */
 import { render, screen, within } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
@@ -10,47 +13,42 @@ vi.mock('react-i18next', async () => {
     const kit = await import('./report-test-kit');
     return { useTranslation: () => ({ t: kit.tWithValues, i18n: { language: 'en' } }) };
 });
+// The kit reads fixtures through `normalizeReport` (reports-api), which imports these.
+vi.mock('@/lib/auth/axiosInstance', () => ({ default: { get: vi.fn() } }));
+vi.mock('@/lib/save-blob', () => ({ saveBlob: vi.fn() }));
 vi.mock('@/components/design-system/table', async () => ({ MyTable: (await import('./report-test-kit')).MockTable }));
+const lang = vi.hoisted(() => ({ value: 'en' as 'en' | 'hi' }));
+vi.mock('@/routes/commerce/-components/CatalogueBits', () => ({ useAdminLanguage: () => lang.value }));
 
+import { DOCUMENTS_ISSUED_JSON } from '../-shared/report-server-fixtures';
 import { DocumentsIssuedView, hasGap } from './DocumentsIssuedView';
-import { answer, column } from './report-test-kit';
+import { fromServer } from './report-test-kit';
 
-const systemCols = [column('prefix'), column('from_number'), column('to_number'), column('total', 'INT'), column('gap')];
-const bookCols = [column('book_prefix'), column('book_range'), column('total', 'INT'), column('not_entered')];
-
-const issued = answer({
-    report: 'documents-issued',
-    sections: [
-        {
-            key: 'system',
-            title: null,
-            columns: systemCols,
-            rows: [
-                { prefix: 'INV/', from_number: 'INV/2627-00001', to_number: 'INV/2627-00009', total: 9, gap: 'none' },
-                { prefix: 'CN/', from_number: 'CN/2627-00001', to_number: 'CN/2627-00004', total: 3, gap: ['CN/2627-00003'] },
-            ],
-            totals: null,
-        },
-        {
-            key: 'bill_books',
-            title: null,
-            columns: bookCols,
-            rows: [{ book_prefix: 'BK', book_range: '100–199', total: 2, not_entered: [102] }],
-            totals: null,
-        },
-    ],
-});
+const issued = fromServer(DOCUMENTS_ISSUED_JSON);
 
 describe('DocumentsIssuedView', () => {
-    it('system numbers and paper bill books are two blocks', () => {
+    it('system numbers and paper bill books are two blocks, with the server headings', () => {
+        lang.value = 'en';
         render(<DocumentsIssuedView answer={issued} />);
         const system = screen.getByTestId('report-section-system');
         const books = screen.getByTestId('report-section-bill_books');
-        expect(system.textContent).toContain('reports.sections.system');
+        expect(system.querySelector('h3')?.textContent).toBe('System numbers');
         expect(system.textContent).toContain('INV/2627-00001');
         expect(system.textContent).not.toContain('100–199');
-        expect(books.textContent).toContain('reports.sections.bill_books');
+        expect(books.querySelector('h3')?.textContent).toBe('Paper bill books');
         expect(books.textContent).toContain('100–199');
+        // "Dated in another period" is a column of the system block, not a block of its own.
+        expect(Array.from(system.querySelectorAll('th')).map((th) => th.textContent)).toContain('Dated in another period');
+        expect(screen.queryByTestId('report-section-other_period')).toBeNull();
+    });
+
+    it('in Hindi the headings and column labels are the server label_hi', () => {
+        lang.value = 'hi';
+        render(<DocumentsIssuedView answer={issued} />);
+        const system = screen.getByTestId('report-section-system');
+        expect(system.querySelector('h3')?.textContent).toBe('सिस्टम नंबर');
+        expect(Array.from(system.querySelectorAll('th')).map((th) => th.textContent)).toContain('छूटे नंबर');
+        lang.value = 'en';
     });
 
     it('lists the pages not entered under the book: "not entered: 102"', () => {
@@ -65,14 +63,14 @@ describe('DocumentsIssuedView', () => {
         const danger = system.querySelectorAll('[data-tone="danger"]');
         expect(danger.length).toBeGreaterThan(0);
         danger.forEach((cell) => expect(cell.className).toContain('text-danger-600'));
-        expect(Array.from(danger).some((cell) => cell.textContent?.includes('CN/2627-00003'))).toBe(true);
+        expect(Array.from(danger).some((cell) => cell.textContent?.includes('CN/2627-00001'))).toBe(true);
         expect(Array.from(danger).some((cell) => cell.textContent?.includes('INV/2627-00001'))).toBe(false);
     });
 
-    it('reads a gap from "gap" or "missing"', () => {
+    it('reads a gap from the server text in "gap" ("none" or the numbers)', () => {
         expect(hasGap({ gap: 'none' })).toBe(false);
-        expect(hasGap({ gap: [] })).toBe(false);
-        expect(hasGap({ missing: [5] })).toBe(true);
-        expect(hasGap({ gap: '5, 6' })).toBe(true);
+        expect(hasGap({ gap: '' })).toBe(false);
+        expect(hasGap({ gap: 'CN/2627-00003' })).toBe(true);
+        expect(hasGap({ missing: [5] })).toBe(false);
     });
 });

@@ -55,7 +55,16 @@ describe('refundCap', () => {
 });
 
 describe('receiptDue', () => {
-    it('total less paid, floored at 0', () => {
+    it('is the server amount_due: a ₹1,000 credit order with ₹300 returned before payment owes ₹700', () => {
+        // F1 (CommerceOrderReturnsViewDueTest): the detail sends amount_due net of the return.
+        const detail = detailFixture({ amount_due: '700.00' }, { total: '1000.00', amount_paid: 0, payment_status: 'UNPAID' });
+        expect(detail.amount_due).toBe(700);
+        expect(receiptDue(detail)).toBe(700);
+        expect(receiptDue(detailFixture({ amount_due: 0 }, { total: '1000.00', amount_paid: 0 }))).toBe(0);
+        expect(receiptDue(detailFixture({ amount_due: '-5.00' }, { total: '1000.00' }))).toBe(0);
+    });
+
+    it('falls back to total less paid only when the server sent no amount_due, floored at 0', () => {
         expect(receiptDue(detailFixture({}, { total: '800.00', amount_paid: '300.00' }))).toBe(500);
         expect(receiptDue(detailFixture({}, { total: '800.00', amount_paid: '900.00' }))).toBe(0);
     });

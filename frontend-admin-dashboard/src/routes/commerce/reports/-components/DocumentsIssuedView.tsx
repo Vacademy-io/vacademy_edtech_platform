@@ -1,43 +1,38 @@
 import { useTranslation } from 'react-i18next';
-import type { ReportAnswer, ReportCell, ReportRow, ReportSection } from '../-shared/report-types';
+import type { ReportAnswer, ReportRow, ReportSection } from '../-shared/report-types';
 import { SectionBlock } from './ReportTable';
 
-/** Pages as text: `[102, 105]` → "102, 105"; a string as sent. */
-export function pagesText(value: ReportCell): string {
-    if (Array.isArray(value)) return value.map((v) => String(v)).join(', ');
-    if (typeof value === 'number') return String(value);
-    return typeof value === 'string' ? value.trim() : '';
-}
+/** A cell the server sends as text ("none", "102, 105"), trimmed; anything else as empty. */
+const textCell = (value: unknown): string => (typeof value === 'string' ? value.trim() : '');
 
-/** A system series row with missing numbers (`gap` other than "none", or a `missing` list). */
+/** A system series row with missing numbers: its `gap` text is something other than "none". */
 export function hasGap(row: ReportRow): boolean {
-    const gap = row.gap ?? row.missing;
-    if (Array.isArray(gap)) return gap.length > 0;
-    if (typeof gap === 'number') return gap > 0;
-    if (typeof gap === 'string') return gap.trim() !== '' && gap.trim().toLowerCase() !== 'none';
-    return false;
+    const gap = textCell(row.gap);
+    return gap !== '' && gap.toLowerCase() !== 'none';
 }
 
-const notEnteredOf = (row: ReportRow): string => pagesText(row.not_entered ?? row.not_entered_pages);
-const bookName = (row: ReportRow): string =>
-    String(row.book_prefix ?? row.prefix ?? row.book ?? row.series ?? '').trim();
-
-const emptySection = (key: string): ReportSection => ({ key, title: null, columns: [], rows: [], totals: null });
+const emptySection = (key: string): ReportSection => ({
+    key,
+    labelEn: null,
+    labelHi: null,
+    columns: [],
+    rows: [],
+    totals: null,
+});
 
 /**
- * Documents issued (GSTR-1 table 13; contract §2.6, §7.2): system numbers and
- * paper bill books in two blocks. A series with missing numbers is drawn in
- * the error colour; under each book, the pages "not entered".
+ * Documents issued (GSTR-1 table 13; contract §2.6, §7.2): the server's two
+ * blocks, `system` (system numbers; "dated in another period" is its column
+ * `dated_in_other_period`) and `bill_books` (paper bill books). A series with
+ * missing numbers (`gap` ≠ "none") is drawn in the error colour; under the
+ * books, each book's pages "not entered" (`not_entered`, by `prefix`).
  */
 export function DocumentsIssuedView({ answer }: { answer: ReportAnswer }) {
     const { t } = useTranslation('commerce');
     const byKey = new Map(answer.sections.map((s) => [s.key, s]));
-    const system =
-        byKey.get('system') ??
-        (answer.rows.length > 0 ? { ...emptySection('system'), columns: answer.columns, rows: answer.rows, totals: answer.totals } : emptySection('system'));
+    const system = byKey.get('system') ?? emptySection('system');
     const books = byKey.get('bill_books') ?? emptySection('bill_books');
-    const otherPeriod = byKey.get('other_period');
-    const booksWithBlanks = books.rows.filter((row) => notEnteredOf(row) !== '');
+    const booksWithBlanks = books.rows.filter((row) => textCell(row.not_entered) !== '');
 
     return (
         <div className="flex flex-col gap-6" data-testid="documents-issued-view">
@@ -46,15 +41,17 @@ export function DocumentsIssuedView({ answer }: { answer: ReportAnswer }) {
                 {booksWithBlanks.length > 0 && (
                     <ul className="flex flex-col gap-1" data-testid="not-entered">
                         {booksWithBlanks.map((row, index) => (
-                            <li key={`${bookName(row)}-${index}`} className="text-caption text-warning-600">
-                                {t('reports.documents.notEntered', { book: bookName(row) || '—', pages: notEnteredOf(row) })}
+                            <li key={`${textCell(row.prefix)}-${index}`} className="text-caption text-warning-600">
+                                {t('reports.documents.notEntered', {
+                                    book: textCell(row.prefix) || '—',
+                                    pages: textCell(row.not_entered),
+                                })}
                             </li>
                         ))}
                     </ul>
                 )}
                 <p className="text-caption text-muted-foreground">{t('reports.documents.notEnteredHelp')}</p>
             </SectionBlock>
-            {otherPeriod && otherPeriod.rows.length > 0 && <SectionBlock section={otherPeriod} />}
         </div>
     );
 }

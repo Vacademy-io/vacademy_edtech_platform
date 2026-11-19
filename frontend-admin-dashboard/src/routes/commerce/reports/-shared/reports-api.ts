@@ -69,115 +69,92 @@ export function reportParams(filters: ReportFilterValues): Rec {
 }
 
 // ─── Answer normalisers ──────────────────────────────────────────────────────
+// Read the keys of `report/dto/ReportDtos.java` exactly (snake_case); nothing else.
 
 const COLUMN_TYPES = new Set<string>(REPORT_COLUMN_TYPES);
 
+/** `{key, label, label_hi, type}` → a column; an unknown type prints as text. */
 export function normalizeColumn(raw: unknown): ReportColumn | null {
-    if (typeof raw === 'string' && raw) {
-        return { key: raw, label: null, labelEn: null, labelHi: null, type: 'TEXT' };
-    }
     const r = asRecord(raw);
-    const key = str(r?.key) ?? str(r?.id);
+    const key = str(r?.key);
     if (!r || !key) return null;
-    const type = (str(r.type) ?? 'TEXT').toUpperCase();
+    const type = str(r.type) ?? 'TEXT';
     return {
         key,
-        label: str(r.label),
-        labelEn: str(r.label_en),
+        labelEn: str(r.label),
         labelHi: str(r.label_hi),
-        type: (COLUMN_TYPES.has(type) ? type : type === 'DATETIME' ? 'TIME' : 'TEXT') as ReportColumnType,
+        type: (COLUMN_TYPES.has(type) ? type : 'TEXT') as ReportColumnType,
     };
 }
 
 const columnsOf = (value: unknown): ReportColumn[] =>
     (Array.isArray(value) ? value : []).map(normalizeColumn).filter((c): c is ReportColumn => !!c);
 
-/** Rows as objects keyed by column; a positional row (array) is matched to the columns. */
-function rowsOf(value: unknown, columns: ReportColumn[]): ReportRow[] {
-    if (!Array.isArray(value)) return [];
-    return value.flatMap((row): ReportRow[] => {
-        if (Array.isArray(row)) {
-            return [Object.fromEntries(columns.map((column, index) => [column.key, row[index] ?? null]))];
-        }
-        const r = asRecord(row);
-        return r ? [r] : [];
-    });
-}
+/** Rows are maps keyed by column key. */
+const rowsOf = (value: unknown): ReportRow[] => records(value);
 
-function totalsOf(value: unknown, columns: ReportColumn[]): ReportRow | null {
-    if (Array.isArray(value)) return rowsOf([value], columns)[0] ?? null;
+/** Totals: a map; an empty map (the server never sends null) means none. */
+function totalsOf(value: unknown): ReportRow | null {
     const r = asRecord(value);
     return r && Object.keys(r).length > 0 ? r : null;
 }
 
-function normalizeSection(key: string, raw: unknown, fallbackColumns: ReportColumn[]): ReportSection {
-    const r = rec(raw);
-    const own = columnsOf(r.columns);
-    const columns = own.length > 0 ? own : fallbackColumns;
-    return {
-        key,
-        title: str(r.title) ?? str(r.label),
-        columns,
-        rows: rowsOf(Array.isArray(raw) ? raw : r.rows, columns),
-        totals: totalsOf(r.totals, columns),
-    };
+/** `[{key, label, label_hi, columns, rows, totals}]`. */
+function sectionsOf(value: unknown): ReportSection[] {
+    return records(value).flatMap((r): ReportSection[] => {
+        const key = str(r.key);
+        if (!key) return [];
+        return [
+            {
+                key,
+                labelEn: str(r.label),
+                labelHi: str(r.label_hi),
+                columns: columnsOf(r.columns),
+                rows: rowsOf(r.rows),
+                totals: totalsOf(r.totals),
+            },
+        ];
+    });
 }
 
-/** Sections as a list (`[{key, columns, rows, totals}]`) or a map (`{b2b: {…}}`). */
-function sectionsOf(value: unknown, fallbackColumns: ReportColumn[]): ReportSection[] {
-    if (Array.isArray(value)) {
-        return records(value).flatMap((r) => {
-            const key = str(r.key) ?? str(r.id) ?? str(r.name);
-            return key ? [normalizeSection(key, r, fallbackColumns)] : [];
-        });
-    }
-    return Object.entries(rec(value)).map(([key, raw]) => normalizeSection(key, raw, fallbackColumns));
-}
-
+/** `{rule, difference, columns?: [{key, sections, documents, difference}]}` (GSTR-1 sends `columns`). */
 function checkOf(value: unknown): ReportCheck | null {
     const r = asRecord(value);
     if (!r) return null;
-    const lineOf = (key: string, raw: unknown): ReportCheckLine | null => {
-        const l = asRecord(raw);
-        if (!l || !('difference' in l)) return null;
-        return {
-            key: str(l.key) ?? key,
-            sections: l.sections ?? l.sections_total ?? l.report ?? null,
-            documents: l.documents ?? l.documents_total ?? l.expected ?? null,
-            difference: l.difference,
-        };
-    };
-    const listed = Array.isArray(r.lines) ? r.lines : Array.isArray(r.items) ? r.items : null;
-    const lines = listed
-        ? listed.map((raw, index) => lineOf(String(index), raw)).filter((l): l is ReportCheckLine => !!l)
-        : Object.entries(r)
-              .map(([key, raw]) => lineOf(key, raw))
-              .filter((l): l is ReportCheckLine => !!l);
-    return { difference: r.difference ?? null, lines };
+    const columns = records(r.columns).flatMap((l): ReportCheckLine[] => {
+        const key = str(l.key);
+        return key
+            ? [{ key, sections: l.sections ?? null, documents: l.documents ?? null, difference: l.difference ?? null }]
+            : [];
+    });
+    return { rule: str(r.rule), difference: r.difference ?? null, columns };
 }
 
+/** The server's fold of the warnings beyond 100 per code: "and N more" with no ref. */
+const FOLDED = /^and (\d+) more$/;
+
 function warningsOf(value: unknown): ReportWarning[] {
-    return (Array.isArray(value) ? value : []).flatMap((raw): ReportWarning[] => {
-        if (typeof raw === 'string' && raw) return [{ code: raw, message: '', ref: null, count: null }];
-        const r = asRecord(raw);
-        const code = str(r?.code);
-        if (!r || !code) return [];
-        return [{ code, message: str(r.message) ?? '', ref: text(r.ref), count: num(r.count) }];
+    return records(value).flatMap((r): ReportWarning[] => {
+        const code = str(r.code);
+        if (!code) return [];
+        const message = str(r.message) ?? '';
+        const ref = text(r.ref);
+        const folded = ref === null ? FOLDED.exec(message) : null;
+        return [{ code, message, ref, more: folded ? Number(folded[1]) : null }];
     });
 }
 
 export function normalizeReport(data: unknown, fallbackName = ''): ReportAnswer {
     const r = rec(data);
-    const columns = columnsOf(r.columns);
     return {
         report: str(r.report) ?? fallbackName,
         from: str(r.from),
         to: str(r.to),
         filters: rec(r.filters),
-        columns,
-        rows: rowsOf(r.rows, columns),
-        totals: totalsOf(r.totals, columns),
-        sections: sectionsOf(r.sections, columns),
+        columns: columnsOf(r.columns),
+        rows: rowsOf(r.rows),
+        totals: totalsOf(r.totals),
+        sections: sectionsOf(r.sections),
         check: checkOf(r.check),
         warnings: warningsOf(r.warnings),
         nextCursor: text(r.next_cursor),

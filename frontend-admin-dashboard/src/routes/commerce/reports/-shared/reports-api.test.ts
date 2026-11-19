@@ -1,8 +1,8 @@
 /**
  * WP-51 contract §7.3: query parameters are built from the filters; downloads
  * send `format` and ask for a blob; the keyset cursor is passed; answers are
- * normalised (sections as a map or a list); a refusal sent as a Blob is read
- * back so its code reaches the screen.
+ * read with the server's own keys (`ReportDtos`); a refusal sent as a Blob is
+ * read back so its code reaches the screen.
  */
 import { AxiosError, type AxiosResponse } from 'axios';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -14,6 +14,7 @@ vi.mock('@/constants/helper', () => ({ getInstituteId: () => 'inst-1' }));
 vi.mock('@/lib/save-blob', () => saved);
 
 import { readReportError } from './report-errors';
+import { GSTR1_JSON, SALES_REGISTER_JSON } from './report-server-fixtures';
 import {
     downloadAudit,
     downloadReport,
@@ -102,29 +103,58 @@ describe('reports api', () => {
         expect(saved.saveBlob).not.toHaveBeenCalled();
     });
 
-    it('normalises columns, positional rows, sections as a map, the check and warnings', () => {
-        const answer = normalizeReport({
-            report: 'gstr1',
-            columns: [{ key: 'rate', type: 'percent', label_en: 'Rate', label_hi: 'दर' }, { key: 'taxable', type: 'MONEY' }],
-            rows: [[5, '100.00']],
-            totals: { taxable: '100.00' },
-            sections: { b2b: { rows: [{ rate: 5, taxable: 10 }] } },
-            check: { difference: '0.00', taxable: { sections: '10.00', documents: '10.00', difference: '0.00' } },
-            warnings: [{ code: 'HSN_MISSING', message: 'x', ref: 'INV-1' }, 'QTY_ROUNDED'],
-            next_cursor: 7,
-            as_of: '2026-11-19T10:00:00Z',
+    it('reads the server answer frame: label / label_hi, section labels, check.columns, the warning fold', () => {
+        const answer = normalizeReport(GSTR1_JSON);
+        const b2b = answer.sections.find((s) => s.key === 'b2b');
+        expect(answer.sections.map((s) => s.key)).toEqual([
+            'b2b',
+            'b2cl',
+            'b2cs',
+            'b2cs_credit_notes',
+            'cdnr',
+            'cdnur',
+            'exemp',
+            'hsn_b2b',
+            'hsn_b2c',
+            'docs',
+            'docs_bill_books',
+        ]);
+        expect(b2b).toMatchObject({ labelEn: 'B2B', labelHi: 'B2B' });
+        expect(b2b?.columns.find((c) => c.key === 'taxable_value')).toEqual({
+            key: 'taxable_value',
+            labelEn: 'Taxable Value',
+            labelHi: 'कर योग्य मूल्य',
+            type: 'MONEY',
         });
-        expect(answer.columns.map((c) => c.type)).toEqual(['PERCENT', 'MONEY']);
-        expect(answer.rows).toEqual([{ rate: 5, taxable: '100.00' }]);
-        expect(answer.sections[0]).toMatchObject({ key: 'b2b', rows: [{ rate: 5, taxable: 10 }] });
-        expect(answer.sections[0]?.columns).toHaveLength(2);
-        expect(answer.check).toEqual({
-            difference: '0.00',
-            lines: [{ key: 'taxable', sections: '10.00', documents: '10.00', difference: '0.00' }],
-        });
-        expect(answer.warnings.map((w) => w.code)).toEqual(['HSN_MISSING', 'QTY_ROUNDED']);
-        expect(answer.nextCursor).toBe('7');
+        expect(b2b?.totals).toMatchObject({ documents: 1, documents_value: 105 });
+        expect(answer.check?.rule).toContain('b2b + b2cl');
+        expect(answer.check?.columns.map((c) => c.key)).toEqual(['taxable_value', 'cgst', 'sgst', 'igst', 'cess']);
+        expect(answer.check?.difference).toBe(0);
+        expect(answer.asOf).toBe('2026-11-19T14:00:00+05:30');
+
+        const register = normalizeReport(SALES_REGISTER_JSON);
+        expect(register.nextCursor).toBe('c-2');
+        expect(register.warnings.map((w) => [w.ref, w.more])).toEqual([
+            ['INV/2627-00001', null],
+            ['INV/2627-00002', null],
+            [null, 3],
+        ]);
+        // A non-GSTR-1 check is a flat map: no lines.
+        expect(register.check).toMatchObject({ rule: expect.any(String), difference: 0, columns: [] });
         expect(normalizeReport(null, 'sales')).toMatchObject({ report: 'sales', rows: [], sections: [], warnings: [] });
+    });
+
+    it('names the screen used to guess are not read: label_en, title, check.lines, positional rows', () => {
+        const answer = normalizeReport({
+            columns: [{ key: 'rate', type: 'DATETIME', label_en: 'Rate' }],
+            rows: [[5]],
+            sections: { b2b: { title: 'B2B', rows: [{ rate: 5 }] } },
+            check: { difference: 1, lines: [{ key: 'taxable', difference: 1 }] },
+        });
+        expect(answer.columns[0]).toEqual({ key: 'rate', labelEn: null, labelHi: null, type: 'TEXT' });
+        expect(answer.rows).toEqual([]);
+        expect(answer.sections).toEqual([]);
+        expect(answer.check?.columns).toEqual([]);
     });
 
     it('audit filters go to the query; approvals take dates and the document number only', async () => {

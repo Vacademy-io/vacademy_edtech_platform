@@ -1,22 +1,23 @@
-import type { TFunction } from 'i18next';
 import { formatMoney } from '@/components/design-system/money-cell';
 import { formatNumber, getActiveLocale } from '@/lib/formatters';
 import { asRecord, num, str } from '@/routes/commerce/-shared/commerce-api';
-import { GST_STATE_CODES } from '@/routes/commerce/-shared/gstin';
-import { formatRate, lengthNumber, unitSign, unitWord } from '@/routes/commerce/-shared/units';
 import type { ReportCell, ReportColumnType } from './report-types';
 
 /**
  * How report cells read on screen (contract §7.2 `report-format.ts`).
  *
- * Dates are India dates. A stored timestamp is UTC; India is UTC+05:30 all
- * year (no summer time), so the India day of `2026-10-31T18:30:00Z` is
- * 1 November. A date-only value (`2026-11-01`, the server's `document_date`)
- * is already an India date and is printed as it is, never shifted.
+ * Report cells come from `export/ReportTable.java`: DATE is an India date
+ * `yyyy-MM-dd`, TIME is India wall-clock text `yyyy-MM-dd HH:mm` (or "—" for
+ * an event with a date and no time). Both are printed as they are, only
+ * re-worded ("19 Nov 2026, 14:05"): never moved to another time zone.
  *
- * Quantities print in display units with the unit sign ("2.5 m") through the
- * shared `units.ts`; rates per display unit read "₹123.40 / m". Money is drawn
- * only by `MoneyCell` (design system); this file never adds two amounts.
+ * QTY is a number already in display units; the unit travels in its own
+ * `*_text` column ("5.9 m"), which the table shows instead (`report-columns.ts`).
+ * Money is drawn only by `MoneyCell` (design system); this file never adds
+ * two amounts.
+ *
+ * `as_of` (an ISO instant with offset) is the only real instant: it alone goes
+ * through `readInstant` and the fixed +05:30 offset.
  */
 
 /** India's offset from UTC in minutes (+05:30, no summer time). */
@@ -115,65 +116,26 @@ export function formatIndiaDateTime(value: unknown): string {
     return `${formatIndiaDate(value)}, ${formatIndiaTime(value)}`;
 }
 
-/**
- * A quantity cell. The server may send it already printed ("2.5 m"), as the
- * stored integer with its scale and unit (`{base, qty_scale, unit}`), or as a
- * plain number for counted goods. Base units are shown in display units, so
- * 25 at scale 10 in MTR reads "2.5 m" (metres in the admin's word with `t`).
- */
-export function formatQuantityCell(value: ReportCell, t?: TFunction): string {
-    if (typeof value === 'string') return value.trim() || '—';
-    const record = asRecord(value);
-    if (record) {
-        const base = num(record.base ?? record.qty ?? record.quantity);
-        if (base === null) return str(record.text) ?? '—';
-        const scale = num(record.qty_scale ?? record.scale) ?? 1;
-        const unit = str(record.unit);
-        const number = lengthNumber(base, scale);
-        const sign = t ? unitWord(unit, t) : unitSign(unit);
-        return sign ? `${number} ${sign}` : number;
-    }
-    const plain = num(value);
-    return plain === null ? '—' : formatNumber(plain);
-}
-
-/**
- * A rate per display unit. Printed by the server ("₹123.40 / m"), a per-base-unit
- * price with its scale (`{unit_price, qty_scale, unit}` → × scale in paise), or
- * an amount already per display unit (`{amount, unit}`).
- */
-export function formatRateCell(value: ReportCell, t?: TFunction): string {
+/** A QTY cell: a number in display units (5.9), printed without unit (the `*_text` column carries it). */
+export function formatQuantityCell(value: ReportCell): string {
     if (typeof value === 'string' && num(value) === null) return value.trim() || '—';
-    const record = asRecord(value);
-    if (!record) {
-        const plain = num(value);
-        return plain === null ? '—' : formatMoney(plain);
-    }
-    const unit = str(record.unit);
-    const basePrice = num(record.unit_price ?? record.price_per_base);
-    if (basePrice !== null) return formatRate(basePrice, num(record.qty_scale ?? record.scale) ?? 1, unit, null, t);
-    const amount = num(record.amount ?? record.rate);
-    if (amount === null) return str(record.text) ?? '—';
-    const sign = t ? unitWord(unit, t) : unitSign(unit);
-    return sign ? `${formatMoney(amount)} / ${sign}` : formatMoney(amount);
+    const plain = num(value);
+    return plain === null ? '—' : formatNumber(plain, { maximumFractionDigits: 3 });
 }
 
-const KNOWN_STATES = new Set(GST_STATE_CODES);
+const WALL_TIME = /^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2})(?::\d{2})?$/;
 
 /**
- * Place of supply as the GST forms write it: "<code>-<state name>". The server
- * normally sends that text; a bare two-digit code gets the state's name from
- * the commerce `states.<code>` strings.
+ * A TIME cell: the server's India wall-clock text `yyyy-MM-dd HH:mm` printed
+ * as "19 Nov 2026, 14:05" (the same date and clock, re-worded only). Anything
+ * else ("—" for a date-only event) is printed exactly as sent.
  */
-export function placeOfSupplyText(value: ReportCell, t?: TFunction): string {
-    const text = typeof value === 'number' ? String(value).padStart(2, '0') : (str(value) ?? '');
+export function formatWallTime(value: ReportCell): string {
+    const text = str(value);
     if (!text) return '—';
-    if (/^\d{1,2}$/.test(text)) {
-        const code = text.padStart(2, '0');
-        if (t && KNOWN_STATES.has(code)) return `${code}-${t(`states.${code}`)}`;
-        return code;
-    }
-    return text;
+    const match = WALL_TIME.exec(text);
+    if (!match) return text;
+    return `${formatIndiaDate(match[1])}, ${match[2]}`;
 }
 
 /** A percentage the server computed (12.5 → "12.5%"). */
@@ -184,19 +146,15 @@ export function formatPercentCell(value: ReportCell): string {
 }
 
 /** Text of any non-money cell by its column type (money goes through `MoneyCell`). */
-export function cellText(type: ReportColumnType, value: ReportCell, t?: TFunction): string {
+export function cellText(type: ReportColumnType, value: ReportCell): string {
     if (value === null || value === undefined || value === '') return '';
     switch (type) {
         case 'DATE':
             return formatIndiaDate(value);
         case 'TIME':
-            return readInstant(value) ? formatIndiaDateTime(value) : formatIndiaDate(value);
+            return formatWallTime(value);
         case 'QTY':
-            return formatQuantityCell(value, t);
-        case 'RATE':
-            return formatRateCell(value, t);
-        case 'STATE':
-            return placeOfSupplyText(value, t);
+            return formatQuantityCell(value);
         case 'PERCENT':
             return formatPercentCell(value);
         case 'INT': {

@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { MoneyCell } from '@/components/design-system/money-cell';
-import { formatNumber } from '@/lib/formatters';
 import { cn } from '@/lib/utils';
-import { num } from '@/routes/commerce/-shared/commerce-api';
 import { CommercePage } from '@/routes/commerce/-components/CommercePage';
 import { CommerceEmptyState, CommerceLoadingRows } from '@/routes/commerce/-components/CommerceStates';
 import { type ReportEntry, reportHelpKey, reportTitleKey } from '../-shared/report-catalogue';
 import { readReportError } from '../-shared/report-errors';
 import { formatIndiaTime, indiaToday } from '../-shared/report-format';
-import { KNOWN_EXTRA_TOTALS } from '../-shared/report-keys';
 import { useReport, useReportLocations } from '../-shared/report-hooks';
 import { rangeProblem, type ReportsSearch, resolveReportFilters } from '../-shared/report-search';
-import type { ReportAnswer, ReportColumn, ReportRow } from '../-shared/report-types';
+import { answerColumns } from '../-shared/report-columns';
+import type { ReportAnswer } from '../-shared/report-types';
 import { downloadReport } from '../-shared/reports-api';
 import { DayBookView } from './DayBookView';
 import { DocumentsIssuedView } from './DocumentsIssuedView';
@@ -20,18 +17,8 @@ import { ExportButtons } from './ExportButtons';
 import { Gstr1View } from './Gstr1View';
 import { ReportFilters } from './ReportFilters';
 import { ReportErrorNotice } from './ReportStates';
-import { KeysetPager, ReportTable, SectionBlock } from './ReportTable';
+import { ExtraTotals, KeysetPager, ReportTable, SectionBlock } from './ReportTable';
 import { ReportWarnings } from './ReportWarnings';
-
-const KNOWN_EXTRA = new Set<string>(KNOWN_EXTRA_TOTALS);
-const COUNT_TOTALS = new Set<string>(['count', 'cancelled_count', 'customers', 'orders', 'invoices']);
-
-/** Totals keys that are not a column of the table (count, cancelled apart…), in the server's order. */
-export function extraTotals(columns: ReportColumn[], totals: ReportRow | null): [string, unknown][] {
-    if (!totals) return [];
-    const keys = new Set(columns.map((c) => c.key));
-    return Object.entries(totals).filter(([key, value]) => !keys.has(key) && value !== null && typeof value !== 'object');
-}
 
 const isEmptyAnswer = (answer: ReportAnswer): boolean =>
     answer.rows.length === 0 && answer.sections.every((s) => s.rows.length === 0);
@@ -146,7 +133,7 @@ function ReportBody({ entry, answer }: { entry: ReportEntry; answer: ReportAnswe
     }
     if (entry.view === 'documents') return <DocumentsIssuedView answer={answer} />;
     if (entry.view === 'dayBook') return <DayBookView answer={answer} />;
-    const extras = extraTotals(answer.columns, answer.totals);
+    const all = answerColumns(answer);
     return (
         <div className="flex flex-col gap-6">
             {answer.columns.length > 0 && (answer.rows.length > 0 || answer.totals) && (
@@ -157,33 +144,11 @@ function ReportBody({ entry, answer }: { entry: ReportEntry; answer: ReportAnswe
                     testId="report-main-table"
                 />
             )}
-            {extras.length > 0 && <ExtraTotals entries={extras} />}
+            <ExtraTotals columns={answer.columns} allColumns={all} totals={answer.totals} />
             {answer.sections.map((section) => (
-                <SectionBlock key={section.key} section={section} />
+                <SectionBlock key={section.key} section={section} allColumns={all} />
             ))}
         </div>
-    );
-}
-
-function ExtraTotals({ entries }: { entries: [string, unknown][] }) {
-    const { t } = useTranslation('commerce');
-    return (
-        <dl className="grid grid-cols-1 gap-2 rounded-lg border border-border bg-card p-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="report-extra-totals">
-            {entries.map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between gap-3">
-                    <dt className="text-caption text-muted-foreground">
-                        {KNOWN_EXTRA.has(key) ? t(`reports.totals.${key}`) : key}
-                    </dt>
-                    <dd className="text-body">
-                        {COUNT_TOTALS.has(key) ? (
-                            <span className="tabular-nums">{formatNumber(num(value) ?? 0)}</span>
-                        ) : (
-                            <MoneyCell value={value as number | string} />
-                        )}
-                    </dd>
-                </div>
-            ))}
-        </dl>
     );
 }
 

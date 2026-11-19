@@ -59,7 +59,10 @@ export interface ReportEntry {
     filters: readonly ReportFilterKey[];
     /** Range used when the address has none: this month, today, or no range (as of now). */
     defaultRange: 'month' | 'today' | 'none';
-    /** Registers page by keyset (`next_cursor`); summaries answer every row. */
+    /**
+     * Registers page by keyset (`next_cursor`): sales register, credit notes, customer dues, POS
+     * sessions. Summaries answer in one go (the server cuts a block at 5,000 rows with `ROWS_CUT`).
+     */
     kind: 'register' | 'summary' | 'file';
     formats: readonly ReportFormat[];
     view: ReportView;
@@ -185,7 +188,7 @@ export const REPORT_CATALOGUE: readonly ReportEntry[] = [
         anyFeature: ORDERS,
         filters: ['range', 'location', 'channel', 'groupBy'],
         defaultRange: 'month',
-        kind: 'register',
+        kind: 'summary', // not paged by the server (B2): at most 5,000 rows per block on screen, ROWS_CUT beyond
         formats: FILES,
         view: 'table',
         groupBy: PRODUCT_GROUP_BY,
@@ -211,7 +214,7 @@ export const REPORT_CATALOGUE: readonly ReportEntry[] = [
         anyFeature: ORDERS,
         filters: ['asOf', 'range', 'location'],
         defaultRange: 'month',
-        kind: 'register',
+        kind: 'summary', // not paged by the server (B2): at most 5,000 rows per block on screen, ROWS_CUT beyond
         formats: FILES,
         view: 'table',
         maxDays: YEAR,
@@ -236,7 +239,7 @@ export const REPORT_CATALOGUE: readonly ReportEntry[] = [
         anyFeature: TAX,
         filters: ['range', 'location'],
         defaultRange: 'today',
-        kind: 'register',
+        kind: 'summary', // not paged by the server (B2): at most 5,000 rows per block on screen, ROWS_CUT beyond
         formats: FILES,
         view: 'dayBook',
         maxDays: 31,
@@ -290,52 +293,3 @@ export function visibleReportGroups(
         entries: REPORT_CATALOGUE.filter((entry) => entry.group === group && canSeeReport(entry, access)),
     })).filter((block) => block.entries.length > 0);
 }
-
-/**
- * Section keys the screens have their own words for (`reports.sections.<key>`).
- * Assumed names of the blocks of §2 (the backend is built in parallel); a
- * section with another key shows the server's title, else its key.
- */
-export const REPORT_SECTION_KEYS = [
-    // GSTR-1 sheets (§2.5) and the B2C small sub-block.
-    'b2b',
-    'b2cl',
-    'b2cs',
-    'b2cs_credit_notes',
-    'cdnr',
-    'cdnur',
-    'exemp',
-    'hsn_b2b',
-    'hsn_b2c',
-    'docs',
-    // HSN summary (§2.4).
-    'b2c',
-    'round_off',
-    // Tax by rate (§2.3).
-    'invoices',
-    'credit_notes',
-    'net',
-    // Documents issued (§2.6).
-    'system',
-    'bill_books',
-    'other_period',
-    // Day book (§2.7).
-    'documents',
-    'money',
-    'by_mode',
-    'sessions',
-    // Payment modes (§2.8).
-    'paid_not_invoiced',
-    // COD outstanding (§2.9).
-    'outstanding',
-    'in_transit',
-    'remittances',
-    'rto',
-    // POS sessions (§2.11) and products (§2.13).
-    'open_sessions',
-    'never_sold',
-] as const;
-
-const KNOWN_SECTIONS = new Set<string>(REPORT_SECTION_KEYS);
-
-export const isKnownSection = (key: string): boolean => KNOWN_SECTIONS.has(key);

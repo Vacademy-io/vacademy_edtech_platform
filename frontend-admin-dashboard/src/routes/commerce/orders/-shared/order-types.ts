@@ -275,6 +275,12 @@ export interface StaffOrderDetail {
     refund_committed: number | null;
     amount_refunded: number | null;
     refund_open: number | null;
+    /**
+     * What the order still owes (server, F1): total − paid − the credit of goods
+     * returned that was not owed back as money. The most "Record receipt" takes.
+     * Absent on an answer from a server without it.
+     */
+    amount_due?: number | null;
     returns: ReturnSummary[];
     refunds: RefundSummary[];
     exchange_of_order_id: string | null;

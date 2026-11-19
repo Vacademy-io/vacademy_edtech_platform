@@ -41,9 +41,9 @@ import {
     APPROVAL_ACTION_LABELS,
     AUDIT_KIND_LABELS,
     AUDIT_TABS,
-    GSTR1_CHECK_KEYS,
+    COUNT_TOTALS,
     GSTR1_TABS,
-    KNOWN_EXTRA_TOTALS,
+    MONEY_TOTALS,
     REPORT_WARNING_CODES,
 } from '../reports/-shared/report-keys';
 import { TENDER_PROBLEMS } from '../pos/-shared/pos-tenders';
@@ -449,13 +449,12 @@ describe('commerce strings: every key the code asks for exists', () => {
             need.push(catalogue.reportTitleKey(id), catalogue.reportHelpKey(id))
         );
         each('reports.groups', catalogue.REPORT_GROUPS);
-        each('reports.sections', catalogue.REPORT_SECTION_KEYS);
         each('reports.groupBy', [...catalogue.SALES_GROUP_BY, ...catalogue.PRODUCT_GROUP_BY]);
         each('reports.errors', [...REPORT_ERROR_CODES, ...REPORT_ERROR_FALLBACKS]);
         each('reports.warnings', REPORT_WARNING_CODES);
         each('reports.gstr1.tabs', GSTR1_TABS);
-        each('reports.gstr1.check.keys', GSTR1_CHECK_KEYS);
-        each('reports.totals', KNOWN_EXTRA_TOTALS);
+        // Totals beyond the columns: the server's own keys (section headings and column labels are the server's).
+        each('reports.totals', [...MONEY_TOTALS, ...COUNT_TOTALS]);
         each('reports.filters.problems', ['order', 'tooLong', 'future', 'futureMonth']);
         each('reports.audit.kinds', AUDIT_KIND_LABELS);
         each('reports.audit.actions', APPROVAL_ACTION_LABELS);

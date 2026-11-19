@@ -3,7 +3,8 @@ import type { ColumnDef } from '@tanstack/react-table';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { AxiosError, type AxiosResponse } from 'axios';
-import type { ReportAnswer, ReportColumn } from '../-shared/report-types';
+import { normalizeReport } from '../-shared/reports-api';
+import type { ReportAnswer } from '../-shared/report-types';
 
 /**
  * Neutral data and helpers for the report screen tests (no real shop, place
@@ -19,13 +20,8 @@ export const tWithValues = (key: string, values?: Record<string, unknown>) => {
     return shown.length > 0 ? `${key} ${shown.join(' ')}` : key;
 };
 
-export const column = (key: string, type: ReportColumn['type'] = 'TEXT', label = key): ReportColumn => ({
-    key,
-    label: null,
-    labelEn: label,
-    labelHi: null,
-    type,
-});
+/** A server answer (`report-server-fixtures.ts`) read the way the screens read it. */
+export const fromServer = (json: unknown): ReportAnswer => normalizeReport(json);
 
 export const answer = (overrides: Partial<ReportAnswer> = {}): ReportAnswer => ({
     report: 'sales-register',
@@ -39,7 +35,7 @@ export const answer = (overrides: Partial<ReportAnswer> = {}): ReportAnswer => (
     check: null,
     warnings: [],
     nextCursor: null,
-    asOf: '2026-11-19T08:30:00Z',
+    asOf: '2026-11-19T14:00:00+05:30',
     ...overrides,
 });
 
