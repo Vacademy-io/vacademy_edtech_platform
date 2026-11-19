@@ -9,6 +9,7 @@ import type {
     QuickMarksItem,
     ReleaseInfo,
 } from './types';
+import { isKeywordSuggestion } from './labels';
 
 /** Question types scored by the answer key (contract §2.4). */
 export const OBJECTIVE_TYPES = new Set([
@@ -44,6 +45,13 @@ export const formatMark = (n: number | null | undefined): string => {
 /** "6 / 10", "6 / —" (contract §11). */
 export const formatMarkOutOf = (marks: number | null | undefined, max: number | null | undefined) =>
     `${formatMark(marks)} / ${formatMark(max)}`;
+
+/**
+ * The mark "Keep" / "Use" sends for a keyword suggestion: the keyword score, never below 0
+ * (a long answer's minimum is 0, so a negative keyword score is offered as "Use 0").
+ */
+export const keywordKeepMarks = (row: Pick<QuestionRow, 'marks' | 'min_marks' | 'max_marks'>): number =>
+    clampMark(row.marks, Math.max(0, row.min_marks ?? 0), row.max_marks);
 
 /** The token every write echoes as `expected_release`. */
 export const releaseTokenOf = (info: Pick<ReleaseInfo, 'token'> | null | undefined): string =>
@@ -116,9 +124,12 @@ export const canMarkRestNotAnswered = (
     return sheet.evaluationType?.toUpperCase() === 'MANUAL' || !!sheet.responseFileId?.trim();
 };
 
-/** Whether "Mark the rest as not answered" may touch this row (not one the AI is on, or failed). */
+/**
+ * Whether "Mark the rest as not answered" may touch this row: not one the AI is on, or
+ * failed, and never a typed answer the keyword match scored (it was written, not left blank).
+ */
 const restCandidate = (row: QuestionRow): boolean =>
-    row.state === 'NEEDS_MARKING' && !row.ai_checking && !row.ai_failed_reason;
+    row.state === 'NEEDS_MARKING' && !row.ai_checking && !row.ai_failed_reason && !isKeywordSuggestion(row);
 
 /** How many empty boxes "Mark the rest as not answered" would change. */
 export const emptyRestCount = (items: QuickDrafts, rows: QuestionRow[]): number =>
@@ -187,7 +198,8 @@ export const buildQuickMarksItems = (
 
 /**
  * Running total while typing: each counted row's draft (or its saved mark). An approximation
- * of the server's R6 total; the server's number replaces it after Save.
+ * of the server's R6 total, which counts the stored mark of an unmarked answer (a keyword
+ * suggestion's score, else 0); the server's number replaces it after Save.
  */
 export const quickTotal = (drafts: QuickDrafts, rows: QuestionRow[]): number => {
     let total = 0;
@@ -200,7 +212,7 @@ export const quickTotal = (drafts: QuickDrafts, rows: QuestionRow[]): number => 
         }
         if (d.notAnswered) continue;
         const parsed = parseMark(d.value);
-        total += parsed == null ? (row.state === 'NEEDS_MARKING' ? 0 : row.marks) : clampMark(parsed, row.min_marks, row.max_marks);
+        total += parsed == null ? row.marks : clampMark(parsed, row.min_marks, row.max_marks);
     }
     return roundMark(total);
 };

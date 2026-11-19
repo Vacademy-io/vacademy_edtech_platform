@@ -7,11 +7,18 @@ export const submissionKeys = {
     summary: (assessmentId: string) => ['SUBMISSION_MARKING_SUMMARY', assessmentId] as const,
     releaseCheck: (assessmentId: string, idsKey: string) => ['SUBMISSION_RELEASE_CHECK', assessmentId, idsKey] as const,
 };
-/** After any write on one attempt. */
-export const invalidateAttempt = (qc: import('@tanstack/react-query').QueryClient, attemptId: string, assessmentId?: string) => {
-    qc.invalidateQueries({ queryKey: ['SUBMISSION_REVIEW', attemptId] });
-    qc.invalidateQueries({ queryKey: ['SUBMISSION_REVIEW_CARD', attemptId] });
-    qc.invalidateQueries({ queryKey: ['SUBMISSION_REVIEW_HISTORY', attemptId] });
-    qc.invalidateQueries({ queryKey: ['SUBMISSION_MARKING', attemptId] });
-    if (assessmentId) qc.invalidateQueries({ queryKey: ['SUBMISSION_MARKING_SUMMARY', assessmentId] });
-};
+/** After any write on one attempt. Resolves once the active queries have refetched. */
+export const invalidateAttempt = (
+    qc: import('@tanstack/react-query').QueryClient,
+    attemptId: string,
+    assessmentId?: string
+): Promise<void> =>
+    Promise.all([
+        qc.invalidateQueries({ queryKey: ['SUBMISSION_REVIEW', attemptId] }),
+        qc.invalidateQueries({ queryKey: ['SUBMISSION_REVIEW_CARD', attemptId] }),
+        qc.invalidateQueries({ queryKey: ['SUBMISSION_REVIEW_HISTORY', attemptId] }),
+        qc.invalidateQueries({ queryKey: ['SUBMISSION_MARKING', attemptId] }),
+        assessmentId
+            ? qc.invalidateQueries({ queryKey: ['SUBMISSION_MARKING_SUMMARY', assessmentId] })
+            : undefined,
+    ]).then(() => undefined);

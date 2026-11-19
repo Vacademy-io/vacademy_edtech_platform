@@ -68,7 +68,13 @@
         "save": "Enregistrer",
         "saveNext": "Enregistrer et suivant à corriger",
         "markRestNotAnswered": "Marquer le reste sans réponse ({{count}})",
-        "aiLooksRight": "La note IA est correcte"
+        "aiLooksRight": "La note IA est correcte",
+        "keepKeyword": "Garder {{marks}} / {{max}}",
+        "useZero": "Mettre 0",
+        "useZeroHint": "Les mots-clés donnent {{marks}}. Une réponse rédigée ne peut pas descendre sous 0.",
+        "keptKeyword": "Q{{number}} notée {{marks}} / {{max}}",
+        "keepStale": "Cette réponse vient de changer. La page est actualisée.",
+        "keepFailed": "Échec de l’enregistrement de la note. Réessayez."
     },
     "ai": {
         "buttonTyped": "Corriger les réponses écrites avec l’IA · {{credits}} crédits",
@@ -88,9 +94,9 @@
         "retry": "Réessayer"
     },
     "banners": {
-        "releasedWithUnmarked_one": "Publié le {{date}} avec {{count}} réponse non corrigée. {{name}} voit 0 pour {{questions}}. Corrigez-la ci-dessous, puis cliquez sur Envoyer le résultat mis à jour.",
-        "releasedWithUnmarked_many": "Publié le {{date}} avec {{count}} réponses non corrigées. {{name}} voit 0 pour {{questions}}. Corrigez-les ci-dessous, puis cliquez sur Envoyer le résultat mis à jour.",
-        "releasedWithUnmarked_other": "Publié le {{date}} avec {{count}} réponses non corrigées. {{name}} voit 0 pour {{questions}}. Corrigez-les ci-dessous, puis cliquez sur Envoyer le résultat mis à jour.",
+        "releasedWithUnmarked_one": "Publié le {{date}} avec {{count}} réponse non corrigée. {{name}} voit sa note actuelle (0, ou la note des mots-clés) pour {{questions}}. Corrigez-la ci-dessous, puis cliquez sur Envoyer le résultat mis à jour.",
+        "releasedWithUnmarked_many": "Publié le {{date}} avec {{count}} réponses non corrigées. {{name}} voit leurs notes actuelles (0, ou la note des mots-clés) pour {{questions}}. Corrigez-les ci-dessous, puis cliquez sur Envoyer le résultat mis à jour.",
+        "releasedWithUnmarked_other": "Publié le {{date}} avec {{count}} réponses non corrigées. {{name}} voit leurs notes actuelles (0, ou la note des mots-clés) pour {{questions}}. Corrigez-les ci-dessous, puis cliquez sur Envoyer le résultat mis à jour.",
         "changedSinceRelease": "Des notes ont changé après publication. {{name}} les voit déjà, avec la mention Révisé. Cliquez sur Envoyer le résultat mis à jour pour l’envoyer par e-mail.",
         "aiRunning": "L’IA corrige…",
         "aiRunningProgress": "L’IA corrige… {{done}} sur {{total}}",
@@ -123,7 +129,8 @@
         "close": "Fermer",
         "more": "Plus pour Q{{number}}",
         "readOnly": "Vous pouvez consulter cette copie mais pas modifier les notes.",
-        "readOnlyReleased": "Seuls les administrateurs et enseignants peuvent modifier un résultat publié."
+        "readOnlyReleased": "Seuls les administrateurs et enseignants peuvent modifier un résultat publié.",
+        "keywordSuggested": "Mots-clés : {{marks}} / {{max}} suggéré"
     },
     "state": {
         "notAnswered": "Sans réponse",
@@ -193,7 +200,8 @@
         "pagesFailed": "Impossible d’enregistrer la page.",
         "pagesInvalid": "Saisissez des numéros de page, ex. 3 ou 3,4.",
         "accepted": "Note IA acceptée",
-        "omrHint": "Pour changer ce que le scanner a lu, utilisez Corriger les réponses dans l’onglet OMR. Vous pouvez modifier la note ici."
+        "omrHint": "Pour changer ce que le scanner a lu, utilisez Corriger les réponses dans l’onglet OMR. Vous pouvez modifier la note ici.",
+        "keywordNote": "Note donnée par les mots-clés ({{marks}} / {{max}}), pas encore vérifiée par un enseignant. Lisez la réponse, puis gardez ou modifiez la note."
     },
     "edit": {
         "title": "Modifier la note · Q{{number}} · {{name}}",
@@ -237,7 +245,8 @@
             "forbidden": "Vous ne pouvez pas modifier les notes de ce résultat.",
             "failed": "Échec de l’enregistrement. Réessayez.",
             "totalOnly": "Ce résultat a été saisi comme un total, sans notes par question. Modifier une question remplacerait ce total."
-        }
+        },
+        "useSuggested": "Utiliser {{marks}}"
     },
     "remark": {
         "title": "Recorriger Q{{number}} avec le corrigé",
@@ -279,7 +288,10 @@
         "releasedTitle": "Ce résultat est publié",
         "saveCount_one": "Enregistrer {{count}} modification",
         "saveCount_many": "Enregistrer {{count}} modifications",
-        "saveCount_other": "Enregistrer {{count}} modifications"
+        "saveCount_other": "Enregistrer {{count}} modifications",
+        "keywordHint": "Mots-clés : {{marks}}",
+        "useMark": "Utiliser {{marks}}",
+        "useMarkFor": "Utiliser {{marks}} pour Q{{number}}"
     },
     "sheet": {
         "ariaLabel": "Quelle copie",

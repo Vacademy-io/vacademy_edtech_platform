@@ -8,6 +8,9 @@ export interface RowActions {
     onHistory: (row: QuestionRow) => void;
     onAcceptAi: (row: QuestionRow) => void;
     acceptingKey: string | null;
+    /** "Keep X / Y": confirm a keyword-match suggestion as the teacher's mark (before release). */
+    onKeepKeyword: (row: QuestionRow) => void;
+    keepingKey: string | null;
     onShowSheet: (page: number | null) => void;
 }
 

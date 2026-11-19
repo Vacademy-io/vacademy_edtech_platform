@@ -50,6 +50,14 @@ export const releasedWithUnmarked = (m: Pick<AttemptMarking, 'result' | 'release
     m && m.result !== 'NOT_RELEASED' ? Math.max(0, m.released_with_unmarked ?? 0) : 0;
 
 /**
+ * A typed long answer the keyword scorer marked when AI marking is off: it shows as Needs
+ * marking until a teacher (or the AI) confirms it, and `marks` holds the keyword score
+ * (it may be 0 or negative). The backend sends marked_by_kind KEYWORD on such rows.
+ */
+export const isKeywordSuggestion = (row: Pick<QuestionRow, 'state' | 'marked_by_kind'>): boolean =>
+    row.state === 'NEEDS_MARKING' && row.marked_by_kind === 'KEYWORD';
+
+/**
  * One question's state as shown on a row. The derived states (AI checking, AI couldn't
  * mark) win over the stored one. Keys live under `state.*`.
  */

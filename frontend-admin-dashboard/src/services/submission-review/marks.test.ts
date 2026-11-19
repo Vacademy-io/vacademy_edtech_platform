@@ -9,6 +9,7 @@ import {
     formatMark,
     formatMarkOutOf,
     initialQuickDrafts,
+    keywordKeepMarks,
     markRestNotAnswered,
     nextNeedsMarking,
     quickTotal,
@@ -188,5 +189,53 @@ describe('review fixes (2026-11-18)', () => {
             qrow({ key: 's1:q3', state: 'AI_DRAFT', revision: 1 }),
         ];
         expect(draftRevisions(rows)).toEqual({ 's1:q1': 4, 's1:q3': 1 });
+    });
+});
+
+describe('keyword-scored long answers (Needs marking until confirmed)', () => {
+    const kw = (over: Parameters<typeof qrow>[0]) => qrow({ marked_by_kind: 'KEYWORD', ...over });
+
+    it('Keep / Use sends the keyword score, and 0 for a negative one', () => {
+        expect(keywordKeepMarks(kw({ key: 's1:q1', marks: 2.5 }))).toBe(2.5);
+        expect(keywordKeepMarks(kw({ key: 's1:q1', marks: 0 }))).toBe(0);
+        expect(keywordKeepMarks(kw({ key: 's1:q1', marks: -1 }))).toBe(0);
+        expect(keywordKeepMarks(kw({ key: 's1:q1', marks: 12, max_marks: 10 }))).toBe(10);
+    });
+
+    it('Quick marks never prefills the box, so an untouched box sends nothing', () => {
+        const rows = [kw({ key: 's1:q1', marks: 2 })];
+        const initial = initialQuickDrafts(rows);
+        expect(initial['s1:q1']).toEqual({ value: '', feedback: '', notAnswered: false });
+        expect(buildQuickMarksItems(initial, initial, rows)).toEqual([]);
+    });
+
+    it('typing (or "Use") the same value sends it, so the teacher confirms it', () => {
+        const rows = [kw({ key: 's1:q1', marks: 2, revision: 3 })];
+        const initial = initialQuickDrafts(rows);
+        const drafts = { 's1:q1': { ...initial['s1:q1']!, value: '2' } };
+        expect(buildQuickMarksItems(drafts, initial, rows)).toEqual([
+            { section_id: 's1', question_id: 'q1', expected_revision: 3, marks: 2 },
+        ]);
+    });
+
+    it('the running total counts an empty keyword box at its stored score, like the server (R6)', () => {
+        const rows = [
+            kw({ key: 's1:q1', marks: 2 }),
+            kw({ key: 's1:q2', marks: -1 }),
+            qrow({ key: 's1:q3', state: 'MARKED', marks: 4 }),
+        ];
+        const drafts = initialQuickDrafts(rows);
+        expect(quickTotal(drafts, rows)).toBe(5);
+        // A typed value replaces the suggestion.
+        expect(quickTotal({ ...drafts, 's1:q1': { ...drafts['s1:q1']!, value: '5' } }, rows)).toBe(8);
+    });
+
+    it('"Mark the rest as not answered" never touches a keyword-scored answer', () => {
+        const rows = [kw({ key: 's1:q1', marks: 2 }), qrow({ key: 's1:q2' })];
+        const drafts = initialQuickDrafts(rows);
+        expect(emptyRestCount(drafts, rows)).toBe(1);
+        const out = markRestNotAnswered(drafts, rows);
+        expect(out['s1:q1']!.notAnswered).toBe(false);
+        expect(out['s1:q2']!.notAnswered).toBe(true);
     });
 });

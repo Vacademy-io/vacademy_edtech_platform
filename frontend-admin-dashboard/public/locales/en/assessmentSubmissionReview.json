@@ -65,7 +65,13 @@
         "save": "Save",
         "saveNext": "Save & next needs marking",
         "markRestNotAnswered": "Mark the rest as not answered ({{count}})",
-        "aiLooksRight": "AI mark looks right"
+        "aiLooksRight": "AI mark looks right",
+        "keepKeyword": "Keep {{marks}} / {{max}}",
+        "useZero": "Use 0",
+        "useZeroHint": "The keyword match gave {{marks}}. A written answer can't go below 0.",
+        "keptKeyword": "Q{{number}} marked {{marks}} / {{max}}",
+        "keepStale": "This answer changed a moment ago. The page is refreshed.",
+        "keepFailed": "Couldn't save the mark. Try again."
     },
     "ai": {
         "buttonTyped": "Check written answers with AI · {{credits}} credits",
@@ -84,8 +90,8 @@
         "retry": "Retry"
     },
     "banners": {
-        "releasedWithUnmarked_one": "Released on {{date}} with {{count}} answer unmarked. {{name}} sees 0 for {{questions}}. Mark it below, then press Send updated result.",
-        "releasedWithUnmarked_other": "Released on {{date}} with {{count}} answers unmarked. {{name}} sees 0 for {{questions}}. Mark them below, then press Send updated result.",
+        "releasedWithUnmarked_one": "Released on {{date}} with {{count}} answer unmarked. {{name}} sees its current mark (0, or the keyword match score) for {{questions}}. Mark it below, then press Send updated result.",
+        "releasedWithUnmarked_other": "Released on {{date}} with {{count}} answers unmarked. {{name}} sees their current marks (0, or the keyword match score) for {{questions}}. Mark them below, then press Send updated result.",
         "changedSinceRelease": "Marks changed after release. {{name}} already sees them, tagged Revised. Press Send updated result to email the new result.",
         "aiRunning": "AI is checking…",
         "aiRunningProgress": "AI is checking… {{done}} of {{total}} done",
@@ -117,7 +123,8 @@
         "close": "Close",
         "more": "More for Q{{number}}",
         "readOnly": "You can view this submission but can't change marks.",
-        "readOnlyReleased": "Released results can be changed by admins and teachers only."
+        "readOnlyReleased": "Released results can be changed by admins and teachers only.",
+        "keywordSuggested": "Keyword match suggested {{marks}} / {{max}}"
     },
     "state": {
         "notAnswered": "Not answered",
@@ -187,7 +194,8 @@
         "pagesFailed": "Couldn't save the page.",
         "pagesInvalid": "Type page numbers, e.g. 3 or 3,4.",
         "accepted": "AI mark accepted",
-        "omrHint": "To change what the scanner read, use Fix answers on the OMR tab. You can change the marks here."
+        "omrHint": "To change what the scanner read, use Fix answers on the OMR tab. You can change the marks here.",
+        "keywordNote": "Scored by keyword match ({{marks}} / {{max}}), not checked by a teacher yet. Read the answer, then keep or change the mark."
     },
     "edit": {
         "title": "Edit marks · Q{{number}} · {{name}}",
@@ -231,7 +239,8 @@
             "forbidden": "You can't change marks on this result.",
             "failed": "Couldn't save. Try again.",
             "totalOnly": "This result was entered as a total, without question marks. Changing one question would replace that total."
-        }
+        },
+        "useSuggested": "Use {{marks}}"
     },
     "remark": {
         "title": "Re-mark Q{{number}} with answer key",
@@ -269,7 +278,10 @@
         "failed": "Couldn't save. Try again.",
         "releasedTitle": "This result is released",
         "saveCount_one": "Save {{count}} change",
-        "saveCount_other": "Save {{count}} changes"
+        "saveCount_other": "Save {{count}} changes",
+        "keywordHint": "Keyword match: {{marks}}",
+        "useMark": "Use {{marks}}",
+        "useMarkFor": "Use {{marks}} for Q{{number}}"
     },
     "sheet": {
         "ariaLabel": "Which copy",

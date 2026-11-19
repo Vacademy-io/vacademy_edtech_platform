@@ -40,6 +40,7 @@ import { EditMarksDialog, type EditMode, type PenNotesSource } from './-componen
 import { RemarkKeyDialog } from './-components/RemarkKeyDialog';
 import { HistoryDrawer } from './-components/HistoryDrawer';
 import { isRunActive } from './-components/CheckWithAiButton';
+import { useKeepKeyword } from './-components/KeywordSuggestion';
 
 export interface SubmissionSearch {
     /** AI run to show in the banner (the old review page's process id). */
@@ -186,6 +187,8 @@ function SubmissionPage() {
         },
     });
 
+    const keepKeyword = useKeepKeyword(outline);
+
     const actions: RowActions = {
         onEdit: (row) => setEditTarget({ row, mode: 'edit' }),
         onNotAnswered: (row) => setEditTarget({ row, mode: 'notAnswered' }),
@@ -193,6 +196,8 @@ function SubmissionPage() {
         onHistory: (row) => setHistoryTarget({ row }),
         onAcceptAi: (row) => acceptOne.mutate(row),
         acceptingKey: acceptOne.isPending ? acceptOne.variables?.key ?? null : null,
+        onKeepKeyword: (row) => keepKeyword.keep(row),
+        keepingKey: keepKeyword.keepingKey,
         onShowSheet: (page) => {
             setSheetPage(page);
             if (!sheetOpen) setSearch({ sheet: '1' });

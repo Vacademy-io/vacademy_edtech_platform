@@ -169,4 +169,43 @@ describe('QuickMarksPanel (W2b)', () => {
         // Objective rows stay out of Quick marks (Edit marks changes them, contract 9.8).
         expect(screen.queryByLabelText('Marks for Q2')).not.toBeInTheDocument();
     });
+
+    it('keyword suggestions: placeholder + "Use", no prefill, counted in the total, never "not answered"', async () => {
+        const o = outline({
+            attempt_id: 'att-1',
+            kind: 'HANDWRITTEN',
+            max_total: 20,
+            sections: [
+                {
+                    section_id: 's1',
+                    name: 'Section A',
+                    order: 0,
+                    total: 2,
+                    max: 20,
+                    questions: [
+                        qrow({ key: 's1:q1', question_number: 1, marks: 2, max_marks: 10, revision: 5, marked_by_kind: 'KEYWORD' }),
+                        qrow({ key: 's1:q2', question_number: 2, max_marks: 10 }),
+                    ],
+                },
+            ],
+        });
+        renderPanel(vi.fn(), o);
+        const box = screen.getByLabelText('Marks for Q1');
+        expect(box).toHaveValue(null);
+        expect(box).toHaveAttribute('placeholder', '2');
+        expect(screen.getByTestId('quick-keyword')).toHaveTextContent('Keyword match: 2');
+        // The server's total counts the stored keyword score; the running total agrees.
+        expect(screen.getByTestId('quick-total')).toHaveTextContent('Total 2 / 20');
+        // "Mark the rest" only offers the truly empty Q2.
+        expect(screen.getByRole('button', { name: 'Mark the rest as not answered (1)' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Use 2 for Q1' }));
+        expect(box).toHaveValue(2);
+        expect(screen.queryByTestId('quick-keyword')).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+        await waitFor(() => expect(api.saveQuickMarks).toHaveBeenCalledTimes(1));
+        expect(api.saveQuickMarks.mock.calls[0]![1].items).toEqual([
+            { section_id: 's1', question_id: 'q1', expected_revision: 5, marks: 2 },
+        ]);
+    });
 });

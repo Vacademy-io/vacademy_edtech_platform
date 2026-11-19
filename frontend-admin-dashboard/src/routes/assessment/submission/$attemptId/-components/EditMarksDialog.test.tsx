@@ -18,10 +18,10 @@ import { EditMarksDialog } from './EditMarksDialog';
 const row = qrow({ key: 's1:q12', question_number: 12, question_type: 'CBE_RESPONSE', max_marks: 16, revision: 2 });
 const conflict = (data: unknown) => ({ response: { status: 409, data } });
 
-const renderDialog = (o = outline()) =>
+const renderDialog = (o = outline(), r = row) =>
     render(
         <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-            <EditMarksDialog outline={o} row={row} mode="edit" open onOpenChange={() => {}} />
+            <EditMarksDialog outline={o} row={r} mode="edit" open onOpenChange={() => {}} />
         </QueryClientProvider>
     );
 
@@ -106,5 +106,40 @@ describe('EditMarksDialog (W4) conflicts', () => {
         fireEvent.change(screen.getByRole('spinbutton'), { target: { value: '7' } });
         expect(await screen.findByTestId('edit-total-preview', {}, { timeout: 2000 })).toHaveTextContent('Total: 2 → 9');
         expect(screen.getByText(/The total will also change from 1 to 2/)).toBeInTheDocument();
+    });
+});
+
+describe('EditMarksDialog: keyword-match suggestion (AI marking off)', () => {
+    const keywordRow = (marks: number) =>
+        qrow({ key: 's1:q3', question_number: 3, marks, max_marks: 10, revision: 4, marked_by_kind: 'KEYWORD' });
+
+    it('shows the suggestion, keeps the box empty, and "Use" fills it for a deliberate save', async () => {
+        api.editMarks.mockImplementation((_a, _s, _q, body) =>
+            body.preview
+                ? Promise.resolve({ total_before: 3, total_after: 3, total_recomputed: null })
+                : Promise.resolve({ row, total_before: 3, total_after: 3, release: release(), update_queued: false })
+        );
+        renderDialog(outline(), keywordRow(3));
+        expect(screen.getByTestId('edit-keyword-suggested')).toHaveTextContent('Keyword match suggested 3 / 10');
+        expect(screen.queryByText('Not marked yet')).not.toBeInTheDocument();
+        expect(screen.getByRole('spinbutton')).toHaveValue(null);
+        fireEvent.click(screen.getByRole('button', { name: 'Use 3' }));
+        expect(screen.getByRole('spinbutton')).toHaveValue(3);
+        fireEvent.click(screen.getByRole('button', { name: 'Save marks' }));
+        await waitFor(() =>
+            expect(api.editMarks).toHaveBeenLastCalledWith(
+                'att-1',
+                's1',
+                'q3',
+                expect.objectContaining({ marks: 3, expected_revision: 4, expected_release: 'PENDING|0' })
+            )
+        );
+    });
+
+    it('offers "Use 0" for a negative keyword score (a written answer cannot go below 0)', () => {
+        renderDialog(outline(), keywordRow(-1));
+        expect(screen.getByTestId('edit-keyword-suggested')).toHaveTextContent('Keyword match suggested -1 / 10');
+        fireEvent.click(screen.getByRole('button', { name: 'Use 0' }));
+        expect(screen.getByRole('spinbutton')).toHaveValue(0);
     });
 });

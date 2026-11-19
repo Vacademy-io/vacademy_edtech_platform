@@ -87,7 +87,7 @@ describe('ReleaseResultDialog (W9)', () => {
     it('"Release all" needs the "I understand" tick before it sends allow_unmarked', async () => {
         renderDialog();
         await screen.findByText('49 selected');
-        fireEvent.click(screen.getByRole('radio', { name: 'Release all 49. Unmarked answers count as 0.' }));
+        fireEvent.click(screen.getByRole('radio', { name: 'Release all 49. Unmarked answers count with their current mark (0, or a keyword match score).' }));
         const release = screen.getByRole('button', { name: /^Release$/ });
         expect(release).toBeDisabled();
         fireEvent.click(screen.getByRole('checkbox', { name: 'I understand' }));

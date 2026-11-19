@@ -11,7 +11,8 @@ import { MyButton } from '@/components/design-system/button';
 import { cn } from '@/lib/utils';
 import { editMarks, getQuestionDetail, httpStatusOf, parseApiError } from '@/services/submission-review/api';
 import { invalidateAttempt, submissionKeys } from '@/services/submission-review/query-keys';
-import { allRows, formatMark, isObjectiveType, notifyByDefault } from '@/services/submission-review/marks';
+import { isKeywordSuggestion } from '@/services/submission-review/labels';
+import { allRows, formatMark, isObjectiveType, keywordKeepMarks, notifyByDefault } from '@/services/submission-review/marks';
 import type {
     EditMarksRequest,
     EditMarksResponse,
@@ -254,7 +255,31 @@ export const EditMarksDialog = ({
                                     <span className="text-neutral-500">/ {formatMark(base.max_marks)}</span>
                                 </label>
                                 <span className="text-caption text-neutral-500">
-                                    {base.state === 'NEEDS_MARKING' ? (
+                                    {isKeywordSuggestion(base) ? (
+                                        // The keyword match's score is a suggestion: the box stays empty
+                                        // until the teacher types a mark or takes this one.
+                                        <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+                                            <span data-testid="edit-keyword-suggested">
+                                                {t('row.keywordSuggested', {
+                                                    marks: formatMark(base.marks),
+                                                    max: formatMark(base.max_marks),
+                                                })}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                className="font-semibold text-primary-500 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+                                                onClick={() =>
+                                                    setForm({
+                                                        ...form,
+                                                        marks: formatMark(keywordKeepMarks(base)),
+                                                        useParts: false,
+                                                    })
+                                                }
+                                            >
+                                                {t('edit.useSuggested', { marks: formatMark(keywordKeepMarks(base)) })}
+                                            </button>
+                                        </span>
+                                    ) : base.state === 'NEEDS_MARKING' ? (
                                         t('edit.notMarkedYet')
                                     ) : (
                                         <>

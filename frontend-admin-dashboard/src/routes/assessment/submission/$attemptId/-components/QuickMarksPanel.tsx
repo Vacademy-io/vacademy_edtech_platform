@@ -10,7 +10,7 @@ import { MyButton } from '@/components/design-system/button';
 import { cn } from '@/lib/utils';
 import { getMarkingSummary, parseApiError, saveQuickMarks } from '@/services/submission-review/api';
 import { invalidateAttempt } from '@/services/submission-review/query-keys';
-import { markedByLabel } from '@/services/submission-review/labels';
+import { isKeywordSuggestion, markedByLabel } from '@/services/submission-review/labels';
 import {
     allRows,
     buildQuickMarksItems,
@@ -21,6 +21,7 @@ import {
     formatMarkOutOf,
     initialQuickDrafts,
     isQuickEditable,
+    keywordKeepMarks,
     markRestNotAnswered,
     nextNeedsMarking,
     notifyByDefault,
@@ -65,7 +66,8 @@ export const findNextNeedsMarking = async (outline: SubmissionOutline): Promise<
 
 /**
  * W2b Quick marks: one box per question in paper order, objective answers locked (labelled with
- * who set the mark; Edit marks changes them), a running
+ * who set the mark; Edit marks changes them), a keyword match's score shown as a suggestion
+ * (placeholder + "Use", never prefilled, so an untouched box stays Needs marking), a running
  * total, "Mark the rest as not answered", and one batch save (A3b). After release, Save
  * asks once for a reason and whether to send the learner the update.
  */
@@ -212,6 +214,7 @@ export const QuickMarksPanel = ({
             <ol className="flex flex-col divide-y divide-neutral-100">
                 {rows.map((row) => {
                     const d = drafts[row.key];
+                    const keyword = isKeywordSuggestion(row);
                     return (
                         <li key={row.key} className="flex flex-wrap items-center gap-x-3 gap-y-2 py-2">
                             <span className="w-10 shrink-0 font-semibold text-neutral-800">
@@ -265,6 +268,7 @@ export const QuickMarksPanel = ({
                                             min={row.min_marks}
                                             max={row.max_marks ?? undefined}
                                             value={d.value}
+                                            placeholder={keyword ? formatMark(row.marks) : undefined}
                                             aria-label={t('quick.marksFor', { number: row.question_number })}
                                             onFocus={() => onFocusRow?.(row)}
                                             onChange={(e) => setDraft(row.key, { value: e.target.value })}
@@ -285,6 +289,26 @@ export const QuickMarksPanel = ({
                                         />
                                         <span className="text-body text-neutral-500">/ {formatMark(row.max_marks)}</span>
                                     </span>
+                                    {keyword && d.value.trim() === '' && (
+                                        <span className="flex items-center gap-1.5" data-testid="quick-keyword">
+                                            <span className="text-caption text-neutral-600">
+                                                {t('quick.keywordHint', { marks: formatMark(row.marks) })}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                className="inline-flex h-6 items-center rounded-full border border-primary-200 bg-primary-50 px-2 text-caption font-semibold text-primary-600 hover:bg-primary-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
+                                                aria-label={t('quick.useMarkFor', {
+                                                    marks: formatMark(keywordKeepMarks(row)),
+                                                    number: row.question_number,
+                                                })}
+                                                onClick={() =>
+                                                    setDraft(row.key, { value: formatMark(keywordKeepMarks(row)) })
+                                                }
+                                            >
+                                                {t('quick.useMark', { marks: formatMark(keywordKeepMarks(row)) })}
+                                            </button>
+                                        </span>
+                                    )}
                                     <Input
                                         value={d.feedback}
                                         placeholder={t('quick.feedbackPlaceholder')}

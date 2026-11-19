@@ -22,6 +22,12 @@ import { EditMarksDialog } from '@/routes/assessment/submission/$attemptId/-comp
 import { HistoryDrawer } from '@/routes/assessment/submission/$attemptId/-components/HistoryDrawer';
 import { canEditMarks } from '@/routes/assessment/submission/$attemptId/-components/actions';
 import { isRunActive } from '@/routes/assessment/submission/$attemptId/-components/CheckWithAiButton';
+import {
+    canKeepKeyword,
+    KeepKeywordButton,
+    KeywordSuggestedText,
+    useKeepKeyword,
+} from '@/routes/assessment/submission/$attemptId/-components/KeywordSuggestion';
 import StudentAttemptDropdown from '../assessment-submissions-dropdown-individual/student-attempt-dropdown';
 import { StatusPill } from './StatusPill';
 import { useOpenSubmission } from './use-attempt-marking';
@@ -78,6 +84,17 @@ export const SubmissionSideView = ({
         retry: (count, error) => httpStatusOf(error) !== 403 && httpStatusOf(error) !== 404 && count < 2,
     });
     const outline = outlineQuery.data;
+    // A keep answered after the teacher moved to another learner: the change effect below
+    // only sees the learner on screen, so refresh the list for the one that was kept.
+    const currentAttemptId = useRef(attemptId);
+    useEffect(() => {
+        currentAttemptId.current = attemptId;
+    }, [attemptId]);
+    const keepKeyword = useKeepKeyword(outline, {
+        onKept: (keptId) => {
+            if (keptId !== currentAttemptId.current) onChanged();
+        },
+    });
 
     // The list shows score / status from its own call: refresh it when this attempt's marks
     // or release change here (an edit, Accept AI, Release, Hide, an AI run finishing).
@@ -199,6 +216,8 @@ export const SubmissionSideView = ({
                             timings={timings}
                             onOpenPage={openPage}
                             onEdit={setEditTarget}
+                            onKeepKeyword={keepKeyword.keep}
+                            keepingKey={keepKeyword.keepingKey}
                             onHistory={(r) => setHistoryTarget({ row: r })}
                             onAiStarted={() => invalidateAttempt(queryClient, attemptId, assessmentId)}
                             typeLabel={typeLabel}
@@ -235,6 +254,8 @@ const SubmissionBody = ({
     timings,
     onOpenPage,
     onEdit,
+    onKeepKeyword,
+    keepingKey,
     onHistory,
     onAiStarted,
     typeLabel,
@@ -243,6 +264,9 @@ const SubmissionBody = ({
     timings: { label: string; value: string | null }[];
     onOpenPage: (search?: { q?: string; mode?: 'quick'; filter?: 'all' | 'needs_marking' | 'ai' | 'changed'; sheet?: '1' }) => void;
     onEdit: (row: QuestionRow) => void;
+    /** "Keep X / Y" for a keyword-match suggestion (before release). */
+    onKeepKeyword: (row: QuestionRow) => void;
+    keepingKey: string | null;
     onHistory: (row: QuestionRow | null) => void;
     onAiStarted: () => void;
     typeLabel: (type: string | null | undefined) => string;
@@ -427,8 +451,17 @@ const SubmissionBody = ({
                                             <span className="flex flex-wrap items-center gap-x-2 gap-y-1 ps-11">
                                                 <StateBadge row={q} hideMarked={q.state === 'MARKED' || q.state === 'AI_DRAFT'} />
                                                 {(q.state === 'MARKED' || q.state === 'AI_DRAFT') && <MarkedByLabel row={q} />}
+                                                <KeywordSuggestedText row={q} />
                                             </span>
                                         </button>
+                                        {canKeepKeyword(q, outline) && (
+                                            <KeepKeywordButton
+                                                row={q}
+                                                onKeep={onKeepKeyword}
+                                                busy={keepingKey === q.key}
+                                                buttonType="secondary"
+                                            />
+                                        )}
                                         {editable && (
                                             <button
                                                 type="button"

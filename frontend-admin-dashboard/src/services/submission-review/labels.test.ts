@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { markedByLabel, markingLabel, questionStateLabel, releasedWithUnmarked, resultLabel } from './labels';
-import { attemptMarking, counts } from './test-fixtures';
+import {
+    isKeywordSuggestion,
+    markedByLabel,
+    markingLabel,
+    questionStateLabel,
+    releasedWithUnmarked,
+    resultLabel,
+} from './labels';
+import { attemptMarking, counts, qrow } from './test-fixtures';
 
 describe('markingLabel (W1 Marking column)', () => {
     it('acceptance 1: one CBE needing marking reads "Needs marking (1)"', () => {
@@ -61,5 +68,18 @@ describe('markedByLabel', () => {
     it('has no label for unmarked answers', () => {
         expect(markedByLabel('NONE', null, 'x')).toBeNull();
         expect(markedByLabel('ANSWER_KEY', null, 'x')?.key).toBe('markedBy.answerKey');
+    });
+});
+
+describe('isKeywordSuggestion (keyword-scored long answer, needs marking)', () => {
+    it('is a Needs-marking row the keyword match scored', () => {
+        expect(isKeywordSuggestion(qrow({ key: 's1:q1', marked_by_kind: 'KEYWORD', marks: 2 }))).toBe(true);
+    });
+    it('is not a confirmed keyword mark, nor a plain unmarked answer', () => {
+        expect(isKeywordSuggestion(qrow({ key: 's1:q1', state: 'MARKED', marked_by_kind: 'KEYWORD' }))).toBe(false);
+        expect(isKeywordSuggestion(qrow({ key: 's1:q1', marked_by_kind: 'NONE' }))).toBe(false);
+    });
+    it('still reads as Needs marking on the state chip', () => {
+        expect(questionStateLabel(qrow({ key: 's1:q1', marked_by_kind: 'KEYWORD' })).key).toBe('state.needsMarking');
     });
 });

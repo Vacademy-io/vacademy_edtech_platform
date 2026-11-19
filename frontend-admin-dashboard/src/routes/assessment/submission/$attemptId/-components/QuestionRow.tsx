@@ -8,12 +8,13 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MyButton } from '@/components/design-system/button';
 import { cn } from '@/lib/utils';
-import { formatMarkOutOf, isObjectiveType } from '@/services/submission-review/marks';
+import { formatMark, formatMarkOutOf, isObjectiveType, keywordKeepMarks } from '@/services/submission-review/marks';
 import type { QuestionRow as QuestionRowData, SubmissionOutline } from '@/services/submission-review/types';
 import type { PaperQuestion } from '../-utils/paper';
 import { cardKindFor } from '../-utils/filters';
 import { canEditMarks, type RowActions } from './actions';
 import { MarkedByLabel, useTypeLabel } from './MarkedByLabel';
+import { canKeepKeyword, KeepKeywordButton, KeywordSuggestedText } from './KeywordSuggestion';
 import { QuestionCard } from './QuestionCard';
 import { StateBadge } from './StateBadge';
 
@@ -53,6 +54,8 @@ export const QuestionRowLine = ({
     // "AI mark looks right" for any AI draft (typed long answers, spreadsheets); the
     // handwritten card has its own "Looks right" beside the sheet.
     const acceptHere = editable && row.state === 'AI_DRAFT' && cardKindFor(row, outline.kind) !== 'handwritten';
+    // A keyword-match score waits for the teacher: one click keeps it (before release only).
+    const keepHere = canKeepKeyword(row, outline);
 
     return (
         <li
@@ -85,6 +88,7 @@ export const QuestionRowLine = ({
                     </span>
                     <StateBadge row={row} hideMarked={marked} />
                     {marked && <MarkedByLabel row={row} />}
+                    <KeywordSuggestedText row={row} />
                 </button>
                 <div className="flex shrink-0 items-center gap-1">
                     <MyButton
@@ -111,6 +115,20 @@ export const QuestionRowLine = ({
                             </MyButton>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                            {keepHere && (
+                                <DropdownMenuItem
+                                    className="cursor-pointer"
+                                    disabled={actions.keepingKey === row.key}
+                                    onClick={() => actions.onKeepKeyword(row)}
+                                >
+                                    {row.marks < 0
+                                        ? t('actions.useZero')
+                                        : t('actions.keepKeyword', {
+                                              marks: formatMark(keywordKeepMarks(row)),
+                                              max: formatMark(row.max_marks),
+                                          })}
+                                </DropdownMenuItem>
+                            )}
                             {editable && row.state === 'AI_DRAFT' && (
                                 <DropdownMenuItem className="cursor-pointer" onClick={() => actions.onAcceptAi(row)}>
                                     {t('actions.aiLooksRight')}
@@ -162,10 +180,17 @@ export const QuestionRowLine = ({
                                 {t('actions.aiLooksRight')}
                             </MyButton>
                         )}
+                        {keepHere && (
+                            <KeepKeywordButton
+                                row={row}
+                                onKeep={actions.onKeepKeyword}
+                                busy={actions.keepingKey === row.key}
+                            />
+                        )}
                         {editable && (
                             <MyButton
                                 type="button"
-                                buttonType={row.state === 'NEEDS_MARKING' ? 'primary' : 'secondary'}
+                                buttonType={row.state === 'NEEDS_MARKING' && !keepHere ? 'primary' : 'secondary'}
                                 scale="small"
                                 className="gap-1"
                                 onClick={() => actions.onEdit(row)}
