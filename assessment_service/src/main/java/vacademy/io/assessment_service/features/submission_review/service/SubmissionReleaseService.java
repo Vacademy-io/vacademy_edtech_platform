@@ -305,7 +305,8 @@ public class SubmissionReleaseService {
      *   <li>flagged "release the rest once marked" (W9 / A8): released once nothing blocks a
      *       release any more (no answer needs marking or is being checked). AI drafts do not
      *       block: the teacher already pressed Release, which is their OK (owner decision 1);</li>
-     *   <li>otherwise an AUTO_AFTER_SUBMISSION test whose marking a teacher just finished:
+     *   <li>otherwise a test released on submit ({@link MarkWriter#autoReleasesOnSubmit}) whose
+     *       marking a teacher just finished:
      *       released when COMPLETED and not hidden by a teacher; the result message only for
      *       EXAM tests (a mock / practice attempt is retaken freely; same rule as on submit).</li>
      * </ul>

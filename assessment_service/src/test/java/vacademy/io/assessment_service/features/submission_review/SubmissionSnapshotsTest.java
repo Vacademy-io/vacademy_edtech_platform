@@ -7,6 +7,7 @@ import vacademy.io.assessment_service.features.assessment.repository.QuestionAss
 import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.DashboardChoiceGroups;
 import vacademy.io.assessment_service.features.open_evaluation.choice.ChoiceGroupStore;
 import vacademy.io.assessment_service.features.question_core.entity.Question;
+import vacademy.io.assessment_service.features.submission_review.model.MarkState;
 import vacademy.io.assessment_service.features.submission_review.model.MarkingStatus;
 import vacademy.io.assessment_service.features.submission_review.model.SubmissionKind;
 import vacademy.io.assessment_service.features.submission_review.service.QuestionMaxResolver;
@@ -48,6 +49,23 @@ class SubmissionSnapshotsTest {
         assertThat(snap.counts().marked()).isEqualTo(1);
         assertThat(snap.resultStatus()).isEqualTo("PENDING");
         assertThat(SubmissionSnapshots.marking("ENDED", true, 2.0, snap.counts())).isEqualTo(MarkingStatus.NEEDS_MARKING);
+    }
+
+    /** Owner decision 2026-11-19: a keyword suggestion blocks release, its score (even negative) stays in R6. */
+    @Test
+    void keyword_suggestion_needs_marking_blocks_and_counts_in_the_total() {
+        Review.Paper p = paper("A", key("s1", "q1", 1, "MCQS", 2), key("s1", "q2", 2, "LONG_ANSWER", 5),
+                key("s1", "q3", 3, "LONG_ANSWER", 5));
+        var rows = List.of(row("r1", "s1", "q1", 2, "CORRECT", null, null, 0),
+                row("r2", "s1", "q2", 5, "CORRECT", "KEYWORD", null, 0),
+                row("r3", "s1", "q3", -1, "INCORRECT", "KEYWORD", null, 0));
+        for (boolean released : new boolean[] {false, true}) {
+            var snap = plain.compute(facts(false), released, p, rows, Review.RunInfo.NONE, List.of());
+            assertThat(snap.counts().needsMarking()).isEqualTo(2);
+            assertThat(snap.blockers()).hasSize(2);
+            assertThat(snap.total()).isEqualTo(6.0);
+            assertThat(snap.resultStatus()).isEqualTo("PENDING");
+        }
     }
 
     @Test
@@ -194,6 +212,39 @@ class SubmissionSnapshotsTest {
         assertThat(snap.keys().get(0).aiFailedReason()).isEqualTo("Out of credits");
         assertThat(snap.counts().aiFailed()).isEqualTo(1);
         assertThat(snap.resultStatus()).isEqualTo("EVALUATING");
+    }
+
+    /** KW-3: a failed CBE-only run (AI off) never graded the long answer, so a keyword suggestion is not "AI failed". */
+    @Test
+    void failed_cbe_only_run_is_no_reason_on_a_keyword_suggestion() {
+        Review.Paper p = paper("A", key("s1", "q1", 1, "CBE_RESPONSE", 10), key("s1", "q2", 2, "LONG_ANSWER", 5));
+        var failed = new Review.ProcessInfo("p1", "FAILED", "TYPED", null, null, "Out of credits", 0, 1, null, null,
+                new Date());
+        var run = new Review.RunInfo(null, failed, failed, Map.of());
+        String answered = "{\"responseData\":{\"answer\":{\"parts\":{\"p1\":{\"html\":\"<p>Done</p>\"}}}}}";
+        var cbe = new Review.MarkRow("r1", "att-1", "s1", "q1", 0, "PENDING", null, null, 0, null, null, null,
+                false, null, null, new Date(1), answered);
+        var keyword = row("r2", "s1", "q2", 3, "CORRECT", "KEYWORD", null, 0);
+
+        var snap = plain.compute(facts(false), false, p, List.of(cbe, keyword), run, List.of());
+        assertThat(snap.keys().get(0).aiFailedReason()).isEqualTo("Out of credits");
+        assertThat(snap.keys().get(1).state()).isEqualTo(MarkState.NEEDS_MARKING);
+        assertThat(snap.keys().get(1).aiFailedReason()).isNull();
+        assertThat(snap.counts().aiFailed()).isEqualTo(1);
+
+        // With the CBE answer marked, only the keyword suggestion is left: PENDING, not EVALUATING.
+        var marked = row("r1", "s1", "q1", 7, "CORRECT", "MANUAL", "MARKED", 1);
+        snap = plain.compute(facts(false), false, p, List.of(marked, keyword), run, List.of());
+        assertThat(snap.keys().get(1).aiFailedReason()).isNull();
+        assertThat(snap.counts().aiFailed()).isZero();
+        assertThat(snap.resultStatus()).isEqualTo("PENDING");
+
+        // A teacher-started run did grade the long answer: its failure is the reason there.
+        var teacherFailed = new Review.ProcessInfo("p2", "FAILED", "TYPED", "teacher-1", null, null, 0, 1, null, null,
+                new Date());
+        snap = plain.compute(facts(false), false, p, List.of(marked, keyword),
+                new Review.RunInfo(null, teacherFailed, teacherFailed, Map.of()), List.of());
+        assertThat(snap.keys().get(1).aiFailedReason()).isEqualTo(SubmissionSnapshots.AI_FAILED_DEFAULT);
     }
 
     @Test

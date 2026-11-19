@@ -53,6 +53,9 @@ public class TypedAnswerEvaluation {
      */
     public static final List<String> TEACHER_GRADED_TYPES = List.of(CbeConfigRedactor.CBE_TYPE);
 
+    /** Question types the answer key scores by keyword match (a suggestion, see awaitsKeywordConfirmation). */
+    public static final List<String> KEYWORD_SCORED_TYPES = List.of("LONG_ANSWER");
+
     private final EvaluationUtilityService evaluationUtilityService;
     private final QuestionAssessmentSectionMappingRepository questionMappingRepository;
     private final QuestionWiseMarksRepository questionWiseMarksRepository;
@@ -231,6 +234,57 @@ public class TypedAnswerEvaluation {
             return false;
         } catch (Exception e) {
             log.warn("[AI-EVAL-TYPED] could not check teacher-graded answers for attempt {}: {}",
+                    attempt.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Owner decision 2026-11-19: an online attempt whose long answer carries only a keyword
+     * match score (marks_source KEYWORD) is held like a CBE answer, so the suggestion is not
+     * auto-released as the result. Reads the JPA rows (the query flushes this submit's own
+     * writes; the JDBC store would not see them), newest row per question, as R6 does.
+     */
+    public boolean awaitsKeywordConfirmation(StudentAttempt attempt, Assessment assessment) {
+        if (attempt == null || assessment == null || attempt.getId() == null) return false;
+        if (!isTypedAttempt(attempt, assessment)) return false;
+        try {
+            // Cheap pre-filter, as for CBE: most papers have no long answer.
+            if (!questionMappingRepository.existsQuestionOfTypesInAssessment(assessment.getId(), KEYWORD_SCORED_TYPES)) {
+                return false;
+            }
+            // Only answers on the live paper count, as on the review screens (the scorer also
+            // writes rows for a question or section removed mid-test; nothing would ever
+            // release an attempt held on one of those).
+            Set<String> live = new HashSet<>();
+            for (QuestionAssessmentSectionMapping m : questionMappingRepository
+                    .getQuestionAssessmentSectionMappingByAssessmentId(assessment.getId())) {
+                if (m.getQuestion() == null || m.getSection() == null
+                        || "DELETED".equalsIgnoreCase(m.getStatus())) {
+                    continue;
+                }
+                live.add(m.getQuestion().getId() + "|" + m.getSection().getId());
+            }
+            if (live.isEmpty()) return false;
+            List<QuestionWiseMarks> rows = new ArrayList<>(questionWiseMarksRepository.findByStudentAttemptId(attempt.getId()));
+            rows.sort(java.util.Comparator.comparing(QuestionWiseMarks::getCreatedAt,
+                    java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())));
+            Set<String> seen = new HashSet<>();
+            for (QuestionWiseMarks marks : rows) {
+                Question q = marks.getQuestion();
+                String sectionId = marks.getSectionId() != null ? marks.getSectionId()
+                        : marks.getSection() != null ? marks.getSection().getId() : null;
+                String key = q == null ? null : q.getId() + "|" + sectionId;
+                if (key == null || !seen.add(key) || !live.contains(key)) continue;
+                if (MarksSource.KEYWORD.equals(marks.getMarksSource()) && marks.getMarkState() == null
+                        && q.getQuestionType() != null
+                        && KEYWORD_SCORED_TYPES.contains(q.getQuestionType().toUpperCase())) {
+                    return true;
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            log.warn("[AI-EVAL-TYPED] could not check keyword-scored answers for attempt {}: {}",
                     attempt.getId(), e.getMessage());
             return false;
         }

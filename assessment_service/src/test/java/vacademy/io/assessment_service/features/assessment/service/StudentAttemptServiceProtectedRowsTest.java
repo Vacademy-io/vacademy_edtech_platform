@@ -64,6 +64,8 @@ class StudentAttemptServiceProtectedRowsTest {
     private Section section;
     private QuestionWiseMarks mcqRow;
     private QuestionWiseMarks longRow;
+    private TypedAnswerEvaluation typed;
+    private AssessmentWorkflowEventPublisher publisher;
 
     @BeforeEach
     void setUp() {
@@ -74,7 +76,8 @@ class StudentAttemptServiceProtectedRowsTest {
         events = mock(MarkEventRepository.class);
         logs = mock(EvaluationLogsRepository.class);
         SectionRepository sections = mock(SectionRepository.class);
-        TypedAnswerEvaluation typed = mock(TypedAnswerEvaluation.class);
+        typed = mock(TypedAnswerEvaluation.class);
+        publisher = mock(AssessmentWorkflowEventPublisher.class);
         ReflectionTestUtils.setField(service, "questionWiseMarksService", marksService);
         ReflectionTestUtils.setField(service, "questionAssessmentSectionMappingRepository", mappings);
         ReflectionTestUtils.setField(service, "studentAttemptRepository", attempts);
@@ -82,7 +85,7 @@ class StudentAttemptServiceProtectedRowsTest {
         ReflectionTestUtils.setField(service, "questionRepository", mock(QuestionRepository.class));
         ReflectionTestUtils.setField(service, "attemptDataParserService", new AttemptDataParserService());
         ReflectionTestUtils.setField(service, "typedAnswerEvaluation", typed);
-        ReflectionTestUtils.setField(service, "assessmentWorkflowEventPublisher", mock(AssessmentWorkflowEventPublisher.class));
+        ReflectionTestUtils.setField(service, "assessmentWorkflowEventPublisher", publisher);
         ReflectionTestUtils.setField(service, "markHistory", new MarkHistory(events));
         ReflectionTestUtils.setField(service, "evaluationLogsRepository", logs);
 
@@ -218,9 +221,10 @@ class StudentAttemptServiceProtectedRowsTest {
         request.setQuestions(List.of(q));
         service.revaluateForCustomParticipantsAndQuestions(assessment, request, "admin-1");
         verify(marksService).updateQuestionWiseMarksForEveryQuestion(eq(assessment), eq(attempt),
-                eq(mcqMapping.getQuestion()), anyString(), any(), eq("CORRECT"), eq(section), eq(2.0));
+                eq(mcqMapping.getQuestion()), anyString(), any(), eq("CORRECT"), eq(section), eq(2.0),
+                org.mockito.ArgumentMatchers.isNull());
         verify(marksService, never()).updateQuestionWiseMarksForEveryQuestion(any(), any(),
-                eq(longMapping.getQuestion()), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyDouble());
+                eq(longMapping.getQuestion()), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyDouble(), any());
         assertThat(savedEvents()).extracting(MarkEvent::getQuestionId).containsExactly("q2");
     }
 
@@ -306,9 +310,10 @@ class StudentAttemptServiceProtectedRowsTest {
         request.setQuestions(List.of(q));
         service.revaluateForCustomParticipantsAndQuestions(assessment, request, "admin-1");
         verify(marksService).updateQuestionWiseMarksForEveryQuestion(eq(assessment), eq(attempt),
-                eq(mcqMapping.getQuestion()), anyString(), any(), eq("CORRECT"), eq(section), eq(2.0));
+                eq(mcqMapping.getQuestion()), anyString(), any(), eq("CORRECT"), eq(section), eq(2.0),
+                org.mockito.ArgumentMatchers.isNull());
         verify(marksService, never()).updateQuestionWiseMarksForEveryQuestion(any(), any(),
-                eq(longMapping.getQuestion()), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyDouble());
+                eq(longMapping.getQuestion()), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyDouble(), any());
         assertThat(savedEvents()).extracting(MarkEvent::getQuestionId).containsExactly("q2");
     }
 
@@ -340,9 +345,10 @@ class StudentAttemptServiceProtectedRowsTest {
         service.revaluateForCustomParticipantsAndQuestions(assessment, request, "admin-1");
 
         verify(marksService).updateQuestionWiseMarksForEveryQuestion(eq(assessment), eq(attempt),
-                eq(mcqMapping.getQuestion()), anyString(), any(), eq("CORRECT"), eq(section), eq(2.0));
+                eq(mcqMapping.getQuestion()), anyString(), any(), eq("CORRECT"), eq(section), eq(2.0),
+                org.mockito.ArgumentMatchers.isNull());
         verify(marksService, never()).updateQuestionWiseMarksForEveryQuestion(any(), any(),
-                eq(longMapping.getQuestion()), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyDouble());
+                eq(longMapping.getQuestion()), any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyDouble(), any());
         MarkEvent e = savedEvents().get(0);
         assertThat(e.getEventType()).isEqualTo("SKIPPED_PROTECTED");
         assertThat(e.getQuestionId()).isEqualTo("q2");
@@ -510,7 +516,7 @@ class StudentAttemptServiceProtectedRowsTest {
         request.setQuestions(List.of(q));
         service.revaluateForCustomParticipantsAndQuestions(assessment, request, "admin-1");
         verify(marksService, never()).updateQuestionWiseMarksForEveryQuestion(any(), any(), any(), any(), any(),
-                any(), any(), org.mockito.ArgumentMatchers.anyDouble());
+                any(), any(), org.mockito.ArgumentMatchers.anyDouble(), any());
         assertThat(savedEvents()).extracting(MarkEvent::getQuestionId).containsExactly("q1");
     }
 
@@ -522,5 +528,220 @@ class StudentAttemptServiceProtectedRowsTest {
         for (String source : java.util.Arrays.asList("AUTO", "KEYWORD", null)) {
             assertThat(StudentAttemptService.isEvaluatorMarked(row("q1", 1, "CORRECT", source))).as(source).isFalse();
         }
+    }
+
+    // ------------------------------------------- keyword-scored long answers (owner decision 2026-11-19)
+
+    private static final String LONG_MARKING = "{\"type\":\"LONG_ANSWER\",\"data\":{\"totalMark\":8,\"negativeMark\":0}}";
+    private static final String LONG_KEY = "{\"type\":\"LONG_ANSWER\",\"data\":{\"answer\":{\"content\":\"photosynthesis\"}}}";
+
+    /** The paper's long answer (q2) gets a model answer, so the keyword match scores it. */
+    private void longAnswerWithModelAnswer(String key) {
+        when(mappings.findMarkingSchemeRowsBySectionIds(anyList()))
+                .thenReturn(List.of(scheme("q1", MCQ_MARKING, MCQ_KEY), scheme("q2", LONG_MARKING, key)));
+    }
+
+    private void keywordRow(String source, double marks, String status) {
+        longRow.setMarksSource(source);
+        longRow.setMarks(marks);
+        longRow.setStatus(status);
+    }
+
+    @Test
+    void submit_writes_keyword_on_a_keyword_scored_long_answer_and_drops_it_when_unscored() {
+        attempt.setReportReleaseStatus(null);
+        keywordRow(null, 0, "PENDING");
+        longAnswerWithModelAnswer(LONG_KEY);
+        service.updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt), null);
+        assertThat(longRow.getMarks()).isEqualTo(8.0);
+        assertThat(longRow.getStatus()).isEqualTo("CORRECT");
+        assertThat(longRow.getMarksSource()).isEqualTo("KEYWORD");
+        assertThat(longRow.getRevision()).isEqualTo(1);
+        assertThat(mcqRow.getMarksSource()).isNull();
+
+        // INCORRECT is a keyword score too.
+        longAnswerWithModelAnswer(LONG_KEY.replace("photosynthesis", "respiration of glucose"));
+        service.updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt), null);
+        assertThat(longRow.getStatus()).isEqualTo("INCORRECT");
+        assertThat(longRow.getMarksSource()).isEqualTo("KEYWORD");
+        assertThat(longRow.getRevision()).isEqualTo(2);
+
+        // The model answer is removed: 0 / PENDING, no keyword source, revision bumped.
+        longAnswerWithModelAnswer("{\"type\":\"LONG_ANSWER\",\"data\":{}}");
+        service.updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt), null);
+        assertThat(longRow.getStatus()).isEqualTo("PENDING");
+        assertThat(longRow.getMarksSource()).isNull();
+        assertThat(longRow.getRevision()).isEqualTo(3);
+
+        // Nothing changed: no revision bump.
+        service.updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt), null);
+        assertThat(longRow.getRevision()).isEqualTo(3);
+    }
+
+    @Test
+    void submit_creates_a_new_long_answer_row_with_the_keyword_source() {
+        attempt.setReportReleaseStatus(null);
+        when(marksService.getAllQuestionWiseMarksForAttemptId("att-1", "A")).thenReturn(List.of(mcqRow));
+        when(marksService.createQuestionWiseMarks(anyList())).thenAnswer(i -> i.getArgument(0));
+        longAnswerWithModelAnswer(LONG_KEY);
+        service.updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt), null);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<QuestionWiseMarks>> saved = ArgumentCaptor.forClass(List.class);
+        verify(marksService).createQuestionWiseMarks(saved.capture());
+        QuestionWiseMarks created = saved.getValue().stream()
+                .filter(m -> m != mcqRow).findFirst().orElseThrow();
+        assertThat(created.getStatus()).isEqualTo("CORRECT");
+        assertThat(created.getMarksSource()).isEqualTo("KEYWORD");
+    }
+
+    @Test
+    void remark_rescores_an_unconfirmed_keyword_row_but_never_a_confirmed_one() {
+        attempt.setReportReleaseStatus("PENDING");
+        keywordRow("KEYWORD", 4, "CORRECT");
+        longAnswerWithModelAnswer(LONG_KEY);
+        service.revaluateAssessmentForAttempts(List.of(attempt), "ENTIRE_ASSESSMENT", "admin-1");
+        assertThat(longRow.getMarks()).isEqualTo(8.0);
+        assertThat(longRow.getMarksSource()).isEqualTo("KEYWORD");
+
+        // A teacher confirmed it (MARKED / MANUAL): the re-mark keeps it.
+        keywordRow("MANUAL", 4, "PARTIAL_CORRECT");
+        longRow.setMarkState("MARKED");
+        service.revaluateAssessmentForAttempts(List.of(attempt), "ENTIRE_ASSESSMENT", "admin-1");
+        assertThat(longRow.getMarks()).isEqualTo(4.0);
+        assertThat(longRow.getMarksSource()).isEqualTo("MANUAL");
+    }
+
+    /** A re-mark of a released result leaves the source NULL: no "released with unmarked" on old results. */
+    @Test
+    void remark_of_a_released_result_never_adds_the_keyword_source() {
+        keywordRow(null, 0, "INCORRECT");
+        longAnswerWithModelAnswer(LONG_KEY);
+        service.revaluateAssessmentForAttempts(List.of(attempt), "ENTIRE_ASSESSMENT", "admin-1");
+        assertThat(longRow.getMarks()).isEqualTo(8.0);
+        assertThat(longRow.getStatus()).isEqualTo("CORRECT");
+        assertThat(longRow.getMarksSource()).isNull();
+    }
+
+    private RevaluateRequest longQuestionRequest() {
+        QuestionAssessmentSectionMapping longMapping = mapping("q2", LONG_MARKING, LONG_KEY, "LONG_ANSWER");
+        when(mappings.findByQuestionIdAndSectionId("q2", "s1")).thenReturn(Optional.of(longMapping));
+        when(marksService.getQuestionWiseMarkForAssessmentIdAndSectionIdAndQuestionIdAndAttemptId("A", "att-1", "s1", "q2"))
+                .thenReturn(Optional.of(longRow));
+        RevaluateRequest request = new RevaluateRequest();
+        request.setAttemptIds(List.of("att-1"));
+        RevaluateRequest.RevaluateQuestionDto q = new RevaluateRequest.RevaluateQuestionDto();
+        q.setSectionId("s1");
+        q.setQuestionIds(List.of("q2"));
+        request.setQuestions(List.of(q));
+        return request;
+    }
+
+    @Test
+    void question_remark_passes_the_keyword_source_only_before_release() {
+        keywordRow(null, 0, "PENDING");
+        attempt.setReportReleaseStatus("PENDING");
+        service.revaluateForCustomParticipantsAndQuestions(assessment, longQuestionRequest(), "admin-1");
+        verify(marksService).updateQuestionWiseMarksForEveryQuestion(eq(assessment), eq(attempt), any(), anyString(),
+                any(), eq("CORRECT"), eq(section), eq(8.0), eq("KEYWORD"));
+
+        attempt.setReportReleaseStatus("RELEASED");
+        service.revaluateForCustomParticipantsAndQuestions(assessment, longQuestionRequest(), "admin-1");
+        verify(marksService).updateQuestionWiseMarksForEveryQuestion(eq(assessment), eq(attempt), any(), anyString(),
+                any(), eq("CORRECT"), eq(section), eq(8.0), org.mockito.ArgumentMatchers.isNull());
+    }
+
+    @Test
+    void question_wise_writer_sets_the_source_and_bumps_the_revision_on_a_change() {
+        var repo = mock(vacademy.io.assessment_service.features.learner_assessment.repository.QuestionWiseMarksRepository.class);
+        QuestionWiseMarksService real = new QuestionWiseMarksService();
+        ReflectionTestUtils.setField(real, "questionWiseMarksRepository", repo);
+        keywordRow(null, 0, "PENDING");
+        when(repo.findByAssessmentIdAndStudentAttemptIdAndQuestionIdAndSectionId("A", "att-1", "q2", "s1"))
+                .thenReturn(Optional.of(longRow));
+        Question q2 = longRow.getQuestion();
+        real.updateQuestionWiseMarksForEveryQuestion(assessment, attempt, q2, "{}", null, "CORRECT", section, 8.0, "KEYWORD");
+        assertThat(longRow.getMarksSource()).isEqualTo("KEYWORD");
+        assertThat(longRow.getRevision()).isEqualTo(1);
+        real.updateQuestionWiseMarksForEveryQuestion(assessment, attempt, q2, "{}", null, "CORRECT", section, 8.0, "KEYWORD");
+        assertThat(longRow.getRevision()).isEqualTo(1);
+        // Same marks and status, source dropped: still a change an open form must see.
+        real.updateQuestionWiseMarksForEveryQuestion(assessment, attempt, q2, "{}", null, "CORRECT", section, 8.0, null);
+        assertThat(longRow.getMarksSource()).isNull();
+        assertThat(longRow.getRevision()).isEqualTo(2);
+    }
+
+    /** The submit hold: a keyword score is not auto-released; without one the result releases as before. */
+    @Test
+    void submit_holds_an_auto_release_attempt_with_a_keyword_score() {
+        assessment.setResultType("AUTO_AFTER_SUBMISSION");
+        attempt.setReportReleaseStatus(null);
+        attempt.setResultStatus(null);
+        when(typed.awaitsKeywordConfirmation(any(), any())).thenReturn(true);
+        service.updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt), null);
+        assertThat(attempt.getResultStatus()).isEqualTo("PENDING");
+        assertThat(attempt.getReportReleaseStatus()).isEqualTo("PENDING");
+        verify(publisher, never()).publishResultReleased(any(), any(), any());
+
+        when(typed.awaitsKeywordConfirmation(any(), any())).thenReturn(false);
+        attempt.setReportReleaseStatus(null);
+        attempt.setResultStatus(null);
+        service.updateStudentAttemptWithResultAfterMarksCalculation(Optional.of(attempt), null);
+        assertThat(attempt.getResultStatus()).isEqualTo("COMPLETED");
+        assertThat(attempt.getReportReleaseStatus()).isEqualTo("RELEASED");
+        verify(publisher).publishResultReleased(any(), any(), any());
+    }
+
+    /**
+     * KW-1: a re-mark that leaves a keyword suggestion on an unreleased attempt already stored
+     * COMPLETED (e.g. released after the test ends) reopens it as PENDING, so the after-end
+     * cron (result_status = 'COMPLETED') does not publish the unconfirmed suggestion.
+     */
+    @Test
+    void entire_remark_reopens_an_unreleased_completed_attempt_left_with_a_keyword_suggestion() {
+        attempt.setReportReleaseStatus("PENDING");
+        attempt.setResultStatus("COMPLETED");
+        keywordRow(null, 0, "PENDING");
+        longAnswerWithModelAnswer(LONG_KEY);
+        when(typed.awaitsKeywordConfirmation(any(), any())).thenReturn(true);
+        service.revaluateAssessmentForAttempts(List.of(attempt), "ENTIRE_ASSESSMENT", "admin-1");
+        assertThat(longRow.getMarksSource()).isEqualTo("KEYWORD");
+        assertThat(attempt.getResultStatus()).isEqualTo("PENDING");
+        assertThat(attempt.getReportReleaseStatus()).isEqualTo("PENDING");
+
+        // No keyword suggestion left: a COMPLETED result stays COMPLETED.
+        attempt.setResultStatus("COMPLETED");
+        when(typed.awaitsKeywordConfirmation(any(), any())).thenReturn(false);
+        service.revaluateAssessmentForAttempts(List.of(attempt), "ENTIRE_ASSESSMENT", "admin-1");
+        assertThat(attempt.getResultStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    void question_remark_reopens_an_unreleased_completed_attempt_left_with_a_keyword_suggestion() {
+        attempt.setReportReleaseStatus(null);
+        attempt.setResultStatus("COMPLETED");
+        keywordRow(null, 0, "PENDING");
+        when(typed.awaitsKeywordConfirmation(any(), any())).thenReturn(true);
+        service.revaluateForCustomParticipantsAndQuestions(assessment, longQuestionRequest(), "admin-1");
+        verify(marksService).updateQuestionWiseMarksForEveryQuestion(eq(assessment), eq(attempt), any(), anyString(),
+                any(), eq("CORRECT"), eq(section), eq(8.0), eq("KEYWORD"));
+        assertThat(attempt.getResultStatus()).isEqualTo("PENDING");
+        assertThat(attempt.getReportReleaseStatus()).isEqualTo("PENDING");
+        verify(attempts, atLeastOnce()).save(attempt);
+    }
+
+    /** A released result is never reopened by a re-mark, whatever its rows say. */
+    @Test
+    void remark_never_reopens_a_released_result() {
+        attempt.setReportReleaseStatus("RELEASED");
+        attempt.setResultStatus("COMPLETED");
+        keywordRow(null, 0, "PENDING");
+        longAnswerWithModelAnswer(LONG_KEY);
+        when(typed.awaitsKeywordConfirmation(any(), any())).thenReturn(true);
+        service.revaluateAssessmentForAttempts(List.of(attempt), "ENTIRE_ASSESSMENT", "admin-1");
+        assertThat(attempt.getResultStatus()).isEqualTo("COMPLETED");
+        assertThat(longRow.getMarksSource()).isNull();
+        service.revaluateForCustomParticipantsAndQuestions(assessment, longQuestionRequest(), "admin-1");
+        assertThat(attempt.getResultStatus()).isEqualTo("COMPLETED");
+        assertThat(attempt.getReportReleaseStatus()).isEqualTo("RELEASED");
     }
 }

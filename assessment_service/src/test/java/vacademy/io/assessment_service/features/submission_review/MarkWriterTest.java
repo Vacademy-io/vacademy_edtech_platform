@@ -781,4 +781,92 @@ class MarkWriterTest {
                 .isInstanceOfSatisfying(SubmissionReviewException.class,
                         e -> assertThat(e.getCode()).isEqualTo("REASON_REQUIRED"));
     }
+
+    // ------------------------------------------- keyword-scored long answers (owner decision 2026-11-19)
+
+    private void keywordSuggestion(double value, String status) {
+        QuestionWiseMarks q2 = rows.get(1);
+        q2.setMarks(value);
+        q2.setStatus(status);
+        q2.setMarksSource("KEYWORD");
+    }
+
+    /** Saving the same value confirms the suggestion: MARKED / MANUAL, a revision and a history event. */
+    @Test
+    void same_value_confirms_a_keyword_suggestion_and_releases_an_auto_after_submission_test() {
+        assessment.setResultType("AUTO_AFTER_SUBMISSION");
+        keywordSuggestion(6.0, "CORRECT");
+        state(false, 8.0, 0);
+        var r = writer.apply(teacher("q2", 6.0, 0, token(false), null, false));
+        QuestionWiseMarks q2 = rows.get(1);
+        assertThat(q2.getMarks()).isEqualTo(6.0);
+        assertThat(q2.getMarkState()).isEqualTo("MARKED");
+        assertThat(q2.getMarksSource()).isEqualTo("MANUAL");
+        assertThat(q2.getRevision()).isEqualTo(1);
+        MarkEvent e = savedEvents().get(0);
+        assertThat(e.getEventType()).isEqualTo("TEACHER_EDITED");
+        assertThat(e.getOldSource()).isEqualTo("KEYWORD");
+        assertThat(e.getOldState()).isEqualTo("NEEDS_MARKING");
+        assertThat(e.getNewSource()).isEqualTo("MANUAL");
+        verify(attempts).applyMarkTotals(eq("att-1"), eq(8.0), eq("COMPLETED"), eq(false), any(Date.class));
+        assertThat(r.releaseQueued()).isTrue();
+        verify(publisher).publishEvent(any(ReviewEvents.AttemptReadyForRelease.class));
+    }
+
+    /** A mock / practice test with results "after the test ends" never ends: it releases when marked too. */
+    @Test
+    void open_ended_after_end_test_releases_once_the_keyword_suggestion_is_confirmed() {
+        assessment.setResultType("AUTO_AFTER_ASSESSMENT_END");
+        assessment.setPlayMode("PRACTICE");
+        keywordSuggestion(6.0, "CORRECT");
+        state(false, 8.0, 0);
+        assertThat(writer.apply(teacher("q2", 6.0, 0, token(false), null, false)).releaseQueued()).isTrue();
+        verify(publisher).publishEvent(any(ReviewEvents.AttemptReadyForRelease.class));
+    }
+
+    /** An exam on "after the test ends" is released by the cron after the end, not by the edit. */
+    @Test
+    void exam_after_end_test_is_not_released_by_the_edit() {
+        assessment.setResultType("AUTO_AFTER_ASSESSMENT_END");
+        assessment.setPlayMode("EXAM");
+        keywordSuggestion(6.0, "CORRECT");
+        state(false, 8.0, 0);
+        assertThat(writer.apply(teacher("q2", 6.0, 0, token(false), null, false)).releaseQueued()).isFalse();
+        verify(publisher, never()).publishEvent(any(ReviewEvents.AttemptReadyForRelease.class));
+    }
+
+    /** A negative keyword score (INCORRECT, -negativeMark) is confirmed as 0: a long answer's minimum. */
+    @Test
+    void negative_keyword_score_is_confirmed_as_zero() {
+        keywordSuggestion(-1.0, "INCORRECT");
+        state(false, 1.0, 0);
+        writer.apply(teacher("q2", 0.0, 0, token(false), null, false));
+        QuestionWiseMarks q2 = rows.get(1);
+        assertThat(q2.getMarks()).isEqualTo(0.0);
+        assertThat(q2.getMarkState()).isEqualTo("MARKED");
+        assertThat(q2.getMarksSource()).isEqualTo("MANUAL");
+        verify(attempts).applyMarkTotals(eq("att-1"), eq(2.0), eq("COMPLETED"), eq(false), any(Date.class));
+    }
+
+    /** The PDF tool's blank-fill never zeroes a typed answer that carries a keyword suggestion. */
+    @Test
+    void manual_submit_blank_fill_skips_a_keyword_suggestion() {
+        Assessment handwritten = ReviewFixtures.assessment("A", "MANUAL", false);
+        attempt.getRegistration().setAssessment(handwritten);
+        state(false, 0.0, 0);
+        rows.clear();
+        rows.add(entity("r1", attempt, "s1", "q1", 0, "PENDING", null));
+        rows.add(entity("r2", attempt, "s1", "q2", 6, "CORRECT", "KEYWORD"));
+        var change = new MarkWriter.MarkChange("att-1", "s1", "q1", MarkWriter.Writer.LEGACY_MANUAL_SUBMIT, 2.0, null,
+                null, false, null, "teacher-1", null, null, false, null, null, null);
+        var r = writer.applyAll("att-1", List.of(change), new MarkWriter.BatchContext(null, null, false, "teacher-1",
+                MarkWriter.Writer.LEGACY_MANUAL_SUBMIT));
+        assertThat(r.changed()).isEqualTo(1);
+        QuestionWiseMarks q2 = rows.get(1);
+        assertThat(q2.getMarks()).isEqualTo(6.0);
+        assertThat(q2.getMarksSource()).isEqualTo("KEYWORD");
+        assertThat(q2.getMarkState()).isNull();
+        // Still waiting for the teacher: not COMPLETED, its suggestion counts in the total (R6).
+        verify(attempts).applyMarkTotals(eq("att-1"), eq(8.0), eq("PENDING"), eq(false), any(Date.class));
+    }
 }

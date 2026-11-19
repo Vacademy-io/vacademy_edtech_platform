@@ -72,6 +72,19 @@ class LongAnswerQuestionTypeBasedStrategyTest {
         assertThat(logs.list).noneMatch(e -> e.getLevel().isGreaterOrEqual(Level.WARN));
     }
 
+    /** Owner decision 2026-11-19: only spaces is a blank answer, never a (negative) keyword score. */
+    @Test
+    void whitespace_only_answer_is_blank_not_keyword_scored() {
+        String key = "{\"type\":\"LONG_ANSWER\",\"data\":{\"answer\":{\"content\":\"profit\"}}}";
+        String marking = "{\"type\":\"LONG_ANSWER\",\"data\":{\"totalMark\":5,\"negativeMark\":1}}";
+        for (String blank : new String[] {"   ", "\\n\\t "}) {
+            LongAnswerQuestionTypeBasedStrategy s = strategy();
+            assertThat(s.calculateMarks(marking, key, "{\"responseData\":{\"answer\":\"" + blank + "\"}}"))
+                    .as(blank).isEqualTo(0.0);
+            assertThat(s.getAnswerStatus()).as(blank).isEqualTo("PENDING");
+        }
+    }
+
     @Test
     void keyword_match_with_a_model_answer_is_unchanged() {
         String key = "{\"type\":\"LONG_ANSWER\",\"data\":{\"answer\":{\"content\":"

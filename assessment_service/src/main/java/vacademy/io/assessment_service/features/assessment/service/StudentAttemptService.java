@@ -23,6 +23,7 @@ import vacademy.io.assessment_service.features.assessment.entity.QuestionAssessm
 import vacademy.io.assessment_service.features.assessment.entity.Section;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.enums.AttemptResultStatusEnum;
+import vacademy.io.assessment_service.features.assessment.enums.QuestionResponseEnum;
 import vacademy.io.assessment_service.features.assessment.enums.ReleaseResultStatusEnum;
 import vacademy.io.assessment_service.features.assessment.enums.ResultTypeEnum;
 import vacademy.io.assessment_service.features.assessment.repository.QuestionAssessmentSectionMappingRepository;
@@ -214,14 +215,23 @@ public class StudentAttemptService {
         // A Spreadsheet & Written Response (CBE) answer is never auto-scored: it is
         // stored as 0 / PENDING, so the attempt is held for the teacher even when
         // the assessment's AI evaluation is off - releasing it would publish that 0.
-        boolean heldForAi = !isManualEvaluation && (awaitsAiGrading(attempt) || awaitsTeacherGrading(attempt));
+        // A long answer with only a keyword-match score (KEYWORD) waits for the teacher too
+        // (owner decision 2026-11-19); it is released when its last answer is confirmed.
+        boolean awaitsKeyword = !isManualEvaluation && awaitsKeywordConfirmation(attempt);
+        boolean heldForAi = !isManualEvaluation && (awaitsAiGrading(attempt) || awaitsTeacherGrading(attempt)
+                || awaitsKeyword);
         if (heldForAi) {
             // Still an AUTO attempt: keep result_marks as the release path expects;
             // the AI run replaces both totals when it completes.
             attempt.setResultMarks(totalMarks);
         }
         if (isManualEvaluation || heldForAi) {
-            if (!AssessmentAttemptResultEnum.COMPLETED.name().equals(attempt.getResultStatus())) {
+            // A re-mark that leaves a keyword suggestion on an unreleased attempt reopens a
+            // stored COMPLETED: the after-end cron releases on COMPLETED alone, and would
+            // publish the unconfirmed suggestion (spec decision 5).
+            boolean releasedNow = ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus());
+            if (!AssessmentAttemptResultEnum.COMPLETED.name().equals(attempt.getResultStatus())
+                    || (awaitsKeyword && !releasedNow)) {
                 attempt.setResultStatus(AssessmentAttemptResultEnum.PENDING.name());
             }
             // Nothing automatic will ever release a manually-evaluated attempt
@@ -318,6 +328,15 @@ public class StudentAttemptService {
             return typedAnswerEvaluation.awaitsTeacherGrading(attempt, attempt.getRegistration().getAssessment());
         } catch (Exception e) {
             log.error("Failed to resolve teacher grading for attempt {}: {}", attempt.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    private boolean awaitsKeywordConfirmation(StudentAttempt attempt) {
+        try {
+            return typedAnswerEvaluation.awaitsKeywordConfirmation(attempt, attempt.getRegistration().getAssessment());
+        } catch (Exception e) {
+            log.error("Failed to resolve keyword confirmation for attempt {}: {}", attempt.getId(), e.getMessage());
             return false;
         }
     }
@@ -613,6 +632,7 @@ public class StudentAttemptService {
             if (scope != null) scope.skippedKeys.add(sectionId + ":" + questionId);
             return marksRow.getMarks();
         }
+        boolean released = ReleaseResultStatusEnum.RELEASED.name().equals(studentAttempt.getReportReleaseStatus());
         if (marksRow != null) {
             if (!Objects.isNull(timeTakenInSecs)) {
                 marksRow.setTimeTakenInSeconds(timeTakenInSecs);
@@ -620,14 +640,17 @@ public class StudentAttemptService {
             if (!Objects.isNull(questionWiseResponseData)) {
                 marksRow.setResponseJson(questionWiseResponseData);
             }
+            String source = keywordSource(type, answerStatus, marksRow.getMarksSource(), released);
             if (Math.abs(marksRow.getMarks() - marksObtained) > 0.0001
-                    || !Objects.equals(marksRow.getStatus(), answerStatus)) {
+                    || !Objects.equals(marksRow.getStatus(), answerStatus)
+                    || !Objects.equals(marksRow.getMarksSource(), source)) {
                 // Submission review: the answer's mark changed - an open edit form must notice.
                 marksRow.setRevision(marksRow.getRevision() + 1);
             }
             marksRow.setMarks(marksObtained);
             marksRow.setSection(section);
             marksRow.setStatus(answerStatus);
+            marksRow.setMarksSource(source);
             if (context.dirtyKeys.add(questionId + "|" + sectionId)) {
                 context.dirtyQuestionWiseMarks.add(marksRow);
             }
@@ -642,6 +665,7 @@ public class StudentAttemptService {
                     .responseJson(questionWiseResponseData)
                     .section(section)
                     .status(answerStatus)
+                    .marksSource(keywordSource(type, answerStatus, null, released))
                     .marks(marksObtained).build();
             context.marksRowByQuestionAndSection.put(questionId + "|" + sectionId, created);
             context.dirtyKeys.add(questionId + "|" + sectionId);
@@ -649,6 +673,21 @@ public class StudentAttemptService {
         }
 
         return marksObtained;
+    }
+
+    /**
+     * marks_source of a row the answer key just scored (owner decision 2026-11-19): a long
+     * answer the keyword match scored is KEYWORD, "Needs marking" until a teacher or the AI
+     * confirms it; unscored (PENDING) drops it. A re-mark of a released result never adds
+     * KEYWORD, so old results do not turn "released with unmarked answers". Other types keep
+     * their source.
+     */
+    static String keywordSource(String scoringType, String status, String current, boolean released) {
+        if (!QuestionKinds.isLongAnswer(scoringType)) return current;
+        boolean scored = QuestionResponseEnum.CORRECT.name().equals(status)
+                || QuestionResponseEnum.INCORRECT.name().equals(status);
+        if (!scored) return MarksSource.KEYWORD.equals(current) ? null : current;
+        return released ? current : MarksSource.KEYWORD;
     }
 
     /**
@@ -960,6 +999,7 @@ public class StudentAttemptService {
         // every other screen shows. Summing every row counted old duplicates and rows of
         // questions no longer on the paper. The query above flushed this re-mark's rows.
         Double r6 = r6Total(studentAttempt);
+        holdForKeywordAfterRemark(studentAttempt);
         if (r6 != null) {
             studentAttempt.setTotalMarks(r6);
             if (studentAttempt.getStatus().equals("ENDED")) {
@@ -992,6 +1032,24 @@ public class StudentAttemptService {
         }
 
         studentAttemptRepository.save(studentAttempt);
+    }
+
+    /**
+     * The per-question re-mark can turn an answer into a keyword suggestion (marks_source
+     * KEYWORD) on an attempt already stored COMPLETED but not yet released (e.g. a test
+     * released after its end). Hold it as the submit does: result PENDING, so the after-end
+     * cron (result_status = 'COMPLETED') does not publish the suggestion; the teacher's
+     * confirmation of the last answer completes it again (MarkWriter).
+     */
+    private void holdForKeywordAfterRemark(StudentAttempt attempt) {
+        if (!AssessmentAttemptEnum.ENDED.name().equals(attempt.getStatus())) return;
+        if (!AssessmentAttemptResultEnum.COMPLETED.name().equals(attempt.getResultStatus())) return;
+        if (ReleaseResultStatusEnum.RELEASED.name().equals(attempt.getReportReleaseStatus())) return;
+        if (isManualEvaluationAssessment(attempt) || !awaitsKeywordConfirmation(attempt)) return;
+        attempt.setResultStatus(AssessmentAttemptResultEnum.PENDING.name());
+        if (attempt.getReportReleaseStatus() == null) {
+            attempt.setReportReleaseStatus(ReleaseResultStatusEnum.PENDING.name());
+        }
     }
 
     private Double r6Total(StudentAttempt attempt) {
@@ -1065,8 +1123,12 @@ public class StudentAttemptService {
             }
         }
 
+        boolean released = ReleaseResultStatusEnum.RELEASED.name().equals(studentAttempt.getReportReleaseStatus());
+        String source = keywordSource(questionAsked.getQuestionType(), answerStatus,
+                existing.map(QuestionWiseMarks::getMarksSource).orElse(null), released);
         questionWiseMarksService.updateQuestionWiseMarksForEveryQuestion(
-                assessment, studentAttempt, questionAsked, questionWiseResponseData, null, answerStatus, section, marksObtained
+                assessment, studentAttempt, questionAsked, questionWiseResponseData, null, answerStatus, section,
+                marksObtained, source
         );
 
         return marksObtained;

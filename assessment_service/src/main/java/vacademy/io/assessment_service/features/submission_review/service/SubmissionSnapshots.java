@@ -99,6 +99,13 @@ public class SubmissionSnapshots {
                 : choiceGroups.notCountedByMarks(groups, Review.marksByQuestion(paper, targets));
         boolean cbeOnly = run.active() != null && run.active().cbeOnly(facts.aiEvaluationEnabled());
         String lane = run.active() != null ? run.active().lane() : null;
+        // The automatic CBE-only run of an AI-off test never grades a long answer, so its
+        // failure is not a reason on one (e.g. a keyword suggestion just needs the teacher).
+        // A copy-check run grades every question, and a legacy run without a lane keeps
+        // today's reading.
+        Review.ProcessInfo terminal = run.newestTerminal();
+        boolean terminalCbeOnly = terminal != null && terminal.lane() != null
+                && !"COPY".equalsIgnoreCase(terminal.lane()) && terminal.cbeOnly(facts.aiEvaluationEnabled());
         List<KeyState> out = new ArrayList<>();
         int na = 0, needs = 0, needsAll = 0, drafts = 0, cbeDrafts = 0, marked = 0, checking = 0, failed = 0, nc = 0;
         double total = 0;
@@ -111,7 +118,8 @@ public class SubmissionSnapshots {
             boolean aiChecking = run.active() != null && gradable(key.questionType(), lane, cbeOnly)
                     && (row == null || !MarksSource.isProtected(row.marksSource()));
             String failedReason = null;
-            if (d.state() == MarkState.NEEDS_MARKING && !aiChecking) {
+            if (d.state() == MarkState.NEEDS_MARKING && !aiChecking
+                    && !(terminalCbeOnly && !QuestionKinds.isCbe(key.questionType()))) {
                 failedReason = failedReason(run, key.questionId());
             }
             boolean counted = !notCounted.contains(key.questionId());

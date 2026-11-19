@@ -6,6 +6,8 @@ import org.junit.jupiter.api.Test;
 import vacademy.io.assessment_service.features.assessment.entity.AiQuestionEvaluation;
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration;
+import vacademy.io.assessment_service.features.assessment.entity.QuestionAssessmentSectionMapping;
+import vacademy.io.assessment_service.features.assessment.entity.Section;
 import vacademy.io.assessment_service.features.assessment.entity.StudentAttempt;
 import vacademy.io.assessment_service.features.assessment.repository.QuestionAssessmentSectionMappingRepository;
 import vacademy.io.assessment_service.features.learner_assessment.entity.QuestionWiseMarks;
@@ -218,6 +220,90 @@ class TypedAnswerEvaluationTest {
                 manual.setId("a1");
                 manual.setEvaluationType("MANUAL");
                 assertThat(typed.awaitsTeacherGrading(attempt, manual)).isFalse();
+        }
+
+        private static QuestionWiseMarks longRow(String source, String state, long createdAt) {
+                QuestionWiseMarks m = QuestionWiseMarks.builder().question(question("q1")).sectionId("s1").marks(2)
+                                .status("CORRECT").marksSource(source).markState(state).build();
+                m.setCreatedAt(new java.util.Date(createdAt));
+                return m;
+        }
+
+        private static QuestionAssessmentSectionMapping mapping(String qid, String sectionId, String status) {
+                Section section = new Section();
+                section.setId(sectionId);
+                QuestionAssessmentSectionMapping m = new QuestionAssessmentSectionMapping();
+                m.setQuestion(question(qid));
+                m.setSection(section);
+                m.setStatus(status);
+                return m;
+        }
+
+        /** Owner decision 2026-11-19: a keyword-match score waits for the teacher, like CBE. */
+        @Test
+        void aKeywordScoredLongAnswerHoldsTheAttempt() {
+                Assessment off = new Assessment();
+                off.setId("a1");
+                off.setEvaluationType("AUTO");
+                StudentAttempt attempt = online();
+                when(marks.findByStudentAttemptId("att-1")).thenReturn(List.of(stored("mcq", 1), longRow("KEYWORD", null, 1)));
+                // A paper without a long answer never reads the rows.
+                assertThat(typed.awaitsKeywordConfirmation(attempt, off)).isFalse();
+                verify(marks, never()).findByStudentAttemptId("att-1");
+                when(mappings.existsQuestionOfTypesInAssessment("a1", TypedAnswerEvaluation.KEYWORD_SCORED_TYPES)).thenReturn(true);
+                when(mappings.getQuestionAssessmentSectionMappingByAssessmentId("a1"))
+                                .thenReturn(List.of(mapping("mcq", "s1", "ACTIVE"), mapping("q1", "s1", "ACTIVE")));
+                assertThat(typed.awaitsKeywordConfirmation(attempt, off)).isTrue();
+
+                // No keyword score (no model answer, blank, or an old NULL-source row): no hold.
+                when(marks.findByStudentAttemptId("att-1")).thenReturn(List.of(stored("mcq", 1), longRow(null, null, 1)));
+                assertThat(typed.awaitsKeywordConfirmation(attempt, off)).isFalse();
+
+                // The newest row is the answer: a teacher confirmed it, an older duplicate is stale.
+                when(marks.findByStudentAttemptId("att-1")).thenReturn(List.of(longRow("KEYWORD", null, 1),
+                                longRow("MANUAL", "MARKED", 2)));
+                assertThat(typed.awaitsKeywordConfirmation(attempt, off)).isFalse();
+
+                // KEYWORD on a non-long-answer question is not this rule.
+                QuestionWiseMarks mcq = longRow("KEYWORD", null, 1);
+                mcq.getQuestion().setQuestionType("MCQS");
+                when(marks.findByStudentAttemptId("att-1")).thenReturn(List.of(mcq));
+                assertThat(typed.awaitsKeywordConfirmation(attempt, off)).isFalse();
+
+                // An uploaded copy / MANUAL assessment keeps its own handling.
+                when(marks.findByStudentAttemptId("att-1")).thenReturn(List.of(longRow("KEYWORD", null, 1)));
+                Assessment manual = new Assessment();
+                manual.setId("a1");
+                manual.setEvaluationType("MANUAL");
+                assertThat(typed.awaitsKeywordConfirmation(attempt, manual)).isFalse();
+                assertThat(typed.awaitsKeywordConfirmation(attempt("AUTO", "{\"fileId\":\"sheet-1\",\"sections\":[]}"), off))
+                                .isFalse();
+        }
+
+        /** A keyword row for a question or section removed from the paper mid-test holds nothing (KW-2). */
+        @Test
+        void aKeywordRowOffTheLivePaperDoesNotHold() {
+                Assessment off = new Assessment();
+                off.setId("a1");
+                off.setEvaluationType("AUTO");
+                StudentAttempt attempt = online();
+                when(mappings.existsQuestionOfTypesInAssessment("a1", TypedAnswerEvaluation.KEYWORD_SCORED_TYPES)).thenReturn(true);
+                when(marks.findByStudentAttemptId("att-1")).thenReturn(List.of(longRow("KEYWORD", null, 1)));
+
+                // q1's mapping was removed; another long answer (q2) is still live on the paper.
+                when(mappings.getQuestionAssessmentSectionMappingByAssessmentId("a1"))
+                                .thenReturn(List.of(mapping("q1", "s1", "DELETED"), mapping("q2", "s1", "ACTIVE")));
+                assertThat(typed.awaitsKeywordConfirmation(attempt, off)).isFalse();
+
+                // q1 lives on in another section only: the row's own (question, section) is what counts.
+                when(mappings.getQuestionAssessmentSectionMappingByAssessmentId("a1"))
+                                .thenReturn(List.of(mapping("q1", "s2", "ACTIVE")));
+                assertThat(typed.awaitsKeywordConfirmation(attempt, off)).isFalse();
+
+                // On a live mapping the same row still holds.
+                when(mappings.getQuestionAssessmentSectionMappingByAssessmentId("a1"))
+                                .thenReturn(List.of(mapping("q1", "s1", "ACTIVE"), mapping("q2", "s1", "ACTIVE")));
+                assertThat(typed.awaitsKeywordConfirmation(attempt, off)).isTrue();
         }
 
         @Test

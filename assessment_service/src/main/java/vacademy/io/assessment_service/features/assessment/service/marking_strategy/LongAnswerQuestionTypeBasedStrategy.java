@@ -77,8 +77,8 @@ public class LongAnswerQuestionTypeBasedStrategy extends IQuestionTypeBasedStrat
             double totalMarks = markingData.getTotalMark();
             double negativeMarks = markingData.getNegativeMark();
 
-            // If the student did not attempt the question, return 0 marks
-            if (attemptedAnswer.isEmpty()) {
+            // Not attempted (whitespace counts as blank): 0, PENDING, never a keyword score.
+            if (attemptedAnswer.isBlank()) {
                 return 0.0;
             }
             Pair<Double, String> marksStatusMap = calculateMarksViaMatching(attemptedAnswer, correctAnswer, totalMarks, negativeMarks);

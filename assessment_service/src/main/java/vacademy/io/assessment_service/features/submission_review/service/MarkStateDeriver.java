@@ -47,9 +47,14 @@ public final class MarkStateDeriver {
         if (MarksSource.AI.equals(source)) {
             return new Derived(released ? MarkState.MARKED : MarkState.AI_DRAFT, false, MarkedByKind.AI);
         }
+        // Rule 3b (owner decision 2026-11-19): a keyword-match score is a suggestion until a
+        // teacher or the AI confirms it, released or not. Never isBlank here: the store loads
+        // no response_json for these rows, and the scorer never keyword-scores a blank answer.
+        if (MarksSource.KEYWORD.equals(source)) {
+            return new Derived(MarkState.NEEDS_MARKING, false, MarkedByKind.KEYWORD);
+        }
         // Rule 4
-        if (source != null && (MarksSource.isProtected(source) || MarksSource.AUTO.equals(source)
-                || MarksSource.KEYWORD.equals(source))) {
+        if (source != null && (MarksSource.isProtected(source) || MarksSource.AUTO.equals(source))) {
             return new Derived(MarkState.MARKED, false, byKind(source, MarkState.MARKED, type, false));
         }
         boolean pending = row.status() == null || "PENDING".equals(row.status());
@@ -66,6 +71,8 @@ public final class MarkStateDeriver {
             }
             return new Derived(MarkState.MARKED, false, MarkedByKind.TEACHER_LEGACY);
         }
+        // Rule 7: no source = keyword-scored before submit wrote KEYWORD, or an old hand mark.
+        // Kept MARKED: history is not re-guessed (no backfill).
         if (QuestionKinds.isLongAnswer(type)) {
             if (statusPending) {
                 return new Derived(isBlank(row, key) ? MarkState.NOT_ANSWERED : MarkState.NEEDS_MARKING, false,

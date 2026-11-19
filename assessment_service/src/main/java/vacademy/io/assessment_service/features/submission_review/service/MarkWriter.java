@@ -21,6 +21,7 @@ import vacademy.io.assessment_service.features.assessment.enums.QuestionResponse
 import vacademy.io.assessment_service.features.assessment.enums.ResultTypeEnum;
 import vacademy.io.assessment_service.features.assessment.repository.SectionRepository;
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
+import vacademy.io.assessment_service.features.assessment.service.StudentAttemptService;
 import vacademy.io.assessment_service.features.assessment.service.evaluation_ai.CopyCheckReportDataSender;
 import vacademy.io.assessment_service.features.learner_assessment.entity.QuestionWiseMarks;
 import vacademy.io.assessment_service.features.learner_assessment.repository.QuestionWiseMarksRepository;
@@ -272,6 +273,8 @@ public class MarkWriter {
             List<MarkChange> withBlanks = new ArrayList<>(changes);
             for (SubmissionSnapshots.KeyState k : before.keys()) {
                 if (k.state() != MarkState.NEEDS_MARKING || k.aiChecking() || sent.contains(k.key().key())) continue;
+                // A typed answer with a keyword-match suggestion was answered: never zero it.
+                if (k.derived().markedBy() == MarkedByKind.KEYWORD) continue;
                 withBlanks.add(new MarkChange(attemptId, k.key().sectionId(), k.key().questionId(),
                         Writer.LEGACY_MANUAL_SUBMIT, 0.0, null, null, true, "Left blank on the answer sheet", actor,
                         null, null, false, null, null, null));
@@ -439,8 +442,9 @@ public class MarkWriter {
                     // drafts do not: the teacher's Release was their OK), whatever the stored
                     // result status was before (an old attempt may already say COMPLETED).
                     ? afterSnap.blockers().isEmpty()
-                    // AUTO_AFTER_SUBMISSION: this edit completed the marking, and no teacher
-                    // hid the result ("Hide result again" wins over every automatic release).
+                    // A test released on submit (autoReleasesOnSubmit): this edit completed the
+                    // marking, and no teacher hid the result ("Hide result again" wins over
+                    // every automatic release).
                     : !AttemptResultStatusEnum.COMPLETED.name().equals(state.resultStatus())
                     && AttemptResultStatusEnum.COMPLETED.name().equals(afterSnap.resultStatus())
                     && !state.withheld() && autoReleasesOnSubmit(assessment)) {
@@ -682,10 +686,17 @@ public class MarkWriter {
         }
     }
 
-    /** AUTO_AFTER_SUBMISSION tests release once marked (not OMR, not partner API exams). */
+    /**
+     * Tests whose submit releases the result, so a held attempt releases once marked (not
+     * OMR, not partner API exams): AUTO_AFTER_SUBMISSION, and AUTO_AFTER_ASSESSMENT_END on
+     * a mock / practice test, which never ends (submit releases it; the cron never would).
+     */
     static boolean autoReleasesOnSubmit(Assessment a) {
-        return a != null && ResultTypeEnum.AUTO_AFTER_SUBMISSION.name().equals(a.getResultType())
-                && !Boolean.TRUE.equals(a.getOmrMode()) && !ApiCandidatePolicy.isApiExam(a);
+        if (a == null || Boolean.TRUE.equals(a.getOmrMode()) || ApiCandidatePolicy.isApiExam(a)) return false;
+        if (ResultTypeEnum.AUTO_AFTER_SUBMISSION.name().equals(a.getResultType())) return true;
+        return ResultTypeEnum.AUTO_AFTER_ASSESSMENT_END.name().equals(a.getResultType())
+                && a.getPlayMode() != null
+                && StudentAttemptService.OPEN_ENDED_PLAY_MODES.contains(a.getPlayMode().toUpperCase());
     }
 
     private void clearComparisonCache() {

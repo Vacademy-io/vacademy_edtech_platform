@@ -17,6 +17,8 @@ import org.springframework.test.context.DynamicPropertySource;
 import vacademy.io.assessment_service.features.assessment.repository.StudentAttemptRepository;
 import vacademy.io.assessment_service.features.learner_assessment.repository.QuestionWiseMarksRepository;
 import vacademy.io.assessment_service.features.submission_review.entity.MarkEvent;
+import vacademy.io.assessment_service.features.submission_review.model.MarkState;
+import vacademy.io.assessment_service.features.submission_review.model.MarkedByKind;
 import vacademy.io.assessment_service.features.submission_review.model.MarkingStatus;
 import vacademy.io.assessment_service.features.submission_review.model.SubmissionKind;
 import vacademy.io.assessment_service.features.submission_review.repository.MarkEventRepository;
@@ -123,6 +125,38 @@ class SubmissionReviewDbTest {
         assertThat(snap.maxTotal()).isEqualTo(12.0);
         assertThat(SubmissionSnapshots.marking("ENDED", true, 2.0, snap.counts())).isEqualTo(MarkingStatus.NEEDS_MARKING);
         assertThat(store.submittedAttempts(a)).extracting(SubmissionReviewStore.AttemptState::id).containsExactly(att);
+    }
+
+    @Test
+    void keyword_suggestion_reads_needs_marking_through_the_store_and_history_stays_marked() {
+        // Owner decision 2026-11-19: a keyword-match score (marks_source KEYWORD) is a suggestion.
+        String fresh = question("LONG_ANSWER", 5);
+        String old = question("LONG_ANSWER", 5);
+        sql("INSERT INTO question_wise_marks (id, assessment_id, attempt_id, question_id, section_id, marks, status, marks_source, response_json) VALUES (?, ?, ?, ?, ?, 2.5, 'CORRECT', 'KEYWORD', ?)",
+                UUID.randomUUID().toString(), a, att, fresh, sec, "{\"responseData\":{\"answer\":\"photosynthesis uses light\"}}");
+        // Scored before submit wrote KEYWORD (NULL source): history is not re-guessed.
+        sql("INSERT INTO question_wise_marks (id, assessment_id, attempt_id, question_id, section_id, marks, status) VALUES (?, ?, ?, ?, ?, 5, 'CORRECT')",
+                UUID.randomUUID().toString(), a, att, old, sec);
+        em.flush();
+        em.clear();
+
+        Review.Paper paper = store.paper(a);
+        List<Review.MarkRow> rows = store.rows(List.of(att));
+        var snap = new SubmissionSnapshots().compute(new SubmissionSnapshots.Facts(a, "AUTO", false,
+                SubmissionKind.ONLINE), false, paper, rows, store.runs(att), List.of());
+        var kw = snap.keys().stream().filter(k -> k.key().questionId().equals(fresh)).findFirst().orElseThrow();
+        assertThat(kw.state()).isEqualTo(MarkState.NEEDS_MARKING);
+        assertThat(kw.derived().markedBy()).isEqualTo(MarkedByKind.KEYWORD);
+        var hist = snap.keys().stream().filter(k -> k.key().questionId().equals(old)).findFirst().orElseThrow();
+        assertThat(hist.state()).isEqualTo(MarkState.MARKED);
+        // The suggestion still counts in the total (R6) and blocks a release.
+        assertThat(snap.total()).isEqualTo(2.0 + 2.5 + 5.0);
+        assertThat(snap.blockers()).extracting(k -> k.key().key()).contains(kw.key().key());
+        // Released or not, it stays a suggestion.
+        var released = new SubmissionSnapshots().compute(new SubmissionSnapshots.Facts(a, "AUTO", false,
+                SubmissionKind.ONLINE), true, paper, rows, store.runs(att), List.of());
+        assertThat(released.keys().stream().filter(k -> k.key().questionId().equals(fresh)).findFirst().orElseThrow()
+                .state()).isEqualTo(MarkState.NEEDS_MARKING);
     }
 
     @Test

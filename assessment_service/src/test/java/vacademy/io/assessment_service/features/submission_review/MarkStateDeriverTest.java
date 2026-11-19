@@ -89,6 +89,35 @@ class MarkStateDeriverTest {
                 SubmissionKind.ONLINE, "AUTO", false).state()).isEqualTo(MarkState.NOT_ANSWERED);
     }
 
+    /**
+     * Owner decision 2026-11-19: a keyword-match score (source KEYWORD) needs marking whatever
+     * the release or evaluation type, and never reads as blank (the store loads no JSON for it).
+     */
+    @Test
+    void keyword_source_needs_marking_until_confirmed() {
+        for (boolean released : new boolean[] {false, true}) {
+            for (String evalType : new String[] {"AUTO", "MANUAL"}) {
+                for (String status : new String[] {"CORRECT", "INCORRECT"}) {
+                    var d = derive(row("r", "s1", "q3", -1, status, "KEYWORD", null, 0), LONG,
+                            SubmissionKind.ONLINE, evalType, released);
+                    String as = released + "/" + evalType + "/" + status;
+                    assertThat(d.state()).as(as).isEqualTo(MarkState.NEEDS_MARKING);
+                    assertThat(d.markedBy()).as(as).isEqualTo(MarkedByKind.KEYWORD);
+                    assertThat(d.stored()).as(as).isFalse();
+                }
+            }
+        }
+        // A teacher's confirmation stores MARKED / MANUAL: the stored state wins.
+        var confirmed = derive(row("r", "s1", "q3", 3, "PARTIAL_CORRECT", "MANUAL", "MARKED", 1), LONG,
+                SubmissionKind.ONLINE, "AUTO", false);
+        assertThat(confirmed.state()).isEqualTo(MarkState.MARKED);
+        assertThat(confirmed.markedBy()).isEqualTo(MarkedByKind.TEACHER);
+        // History is untouched: a NULL-source keyword score stays MARKED (rule 7).
+        var legacy = derive(row("r", "s1", "q3", 5, "CORRECT", null, null, 0), LONG, SubmissionKind.ONLINE, "AUTO", true);
+        assertThat(legacy.state()).isEqualTo(MarkState.MARKED);
+        assertThat(legacy.markedBy()).isEqualTo(MarkedByKind.KEYWORD);
+    }
+
     @Test
     void rule8_objective_correct_is_marked_by_answer_key() {
         var d = derive(row("r", "s1", "q1", 2, "CORRECT", null, null, 0), MCQ, SubmissionKind.ONLINE, "AUTO", false);

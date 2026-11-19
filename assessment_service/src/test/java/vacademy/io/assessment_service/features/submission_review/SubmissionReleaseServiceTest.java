@@ -508,4 +508,40 @@ class SubmissionReleaseServiceTest {
         assertThat(r.unmarkedAtRelease()).isEqualTo(1);
         assertThat(savedEvents().get(0).getPayloadJson()).contains("\"count\":1");
     }
+
+    /** Owner decision 2026-11-19: a keyword suggestion blocks Release; "Release anyway" never confirms it. */
+    @Test
+    void keyword_suggestion_blocks_release_and_release_anyway_leaves_it_unmarked() {
+        when(paperOutline.get("A")).thenReturn(new Review.Paper("A", List.of(key("s1", "q1", 1, "MCQS", 2),
+                key("s1", "q2", 2, "LONG_ANSWER", 10))));
+        rows.get(1).setMarks(5);
+        rows.get(1).setStatus("CORRECT");
+        rows.get(1).setMarksSource("KEYWORD");
+        rows.get(1).setResponseJson(null);
+        assertThatThrownBy(() -> service.releaseOne("att-1", true, false, false, "PENDING|0", "teacher-1"))
+                .isInstanceOfSatisfying(SubmissionReviewException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("BLOCKERS"));
+
+        var r = service.releaseOne("att-1", false, true, false, "PENDING|0", "teacher-1");
+        assertThat(r.released()).isTrue();
+        assertThat(r.unmarkedAtRelease()).isEqualTo(1);
+        assertThat(savedEvents().get(0).getEventType()).isEqualTo("RELEASED_WITH_UNMARKED");
+        assertThat(rows.get(1).getMarksSource()).isEqualTo("KEYWORD");
+        assertThat(rows.get(1).getMarkState()).isNull();
+    }
+
+    /** A held practice test on "after the test ends" releases once its marking is complete (no message). */
+    @Test
+    void release_when_marked_releases_an_open_ended_after_end_test() {
+        assessment.setResultType("AUTO_AFTER_ASSESSMENT_END");
+        assessment.setPlayMode("MOCK");
+        rows.get(1).setMarksSource("MANUAL");
+        rows.get(1).setMarkState("MARKED");
+        when(store.attempt("att-1")).thenReturn(pending("COMPLETED", false, null));
+        assertThat(service.releaseWhenMarked("att-1", "teacher-1")).isTrue();
+        verify(mailer, never()).render(anyString(), any(), any());
+
+        assessment.setPlayMode("EXAM");
+        assertThat(service.releaseWhenMarked("att-1", "teacher-1")).isFalse();
+    }
 }
