@@ -112,3 +112,12 @@ html.ui-neon-city .neon-mission__pin-hole { fill: var(--neon-card); }
 html.ui-neon-city .fun-hero--course .fun-hero__eyebrow-row .fun-hero__eyebrow { color: var(--neon-gold); }
 html.ui-neon-city .fun-hero--course:has(.fun-hero__eyebrow-row) { border-color: var(--neon-gold); }
 html.ui-neon-city .fun-hero--course:has(.fun-hero__eyebrow-row) .fun-btn--on-colour { --fun-btn-lip: var(--neon-gold-lip); background: var(--neon-gold); }
+
+/* ── Laptop sidebar ────────────────────────────────────────────────── */
+/* Fun pins the sidebar at 221px (13.8125rem) for Nunito. Manrope runs wider, so
+   at that width "Learning Center", "Assessments" and longer institute names were
+   cut to "Learning Ce…". Neon City keeps the app's own 17rem (272px). */
+html.ui-neon-city .group\/sidebar-wrapper { --sidebar-width: 17rem !important; }
+html.ui-neon-city .fun-sidebar [data-sidebar="menu-button"] { font-weight: 700; }
+html.ui-neon-city .fun-sidebar [data-sidebar="menu-button"][data-active="true"] { font-weight: 800; }
+html.ui-neon-city .fun-sidebar [data-sidebar="header"] [data-sidebar="menu-button"] { font-weight: 800; }
