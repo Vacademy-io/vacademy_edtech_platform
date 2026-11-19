@@ -553,6 +553,32 @@ public class StockOpsReadRepository {
     }
 
     /**
+     * Units that came in at the location (every movement up: receipts, transfers in, returns,
+     * adjustments up) since {@code since}, by variant. Read in the caller's snapshot, so a later
+     * read that is higher means stock came in after the first one, whatever its timestamp.
+     */
+    public Map<String, Integer> incomingSince(String instituteId, String locationId,
+                                              Collection<String> packageSessionIds, LocalDateTime since) {
+        if (packageSessionIds == null || packageSessionIds.isEmpty()) {
+            return Map.of();
+        }
+        List<?> rows = entityManager.createNativeQuery("""
+                        SELECT m.package_session_id, SUM(m.quantity_delta) FROM stock_movement m
+                        WHERE m.institute_id = :instituteId AND m.location_id = :locationId
+                          AND m.package_session_id IN (:ids) AND m.quantity_delta > 0 AND m.created_at >= :since
+                        GROUP BY m.package_session_id
+                        """)
+                .setParameter("instituteId", instituteId).setParameter("locationId", locationId)
+                .setParameter("ids", packageSessionIds).setParameter("since", since).getResultList();
+        Map<String, Integer> out = new HashMap<>();
+        for (Object row : rows) {
+            Object[] r = (Object[]) row;
+            out.put(String.valueOf(r[0]), intOr(r[1], 0));
+        }
+        return out;
+    }
+
+    /**
      * Packed parcel lines at the location that may have been packed at some moment since
      * {@code since}: PACKED now, unpacked after it, or with a SALE movement (ship or undo) after
      * it. Quantity units by variant (a one-of-a-kind piece is RESERVED and counted as a piece). The

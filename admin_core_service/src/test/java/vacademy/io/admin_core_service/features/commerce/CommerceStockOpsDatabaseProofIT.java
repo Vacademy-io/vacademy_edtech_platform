@@ -1392,7 +1392,7 @@ class CommerceStockOpsDatabaseProofIT {
         // W1 posts a difference with limits unset: a PIN for any difference, on the review it approves.
         long before = movements();
         String postKey = key();
-        StockOpsDtos.CountReview mainSeen = body(counts.review(w1, inst, main.id()));
+        StockOpsDtos.CountReview mainSeen = body(counts.review(w1, inst, main.id(), true));
         assertEquals("APPROVAL_REQUIRED", code(() -> counts.post(w1, inst, main.id(), zero(postKey, null, mainSeen))));
         assertEquals("PIN_INVALID", code(() -> counts.post(w1, inst, main.id(),
                 zero(postKey, pin(managerId, WRONG_PIN), mainSeen))));
@@ -2223,7 +2223,7 @@ class CommerceStockOpsDatabaseProofIT {
         int trays = onHand(l1, tray);
         CountView open = openCount(w1, l1, "COUNT", corner, null);
         countLines(w1, open.id(), set(plate, onHand(l1, plate) + 1));
-        StockOpsDtos.CountReview seen = body(counts.review(w1, inst, open.id()));
+        StockOpsDtos.CountReview seen = body(counts.review(w1, inst, open.id(), true));
         assertEquals(trays, seen.zeroWriteOff().items().get(tray), "the review shows what ZERO writes off");
         String postKey = key();
         assertEquals("APPROVAL_REQUIRED", code(() -> counts.post(w1, inst, open.id(), zero(postKey, null, seen))));
@@ -2245,7 +2245,7 @@ class CommerceStockOpsDatabaseProofIT {
         receive(w1Id, l1, tray, 2, null);
         CountView second = openCount(manager, l1, "COUNT", corner, null);
         countLines(manager, second.id(), set(plate, onHand(l1, plate)));
-        StockOpsDtos.CountReview before2 = body(counts.review(manager, inst, second.id()));
+        StockOpsDtos.CountReview before2 = body(counts.review(manager, inst, second.id(), true));
         receive(w1Id, l1, tray, 1, null);
         long before = movements();
         assertEquals("COUNT_CHANGED", code(() -> counts.post(manager, inst, second.id(), zero(key(), null, before2))));
@@ -2253,14 +2253,14 @@ class CommerceStockOpsDatabaseProofIT {
         assertEquals(3, onHand(l1, tray), "the tray just received is not written off");
 
         // C. A new item comes into the count's scope since the review: refused.
-        StockOpsDtos.CountReview before3 = body(counts.review(manager, inst, second.id()));
+        StockOpsDtos.CountReview before3 = body(counts.review(manager, inst, second.id(), true));
         String bowl = product("steel-bowl", "Steel bowl", null, "BOWL", "150.00", false, "PCS", 1, List.of(corner));
         receive(w1Id, l1, bowl, 4, null);
         assertEquals("COUNT_CHANGED", code(() -> counts.post(manager, inst, second.id(), zero(key(), null, before3))));
         assertEquals(4, onHand(l1, bowl));
 
         // D. The write-off sent back must be the review's own (it is checked against the fingerprint).
-        StockOpsDtos.CountReview latest = body(counts.review(manager, inst, second.id()));
+        StockOpsDtos.CountReview latest = body(counts.review(manager, inst, second.id(), true));
         Map<String, Integer> inflated = new HashMap<>(latest.zeroWriteOff().items());
         inflated.put(tray, 99);
         assertEquals("VALIDATION", code(() -> counts.post(manager, inst, second.id(), new StockOpsDtos.CountPostRequest(
@@ -2269,6 +2269,30 @@ class CommerceStockOpsDatabaseProofIT {
         assertEquals("POSTED", body(counts.post(manager, inst, second.id(), zero(key(), null, latest))).status());
         assertEquals(0, onHand(l1, tray));
         assertEquals(0, onHand(l1, bowl));
+
+        // E. A sale and a delivery of the same uncounted item: on hand is not above the review, but
+        // stock came in after it, and it is not written off under that review.
+        receive(w1Id, l1, tray, 5, null);
+        CountView third = openCount(manager, l1, "COUNT", corner, null);
+        countLines(manager, third.id(), set(plate, onHand(l1, plate)));
+        StockOpsDtos.CountReview reviewedFive = body(counts.review(manager, inst, third.id(), true));
+        assertEquals(5, reviewedFive.zeroWriteOff().items().get(tray));
+        String saleSession = openSession();
+        sell(saleSession, tray, 4, "1000.00");
+        closeSession(saleSession);
+        receive(w1Id, l1, tray, 3, null);
+        assertEquals(4, onHand(l1, tray), "4 is not more than the 5 reviewed");
+        long beforeE = movements();
+        assertEquals("COUNT_CHANGED", code(() -> counts.post(manager, inst, third.id(), zero(key(), null, reviewedFive))));
+        assertEquals(beforeE, movements(), "the 3 just received are not written off");
+        // A ZERO post needs the whole review: the fingerprint with its uncounted part, and the write-off.
+        StockOpsDtos.CountReview reviewedFour = body(counts.review(manager, inst, third.id(), true));
+        assertEquals("VALIDATION", code(() -> counts.post(manager, inst, third.id(), new StockOpsDtos.CountPostRequest(
+                key(), "ZERO", null, null, reviewedFour.fingerprint().split("\\.")[0], reviewedFour.zeroWriteOff()))));
+        assertEquals("VALIDATION", code(() -> counts.post(manager, inst, third.id(), new StockOpsDtos.CountPostRequest(
+                key(), "ZERO", null, null, reviewedFour.fingerprint()))));
+        assertEquals("POSTED", body(counts.post(manager, inst, third.id(), zero(key(), null, reviewedFour))).status());
+        assertEquals(0, onHand(l1, tray));
 
         // SKIP: a receipt of an uncounted item after the review does not stop the post.
         CountView skip = openCount(manager, l1, "COUNT", corner, null);

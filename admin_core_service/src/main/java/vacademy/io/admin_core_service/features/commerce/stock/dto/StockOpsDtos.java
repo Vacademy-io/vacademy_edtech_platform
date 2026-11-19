@@ -213,7 +213,8 @@ public final class StockOpsDtos {
      * {@code uncounted: ZERO} also one where more would be written off than was reviewed.
      * {@code reviewed_zero}: the review's {@code zero_write_off}, sent back with a ZERO post, so a
      * sale since the review posts (writing off only what is left) while stock that arrived since
-     * is refused. A manager's PIN on a ZERO post needs {@code review_fingerprint}.
+     * is refused. A ZERO post needs both {@code review_fingerprint} (with its uncounted part) and
+     * {@code reviewed_zero}.
      */
     public record CountPostRequest(String clientRequestId, String uncounted, Approval approval,
                                    Boolean confirmMeasured, String reviewFingerprint, ZeroWriteOff reviewedZero) {
@@ -231,11 +232,17 @@ public final class StockOpsDtos {
 
     /**
      * What {@code uncounted: ZERO} would write off at the review: each uncounted item's stock here
-     * ({@code items}, package_session_id to units) and the pieces nobody scanned ({@code pieces}).
+     * ({@code items}, package_session_id to units), the pieces nobody scanned ({@code pieces}) and,
+     * per item, the units that had come in at the location since the count started
+     * ({@code incoming}): stock that comes in after the review is never written off.
      */
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record ZeroWriteOff(Map<String, Integer> items, List<String> pieces) {
+    public record ZeroWriteOff(Map<String, Integer> items, List<String> pieces, Map<String, Integer> incoming) {
+
+        public ZeroWriteOff(Map<String, Integer> items, List<String> pieces) {
+            this(items, pieces, null);
+        }
     }
 
     /** {@code POST /counts/{id}/lines/{lineId}/accept}: the counted quantity the manager looked at. */

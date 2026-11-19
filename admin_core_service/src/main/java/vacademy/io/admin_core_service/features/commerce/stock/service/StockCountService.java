@@ -657,8 +657,16 @@ public class StockCountService {
     // ================================================================== review
 
     public CountReview review(String instituteId, Caller caller, String countId) {
-        // On the primary: a post binds to this review, so it must not lag behind the till (a replica can).
-        return transaction.execute(tx -> {
+        return review(instituteId, caller, countId, false);
+    }
+
+    /**
+     * {@code forPost}: the review the Post dialog binds a post to is read on the primary, so it
+     * does not lag behind the till (a replica can). Every other review (the panel, a posted count)
+     * stays on the replica.
+     */
+    public CountReview review(String instituteId, Caller caller, String countId, boolean forPost) {
+        return (forPost ? transaction : readOnly).execute(tx -> {
             StockCount count = get(instituteId, countId);
             requireNotBlind(instituteId, count, caller);
             boolean recount = StockCountKind.RECOUNT.name().equals(count.getKind());
@@ -911,9 +919,14 @@ public class StockCountService {
         List<String> zeroPieces = new ArrayList<>(StockCountMath.pieceSets(pieceHere, scanned.keySet(),
                 scannedVariants, UncountedChoice.ZERO).missing());
         zeroPieces.sort(null);
-        ZeroWriteOff zeroWriteOff = new ZeroWriteOff(zeroItems, zeroPieces);
+        // What had come in of each uncounted item since the count started, in this snapshot: a post
+        // whose figure is higher had stock come in after the review (even if a sale hid it on hand).
+        Map<String, Integer> incoming = new TreeMap<>(readRepository.incomingSince(instituteId, locationId,
+                zeroItems.keySet(), count.getStartedAt()));
+        zeroItems.keySet().forEach(variant -> incoming.putIfAbsent(variant, 0));
+        ZeroWriteOff zeroWriteOff = new ZeroWriteOff(zeroItems, zeroPieces, incoming);
         String print = sha256(fingerprint.toString());
-        String zero = zeroHash(zeroItems, zeroPieces);
+        String zero = zeroHash(zeroWriteOff);
         CountReview review = new CountReview(count.getId(), LocalDateTime.now().toString(), reviewLines, uncounted,
                 missing, found, misplaced, notInStock, reserved, arrived, totals, over, needsRecount.size(),
                 !measured.isEmpty(), print + "." + zero, zeroWriteOff);
@@ -942,13 +955,22 @@ public class StockCountService {
                 zeroWriteOff);
     }
 
-    /** The uncounted half of a review's fingerprint: items (sorted) with their stock, then pieces (sorted). */
-    static String zeroHash(Map<String, Integer> items, Collection<String> pieces) {
+    /**
+     * The uncounted half of a review's fingerprint: items (sorted) with their stock, then pieces
+     * (sorted), then what had come in of each item.
+     */
+    static String zeroHash(ZeroWriteOff zero) {
+        return zeroHash(zero.items(), zero.pieces(), zero.incoming());
+    }
+
+    static String zeroHash(Map<String, Integer> items, Collection<String> pieces, Map<String, Integer> incoming) {
         StringBuilder text = new StringBuilder();
         new TreeMap<>(items == null ? Map.<String, Integer>of() : items)
                 .forEach((variant, units) -> text.append(variant).append(':').append(units).append(';'));
         new TreeSet<>(pieces == null ? List.<String>of() : pieces)
                 .forEach(pieceId -> text.append('P').append(pieceId).append(';'));
+        new TreeMap<>(incoming == null ? Map.<String, Integer>of() : incoming)
+                .forEach((variant, units) -> text.append('+').append(variant).append(':').append(units).append(';'));
         return sha256(text.toString());
     }
 
@@ -1090,10 +1112,11 @@ public class StockCountService {
         Approval approval = request.approval();
         boolean approvalGiven = approval != null && StockTransferService.blankToNull(approval.approverUserId()) != null
                 && StockTransferService.blankToNull(approval.pin()) != null;
-        if (choice == UncountedChoice.ZERO && approvalGiven && reviewed == null) {
-            // The manager approves what the review showed: a ZERO post is bound to it.
-            throw new InvalidRequestException("VALIDATION: review the count first; a manager's approval of a ZERO post "
-                    + "needs review_fingerprint");
+        if (choice == UncountedChoice.ZERO && (reviewed == null || reviewed.indexOf('.') < 0 || reviewedZero == null
+                || reviewedZero.incoming() == null)) {
+            // ZERO writes stock off: it is bound to the review that showed what it writes off.
+            throw new InvalidRequestException("VALIDATION: review the count first; a ZERO post needs the review's "
+                    + "review_fingerprint and reviewed_zero");
         }
         requireReviewed(before, reviewed, choice, reviewedZero);
         requirePostable(before, manager, confirmMeasured);
@@ -1128,7 +1151,8 @@ public class StockCountService {
                         "this count has differences above your limit and needs a manager");
             }
             if (approvedBy != null && (!model.fingerprint().equals(before.fingerprint())
-                    || (choice == UncountedChoice.ZERO && writeOffGrew(model.zero(), before.zero())))) {
+                    || (choice == UncountedChoice.ZERO && (writeOffGrew(model.zero(), before.zero())
+                            || stockCameIn(model.zero(), before.zero()))))) {
                 // The manager approved the lines as they were; lines saved since were not approved.
                 throw new CommerceAccessDeniedException(StockTransferService.APPROVAL_REQUIRED,
                         "the count changed after the manager approved it; review it and approve again");
@@ -1203,15 +1227,32 @@ public class StockCountService {
         if (reviewedZero == null) {
             grew = !zeroHalf.equals(model.zeroPrint());
         } else {
-            if (!zeroHalf.equals(zeroHash(reviewedZero.items(), reviewedZero.pieces()))) {
+            if (!zeroHalf.equals(zeroHash(reviewedZero))) {
                 throw new InvalidRequestException("VALIDATION: reviewed_zero is not the write-off of that review");
             }
-            grew = writeOffGrew(model.zero(), reviewedZero);
+            grew = writeOffGrew(model.zero(), reviewedZero) || stockCameIn(model.zero(), reviewedZero);
         }
         if (grew) {
             throw new ConflictException("COUNT_CHANGED: stock of items not counted went up, or items came into the "
                     + "count, since it was reviewed; review it again");
         }
+    }
+
+    /**
+     * Whether stock of an item ZERO now writes off came in after the review (a receipt, a transfer
+     * in, a return, an adjustment up): its incoming units now are more than the review read. A sale
+     * and a delivery of the same item could otherwise hide each other in the on-hand figure, and
+     * the delivery would be written off.
+     */
+    static boolean stockCameIn(ZeroWriteOff now, ZeroWriteOff reviewed) {
+        Map<String, Integer> before = reviewed.incoming() == null ? Map.of() : reviewed.incoming();
+        Map<String, Integer> after = now.incoming() == null ? Map.of() : now.incoming();
+        for (String variant : now.items().keySet()) {
+            if (after.getOrDefault(variant, 0) > before.getOrDefault(variant, 0)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** 409 when a line needs a recount, or a large measured difference has no manager's confirm. */

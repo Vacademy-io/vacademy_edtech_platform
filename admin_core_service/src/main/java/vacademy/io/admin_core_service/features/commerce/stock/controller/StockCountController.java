@@ -110,12 +110,21 @@ public class StockCountController {
                 lineId, request));
     }
 
+    /** {@code forPost=true}: the review the Post dialog binds a post to (read on the primary). */
     @GetMapping("/{countId}/review")
     public ResponseEntity<CountReview> review(@RequestAttribute("user") CustomUserDetails user,
                                               @RequestParam("instituteId") String instituteId,
-                                              @PathVariable("countId") String countId) {
+                                              @PathVariable("countId") String countId,
+                                              @RequestParam(value = "forPost", required = false, defaultValue = "false")
+                                              boolean forPost) {
         StockCount count = guarded(user, instituteId, countId, StockOpsAccess.STOCK_STAFF);
-        return ResponseEntity.ok(countService.review(instituteId, access.caller(user, instituteId), count.getId()));
+        return ResponseEntity.ok(countService.review(instituteId, access.caller(user, instituteId), count.getId(),
+                forPost));
+    }
+
+    /** The panel's review (the replica). */
+    public ResponseEntity<CountReview> review(CustomUserDetails user, String instituteId, String countId) {
+        return review(user, instituteId, countId, false);
     }
 
     @PostMapping("/{countId}/post")

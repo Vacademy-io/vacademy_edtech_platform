@@ -39,9 +39,23 @@ class StockCountZeroWriteOffTest {
 
     @Test
     void theHashIsTheSameWhateverTheOrderAndChangesWithAnyUnit() {
-        assertEquals(StockCountService.zeroHash(Map.of("b", 1, "a", 2), List.of("p2", "p1")),
-                StockCountService.zeroHash(new java.util.TreeMap<>(Map.of("a", 2, "b", 1)), List.of("p1", "p2")));
-        assertNotEquals(StockCountService.zeroHash(Map.of("a", 2), List.of()),
-                StockCountService.zeroHash(Map.of("a", 1), List.of()));
+        assertEquals(StockCountService.zeroHash(Map.of("b", 1, "a", 2), List.of("p2", "p1"), Map.of("a", 0, "b", 3)),
+                StockCountService.zeroHash(new java.util.TreeMap<>(Map.of("a", 2, "b", 1)), List.of("p1", "p2"),
+                        new java.util.TreeMap<>(Map.of("b", 3, "a", 0))));
+        assertNotEquals(StockCountService.zeroHash(Map.of("a", 2), List.of(), Map.of()),
+                StockCountService.zeroHash(Map.of("a", 1), List.of(), Map.of()));
+        assertNotEquals(StockCountService.zeroHash(Map.of("a", 2), List.of(), Map.of("a", 0)),
+                StockCountService.zeroHash(Map.of("a", 2), List.of(), Map.of("a", 3)), "what came in is bound too");
+    }
+
+    /** Re-check R1: reviewed 5, sold 4, received 3 → on hand 4 is not more, but stock came in. */
+    @Test
+    void aSaleAndADeliveryOfTheSameItemDoNotHideEachOther() {
+        ZeroWriteOff reviewed = new ZeroWriteOff(Map.of("ps-tray", 5), List.of(), Map.of("ps-tray", 5));
+        ZeroWriteOff soldAndRestocked = new ZeroWriteOff(Map.of("ps-tray", 4), List.of(), Map.of("ps-tray", 8));
+        assertFalse(StockCountService.writeOffGrew(soldAndRestocked, reviewed));
+        assertTrue(StockCountService.stockCameIn(soldAndRestocked, reviewed));
+        ZeroWriteOff soldOnly = new ZeroWriteOff(Map.of("ps-tray", 1), List.of(), Map.of("ps-tray", 5));
+        assertFalse(StockCountService.stockCameIn(soldOnly, reviewed), "a sale alone still posts");
     }
 }
