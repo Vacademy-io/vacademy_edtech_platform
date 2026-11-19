@@ -1,5 +1,6 @@
 import authenticatedAxiosInstance from '@/lib/auth/axiosInstance';
 import {
+    GET_BUILT_IN_INVOICE_TEMPLATE,
     GET_INSITITUTE_SETTINGS,
     GET_INSTITUTE_USERS,
     GET_INVOICE_NUMBERING_STATE,
@@ -526,6 +527,15 @@ export const saveInvoiceSettings = async (data: InvoiceSettingsData): Promise<vo
 };
 
 /** Default template ids per type, read fresh from the stored setting. */
+/**
+ * The built-in invoice PDF layout (HTML, placeholders unfilled). It is what an institute with no
+ * invoice PDF template of its own prints, so Settings shows it and can save an editable copy.
+ */
+export const fetchBuiltInInvoiceTemplate = async (): Promise<string> => {
+    const response = await authenticatedAxiosInstance.get<{ html?: string }>(GET_BUILT_IN_INVOICE_TEMPLATE);
+    return response.data?.html ?? '';
+};
+
 export const fetchDefaultInvoiceTemplateIds = async (): Promise<
     Record<InvoiceTemplateType, string | null>
 > => {

@@ -60,6 +60,14 @@
         "deleting": "Suppression…",
         "delete": "Supprimer"
     },
+    "builtIn": {
+        "name": "Mise en page de facture intégrée",
+        "description": "Vos factures utilisent cette mise en page car vous n'avez pas de modèle PDF de facture. Personnaliser enregistre une copie modifiable ; les factures restent identiques tant que vous ne la modifiez pas.",
+        "customize": "Personnaliser",
+        "copyName": "Invoice (Standard Layout)",
+        "customized": "Copie enregistrée, ouverture de l'éditeur…",
+        "loadFailed": "Impossible de charger la mise en page intégrée. Veuillez réessayer."
+    },
     "htmlEditor": {
         "back": "Retour",
         "namePlaceholder": "Nom du modèle",

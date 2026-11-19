@@ -1373,6 +1373,8 @@ export const GET_INVOICES_BULK_DOWNLOAD = (instituteId: string) =>
     `${BASE_URL}/admin-core-service/v1/invoices/institute/${instituteId}/bulk-download`;
 export const GET_INVOICE_DOWNLOAD_URL = (invoiceId: string) =>
     `${BASE_URL}/admin-core-service/v1/invoices/${invoiceId}/download`;
+// The built-in invoice PDF layout every institute without its own INVOICE template prints.
+export const GET_BUILT_IN_INVOICE_TEMPLATE = `${BASE_URL}/admin-core-service/v1/invoices/built-in-template`;
 export const GET_INVOICE_BY_ID = (invoiceId: string) =>
     `${BASE_URL}/admin-core-service/v1/invoices/${invoiceId}`;
 export const POST_ADMIN_CREATE_INVOICE = `${BASE_URL}/admin-core-service/v1/invoices/admin/create`;

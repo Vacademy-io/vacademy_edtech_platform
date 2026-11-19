@@ -38,7 +38,12 @@ import {
 } from '@/services/message-template-service';
 import { TemplatePreview } from '@/components/templates/shared/TemplatePreview';
 import { toast } from 'sonner';
-import { fetchDefaultInvoiceTemplateIds, setDefaultInvoiceTemplate } from './invoice-settings-service';
+import { extractVariables, toPreviewHtml } from '@/components/templates/html/html-template-utils';
+import {
+    fetchBuiltInInvoiceTemplate,
+    fetchDefaultInvoiceTemplateIds,
+    setDefaultInvoiceTemplate,
+} from './invoice-settings-service';
 
 /** Separate from the settings form's ['invoice-settings'] query so refreshing it never resets unsaved form edits. */
 const DEFAULT_TEMPLATES_QUERY_KEY = ['invoice-default-template-ids'];
@@ -80,6 +85,10 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
     const [deleteId, setDeleteId] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isBuiltInBusy, setIsBuiltInBusy] = useState(false);
+    // Shown in a sandboxed iframe: the layout's own <style> (body, *, @page rules) would
+    // otherwise apply to the whole admin page while the preview is open.
+    const [builtInPreviewHtml, setBuiltInPreviewHtml] = useState<string | null>(null);
 
     const queryClient = useQueryClient();
     const { data: defaultIds } = useQuery({
@@ -157,6 +166,46 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
             toast.error(t('toasts.generateSampleFailed'));
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    // With no INVOICE template of its own the institute prints the built-in layout. It lives in
+    // the backend, not in the templates list, so it is shown here and can be saved as an
+    // editable copy (identical, so invoices look the same until the copy is changed).
+    const handlePreviewBuiltIn = async () => {
+        setIsBuiltInBusy(true);
+        try {
+            const html = await fetchBuiltInInvoiceTemplate();
+            if (!html.trim()) throw new Error('Built-in invoice layout is empty');
+            setBuiltInPreviewHtml(toPreviewHtml(html));
+        } catch (error) {
+            console.error('Error loading built-in invoice layout:', error);
+            toast.error(t('builtIn.loadFailed'));
+        } finally {
+            setIsBuiltInBusy(false);
+        }
+    };
+
+    const handleCustomizeBuiltIn = async () => {
+        setIsBuiltInBusy(true);
+        try {
+            const html = await fetchBuiltInInvoiceTemplate();
+            if (!html.trim()) throw new Error('Built-in invoice layout is empty');
+            const created = await createMessageTemplate({
+                name: t('builtIn.copyName'),
+                type: 'INVOICE',
+                subject: 'Invoice {{invoice_number}}',
+                content: html,
+                variables: extractVariables(html),
+                templateType: 'INVOICE',
+            });
+            toast.success(t('builtIn.customized'));
+            navigate({ to: '/templates/edit/$templateId', params: { templateId: created.id } });
+        } catch (error) {
+            console.error('Error copying built-in invoice layout:', error);
+            toast.error(t('builtIn.loadFailed'));
+        } finally {
+            setIsBuiltInBusy(false);
         }
     };
 
@@ -241,6 +290,42 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                     <div className="flex items-center justify-center py-8">
                         <CircleNotch className="size-5 animate-spin" />
                         <span className="ms-2 text-sm">{t('loading')}</span>
+                    </div>
+                ) : templates.length === 0 && type === 'INVOICE' ? (
+                    <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-subtitle font-semibold">{t('builtIn.name')}</span>
+                                <Badge variant="secondary" title={t('table.defaultBadgeTitle')}>
+                                    {t('table.defaultBadge')}
+                                </Badge>
+                            </div>
+                            <p className="text-caption text-muted-foreground">{t('builtIn.description')}</p>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={handlePreviewBuiltIn}
+                                disabled={isBuiltInBusy}
+                            >
+                                <Eye className="me-2 size-4" />
+                                {t('table.actions.preview')}
+                            </Button>
+                            <MyButton
+                                buttonType="primary"
+                                scale="medium"
+                                onClick={handleCustomizeBuiltIn}
+                                disable={isBuiltInBusy}
+                            >
+                                {isBuiltInBusy ? (
+                                    <CircleNotch className="mr-2 size-4 animate-spin" />
+                                ) : (
+                                    <PencilSimple className="mr-2 size-4" />
+                                )}
+                                {t('builtIn.customize')}
+                            </MyButton>
+                        </div>
                     </div>
                 ) : templates.length === 0 ? (
                     <div className="rounded-lg border border-dashed py-8 text-center">
@@ -390,6 +475,24 @@ export const InvoiceTemplatesSection: React.FC<InvoiceTemplatesSectionProps> = (
                     }}
                 />
             )}
+
+            <Dialog
+                open={builtInPreviewHtml !== null}
+                onOpenChange={(open) => !open && setBuiltInPreviewHtml(null)}
+            >
+                <DialogContent className="flex h-dialog-tall w-dialog-xl flex-col">
+                    <DialogHeader>
+                        <DialogTitle>{t('builtIn.name')}</DialogTitle>
+                        <DialogDescription>{t('builtIn.description')}</DialogDescription>
+                    </DialogHeader>
+                    <iframe
+                        title={t('builtIn.name')}
+                        srcDoc={builtInPreviewHtml ?? ''}
+                        sandbox=""
+                        className="w-full flex-1 rounded-md border bg-white"
+                    />
+                </DialogContent>
+            </Dialog>
 
             <Dialog open={!!deleteId} onOpenChange={(open) => !open && setDeleteId(null)}>
                 <DialogContent className="max-w-md">
