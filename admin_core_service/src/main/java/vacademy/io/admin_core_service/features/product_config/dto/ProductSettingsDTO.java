@@ -64,6 +64,9 @@ public class ProductSettingsDTO {
     /** How this product's self sign-up differs from the default. None = the default. */
     private SignupRulesDTO signupRules;
 
+    /** Links the sign-up welcome mail lists, in order (the product's video tutorials). None = no list. */
+    private java.util.List<ProductLinkDTO> welcomeLinks;
+
     private String updatedBy;
     private String updatedAt;
 }
