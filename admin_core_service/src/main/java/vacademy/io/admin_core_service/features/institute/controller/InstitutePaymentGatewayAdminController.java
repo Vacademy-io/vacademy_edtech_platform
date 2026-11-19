@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
+import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.institute.dto.PaymentGatewayMappingDTO;
 import vacademy.io.admin_core_service.features.institute.dto.PaymentGatewayMappingUpsertRequest;
 import vacademy.io.admin_core_service.features.institute.service.InstitutePaymentGatewayMappingService;
@@ -34,6 +35,11 @@ import java.util.Map;
  *
  * Secrets are masked on read and merge-on-write so the full value never has to
  * round-trip through the browser after the first save.
+ *
+ * Every write lands in the admin activity log ({@code entity_type = PAYMENT_GATEWAY}):
+ * who added, edited, deactivated or re-activated which gateway, with the masked
+ * pre-change state as {@code before_payload}. Request bodies are captured in REDACTED
+ * mode; the gateway credential keys are on the audit redactor's list.
  */
 @RestController
 @RequestMapping("/admin-core-service/v1/institute/payment-gateways")
@@ -52,6 +58,11 @@ public class InstitutePaymentGatewayAdminController {
     }
 
     @PostMapping
+    @Auditable(
+            entityType = "PAYMENT_GATEWAY",
+            action = "CREATE",
+            entityIdExpr = "#result?.body?.id",
+            descriptionExpr = "'added ' + #result?.body?.vendor + ' payment gateway'")
     public ResponseEntity<PaymentGatewayMappingDTO> create(
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId,
@@ -61,6 +72,17 @@ public class InstitutePaymentGatewayAdminController {
     }
 
     @PutMapping("/{mappingId}")
+    @Auditable(
+            entityType = "PAYMENT_GATEWAY",
+            action = "UPDATE",
+            // A PUT may also carry a status; a status flip is logged as the flip, not an edit.
+            actionExpr = "#before == null || #before.status == #result?.body?.status ? 'UPDATE'"
+                    + " : (#result?.body?.status == 'ACTIVE' ? 'MAKE_ACTIVE' : 'DEACTIVATE')",
+            entityIdExpr = "#mappingId",
+            descriptionExpr = "(#before == null || #before.status == #result?.body?.status ? 'updated credentials of '"
+                    + " : (#result?.body?.status == 'ACTIVE' ? 're-activated ' : 'deactivated '))"
+                    + " + #result?.body?.vendor + ' payment gateway'",
+            captureBefore = "@institutePaymentGatewayMappingService.auditSnapshot(#instituteId, #mappingId)")
     public ResponseEntity<PaymentGatewayMappingDTO> update(
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId,
@@ -71,6 +93,14 @@ public class InstitutePaymentGatewayAdminController {
     }
 
     @DeleteMapping("/{mappingId}")
+    @Auditable(
+            entityType = "PAYMENT_GATEWAY",
+            action = "DEACTIVATE",
+            // Deactivating a gateway that is already inactive changes nothing; do not log it.
+            conditionExpr = "#before == null || #before.status != 'INACTIVE'",
+            entityIdExpr = "#mappingId",
+            descriptionExpr = "'deactivated ' + (#before?.vendor ?: 'a') + ' payment gateway'",
+            captureBefore = "@institutePaymentGatewayMappingService.auditSnapshot(#instituteId, #mappingId)")
     public ResponseEntity<Map<String, Object>> deactivate(
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId,

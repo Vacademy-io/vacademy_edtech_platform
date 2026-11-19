@@ -250,6 +250,25 @@ public class InstitutePaymentGatewayMappingService {
         institutePaymentGatewayMappingRepository.save(mapping);
     }
 
+    // ── Audit log support ─────────────────────────────────────────────────────
+
+    /**
+     * Masked pre-change state of one mapping, for the admin activity log's
+     * before/after diff ({@code @Auditable(captureBefore = ...)}). Secrets are masked
+     * exactly as in the admin list. Returns null instead of throwing when the row is
+     * missing or belongs to another institute: the audited call then fails on its own
+     * and no audit row is written.
+     */
+    public PaymentGatewayMappingDTO auditSnapshot(String instituteId, String mappingId) {
+        if (instituteId == null || mappingId == null) {
+            return null;
+        }
+        return institutePaymentGatewayMappingRepository.findById(mappingId)
+                .filter(mapping -> instituteId.equals(mapping.getInstituteId()))
+                .map(this::toMaskedDto)
+                .orElse(null);
+    }
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     private PaymentGatewayMappingDTO toMaskedDto(InstitutePaymentGatewayMapping mapping) {
