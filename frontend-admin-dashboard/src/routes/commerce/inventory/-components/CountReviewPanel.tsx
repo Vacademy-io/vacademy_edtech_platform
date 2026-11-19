@@ -11,7 +11,7 @@ import { acceptCountLine } from '../-shared/inventory-api';
 import { useCountReview, useInventoryAccess } from '../-shared/inventory-hooks';
 import type { ReviewLine } from '../-shared/inventory-types';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
-import { InventoryErrorNotice, ItemCell, Qty, qtyUnit, TOUCH } from './inventory-ui';
+import { InventoryErrorNotice, ItemCell, Qty, TOUCH } from './inventory-ui';
 
 /**
  * Review differences (contract §3.6, §7.3): per counted line the count, the
@@ -227,4 +227,4 @@ function LineFlags({ line, onAccept }: { line: ReviewLine; onAccept?: (line: Rev
 }
 
 const formatQty = (qty: number, line: Pick<ReviewLine, 'qty_scale' | 'unit'>, t: TFunction) =>
-    formatQuantity(Math.abs(qty), line.qty_scale, qtyUnit(line.unit), t);
+    formatQuantity(Math.abs(qty), line.qty_scale, line.unit, t);

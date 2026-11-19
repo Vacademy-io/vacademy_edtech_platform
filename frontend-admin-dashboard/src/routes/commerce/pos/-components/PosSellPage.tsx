@@ -169,6 +169,8 @@ export function PosBillingWorkspace({
     const [payOpen, setPayOpen] = useState(false);
     const [discountTarget, setDiscountTarget] = useState<DiscountTarget | null>(null);
     const [lengthRef, setLengthRef] = useState<string | null>(null);
+    /** The open length box is for a line just added (a ref: Save and the close run in one tick). */
+    const lengthIsNew = useRef(false);
     const [clearOpen, setClearOpen] = useState(false);
     const [removeCreditOpen, setRemoveCreditOpen] = useState(false);
     const [addCreditOpen, setAddCreditOpen] = useState(false);
@@ -210,7 +212,10 @@ export function PosBillingWorkspace({
             say('danger', t(`pos.cart.${result.refusal}`));
             return;
         }
-        if (result.openLengthFor) setLengthRef(result.openLengthFor);
+        if (result.openLengthFor) {
+            setLengthRef(result.openLengthFor);
+            lengthIsNew.current = !!result.openLengthIsNew;
+        }
         say('info', t('pos.sell.added', { name: pickText(item.names, lang) || item.sku || '' }));
     };
 
@@ -436,7 +441,10 @@ export function PosBillingWorkspace({
                             const result = apply({ type: 'SET_QUANTITY', lineRef: line.lineRef, quantity });
                             if (result.refusal) say('danger', t(`pos.cart.${result.refusal}`));
                         }}
-                        onLength={(line) => setLengthRef(line.lineRef)}
+                        onLength={(line) => {
+                            setLengthRef(line.lineRef);
+                            lengthIsNew.current = false;
+                        }}
                         onRemovePiece={(line, pieceId) => apply({ type: 'REMOVE_PIECE', lineRef: line.lineRef, pieceId })}
                         onRemoveLine={(line) => apply({ type: 'REMOVE_LINE', lineRef: line.lineRef })}
                         onDiscount={(line) =>
@@ -739,13 +747,23 @@ export function PosBillingWorkspace({
             {lengthLine && (
                 <PosLengthInput
                     open={!!lengthLine}
-                    onOpenChange={(open) => !open && setLengthRef(null)}
+                    onOpenChange={(open) => {
+                        if (open) return;
+                        // Closed without a length: a line the scan just added leaves the bill again.
+                        if (lengthIsNew.current) apply({ type: 'REMOVE_LINE', lineRef: lengthLine.lineRef });
+                        lengthIsNew.current = false;
+                        setLengthRef(null);
+                    }}
                     name={pickText(lengthLine.names, lang) || lengthLine.sku || ''}
                     unit={lengthLine.unit}
                     qtyScale={lengthLine.qtyScale}
                     qtyStep={lengthLine.qtyStep}
                     quantity={lengthLine.quantity}
+                    unitPrice={lengthLine.unitPrice}
+                    onHand={lengthLine.onHand}
                     onSave={(stored) => {
+                        // Saved: the line stays even when the box closes right after.
+                        lengthIsNew.current = false;
                         const result = apply({ type: 'SET_QUANTITY', lineRef: lengthLine.lineRef, quantity: stored });
                         if (result.refusal) say('danger', t(`pos.cart.${result.refusal}`));
                     }}

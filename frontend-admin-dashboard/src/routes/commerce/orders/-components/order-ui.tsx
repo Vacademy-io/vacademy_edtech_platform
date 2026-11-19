@@ -76,6 +76,7 @@ export function useOrderErrorText() {
             t(orderErrorKey(error), {
                 amount: error.amount ? formatMoney(error.amount, currency) : '',
                 minutes: error.retryAfterSeconds ? Math.ceil(error.retryAfterSeconds / 60) : 1,
+                step: error.step ?? '',
             }),
         [t]
     );

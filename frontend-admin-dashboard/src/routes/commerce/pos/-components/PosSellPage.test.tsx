@@ -49,7 +49,7 @@ vi.mock('../-shared/pos-api', () => ({
 
 import * as api from '../-shared/pos-api';
 import { CommerceGate } from '@/routes/commerce/-components/CommercePage';
-import { item, piece, quote, scarf, session } from '../-shared/pos-test-fixtures';
+import { hose, item, piece, quote, scarf, session } from '../-shared/pos-test-fixtures';
 import type { CartExchange } from '../-shared/pos-cart';
 import { PosSellPage } from './PosSellPage';
 
@@ -155,6 +155,34 @@ describe('PosSellPage', () => {
         scanInto('p0001');
         await waitFor(() => expect(screen.getByTestId('pos-scan-message').textContent).toBe('pos.cart.alreadyOnBill'));
         expect(screen.queryByTestId('pos-line-l2')).toBeNull();
+    });
+
+    it('a scanned length closed without a length leaves the bill; a typed one stays (WP-44 FA5)', async () => {
+        setRoles([COMMERCE_ROLE.POS_CASHIER]);
+        mocked.fetchCatalogue.mockResolvedValue({
+            register_id: 'reg-1',
+            location_id: 'loc-1',
+            generated_at: null,
+            truncated: false,
+            items: [item(), hose()],
+        });
+        renderSell();
+        await screen.findByTestId('pos-scan');
+        await catalogueLoaded();
+        scanInto('V-HOSE');
+        expect(await screen.findByTestId('pos-line-l1')).toBeTruthy();
+        const cancel = await screen.findAllByRole('button', { name: 'common.cancel' });
+        fireEvent.click(cancel[cancel.length - 1] as HTMLElement);
+        await waitFor(() => expect(screen.queryByTestId('pos-line-l1')).toBeNull());
+
+        scanInto('v-hose');
+        expect(await screen.findByTestId('pos-line-l2')).toBeTruthy();
+        const length = await screen.findByTestId('pos-length-total');
+        const input = length.closest('[role="dialog"]')?.querySelector('input') as HTMLInputElement;
+        fireEvent.change(input, { target: { value: '2.5' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+        await waitFor(() => expect(screen.queryByTestId('pos-length-total')).toBeNull());
+        expect(screen.getByTestId('pos-line-l2')).toBeTruthy();
     });
 
     it('offline: the banner shows and Pay is disabled', async () => {

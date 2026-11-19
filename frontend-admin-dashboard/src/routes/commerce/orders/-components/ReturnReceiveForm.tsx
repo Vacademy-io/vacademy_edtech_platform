@@ -9,7 +9,9 @@ import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
 import { PlainSelect } from '@/routes/commerce/-components/CatalogueBits';
 import { useLocations } from '@/routes/commerce/-shared/commerce-hooks';
 import { receiveReturn } from '@/routes/commerce/orders/-shared/order-api';
-import { displayQuantity, formatQuantity, storedQuantity } from '@/routes/commerce/orders/-shared/order-format';
+import { lengthProblemText } from '@/routes/commerce/-shared/units';
+import { conditionLabel, conditionSplit, wholeText } from '@/routes/commerce/orders/-shared/length-entry';
+import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { orderKeys } from '@/routes/commerce/orders/-shared/order-hooks';
 import {
     CONDITIONS,
@@ -101,7 +103,7 @@ export function ReturnReceiveForm({
                 .map((line) => [
                     line.id,
                     {
-                        resaleable: String(displayQuantity(line.quantity, lineById.get(line.order_line_id)?.qty_scale)),
+                        resaleable: wholeText(line.quantity, lineById.get(line.order_line_id)?.qty_scale),
                         damaged: '0',
                     },
                 ])
@@ -125,12 +127,14 @@ export function ReturnReceiveForm({
         if (isPieceLine(line)) {
             return candidatesOf(line).filter((code) => pieces[code]?.back).length !== line.quantity;
         }
-        const entry = counts[line.id];
+        return 'problem' in conditionSplit(counts[line.id], lineById.get(line.order_line_id)?.qty_scale, line.quantity);
+    };
+    /** A refused length box ("1.25" at scale 10) names its own sentence; null for "must add up". */
+    const typedProblem = (line: ReturnLineView): string | null => {
+        if (isPieceLine(line)) return null;
         const scale = lineById.get(line.order_line_id)?.qty_scale;
-        const good = Number(entry?.resaleable || 0);
-        const bad = Number(entry?.damaged || 0);
-        if (!Number.isFinite(good) || !Number.isFinite(bad) || good < 0 || bad < 0) return true;
-        return storedQuantity(good, scale) + storedQuantity(bad, scale) !== line.quantity;
+        const split = conditionSplit(counts[line.id], scale, line.quantity);
+        return 'problem' in split && split.problem !== 'sum' ? lengthProblemText(split.problem, scale, t) : null;
     };
     const invalid = view.lines.some(lineProblem);
 
@@ -149,10 +153,9 @@ export function ReturnReceiveForm({
                     out.push({ order_line_id: line.order_line_id, condition, quantity: codes.length, piece_ids: ids });
                 }
             } else {
-                const entry = counts[line.id];
-                const scale = lineById.get(line.order_line_id)?.qty_scale;
-                const good = storedQuantity(Number(entry?.resaleable || 0), scale);
-                const bad = storedQuantity(Number(entry?.damaged || 0), scale);
+                const split = conditionSplit(counts[line.id], lineById.get(line.order_line_id)?.qty_scale, line.quantity);
+                if ('problem' in split) continue;
+                const { good, bad } = split;
                 if (good > 0) out.push({ order_line_id: line.order_line_id, condition: 'RESALEABLE', quantity: good });
                 if (bad > 0) out.push({ order_line_id: line.order_line_id, condition: 'DAMAGED', quantity: bad });
             }
@@ -239,15 +242,12 @@ export function ReturnReceiveForm({
                                 {(['resaleable', 'damaged'] as const).map((kind) => (
                                     <Field
                                         key={kind}
-                                        label={t(kind === 'resaleable' ? 'orders.condition.RESALEABLE' : 'orders.condition.DAMAGED')}
+                                        label={conditionLabel(kind, scale, orderLine?.unit, t)}
                                         htmlFor={`return-${line.id}-${kind}`}
                                     >
                                         <input
                                             id={`return-${line.id}-${kind}`}
-                                            type="number"
-                                            inputMode="decimal"
-                                            min={0}
-                                            step={scale && scale > 1 ? 1 / scale : 1}
+                                            inputMode={scale && scale > 1 ? 'decimal' : 'numeric'}
                                             className={inputClass}
                                             value={entry?.[kind] ?? ''}
                                             onChange={(event) =>
@@ -267,9 +267,10 @@ export function ReturnReceiveForm({
                         )}
                         {problem && (
                             <p role="alert" className="text-caption text-danger-600">
-                                {t(isPieceLine(line) ? 'orders.returnSheet.tickPieces' : 'orders.returnSheet.mustAddUp', {
-                                    quantity: formatQuantity(line.quantity, scale, orderLine?.unit, t),
-                                })}
+                                {typedProblem(line) ??
+                                    t(isPieceLine(line) ? 'orders.returnSheet.tickPieces' : 'orders.returnSheet.mustAddUp', {
+                                        quantity: formatQuantity(line.quantity, scale, orderLine?.unit, t),
+                                    })}
                             </p>
                         )}
                     </div>

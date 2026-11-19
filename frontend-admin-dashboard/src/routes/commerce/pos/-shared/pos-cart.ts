@@ -125,6 +125,12 @@ export interface CartResult {
     refusal: CartRefusal | null;
     /** A measured line the screen should open the length box for. */
     openLengthFor: string | null;
+    /**
+     * The length box opens for a line this event just added (at one step): closing the
+     * box without a length takes it off the bill again (`REMOVE_LINE`), so a scan never
+     * leaves 0.1 m on the bill by itself (WP-44 FA5).
+     */
+    openLengthIsNew?: boolean;
 }
 
 export const EMPTY_CUSTOMER: CartCustomer = {
@@ -237,6 +243,7 @@ export function cartStep(state: CartState, event: CartEvent): CartResult {
                 state: nextState,
                 refusal: null,
                 openLengthFor: isMeasured(line) ? line.lineRef : null,
+                openLengthIsNew: isMeasured(line),
             };
         }
         case 'ADD_PIECE': {

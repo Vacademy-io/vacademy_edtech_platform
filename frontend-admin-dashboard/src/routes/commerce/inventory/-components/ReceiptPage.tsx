@@ -2,11 +2,11 @@ import { type ReactNode, useState } from 'react';
 import { useParams } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { MyButton } from '@/components/design-system/button';
-import { MoneyCell } from '@/components/design-system/money-cell';
 import { formatDate, formatDateTime } from '@/lib/formatters';
 import { SectionCard } from '@/routes/commerce/-components/CatalogueBits';
 import { CommercePage } from '@/routes/commerce/-components/CommercePage';
 import { CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
+import { formatCost } from '@/routes/commerce/-shared/units';
 import { useInventoryAccess, useInventoryLocations, useLabels, useReceipt } from '../-shared/inventory-hooks';
 import type { ReceiptView } from '../-shared/inventory-types';
 import { InventoryErrorNotice, ItemCell, LabelQuantity, placeLabel, Qty, TOUCH } from './inventory-ui';
@@ -103,7 +103,7 @@ function ReceiptBody({ receipt }: { receipt: ReceiptView }) {
                                     <Qty qty={line.qty_received} scale={line.qty_scale} unit={line.unit} className="text-body" />
                                     {access.isManager && line.unit_cost !== null && (
                                         <span className="text-caption text-muted-foreground">
-                                            <MoneyCell value={line.unit_cost} />
+                                            {formatCost(line.unit_cost, line.qty_scale, line.unit, t)}
                                         </span>
                                     )}
                                 </div>

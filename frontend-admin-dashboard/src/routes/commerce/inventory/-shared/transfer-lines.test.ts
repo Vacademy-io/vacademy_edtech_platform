@@ -8,6 +8,7 @@ import {
     type DraftItem,
     type DraftState,
     linesMissingReason,
+    linesWithoutLength,
     receiveFromView,
     toReceiveBody,
     toTransferLines,
@@ -25,16 +26,37 @@ const bottle: DraftItem = {
     qty_step: 1,
 };
 const cloth: DraftItem = { ...bottle, package_session_id: 'ps-cloth', sku: 'CLOTH-1', unit: 'MTR', qty_scale: 10, qty_step: 5 };
+/** A counted item sold in packs of 5: transfers keep its step. */
+const packs: DraftItem = { ...bottle, package_session_id: 'ps-pack', sku: 'PACK-1', qty_step: 5 };
 const scarf: DraftItem = { ...bottle, package_session_id: 'ps-scarf', sku: 'SCARF-1', stock_mode: 'PIECE' };
 const empty: DraftState = { fromLocationId: 'L2', lines: [] };
 
 describe('draft lines', () => {
     it('ADD_VARIANT adds a line of one step, then a step more', () => {
-        let state = applyDraft(empty, { type: 'ADD_VARIANT', item: cloth }).state;
+        let state = applyDraft(empty, { type: 'ADD_VARIANT', item: packs }).state;
         expect(state.lines[0]?.quantity).toBe(5);
-        state = applyDraft(state, { type: 'ADD_VARIANT', item: cloth }).state;
+        state = applyDraft(state, { type: 'ADD_VARIANT', item: packs }).state;
         expect(state.lines).toHaveLength(1);
         expect(state.lines[0]?.quantity).toBe(10);
+    });
+
+    it('a scanned roll waits at 0 for its typed length; a repeat scan only asks again (WP-44 FA6)', () => {
+        const first = applyDraft(empty, { type: 'ADD_VARIANT', item: cloth });
+        expect(first.refusal).toBe('typeLength');
+        expect(first.state.lines[0]).toMatchObject({ key: 'v:ps-cloth', quantity: 0, qty_step: 1 });
+        expect(linesWithoutLength(first.state)).toHaveLength(1);
+        const again = applyDraft(first.state, { type: 'ADD_VARIANT', item: cloth });
+        expect(again.refusal).toBe('typeLength');
+        expect(again.state).toBe(first.state);
+    });
+
+    it('a roll moves in any whole tenth: 23.7 m at a 0.5 m sale step is 237 (D3)', () => {
+        const state = applyDraft(empty, { type: 'ADD_VARIANT', item: cloth }).state;
+        const set = applyDraft(state, { type: 'SET_QUANTITY', key: 'v:ps-cloth', quantity: 237 });
+        expect(set.refusal).toBeNull();
+        expect(set.state.lines[0]?.quantity).toBe(237);
+        expect(linesWithoutLength(set.state)).toEqual([]);
+        expect(toTransferLines(set.state)).toEqual([{ package_session_id: 'ps-cloth', quantity: 237 }]);
     });
 
     it('ADD_VARIANT refuses a piece item and an untracked item', () => {
@@ -58,7 +80,7 @@ describe('draft lines', () => {
     });
 
     it('SET_QUANTITY keeps to the step and the range; REMOVE drops the line', () => {
-        const state = applyDraft(empty, { type: 'ADD_VARIANT', item: cloth }).state;
+        const state = applyDraft(empty, { type: 'ADD_VARIANT', item: packs }).state;
         const key = state.lines[0]?.key as string;
         expect(applyDraft(state, { type: 'SET_QUANTITY', key, quantity: 7 }).refusal).toBe('quantityStep');
         expect(applyDraft(state, { type: 'SET_QUANTITY', key, quantity: 0 }).refusal).toBe('quantityRange');

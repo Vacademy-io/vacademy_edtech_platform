@@ -1,4 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
+import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle, CircleNotch, WarningCircle } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
@@ -9,7 +10,8 @@ import { DialogButtons, OrderNotice } from '@/routes/commerce/orders/-components
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { type InventoryError, inventoryErrorKey, readInventoryError } from '../-shared/inventory-errors';
 import type { InventoryLocation, LabelRow } from '../-shared/inventory-types';
-import { labelQuantity, unitSign } from '../-shared/label-print';
+import { labelQuantity } from '../-shared/label-print';
+import { lengthProblemText, parseLength, unitWord } from '@/routes/commerce/-shared/units';
 
 /**
  * Small pieces the inventory screens share: the error sentence, an item cell,
@@ -84,15 +86,11 @@ export function Qty({
     const { t } = useTranslation('commerce');
     return (
         <span className={cn('tabular-nums', className)}>
-            {qty === null || qty === undefined ? '—' : formatQuantity(qty, scale, qtyUnit(unit), t)}
+            {qty === null || qty === undefined ? '—' : formatQuantity(qty, scale, unit, t)}
         </span>
     );
 }
 
-/**
- * The unit after a measured quantity: metres in the admin's words ("m" /
- * "मीटर"), any other code as its short sign ("kg"), never a raw code ("MTR").
- */
 /** A label row's count: "×1200", or "×1200 · 1000 printed" while it prints in rounds. */
 export function LabelQuantity({ row }: { row: Pick<LabelRow, 'quantity' | 'original_quantity' | 'printed_quantity' | 'status'> }) {
     const { t } = useTranslation('commerce');
@@ -105,10 +103,11 @@ export function LabelQuantity({ row }: { row: Pick<LabelRow, 'quantity' | 'origi
     );
 }
 
-export const qtyUnit = (unit: string | null | undefined): string | null => {
-    const u = (unit ?? '').trim().toUpperCase();
-    return u === 'MTR' || u === 'M' ? null : unitSign(unit);
-};
+/**
+ * The unit after a measured quantity: metres in the admin's words ("m" /
+ * "मीटर"), any other code as its short sign ("kg"), never a raw code ("MTR").
+ */
+export const qtyUnit = (unit: string | null | undefined, t: TFunction): string | null => unitWord(unit, t);
 
 /** A tab that works at one place, when "All my locations" is chosen. */
 export function NeedOneLocation({
@@ -299,13 +298,33 @@ export function ChoiceGroup<V extends string>({
     );
 }
 
-/** A number typed in display units (2.5 m), read back to base units; null when it is not a number. */
+/**
+ * A number typed in display units (2.5 m), read back to base units; null when
+ * it is not a number or has more decimals than the scale allows ("2.55" at
+ * scale 10 is refused, never rounded).
+ */
 export function parseDisplayQuantity(text: string, scale: number): number | null {
-    const trimmed = text.trim().replace(',', '.');
-    if (!/^\d+(\.\d+)?$/.test(trimmed)) return null;
-    const value = Number(trimmed);
-    if (!Number.isFinite(value)) return null;
-    return Math.round(value * Math.max(1, scale));
+    const parsed = parseLength(text, scale);
+    return 'stored' in parsed ? parsed.stored : null;
+}
+
+/** The sentence under a length box when the typed text is refused (nothing while it is fine or empty). */
+export function LengthProblem({ text, scale, id }: { text: string | undefined; scale: number; id?: string }) {
+    const { t } = useTranslation('commerce');
+    if (text === undefined || text.trim() === '') return null;
+    const parsed = parseLength(text, scale);
+    if ('stored' in parsed) return null;
+    return (
+        <span id={id} role="alert" className="text-caption text-danger-600">
+            {lengthProblemText(parsed.problem, scale, t)}
+        </span>
+    );
+}
+
+/** The problem sentence of a typed length for a dialog's error line (null when it parses). */
+export function typedLengthProblem(text: string, scale: number, t: TFunction): string | null {
+    const parsed = parseLength(text, scale);
+    return 'problem' in parsed ? lengthProblemText(parsed.problem, scale, t) : null;
 }
 
 /** A collection's name in the admin's language, else any name it has. */

@@ -12,6 +12,9 @@ import {
     lineStoredQuantity,
     mobileDigits,
     needsRemainderRefund,
+    firstQuantity,
+    offStep,
+    overrideBasePrice,
     prefillCustomer,
     validateNewOrder,
 } from './new-order';
@@ -25,15 +28,17 @@ const scarf: LineSource = {
     unit: null,
     listPrice: 500,
 };
+/** The server's price is per base unit: 12.34 per 10 cm is ₹123.40 a metre (WP-44 FA3). */
 const cloth: LineSource = {
     variantId: 'ps-cloth',
     sku: 'CLOTH-1',
     name: 'Cotton cloth',
     variantName: null,
     qtyScale: 10,
-    unit: 'm',
-    listPrice: 200,
+    unit: 'MTR',
+    listPrice: 12.34,
 };
+const linen: LineSource = { ...cloth, variantId: 'ps-linen', sku: 'LINEN-1', name: 'Linen cloth', qtyStep: 5, listPrice: 20 };
 
 const line = (patch: Partial<NewOrderLine> = {}): NewOrderLine => ({
     key: 'k1',
@@ -129,7 +134,9 @@ describe('buildStaffOrderBody', () => {
         expect(lineStoredQuantity({ quantity: '0', qtyScale: 1, pieceCodes: [] })).toBeNull();
         const body = buildStaffOrderBody(filled({ lines: [line({ ...cloth, quantity: '2.5' })] }));
         expect(body.lines[0]).toEqual({ variant_id: 'ps-cloth', quantity: 25 });
-        expect(estimateTotal([line({ ...cloth, quantity: '2.5' })])).toBe(500);
+        // 25 × ₹12.34 in paise: ₹308.50, not ₹123.40 × 2.5 read as per-base-unit (₹30.85).
+        expect(estimateTotal([line({ ...cloth, quantity: '2.5' })])).toBe(308.5);
+        expect(estimateTotal([line({ ...cloth, quantity: '3.4' })])).toBe(419.56);
     });
 
     it('an exchange sends the return and, when the credit is larger, the remainder refund', () => {
@@ -216,5 +223,47 @@ describe('prefillCustomer', () => {
         expect(next.email).toBe('a@example.com');
         expect(next.shipping.city).toBe('Test City');
         expect(next.handOverNow).toBe(false);
+    });
+});
+
+describe('measured goods on a staff order (WP-44 FA3)', () => {
+    it('"Price for this order" is typed per metre and sent per 10 cm', () => {
+        const typed = line({ ...cloth, quantity: '2.5', priceOverride: '123.40' });
+        expect(overrideBasePrice(typed)).toBe(12.34);
+        expect(buildStaffOrderBody(filled({ lines: [typed] })).lines[0]).toEqual({
+            variant_id: 'ps-cloth',
+            quantity: 25,
+            unit_price_override: 12.34,
+        });
+        expect(estimateTotal([typed])).toBe(308.5);
+    });
+
+    it('a price per metre that does not split into 10 equal paise is refused, not rounded', () => {
+        const typed = line({ ...cloth, priceOverride: '123.45' });
+        expect(overrideBasePrice(typed)).toBe('notDivisible');
+        expect(validateNewOrder(filled({ lines: [typed] }))['line.k1.price']).toBe('orders.new.problems.priceNotDivisible');
+        expect(buildStaffOrderBody(filled({ lines: [typed] })).lines[0]).not.toHaveProperty('unit_price_override');
+        expect(overrideBasePrice(line({ ...cloth, priceOverride: '123.405' }))).toBe('invalid');
+        // Counted goods: the typed price is the price.
+        expect(overrideBasePrice(line({ priceOverride: '450' }))).toBe(450);
+    });
+
+    it('a length off the sale step is refused before the server says QUANTITY_STEP', () => {
+        expect(offStep(line({ ...linen, quantity: '2.3' }))).toBe(true);
+        expect(offStep(line({ ...linen, quantity: '2.5' }))).toBe(false);
+        expect(validateNewOrder(filled({ lines: [line({ ...linen, quantity: '2.3' })] }))['line.k1.quantity']).toBe(
+            'orders.new.problems.quantityStep'
+        );
+        expect(validateNewOrder(filled({ lines: [line({ ...linen, quantity: '2.55' })] }))['line.k1.quantity']).toBe(
+            'orders.new.problems.quantity'
+        );
+    });
+
+    it('a new measured line starts at 1 m when 1 m is on the step, else one step', () => {
+        expect(firstQuantity(cloth)).toBe('1');
+        expect(firstQuantity(linen)).toBe('1');
+        expect(firstQuantity({ qtyScale: 10, qtyStep: 3 })).toBe('0.3');
+        expect(firstQuantity({ qtyScale: 1, qtyStep: 1 })).toBe('1');
+        expect(addItem([], { ...cloth, qtyStep: 3 })?.[0]?.quantity).toBe('0.3');
     });
 });

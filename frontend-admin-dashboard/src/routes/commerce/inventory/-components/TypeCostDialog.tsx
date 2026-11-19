@@ -7,12 +7,35 @@ import { DialogButtons, Field, inputClass } from '@/routes/commerce/orders/-comp
 import { typeReceiptCost } from '../-shared/inventory-api';
 import { useInvalidateInventory } from '../-shared/inventory-hooks';
 import type { ReceiptView } from '../-shared/inventory-types';
-import { InventoryErrorNotice, ItemCell, TOUCH } from './inventory-ui';
+import { costDecimalsFor, costInputText, parseCostPerUnit } from '@/routes/commerce/-shared/units';
+import { InventoryErrorNotice, ItemCell, qtyUnit, TOUCH } from './inventory-ui';
 import { useInventoryWrite } from './use-inventory-write';
 
-const MONEY = /^\d{1,10}(\.\d{1,4})?$/;
+/**
+ * Type cost (manager; `PATCH /stock/receipts/{id}/cost`). Typed per unit
+ * people buy in (a metre of cloth, WP-44 D13) and sent per base unit (4
+ * decimals); a per-metre cost that does not fit 4 decimals per base unit is
+ * refused, never rounded.
+ */
+export function costLines(
+    receipt: Pick<ReceiptView, 'lines'>,
+    costs: Record<string, string>
+): { lines: { line_id: string; unit_cost: string }[] } | { problemLineId: string | null; decimals: number | null } {
+    const byId = new Map(receipt.lines.map((line) => [line.id, line]));
+    const lines: { line_id: string; unit_cost: string }[] = [];
+    for (const [lineId, value] of Object.entries(costs)) {
+        if (value.trim() === '') continue;
+        const scale = byId.get(lineId)?.qty_scale ?? 1;
+        const parsed = parseCostPerUnit(value, scale);
+        if ('problem' in parsed) {
+            return { problemLineId: lineId, decimals: parsed.problem === 'decimals' ? costDecimalsFor(scale) : null };
+        }
+        lines.push({ line_id: lineId, unit_cost: parsed.baseCost });
+    }
+    if (lines.length === 0) return { problemLineId: null, decimals: null };
+    return { lines };
+}
 
-/** Type cost (manager; `PATCH /stock/receipts/{id}/cost`): cost per base unit for each line. */
 export function TypeCostDialog({
     open,
     onOpenChange,
@@ -26,7 +49,7 @@ export function TypeCostDialog({
     const invalidate = useInvalidateInventory();
     const write = useInventoryWrite('cost');
     const [costs, setCosts] = useState<Record<string, string>>(() =>
-        Object.fromEntries(receipt.lines.map((l) => [l.id, l.unit_cost === null ? '' : String(l.unit_cost)]))
+        Object.fromEntries(receipt.lines.map((l) => [l.id, costInputText(l.unit_cost, l.qty_scale)]))
     );
     const [problem, setProblem] = useState<string | null>(null);
     const [error, setError] = useState<unknown>(null);
@@ -34,12 +57,15 @@ export function TypeCostDialog({
     const save = async () => {
         setProblem(null);
         setError(null);
-        const lines = Object.entries(costs)
-            .filter(([, value]) => value.trim() !== '')
-            .map(([line_id, value]) => ({ line_id, unit_cost: value.trim() }));
-        if (lines.length === 0 || lines.some((l) => !MONEY.test(l.unit_cost))) {
-            return setProblem(t('inventory.receipt.costProblem'));
+        const outcome = costLines(receipt, costs);
+        if (!('lines' in outcome)) {
+            return setProblem(
+                outcome.decimals !== null
+                    ? t('inventory.receipt.costDecimals', { count: outcome.decimals })
+                    : t('inventory.receipt.costProblem')
+            );
         }
+        const { lines } = outcome;
         try {
             await write.run({
                 scope: `cost:${receipt.id}`,
@@ -75,7 +101,15 @@ export function TypeCostDialog({
                 {receipt.lines.map((line) => (
                     <div key={line.id} className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <ItemCell name={line.product_name} variant={line.variant_name} sku={line.sku} />
-                        <Field label={t('inventory.receipt.unitCost')} htmlFor={`cost-${line.id}`} className="sm:w-40">
+                        <Field
+                            label={
+                                line.qty_scale > 1
+                                    ? t('inventory.receipt.unitCostPer', { unit: qtyUnit(line.unit, t) ?? t('orders.units.metre') })
+                                    : t('inventory.receipt.unitCost')
+                            }
+                            htmlFor={`cost-${line.id}`}
+                            className="sm:w-40"
+                        >
                             <input
                                 id={`cost-${line.id}`}
                                 className={inputClass}

@@ -3,13 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Barcode, MagnifyingGlass, Plus, Trash } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
-import { formatMoney } from '@/components/design-system/money-cell';
 import { getInstituteId } from '@/constants/helper';
 import { SectionCard, useAdminLanguage } from '@/routes/commerce/-components/CatalogueBits';
 import { fetchProduct } from '@/routes/commerce/-shared/catalogue-api';
 import type { ProductDetail } from '@/routes/commerce/-shared/catalogue-types';
 import { i18nName } from '@/routes/commerce/-shared/collection-tree';
 import { fetchProducts } from '@/routes/commerce/-shared/commerce-api';
+import { formatRate, unitWord } from '@/routes/commerce/-shared/units';
 import {
     type LineSource,
     MAX_ORDER_LINES,
@@ -19,6 +19,7 @@ import {
     addPiece,
 } from '@/routes/commerce/orders/-shared/new-order';
 import { scanCode } from '@/routes/commerce/orders/-shared/order-api';
+import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { readOrderError } from '@/routes/commerce/orders/-shared/order-errors';
 import type { ScanResult } from '@/routes/commerce/orders/-shared/order-types';
 import { buzz, useScanInput } from '@/routes/commerce/orders/-shared/use-scan-input';
@@ -76,12 +77,14 @@ export function NewOrderLines({
     const sourceFromScan = async (result: ScanResult): Promise<LineSource> => {
         const variant = result.variant;
         let listPrice: number | null = null;
+        let qtyStep = 1;
         let name = variant.product_name ?? variant.sku ?? '';
         if (variant.package_id) {
             try {
                 const product = await fetchProduct(variant.package_id);
                 listPrice =
                     product.variants.find((v) => v.package_session_id === variant.package_session_id)?.price ?? null;
+                qtyStep = product.qty_step && product.qty_step > 0 ? product.qty_step : 1;
                 name = productName(product, language, name);
             } catch {
                 // The price stays unknown; the server prices the order anyway.
@@ -93,6 +96,7 @@ export function NewOrderLines({
             name,
             variantName: variant.variant_name,
             qtyScale: variant.qty_scale > 1 ? variant.qty_scale : 1,
+            qtyStep,
             unit: variant.unit,
             listPrice,
         };
@@ -145,6 +149,7 @@ export function NewOrderLines({
                 name: productName(detail, language, variant.sku ?? ''),
                 variantName: variant.name,
                 qtyScale: detail.qty_scale && detail.qty_scale > 1 ? detail.qty_scale : 1,
+                qtyStep: detail.qty_step && detail.qty_step > 0 ? detail.qty_step : 1,
                 unit: detail.unit,
                 listPrice: variant.price,
             })
@@ -293,7 +298,15 @@ export function NewOrderLines({
                                                     {variant.sku && <span className="text-caption text-muted-foreground">{variant.sku}</span>}
                                                 </span>
                                                 <span className="shrink-0 text-caption tabular-nums text-foreground">
-                                                    {variant.price !== null ? formatMoney(variant.price, variant.currency ?? 'INR') : '—'}
+                                                    {variant.price !== null
+                                                        ? formatRate(
+                                                              variant.price,
+                                                              (product.data as ProductDetail).qty_scale,
+                                                              (product.data as ProductDetail).unit,
+                                                              variant.currency ?? 'INR',
+                                                              t
+                                                          )
+                                                        : '—'}
                                                 </span>
                                             </button>
                                         </li>
@@ -319,6 +332,9 @@ export function NewOrderLines({
                 <ul className="flex flex-col gap-2">
                     {lines.map((line) => {
                         const measured = line.qtyScale > 1;
+                        const unitText = unitWord(line.unit, t) ?? t('orders.units.metre');
+                        const stepText = formatQuantity(Math.max(1, line.qtyStep ?? 1), line.qtyScale, line.unit, t);
+                        const stepHint = measured && (line.qtyStep ?? 1) > 1 ? t('orders.new.lines.stepHint', { step: stepText }) : undefined;
                         const quantityProblem = problems[`line.${line.key}.quantity`];
                         const priceProblem = problems[`line.${line.key}.price`];
                         return (
@@ -348,9 +364,14 @@ export function NewOrderLines({
                                 </div>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                                     <Field
-                                        label={measured ? t('orders.new.lines.quantityMeasured', { unit: line.unit || t('orders.units.metre') }) : t('orders.new.lines.quantity')}
+                                        label={measured ? t('orders.new.lines.quantityMeasured', { unit: unitText }) : t('orders.new.lines.quantity')}
                                         htmlFor={`qty-${line.key}`}
-                                        error={quantityProblem ? t(quantityProblem) : null}
+                                        hint={stepHint}
+                                        error={
+                                            quantityProblem
+                                                ? t(quantityProblem, { step: stepText, count: measured ? Math.round(Math.log10(line.qtyScale)) : 0 })
+                                                : null
+                                        }
                                     >
                                         <input
                                             id={`qty-${line.key}`}
@@ -363,14 +384,20 @@ export function NewOrderLines({
                                     </Field>
                                     <Field label={t('orders.new.lines.listPrice')}>
                                         <p className="flex h-12 items-center text-body tabular-nums text-foreground md:h-9">
-                                            {line.listPrice !== null ? formatMoney(line.listPrice) : t('orders.new.lines.priceBySystem')}
+                                            {line.listPrice !== null
+                                                ? formatRate(line.listPrice, line.qtyScale, line.unit, 'INR', t)
+                                                : t('orders.new.lines.priceBySystem')}
                                         </p>
                                     </Field>
                                     <Field
-                                        label={t('orders.new.lines.priceOverride')}
+                                        label={
+                                            measured
+                                                ? t('orders.new.lines.priceOverrideMeasured', { unit: unitText })
+                                                : t('orders.new.lines.priceOverride')
+                                        }
                                         htmlFor={`price-${line.key}`}
                                         hint={t('orders.new.lines.priceOverrideHint')}
-                                        error={priceProblem ? t(priceProblem) : null}
+                                        error={priceProblem ? t(priceProblem, { scale: line.qtyScale }) : null}
                                     >
                                         <input
                                             id={`price-${line.key}`}

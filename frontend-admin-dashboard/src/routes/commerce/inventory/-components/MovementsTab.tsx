@@ -4,12 +4,12 @@ import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { DownloadSimple } from '@phosphor-icons/react';
 import { MyButton } from '@/components/design-system/button';
-import { MoneyCell } from '@/components/design-system/money-cell';
 import { MyPagination } from '@/components/design-system/pagination';
 import { MyTable } from '@/components/design-system/table';
 import { formatDateTime } from '@/lib/formatters';
 import { PlainSelect, useAdminLanguage } from '@/routes/commerce/-components/CatalogueBits';
 import { CommerceEmptyState, CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
+import { formatCost } from '@/routes/commerce/-shared/units';
 import { inputClass } from '@/routes/commerce/orders/-components/order-ui';
 import { exportMovements } from '../-shared/inventory-api';
 import { useInventoryAccess, useMovements } from '../-shared/inventory-hooks';
@@ -156,7 +156,13 @@ export function MovementsTab({
                           id: 'cost',
                           header: t('inventory.movements.unitCost'),
                           cell: ({ row }: { row: { original: MovementRow } }) =>
-                              row.original.unit_cost === null ? '—' : <MoneyCell value={row.original.unit_cost} />,
+                                                            row.original.unit_cost === null ? (
+                                  '—'
+                              ) : (
+                                  <span className="tabular-nums">
+                                      {formatCost(row.original.unit_cost, row.original.qty_scale, row.original.unit, t)}
+                                  </span>
+                              ),
                       } as ColumnDef<MovementRow>,
                   ]
                 : []),

@@ -61,3 +61,12 @@ describe('pos errors', () => {
         expect(read.uncertain).toBe(false);
     });
 });
+
+describe('QUANTITY_STEP at the till (WP-44 B7)', () => {
+    it('names the line and the step in metres', () => {
+        const read = readPosError(serverError(400, 'QUANTITY_STEP: line l1 is sold in steps of 0.5 m'));
+        expect(read.posKey).toBe('pos.errors.QUANTITY_STEP');
+        expect(read.step).toBe('0.5 m');
+        expect(read.lineRef).toBe('l1');
+    });
+});

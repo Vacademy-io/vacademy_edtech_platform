@@ -4,11 +4,11 @@ import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
 import { MyDialog } from '@/components/design-system/dialog';
 import { DialogButtons, Field, inputClass } from '@/routes/commerce/orders/-components/order-ui';
-import { displayQuantity } from '@/routes/commerce/orders/-shared/order-format';
+import { lengthInputText } from '@/routes/commerce/-shared/units';
 import { setReorderLevel } from '../-shared/inventory-api';
 import { useInvalidateInventory } from '../-shared/inventory-hooks';
 import type { ItemFacts, PlaceRef } from '../-shared/inventory-types';
-import { InventoryErrorNotice, ItemCell, parseDisplayQuantity, TOUCH } from './inventory-ui';
+import { InventoryErrorNotice, ItemCell, parseDisplayQuantity, TOUCH, typedLengthProblem } from './inventory-ui';
 
 /** Set reorder level (manager only; `PUT /stock/levels/reorder-level`). Empty clears it. */
 export function ReorderLevelDialog({
@@ -26,7 +26,7 @@ export function ReorderLevelDialog({
 }) {
     const { t } = useTranslation('commerce');
     const invalidate = useInvalidateInventory();
-    const [text, setText] = useState(current === null ? '' : String(displayQuantity(current, item.qty_scale)));
+    const [text, setText] = useState(current === null ? '' : lengthInputText(current, item.qty_scale));
     const [problem, setProblem] = useState<string | null>(null);
     const [error, setError] = useState<unknown>(null);
 
@@ -34,7 +34,9 @@ export function ReorderLevelDialog({
         setProblem(null);
         setError(null);
         const level = text.trim() === '' ? null : parseDisplayQuantity(text, item.qty_scale);
-        if (text.trim() !== '' && level === null) return setProblem(t('inventory.adjust.problems.quantity'));
+        if (text.trim() !== '' && level === null) {
+            return setProblem(typedLengthProblem(text, item.qty_scale, t) ?? t('inventory.adjust.problems.quantity'));
+        }
         try {
             await setReorderLevel({ location_id: place.id, package_session_id: item.package_session_id, reorder_level: level });
             toast.success(t('inventory.reorder.done'));

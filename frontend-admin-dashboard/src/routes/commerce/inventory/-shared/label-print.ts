@@ -216,34 +216,8 @@ export function labelText(pair: TextPair, language: LabelLanguage): { main: stri
 /** The language of a label's fixed words (MRP, incl. of all taxes): English only for an English label. */
 export const labelWordsLanguage = (language: LabelLanguage): 'en' | 'hi' => (language === 'en' ? 'en' : 'hi');
 
-/** Short unit signs printed on labels and quantities ("2.5 m", "₹120 / kg"); other codes in small letters. */
-const UNIT_SIGNS: Record<string, string> = {
-    MTR: 'm',
-    M: 'm',
-    CMS: 'cm',
-    CM: 'cm',
-    KGS: 'kg',
-    KG: 'kg',
-    GMS: 'g',
-    G: 'g',
-    LTR: 'l',
-    L: 'l',
-    MLT: 'ml',
-    ML: 'ml',
-};
-
-/** The sign of a measuring unit (null for pieces). */
-export function unitSign(unit: string | null | undefined): string | null {
-    const u = (unit ?? '').trim().toUpperCase();
-    if (!u || u === 'PCS' || u === 'NOS') return null;
-    return UNIT_SIGNS[u] ?? u.toLowerCase();
-}
-
-/** A unit after the price for measured goods (" / m", " / kg"); nothing for pieces. */
-export const perUnit = (unit: string | null | undefined): string => {
-    const sign = unitSign(unit);
-    return sign ? ` / ${sign}` : '';
-};
+/** Unit signs moved to the shared helper (WP-44); re-exported so label importers do not change. */
+export { perUnit, UNIT_SIGNS, unitSign } from '@/routes/commerce/-shared/units';
 
 /**
  * What the QR holds. On the A4 sheet the QR is 10.5 mm: a long shop link

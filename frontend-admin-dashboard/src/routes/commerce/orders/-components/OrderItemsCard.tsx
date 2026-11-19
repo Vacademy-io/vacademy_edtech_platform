@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Warning } from '@phosphor-icons/react';
 import { MoneyCell } from '@/components/design-system/money-cell';
 import { SectionCard } from '@/routes/commerce/-components/CatalogueBits';
+import { formatRate } from '@/routes/commerce/-shared/units';
 import { itemLines, liveShipment } from '@/routes/commerce/orders/-shared/order-actions';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import type { StaffOrderDetail } from '@/routes/commerce/orders/-shared/order-types';
@@ -56,13 +57,14 @@ export function OrderItemsCard({ detail }: { detail: StaffOrderDetail }) {
                                 <span className="tabular-nums text-foreground">
                                     {t('orders.detail.items.qtyTimesPrice', {
                                         quantity: qty(line.quantity),
-                                        price: money(line.unit_price, currency),
+                                        // A measured line reads "2.5 m × ₹123.40 / m": the wire price is per 10 cm.
+                                        price: formatRate(line.unit_price, line.qty_scale, line.unit, currency, t),
                                     })}
                                 </span>
                                 {line.price_override_by && (
                                     <span className="text-caption text-muted-foreground">
                                         {t('orders.detail.items.priceByStaff', {
-                                            price: money(line.list_unit_price ?? line.mrp, currency),
+                                            price: formatRate(line.list_unit_price ?? line.mrp, line.qty_scale, line.unit, currency, t),
                                         })}
                                     </span>
                                 )}

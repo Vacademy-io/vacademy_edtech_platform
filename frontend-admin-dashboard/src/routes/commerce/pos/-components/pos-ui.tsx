@@ -41,6 +41,7 @@ export function usePosErrorText() {
             t(posErrorKey(error), {
                 amount: error.amount ? rupees(error.amount) : '',
                 time: error.time ?? '',
+                step: error.step ?? '',
                 minutes: error.retryAfterSeconds ? Math.ceil(error.retryAfterSeconds / 60) : 1,
             }),
         [t]

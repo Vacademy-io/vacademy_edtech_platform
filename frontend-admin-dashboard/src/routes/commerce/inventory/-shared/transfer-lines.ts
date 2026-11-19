@@ -21,6 +21,7 @@ export const TRANSFER_REFUSALS = [
     'allReceived',
     'quantityStep',
     'quantityRange',
+    'typeLength',
 ] as const;
 export type TransferRefusal = (typeof TRANSFER_REFUSALS)[number];
 
@@ -74,8 +75,14 @@ export interface Outcome<S> {
     refusal: TransferRefusal | null;
 }
 
-const step = (item: { qty_step?: number }) => Math.max(1, Math.floor(item.qty_step ?? 1));
 const isPieceItem = (item: DraftItem) => (item.stock_mode ?? '').toUpperCase() === 'PIECE';
+/** Cloth by the metre and the like: a length is typed, never added a step at a time. */
+const isMeasuredItem = (item: DraftItem) => item.qty_scale > 1 && !isPieceItem(item);
+/**
+ * The sale step does not apply to stock movements (WP-44 D3): a measured line
+ * moves in any whole base unit (a 23.7 m roll at a 0.5 m sale step is 237).
+ */
+const step = (item: DraftItem) => (isMeasuredItem(item) ? 1 : Math.max(1, Math.floor(item.qty_step ?? 1)));
 const isUntracked = (item: DraftItem) => (item.stock_policy ?? '').toUpperCase() === 'UNTRACKED';
 
 /** The draft's lines as the server sent them (variant lines and piece lines). */
@@ -107,6 +114,8 @@ export function applyDraft(state: DraftState, event: DraftEvent): Outcome<DraftS
             if (isPieceItem(item)) return refuse('scanPieceLabel');
             const key = `v:${item.package_session_id}`;
             const existing = state.lines.find((l) => l.key === key);
+            // A measured roll: a scan opens its length box (as on receive) instead of adding 0.1 m.
+            if (existing && isMeasuredItem(item)) return { state, refusal: 'typeLength' };
             if (existing) {
                 const next = existing.quantity + existing.qty_step;
                 if (next > MAX_BASE_UNITS) return refuse('quantityRange');
@@ -126,9 +135,12 @@ export function applyDraft(state: DraftState, event: DraftEvent): Outcome<DraftS
                 qty_step: step(item),
                 piece_id: null,
                 piece_code: null,
-                quantity: step(item),
+                quantity: isMeasuredItem(item) ? 0 : step(item),
             };
-            return { state: { ...state, lines: [...state.lines, line] }, refusal: null };
+            return {
+                state: { ...state, lines: [...state.lines, line] },
+                refusal: isMeasuredItem(item) ? 'typeLength' : null,
+            };
         }
         case 'ADD_PIECE': {
             const { piece, item } = event;
@@ -169,6 +181,10 @@ export function applyDraft(state: DraftState, event: DraftEvent): Outcome<DraftS
             return { state, refusal: null };
     }
 }
+
+/** Lines still waiting for a typed length (a scanned roll starts at 0); the draft cannot be saved with them. */
+export const linesWithoutLength = (state: DraftState): DraftLine[] =>
+    state.lines.filter((line) => !line.piece_id && line.quantity < 1);
 
 /** The draft's lines as the server takes them: every line once, base units. */
 export function toTransferLines(state: DraftState): TransferLineBody[] {

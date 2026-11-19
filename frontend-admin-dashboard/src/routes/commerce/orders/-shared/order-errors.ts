@@ -22,6 +22,7 @@ export const ORDER_ERROR_CODES = [
     'NO_FULFILMENT_LOCATION',
     'STOCK_NOT_SETTLED',
     'NOT_IN_STOCK',
+    'QUANTITY_STEP',
     'COD_COLLECTED',
     'HAS_RETURNS',
     'LINE_NOT_CANCELLABLE',
@@ -100,7 +101,17 @@ const AMOUNT_CODES: ReadonlySet<string> = new Set([
 ]);
 
 /** Codes whose server sentence is shown under the mapped one (it names the field). */
-const SHOW_SERVER_SENTENCE: ReadonlySet<string> = new Set(['VALIDATION', 'invalid_request']);
+const SHOW_SERVER_SENTENCE: ReadonlySet<string> = new Set(['VALIDATION', 'invalid_request', 'QUANTITY_STEP']);
+
+/**
+ * The step of a `QUANTITY_STEP` answer as the server wrote it in display units
+ * ("line L1 is sold in steps of 0.5 m" → "0.5 m"); null when it is not there.
+ */
+export function quantityStepText(message: string): string | null {
+    // B7 writes the step already formatted and ends the sentence there ("0.5 m", "2").
+    const match = /steps of\s+(.+?)\.?\s*$/i.exec(message);
+    return match?.[1]?.trim() || null;
+}
 
 export interface OrderError {
     status: number | null;
@@ -115,6 +126,8 @@ export interface OrderError {
     retryAfterSeconds: number | null;
     /** The server's sentence should be shown under the mapped one. */
     showServerSentence: boolean;
+    /** `QUANTITY_STEP`: the step in display units ("0.5 m"), for the mapped sentence. */
+    step?: string | null;
 }
 
 export type OrderErrorKind = 'feature' | 'access' | 'state' | 'idempotency' | 'network' | 'inline';
@@ -152,6 +165,7 @@ export function readOrderError(error: unknown): OrderError {
         amount: amountMatch ? amountMatch[0].replace(/,/g, '') : null,
         message,
         retryAfterSeconds: Number.isFinite(retry) && retry > 0 ? retry : null,
+        step: code === 'QUANTITY_STEP' ? quantityStepText(message) : null,
         showServerSentence:
             !!message && (!code || !KNOWN.has(code) || SHOW_SERVER_SENTENCE.has(code)),
     };

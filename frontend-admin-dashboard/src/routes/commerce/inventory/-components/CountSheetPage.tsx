@@ -39,6 +39,7 @@ import {
     qtyUnit,
     SaveStateMark,
     TOUCH,
+    typedLengthProblem,
     useInventoryErrorText,
 } from './inventory-ui';
 import { PostCountDialog } from './PostCountDialog';
@@ -115,7 +116,7 @@ export function CountSheet({ view }: { view: CountView }) {
     // A measured item was scanned: its length is typed here (a scan never counts it as 1 base unit).
     const [lengthFor, setLengthFor] = useState<LineMeta | null>(null);
     const [lengthText, setLengthText] = useState('');
-    const [lengthProblem, setLengthProblem] = useState(false);
+    const [lengthProblem, setLengthProblem] = useState<string | null>(null);
 
     const saved = useMemo(() => new Map(lines.map((l) => [lineKey(l), l])), [lines]);
 
@@ -201,7 +202,7 @@ export function CountSheet({ view }: { view: CountView }) {
             const meta: LineMeta = { key: variantKey(v.package_session_id), package_session_id: v.package_session_id, name: v.product_name, variant_name: v.variant_name, sku: v.sku, piece_code: null, unit: v.unit, qty_scale: v.qty_scale };
             if (isMeasured(v)) {
                 setLengthText('');
-                setLengthProblem(false);
+                setLengthProblem(null);
                 setLengthFor(meta);
                 return setMessage({ tone: 'info', text: t('inventory.countSheet.typeLength', { item: v.product_name ?? v.sku ?? '' }) });
             }
@@ -224,7 +225,9 @@ export function CountSheet({ view }: { view: CountView }) {
     const addLength = () => {
         if (!lengthFor) return;
         const base = parseDisplayQuantity(lengthText, lengthFor.qty_scale);
-        if (base === null || base < 1 || base > 10_000_000) return setLengthProblem(true);
+        if (base === null || base < 1 || base > 10_000_000) {
+            return setLengthProblem(typedLengthProblem(lengthText, lengthFor.qty_scale, t) ?? t('inventory.transferLines.quantityRange'));
+        }
         enqueue(lengthFor, { kind: 'ADD', quantity: base, explicit: true });
         setTyped((current) => {
             const next = { ...current };
@@ -240,7 +243,8 @@ export function CountSheet({ view }: { view: CountView }) {
         if (text === undefined) return;
         const base = parseDisplayQuantity(text, meta.qty_scale);
         if (base === null || base > 10_000_000) {
-            return setMessage({ tone: 'danger', text: t('inventory.transferLines.quantityRange') });
+            const text$ = typedLengthProblem(text, meta.qty_scale, t) ?? t('inventory.transferLines.quantityRange');
+            return setMessage({ tone: 'danger', text: text$ });
         }
         enqueue(meta, { kind: 'SET', quantity: base });
     };
@@ -484,7 +488,7 @@ export function CountSheet({ view }: { view: CountView }) {
                 }
             >
                 <Field
-                    label={t('inventory.countSheet.lengthLabel', { unit: qtyUnit(lengthFor?.unit) ?? t('orders.units.metre') })}
+                    label={t('inventory.countSheet.lengthLabel', { unit: qtyUnit(lengthFor?.unit, t) ?? t('orders.units.metre') })}
                     htmlFor="count-length"
                     hint={t('inventory.countSheet.lengthHint')}
                 >
@@ -506,7 +510,7 @@ export function CountSheet({ view }: { view: CountView }) {
                 </Field>
                 {lengthProblem && (
                     <p role="alert" className="text-caption text-danger-600">
-                        {t('inventory.transferLines.quantityRange')}
+                        {lengthProblem}
                     </p>
                 )}
             </MyDialog>

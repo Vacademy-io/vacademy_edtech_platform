@@ -9,6 +9,8 @@ import { PlainSelect } from '@/routes/commerce/-components/CatalogueBits';
 import { CommerceLoadingRows } from '@/routes/commerce/-components/CommerceStates';
 import { RETURN_WARNINGS } from '@/routes/commerce/orders/-components/dialogs/ReturnCreateDialog';
 import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
+import { isMeasuredScale, lengthProblemText, parseLength } from '@/routes/commerce/-shared/units';
+import { conditionLabel } from '@/routes/commerce/orders/-shared/length-entry';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { buzz, useScanInput } from '@/routes/commerce/orders/-shared/use-scan-input';
 import { getInstituteId } from '@/constants/helper';
@@ -42,14 +44,43 @@ export function PosReturnPage({ sessionId, initialOrderId }: { sessionId: string
 }
 
 /** What is being returned of one line: resaleable and damaged counts, or picked pieces. */
-interface Pick {
+export interface Pick {
     good: number;
     damaged: number;
     /** Piece id → condition, for one-of-a-kind lines. */
     pieces: Record<string, 'RESALEABLE' | 'DAMAGED'>;
+    /** A measured line's boxes as typed (metres); `good`/`damaged` hold their base units. */
+    typed?: Partial<Record<'good' | 'damaged', string>>;
 }
 
-const EMPTY_PICK: Pick = { good: 0, damaged: 0, pieces: {} };
+export const EMPTY_PICK: Pick = { good: 0, damaged: 0, pieces: {} };
+
+/** A measured line's whole returnable length goes back by typing (1.2 m → 12), not by 12 taps (WP-44 FA5). */
+export const typesLength = (line: ReturnLineFacts): boolean =>
+    isMeasuredScale(line.qty_scale) && line.piece_ids.length === 0;
+/** What the length rules read of a bill line (`Pick` here is the return pick, not the TS utility). */
+type ReturnLineFacts = { qty_scale: number; piece_ids: string[]; returnable: number };
+
+/**
+ * A typed length in one condition box: the text is kept as typed; the base
+ * units follow it, 0 while it is blank or refused ("1.25" at scale 10).
+ */
+export function typeLengthPick(pick: Pick, key: 'good' | 'damaged', text: string, line: ReturnLineFacts): Pick {
+    const parsed = parseLength(text, line.qty_scale);
+    return { ...pick, typed: { ...pick.typed, [key]: text }, [key]: 'stored' in parsed ? parsed.stored : 0 };
+}
+
+/** Why a line's pick cannot be sent: a refused box, or more than can come back; null when fine. */
+export function pickProblem(pick: Pick | undefined, line: ReturnLineFacts): 'format' | 'decimals' | 'tooMuch' | null {
+    if (!pick) return null;
+    for (const key of ['good', 'damaged'] as const) {
+        const text = pick.typed?.[key];
+        if (text === undefined || text.trim() === '') continue;
+        const parsed = parseLength(text, line.qty_scale);
+        if ('problem' in parsed) return parsed.problem;
+    }
+    return pickCount(pick) > line.returnable ? 'tooMuch' : null;
+}
 const pickCount = (pick: Pick | undefined) =>
     pick ? pick.good + pick.damaged + Object.keys(pick.pieces).length : 0;
 
@@ -339,7 +370,8 @@ function ReturnForm({
     const needsRef = settle === 'UPI' || settle === 'BANK_TRANSFER';
     const refOk = !needsRef || /^[A-Za-z0-9 /_.:#-]{1,100}$/.test(reference.trim());
     const overrideOk = warnings.length === 0 || override.trim().length > 0;
-    const canSubmit = online && lines.length > 0 && !!reason && refOk && overrideOk;
+    const picksOk = sale.lines.every((line) => pickProblem(picks[line.order_line_id], line) === null);
+    const canSubmit = online && lines.length > 0 && !!reason && refOk && overrideOk && picksOk;
 
     const submit = async () => {
         setTouched(true);
@@ -534,6 +566,7 @@ function ReturnLine({
     const { t } = useTranslation('commerce');
     const count = pickCount(pick);
     const max = line.returnable;
+    const problem = pickProblem(pick, line);
     const stepper = (label: string, value: number, key: 'good' | 'damaged') => (
         <div className="flex items-center gap-2">
             <span className="min-w-24 text-caption text-muted-foreground">{label}</span>
@@ -605,6 +638,37 @@ function ReturnLine({
                             </button>
                         );
                     })}
+                </div>
+            ) : typesLength(line) ? (
+                <div className="flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2">
+                        {(['good', 'damaged'] as const).map((key) => (
+                            <PosField
+                                key={key}
+                                label={conditionLabel(key === 'good' ? 'resaleable' : 'damaged', line.qty_scale, line.unit, t)}
+                                htmlFor={`pos-return-${line.order_line_id}-${key}`}
+                            >
+                                <input
+                                    id={`pos-return-${line.order_line_id}-${key}`}
+                                    data-testid={`pos-return-length-${key}`}
+                                    inputMode="decimal"
+                                    className={posInputClass}
+                                    value={pick.typed?.[key] ?? ''}
+                                    placeholder="0"
+                                    onChange={(event) =>
+                                        onChange((p) => typeLengthPick(p, key, event.target.value.replace(/[^\d.,]/g, ''), line))
+                                    }
+                                />
+                            </PosField>
+                        ))}
+                    </div>
+                    {problem && (
+                        <p role="alert" className="text-caption text-danger-600">
+                            {problem === 'tooMuch'
+                                ? t('pos.returns.tooMuch', { quantity: formatQuantity(max, line.qty_scale, line.unit, t) })
+                                : lengthProblemText(problem, line.qty_scale, t)}
+                        </p>
+                    )}
                 </div>
             ) : (
                 <div className="flex flex-col gap-2">

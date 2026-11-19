@@ -8,7 +8,7 @@ import { SectionCard, useAdminLanguage } from '@/routes/commerce/-components/Cat
 import { CommercePage } from '@/routes/commerce/-components/CommercePage';
 import { CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
 import { OrderNotice, TextAreaField } from '@/routes/commerce/orders/-components/order-ui';
-import { displayQuantity } from '@/routes/commerce/orders/-shared/order-format';
+import { lengthInputText } from '@/routes/commerce/-shared/units';
 import { cancelTransfer, updateTransfer } from '../-shared/inventory-api';
 import {
     assignedLocations,
@@ -18,7 +18,14 @@ import {
     useTransfer,
 } from '../-shared/inventory-hooks';
 import { SHORTFALL_REASONS, type TransferView } from '../-shared/inventory-types';
-import { applyDraft, type DraftEvent, type DraftState, draftFromView, toTransferLines } from '../-shared/transfer-lines';
+import {
+    applyDraft,
+    type DraftEvent,
+    type DraftState,
+    draftFromView,
+    linesWithoutLength,
+    toTransferLines,
+} from '../-shared/transfer-lines';
 import { type StockScan, useStockScan } from '../-shared/use-stock-scan';
 import { DispatchDialog } from './DispatchDialog';
 import { pickName } from './ItemPicker';
@@ -26,6 +33,7 @@ import {
     ConfirmDialog,
     InventoryErrorNotice,
     ItemCell,
+    LengthProblem,
     parseDisplayQuantity,
     placeLabel,
     Qty,
@@ -209,8 +217,21 @@ function DraftEditor({ view, canDispatch, canCancel }: { view: TransferView; can
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [view]);
 
+    const askLength = (key: string, name: string) => {
+        setTyped((previous) => ({ ...previous, [key]: previous[key] ?? '' }));
+        setMessage({ tone: 'info', text: t('inventory.transferLines.typeLength', { item: name }) });
+        setTimeout(() => document.getElementById(`transfer-qty-${key}`)?.focus(), 0);
+    };
+
     const apply = (event: DraftEvent) => {
         const outcome = applyDraft(draft, event);
+        if (outcome.refusal === 'typeLength' && event.type === 'ADD_VARIANT') {
+            // A measured roll: the line waits at 0 for its typed length; a repeat scan reopens the box.
+            setDraft(outcome.state);
+            setDirty(true);
+            askLength(`v:${event.item.package_session_id}`, event.item.product_name ?? event.item.sku ?? '');
+            return false;
+        }
         if (outcome.refusal) {
             scan.refuse();
             setMessage({ tone: 'danger', text: t(`inventory.transferLines.${outcome.refusal}`) });
@@ -245,6 +266,11 @@ function DraftEditor({ view, canDispatch, canCancel }: { view: TransferView; can
 
     const save = async (): Promise<boolean> => {
         setError(null);
+        const waiting = linesWithoutLength(draft)[0];
+        if (waiting) {
+            askLength(waiting.key, waiting.name ?? waiting.sku ?? '');
+            return false;
+        }
         let saved = false;
         try {
             await write.run({
@@ -300,24 +326,28 @@ function DraftEditor({ view, canDispatch, canCancel }: { view: TransferView; can
                                 {line.piece_id ? (
                                     <span className="text-caption text-muted-foreground">{t('inventory.transfers.onePiece')}</span>
                                 ) : (
-                                    <input
-                                        aria-label={t('inventory.transfers.quantity')}
-                                        inputMode={line.qty_scale > 1 ? 'decimal' : 'numeric'}
-                                        value={typed[line.key] ?? String(displayQuantity(line.quantity, line.qty_scale))}
-                                        onChange={(event) => {
-                                            const text = event.target.value;
-                                            setTyped({ ...typed, [line.key]: text });
-                                            const base = parseDisplayQuantity(text, line.qty_scale);
-                                            if (base !== null) {
-                                                const outcome = applyDraft(draft, { type: 'SET_QUANTITY', key: line.key, quantity: base });
-                                                if (!outcome.refusal) {
-                                                    setDraft(outcome.state);
-                                                    setDirty(true);
+                                    <div className="flex flex-col items-end gap-1">
+                                        <input
+                                            id={`transfer-qty-${line.key}`}
+                                            aria-label={t('inventory.transfers.quantity')}
+                                            inputMode={line.qty_scale > 1 ? 'decimal' : 'numeric'}
+                                            value={typed[line.key] ?? lengthInputText(line.quantity, line.qty_scale)}
+                                            onChange={(event) => {
+                                                const text = event.target.value;
+                                                setTyped({ ...typed, [line.key]: text });
+                                                const base = parseDisplayQuantity(text, line.qty_scale);
+                                                if (base !== null) {
+                                                    const outcome = applyDraft(draft, { type: 'SET_QUANTITY', key: line.key, quantity: base });
+                                                    if (!outcome.refusal) {
+                                                        setDraft(outcome.state);
+                                                        setDirty(true);
+                                                    }
                                                 }
-                                            }
-                                        }}
-                                        className="h-12 w-28 rounded-md border border-neutral-300 bg-background px-3 text-end text-body tabular-nums focus:border-primary-500 focus:outline-none"
-                                    />
+                                            }}
+                                            className="h-12 w-28 rounded-md border border-neutral-300 bg-background px-3 text-end text-body tabular-nums focus:border-primary-500 focus:outline-none"
+                                        />
+                                        <LengthProblem text={typed[line.key]} scale={line.qty_scale} />
+                                    </div>
                                 )}
                                 <button
                                     type="button"

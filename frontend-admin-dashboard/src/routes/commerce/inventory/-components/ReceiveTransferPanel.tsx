@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { MyButton } from '@/components/design-system/button';
 import { PlainSelect, SectionCard } from '@/routes/commerce/-components/CatalogueBits';
 import { TextAreaField } from '@/routes/commerce/orders/-components/order-ui';
-import { displayQuantity } from '@/routes/commerce/orders/-shared/order-format';
+import { lengthInputText } from '@/routes/commerce/-shared/units';
 import { receiveTransfer } from '../-shared/inventory-api';
 import { useInvalidateInventory } from '../-shared/inventory-hooks';
 import { SHORTFALL_REASONS, type ShortfallReason, type TransferView } from '../-shared/inventory-types';
@@ -17,7 +17,7 @@ import {
     toReceiveBody,
 } from '../-shared/transfer-lines';
 import { type StockScan, useStockScan } from '../-shared/use-stock-scan';
-import { InventoryErrorNotice, ItemCell, parseDisplayQuantity, Qty, useInventoryErrorText } from './inventory-ui';
+import { InventoryErrorNotice, ItemCell, LengthProblem, parseDisplayQuantity, Qty, useInventoryErrorText } from './inventory-ui';
 import { type ScanMessage, StockScanBox } from './StockScanBox';
 import { useInventoryWrite } from './use-inventory-write';
 
@@ -127,7 +127,7 @@ export function ReceiveTransferPanel({ view }: { view: TransferView }) {
                                         {t('inventory.transfers.receivedQty')}
                                         <input
                                             inputMode={scale > 1 ? 'decimal' : 'numeric'}
-                                            value={typed[line.line_id] ?? String(displayQuantity(line.received, scale))}
+                                            value={typed[line.line_id] ?? lengthInputText(line.received, scale)}
                                             onChange={(event) => {
                                                 const text = event.target.value;
                                                 setTyped({ ...typed, [line.line_id]: text });
@@ -136,6 +136,7 @@ export function ReceiveTransferPanel({ view }: { view: TransferView }) {
                                             }}
                                             className="h-12 w-28 rounded-md border border-neutral-300 bg-background px-3 text-end text-body tabular-nums text-foreground focus:border-primary-500 focus:outline-none"
                                         />
+                                        <LengthProblem text={typed[line.line_id]} scale={scale} />
                                     </label>
                                 )}
                                 {short && (

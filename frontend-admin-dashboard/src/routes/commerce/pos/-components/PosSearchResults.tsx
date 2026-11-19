@@ -1,8 +1,9 @@
 import { useTranslation } from 'react-i18next';
 import { Plus } from '@phosphor-icons/react';
+import { formatRate } from '@/routes/commerce/-shared/units';
 import { pickText } from '../-shared/pos-cart';
 import type { CatalogueItem } from '../-shared/pos-types';
-import { rupees, stockHint, usePosLang } from './pos-ui';
+import { stockHint, usePosLang } from './pos-ui';
 
 /** Typed-search matches under the scan box; one tap adds the item. */
 export function PosSearchResults({
@@ -44,7 +45,9 @@ export function PosSearchResults({
                                         .join(' · ')}
                                 </span>
                             </span>
-                            <span className="shrink-0 tabular-nums text-body text-foreground">{rupees(item.unit_price)}</span>
+                            <span className="shrink-0 tabular-nums text-body text-foreground">
+                                {formatRate(item.unit_price, item.qty_scale, item.unit, 'INR', t)}
+                            </span>
                             <Plus size={20} className="shrink-0 text-primary-500" />
                         </button>
                     </li>

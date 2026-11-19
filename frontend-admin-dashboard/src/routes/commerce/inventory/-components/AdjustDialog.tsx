@@ -9,7 +9,7 @@ import { scanCode } from '@/routes/commerce/orders/-shared/order-api';
 import { adjustStock } from '../-shared/inventory-api';
 import { useInvalidateInventory } from '../-shared/inventory-hooks';
 import { ADJUSTMENT_REASONS, DAMAGE_REASONS, type ItemFacts, type PlaceRef } from '../-shared/inventory-types';
-import { ChoiceGroup, InventoryErrorNotice, ItemCell, parseDisplayQuantity, Qty, TOUCH } from './inventory-ui';
+import { ChoiceGroup, InventoryErrorNotice, ItemCell, parseDisplayQuantity, Qty, TOUCH, typedLengthProblem } from './inventory-ui';
 import { useInventoryWrite } from './use-inventory-write';
 
 type Kind = 'ADJUSTMENT' | 'DAMAGE';
@@ -55,7 +55,9 @@ export function AdjustDialog({
         setError(null);
         const dir: Direction | null = kind === 'DAMAGE' ? 'REMOVE' : direction;
         if (!dir) return setProblem(t('inventory.adjust.problems.direction'));
-        if (!base || base < 1) return setProblem(t('inventory.adjust.problems.quantity'));
+        if (!base || base < 1) {
+            return setProblem(typedLengthProblem(quantity, item.qty_scale, t) ?? t('inventory.adjust.problems.quantity'));
+        }
         if (!reason) return setProblem(t('inventory.adjust.problems.reason'));
         let pieceId: string | undefined;
         if (isPiece) {

@@ -11,7 +11,9 @@ import { PlainSelect, useAdminLanguage } from '@/routes/commerce/-components/Cat
 import { useLocations } from '@/routes/commerce/-shared/commerce-hooks';
 import { itemLines } from '@/routes/commerce/orders/-shared/order-actions';
 import { createReturn, previewReturn } from '@/routes/commerce/orders/-shared/order-api';
-import { displayQuantity, formatQuantity, storedQuantity } from '@/routes/commerce/orders/-shared/order-format';
+import { lengthProblemText, unitWord } from '@/routes/commerce/-shared/units';
+import { returnRequestLines, typedQuantity } from '@/routes/commerce/orders/-shared/length-entry';
+import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import {
     RETURN_REASONS,
     RETURN_VIA,
@@ -82,16 +84,8 @@ export function ReturnCreateDialog({ open, onOpenChange, detail }: OrderDialogPr
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
-    const requested = useMemo(
-        () =>
-            lines
-                .map((line) => ({
-                    order_line_id: line.id,
-                    quantity: storedQuantity(Number(quantities[line.id] || 0), line.qty_scale),
-                }))
-                .filter((line) => Number.isFinite(line.quantity) && line.quantity > 0),
-        [lines, quantities]
-    );
+    // Typed in metres for measured lines; a refused box ("1.25" at scale 10) sends nothing.
+    const requested = useMemo(() => returnRequestLines(lines, quantities), [lines, quantities]);
 
     // Preview every change, 400 ms after the last one.
     const previewKey = JSON.stringify({ requested, reason, via });
@@ -122,13 +116,13 @@ export function ReturnCreateDialog({ open, onOpenChange, detail }: OrderDialogPr
         return found ? found.returnable_quantity : fallback;
     };
 
-    const lineProblems = lines.filter((line) => {
-        const typed = quantities[line.id];
-        if (!typed) return false;
-        const value = Number(typed);
-        const stored = storedQuantity(value, line.qty_scale);
-        return !Number.isFinite(value) || value < 0 || stored > returnableOf(line.id, line.qty_shipped - line.qty_returned);
-    });
+    /** The sentence of a refused box: extra decimals, not a number, or more than can come back. */
+    const lineProblemOf = (line: (typeof lines)[number]): string | null => {
+        const typed = typedQuantity(quantities[line.id], line.qty_scale);
+        if ('problem' in typed) return lengthProblemText(typed.problem, line.qty_scale, t);
+        return typed.stored > returnableOf(line.id, line.qty_shipped - line.qty_returned) ? t('orders.returns.tooMany') : null;
+    };
+    const lineProblems = lines.filter((line) => lineProblemOf(line) !== null);
     const warnings = preview?.warnings ?? [];
     const needsOverride = warnings.length > 0 || forceOverride;
     const overrideError = needsOverride && !override.trim() ? t('orders.dialogs.reasonRequired') : null;
@@ -206,12 +200,13 @@ export function ReturnCreateDialog({ open, onOpenChange, detail }: OrderDialogPr
                                         </span>
                                     </div>
                                     <div className="flex flex-col gap-1 sm:w-32">
+                                        {line.qty_scale > 1 && (
+                                            <span className="text-caption text-muted-foreground">
+                                                {t('orders.units.lengthLabel', { unit: unitWord(line.unit, t) ?? '' })}
+                                            </span>
+                                        )}
                                         <input
-                                            type="number"
-                                            inputMode="decimal"
-                                            min={0}
-                                            max={displayQuantity(left, line.qty_scale)}
-                                            step={line.qty_scale > 1 ? 1 / line.qty_scale : 1}
+                                            inputMode={line.qty_scale > 1 ? 'decimal' : 'numeric'}
                                             aria-label={t('orders.returns.quantityFor', { name: line.name ?? line.sku ?? '' })}
                                             aria-invalid={bad || undefined}
                                             className={inputClass}
@@ -222,7 +217,7 @@ export function ReturnCreateDialog({ open, onOpenChange, detail }: OrderDialogPr
                                         />
                                         {bad && (
                                             <p role="alert" className="text-caption text-danger-600">
-                                                {t('orders.returns.tooMany')}
+                                                {lineProblemOf(line)}
                                             </p>
                                         )}
                                     </div>

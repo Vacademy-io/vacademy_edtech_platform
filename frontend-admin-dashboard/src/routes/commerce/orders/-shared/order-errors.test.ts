@@ -2,7 +2,7 @@
 import { AxiosError } from 'axios';
 import { describe, expect, it } from 'vitest';
 import { readCommerceError } from '@/routes/commerce/-shared/commerce-errors';
-import { ORDER_ERROR_CODES, orderErrorKey, orderErrorKind, readOrderError } from './order-errors';
+import { ORDER_ERROR_CODES, orderErrorKey, orderErrorKind, quantityStepText, readOrderError } from './order-errors';
 
 const failure = (status: number, message: string, headers: Record<string, string> = {}) =>
     new AxiosError('failed', 'ERR_BAD_RESPONSE', undefined, undefined, {
@@ -114,5 +114,16 @@ describe('a 403 without a code', () => {
         expect(orderErrorKey(readOrderError(failure(403, 'LOCATION_NOT_ALLOWED: not here')))).toBe(
             'orders.errors.LOCATION_NOT_ALLOWED'
         );
+    });
+});
+
+describe('QUANTITY_STEP (WP-44 B7)', () => {
+    it('maps the code and keeps the step the server named', () => {
+        const read = readOrderError(failure(400, 'QUANTITY_STEP: line L1 is sold in steps of 0.5 m'));
+        expect(read).toMatchObject({ code: 'QUANTITY_STEP', key: 'orders.errors.QUANTITY_STEP', step: '0.5 m', showServerSentence: true });
+        expect(quantityStepText('line l2 is sold in steps of 1 kg.')).toBe('1 kg');
+        expect(quantityStepText('line l3 is sold in steps of 2')).toBe('2');
+        expect(quantityStepText('line l4 is sold in steps of 0.25 m')).toBe('0.25 m');
+        expect(quantityStepText('no step here')).toBeNull();
     });
 });

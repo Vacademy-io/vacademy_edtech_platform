@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/formatters';
 import { PlainSelect, SectionCard, useAdminLanguage } from '@/routes/commerce/-components/CatalogueBits';
 import { CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
 import { Field, TextAreaField } from '@/routes/commerce/orders/-components/order-ui';
-import { displayQuantity } from '@/routes/commerce/orders/-shared/order-format';
+import { lengthInputText } from '@/routes/commerce/-shared/units';
 import { createReceipt } from '../-shared/inventory-api';
 import { useInvalidateInventory, useReceipts } from '../-shared/inventory-hooks';
 import { RECEIVE_SOURCES, type ReceiptView, type ReceiveSource, type VariantPick } from '../-shared/inventory-types';
@@ -21,7 +21,7 @@ import {
 import { type StockScan, useStockScan } from '../-shared/use-stock-scan';
 import { pickName } from './ItemPicker';
 import type { TabProps } from './InventoryPage';
-import { ChoiceGroup, InventoryErrorNotice, ItemCell, parseDisplayQuantity, Qty, TOUCH, useInventoryErrorText } from './inventory-ui';
+import { ChoiceGroup, InventoryErrorNotice, ItemCell, parseDisplayQuantity, Qty, TOUCH, typedLengthProblem, useInventoryErrorText } from './inventory-ui';
 import { PrintLabelsDialog } from './PrintLabelsDialog';
 import { QuickAddDialog } from './QuickAddDialog';
 import { type ScanMessage, StockScanBox } from './StockScanBox';
@@ -250,7 +250,7 @@ export function ReceiveTab({ locationId, allPlaces }: TabProps) {
                             {lines.map((line) => {
                                 const piece = (line.stock_mode ?? '').toUpperCase() === 'PIECE';
                                 const shown =
-                                    typed[line.package_session_id] ?? String(displayQuantity(line.quantity, line.qty_scale));
+                                    typed[line.package_session_id] ?? lengthInputText(line.quantity, line.qty_scale);
                                 return (
                                     <li
                                         key={line.package_session_id}
@@ -272,6 +272,11 @@ export function ReceiveTab({ locationId, allPlaces }: TabProps) {
                                                 label={t('inventory.receive.quantity')}
                                                 htmlFor={`qty-${line.package_session_id}`}
                                                 className="w-32"
+                                                error={
+                                                    typed[line.package_session_id] !== undefined && typed[line.package_session_id]?.trim()
+                                                        ? typedLengthProblem(typed[line.package_session_id] ?? '', line.qty_scale, t)
+                                                        : null
+                                                }
                                             >
                                                 <input
                                                     id={`qty-${line.package_session_id}`}

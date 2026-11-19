@@ -1,6 +1,7 @@
 import type { TFunction } from 'i18next';
 import { formatMoney } from '@/components/design-system/money-cell';
 import { formatDateTime } from '@/lib/formatters';
+import { formatRate } from '@/routes/commerce/-shared/units';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import type { Receipt } from './pos-types';
 
@@ -74,7 +75,8 @@ export function receiptRows(receipt: Receipt, t: TFunction, _lang: 'hi' | 'en'):
         name: line.name,
         detail: line.variant_label ?? '',
         quantity: formatQuantity(line.quantity, line.qty_scale, line.unit, t),
-        rate: RS(line.unit_price),
+        // "₹123.40 / m" for a measured line (the wire price is per base unit); pieces as before.
+        rate: formatRate(line.unit_price, line.qty_scale, line.unit, 'INR', t),
         amount: RS(line.net),
         discount: line.discount > 0 ? RS(line.discount) : null,
         hsn:

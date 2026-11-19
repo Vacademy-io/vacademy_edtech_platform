@@ -6,11 +6,9 @@ import { MyDialog } from '@/components/design-system/dialog';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { liveShipment } from '@/routes/commerce/orders/-shared/order-actions';
 import { changeShipmentStatus } from '@/routes/commerce/orders/-shared/order-api';
-import {
-    displayQuantity,
-    formatQuantity,
-    storedQuantity,
-} from '@/routes/commerce/orders/-shared/order-format';
+import { lengthProblemText } from '@/routes/commerce/-shared/units';
+import { conditionLabel, conditionSplit, wholeText } from '@/routes/commerce/orders/-shared/length-entry';
+import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import {
     CONDITIONS,
     type Condition,
@@ -85,7 +83,7 @@ export function RtoReceiveDialog({ open, onOpenChange, detail }: OrderDialogProp
                 line.piece_codes.forEach((code) => (pieces[code] = 'RESALEABLE'));
             } else {
                 const scale = lineById.get(line.order_line_id)?.qty_scale;
-                counts[line.id] = { resaleable: String(displayQuantity(line.quantity, scale)), damaged: '0' };
+                counts[line.id] = { resaleable: wholeText(line.quantity, scale), damaged: '0' };
             }
         });
         setState({ pieces, counts });
@@ -98,11 +96,13 @@ export function RtoReceiveDialog({ open, onOpenChange, detail }: OrderDialogProp
     const countProblem = (line: StaffShipmentLine): boolean => {
         const entry = state.counts[line.id];
         if (!entry) return false;
+        return 'problem' in conditionSplit(entry, lineById.get(line.order_line_id)?.qty_scale, line.quantity);
+    };
+    /** A refused length box ("1.25" at scale 10) names its own sentence; null for "must add up". */
+    const typedProblem = (line: StaffShipmentLine): string | null => {
         const scale = lineById.get(line.order_line_id)?.qty_scale;
-        const good = Number(entry.resaleable || 0);
-        const bad = Number(entry.damaged || 0);
-        if (!Number.isFinite(good) || !Number.isFinite(bad) || good < 0 || bad < 0) return true;
-        return storedQuantity(good, scale) + storedQuantity(bad, scale) !== line.quantity;
+        const split = conditionSplit(state.counts[line.id], scale, line.quantity);
+        return 'problem' in split && split.problem !== 'sum' ? lengthProblemText(split.problem, scale, t) : null;
     };
     const invalid = lines.some(countProblem);
 
@@ -117,10 +117,9 @@ export function RtoReceiveDialog({ open, onOpenChange, detail }: OrderDialogProp
                     out.push({ order_line_id: line.order_line_id, condition, quantity: codes.length, piece_ids: ids });
                 }
             } else {
-                const entry = state.counts[line.id];
-                const scale = lineById.get(line.order_line_id)?.qty_scale;
-                const good = storedQuantity(Number(entry?.resaleable || 0), scale);
-                const bad = storedQuantity(Number(entry?.damaged || 0), scale);
+                const split = conditionSplit(state.counts[line.id], lineById.get(line.order_line_id)?.qty_scale, line.quantity);
+                if ('problem' in split) continue;
+                const { good, bad } = split;
                 if (good > 0) out.push({ order_line_id: line.order_line_id, condition: 'RESALEABLE', quantity: good });
                 if (bad > 0) out.push({ order_line_id: line.order_line_id, condition: 'DAMAGED', quantity: bad });
             }
@@ -205,15 +204,12 @@ export function RtoReceiveDialog({ open, onOpenChange, detail }: OrderDialogProp
                                     {(['resaleable', 'damaged'] as const).map((kind) => (
                                         <Field
                                             key={kind}
-                                            label={t(kind === 'resaleable' ? 'orders.condition.RESALEABLE' : 'orders.condition.DAMAGED')}
+                                            label={conditionLabel(kind, scale, orderLine?.unit, t)}
                                             htmlFor={`rto-${line.id}-${kind}`}
                                         >
                                             <input
                                                 id={`rto-${line.id}-${kind}`}
-                                                type="number"
-                                                inputMode="decimal"
-                                                min={0}
-                                                step={scale && scale > 1 ? 1 / scale : 1}
+                                                inputMode={scale && scale > 1 ? 'decimal' : 'numeric'}
                                                 className={inputClass}
                                                 value={entry?.[kind] ?? ''}
                                                 onChange={(event) =>
@@ -234,9 +230,10 @@ export function RtoReceiveDialog({ open, onOpenChange, detail }: OrderDialogProp
                                     ))}
                                     {countProblem(line) && (
                                         <p role="alert" className="text-caption text-danger-600 sm:col-span-2">
-                                            {t('orders.dialogs.rtoReceive.mustAddUp', {
-                                                quantity: formatQuantity(line.quantity, scale, orderLine?.unit, t),
-                                            })}
+                                            {typedProblem(line) ??
+                                                t('orders.dialogs.rtoReceive.mustAddUp', {
+                                                    quantity: formatQuantity(line.quantity, scale, orderLine?.unit, t),
+                                                })}
                                         </p>
                                     )}
                                 </div>

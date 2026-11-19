@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Minus, Plus, Ruler, Tag, Trash, X } from '@phosphor-icons/react';
 import { cn } from '@/lib/utils';
+import { formatRate } from '@/routes/commerce/-shared/units';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { type CartLine, isMeasured, isPieceLine, lineGross, pickText } from '../-shared/pos-cart';
 import type { QuoteLine } from '../-shared/pos-types';
@@ -63,7 +64,16 @@ export function PosCartLines({
                                     {variant ? ` · ${variant}` : ''}
                                 </span>
                                 <span className="text-caption text-muted-foreground">
-                                    {[line.sku, `${rupees(line.unitPrice)} ${t('pos.sell.each')}`, hint].filter(Boolean).join(' · ')}
+                                    {[
+                                        line.sku,
+                                        // A measured line reads "₹123.40 / m"; the wire price is per 10 cm.
+                                        isMeasured(line)
+                                            ? formatRate(line.unitPrice, line.qtyScale, line.unit, 'INR', t)
+                                            : `${rupees(line.unitPrice)} ${t('pos.sell.each')}`,
+                                        hint,
+                                    ]
+                                        .filter(Boolean)
+                                        .join(' · ')}
                                 </span>
                             </div>
                             <div className="flex shrink-0 flex-col items-end">

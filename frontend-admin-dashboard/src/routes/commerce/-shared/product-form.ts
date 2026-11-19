@@ -10,6 +10,7 @@ import {
     type StockPolicy,
     type VariantRequest,
 } from './catalogue-types';
+import { lengthInputText, parseLength } from './units';
 import { type Combination, combinationKey, duplicateSkus } from './variant-combinations';
 
 /**
@@ -69,6 +70,25 @@ export interface ProductFormValues {
 
 export const DEFAULT_MEASURE_UNIT = 'MTR';
 export const DEFAULT_MEASURE_SCALE = '10';
+/** Parts in one unit that goods sold by length may use (WP-44 D2): 1 is for counted goods only. */
+export const MEASURE_SCALES = [10, 100, 1000] as const;
+
+/** The scale the smallest cut is read with: the typed one when allowed, else the default 10. */
+export const measureScaleOf = (raw: string): number => {
+    const n = Number(raw.trim());
+    return (MEASURE_SCALES as readonly number[]).includes(n) ? n : Number(DEFAULT_MEASURE_SCALE);
+};
+
+/**
+ * The smallest cut typed in units ("0.5" m) → base units (5 at scale 10), or
+ * null when it is blank, not a number, has more decimals than the scale holds
+ * ("0.55" at scale 10) or is 0.
+ */
+export function stepToBase(raw: string, scaleRaw: string): number | null {
+    if (raw.trim() === '') return null;
+    const parsed = parseLength(raw, measureScaleOf(scaleRaw));
+    return 'stored' in parsed && parsed.stored >= 1 ? parsed.stored : null;
+}
 
 const EMPTY_TRANSLATION: TranslationValues = {
     name: '',
@@ -168,7 +188,11 @@ export function productToValues(product: ProductDetail): ProductFormValues {
         sold_as: soldAsOf(product),
         unit: product.unit ?? '',
         qty_scale: text(product.qty_scale),
-        qty_step: text(product.qty_step),
+        // A measured product's smallest cut is shown in units ("0.5" m), stored in base units (5).
+        qty_step:
+            soldAsOf(product) === 'MEASURED' && product.qty_step
+                ? lengthInputText(product.qty_step, product.qty_scale)
+                : text(product.qty_step),
         tax_class_id: product.tax_class_id ?? '',
         origin_location_id: product.origin_location_id ?? '',
         translations,
@@ -291,7 +315,8 @@ export function measureFields(
             stock_mode: 'QUANTITY',
             unit: (values.unit.trim() || DEFAULT_MEASURE_UNIT).toUpperCase(),
             qty_scale: numberOrUndefined(values.qty_scale) ?? Number(DEFAULT_MEASURE_SCALE),
-            qty_step: numberOrUndefined(values.qty_step) ?? 1,
+            // Typed in units; validation refuses anything that is not a whole number of base units.
+            qty_step: stepToBase(values.qty_step, values.qty_scale) ?? 1,
         };
     }
     return {
@@ -385,7 +410,6 @@ export function valuesToProductRequest(
 export const SLUG_PATTERN = /^[\p{L}\p{M}\p{N}]+(-[\p{L}\p{M}\p{N}]+)*$/u;
 const MONEY = /^(\d{1,10}(\.\d{1,2})?)?$/;
 const WHOLE = /^\d{0,9}$/;
-const POSITIVE_WHOLE = /^[1-9]\d{0,8}$/;
 export const BLOCK_CODE = /^[a-z0-9]+(_[a-z0-9]+)*$/;
 
 const translationSchema = z.object({
@@ -493,11 +517,20 @@ export const buildProductSchema = (t: TFunction) =>
             });
 
             if (values.sold_as === 'MEASURED') {
-                if (values.qty_scale !== '' && !POSITIVE_WHOLE.test(values.qty_scale)) {
-                    issue(['qty_scale'], t('products.validation.positiveWhole'));
+                // Sold by length needs 10, 100 or 1000 parts in a unit (D2); 1 would read back as "by quantity".
+                if (values.qty_scale !== '' && !(MEASURE_SCALES as readonly number[]).includes(Number(values.qty_scale))) {
+                    issue(['qty_scale'], t('products.validation.measureScale'));
                 }
-                if (!POSITIVE_WHOLE.test(values.qty_step)) {
-                    issue(['qty_step'], t('products.validation.positiveWhole'));
+                if (stepToBase(values.qty_step, values.qty_scale) === null) {
+                    const parsed = parseLength(values.qty_step, measureScaleOf(values.qty_scale));
+                    issue(
+                        ['qty_step'],
+                        'problem' in parsed && parsed.problem === 'decimals'
+                            ? t('products.validation.stepDecimals', {
+                                  count: Math.round(Math.log10(measureScaleOf(values.qty_scale))),
+                              })
+                            : t('products.validation.stepRequired')
+                    );
                 }
             }
 

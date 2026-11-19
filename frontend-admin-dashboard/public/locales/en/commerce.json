@@ -872,9 +872,9 @@
             "unitHint": "For example MTR for metres.",
             "scale": "Parts in one unit",
             "scaleHint": "10 means stock and price count in tenths of the unit.",
-            "step": "Smallest step",
-            "stepHint": "In parts. With 10 parts in a unit, 5 means half a unit.",
-            "smallestCut": "Customers can buy in steps of {{amount}} {{unit}}."
+            "step": "Smallest cut",
+            "stepHint": "In units: 0.5 means half a metre.",
+            "smallestCut": "Customers can buy in steps of {{amount}}."
         },
         "variants": {
             "title": "Options and variants",
@@ -950,7 +950,10 @@
             "noVariant": "A product needs at least one variant.",
             "noLiveVariant": "At least one variant must not be archived.",
             "blockCode": "Use a short code in lower-case letters, digits and underscores, once per language.",
-            "priceNotDivisible": "For goods sold by measure the price is for one unit and must split into {{scale}} equal parts to the paisa."
+            "priceNotDivisible": "For goods sold by measure the price is for one unit and must split into {{scale}} equal parts to the paisa.",
+            "measureScale": "Sold by length needs 10, 100 or 1000 parts in one unit.",
+            "stepDecimals": "Use at most {{count}} decimal place(s) for the smallest cut.",
+            "stepRequired": "Type the smallest cut in units, like 0.5."
         },
         "serverErrors": {
             "taxClassMissing": "Choose a tax class before publishing. A GST-registered shop needs one on every product.",
@@ -1333,7 +1336,9 @@
             "due": "Due {{amount}}"
         },
         "units": {
-            "metre": "m"
+            "metre": "m",
+            "lengthLabel": "Length ({{unit}})",
+            "withUnit": "{{label}} (in {{unit}})"
         },
         "age": {
             "hours": "{{hours}} h",
@@ -1476,7 +1481,8 @@
             "ROLE_NOT_ALLOWED": "You do not have access to this at this location.",
             "LOCATION_NOT_ALLOWED": "You do not have access to this at this location.",
             "ACCESS_DENIED": "You do not have access to this at this location.",
-            "FEATURE_DISABLED": "This part of the shop is switched off for your institute."
+            "FEATURE_DISABLED": "This part of the shop is switched off for your institute.",
+            "QUANTITY_STEP": "Sold in steps of {{step}}. Change the length and try again."
         },
         "detail": {
             "title": "Order {{number}}",
@@ -1867,7 +1873,9 @@
                 "pieces": "Pieces: {{codes}}",
                 "remove": "Remove {{name}}",
                 "tooMany": "An order can have at most {{count}} items.",
-                "pieceTwice": "This piece is already in the order."
+                "pieceTwice": "This piece is already in the order.",
+                "stepHint": "In steps of {{step}}",
+                "priceOverrideMeasured": "Price for this order (per {{unit}})"
             },
             "scan": {
                 "label": "Scan a label",
@@ -1944,7 +1952,9 @@
                 "tooManyPayments": "At most 10 payments.",
                 "amount": "Enter an amount above zero.",
                 "remainderMethod": "Choose how the rest of the credit is refunded.",
-                "fix": "Some fields need attention."
+                "fix": "Some fields need attention.",
+                "quantityStep": "This item is sold in steps of {{step}}; change the length.",
+                "priceNotDivisible": "A price per unit must split into {{scale}} equal parts to the paisa (for example 123.40)."
             }
         },
         "exchange": {
@@ -2288,8 +2298,12 @@
             "problems": {
                 "format": "Enter a number, like 2.5.",
                 "quantityStep": "The length must be in steps of {{step}}.",
-                "quantityRange": "This length is too small or too large."
-            }
+                "quantityRange": "This length is too small or too large.",
+                "decimals": "Use at most {{count}} decimal place(s), like 2.5."
+            },
+            "less": "{{step}} less",
+            "more": "{{step}} more",
+            "lineTotal": "Line total"
         },
         "cart": {
             "scanPieceLabel": "Scan the piece label of this item.",
@@ -2438,7 +2452,8 @@
             "refunded": "{{amount}} refunded by {{method}}",
             "another": "Take another return",
             "credit": "Exchange credit {{amount}} for return {{number}}",
-            "maybeSaved": "The last return of this bill may have been saved: its answer did not reach this screen. Check the bill's returns before you give money back."
+            "maybeSaved": "The last return of this bill may have been saved: its answer did not reach this screen. Check the bill's returns before you give money back.",
+            "tooMuch": "At most {{quantity}} can come back."
         },
         "billBook": {
             "title": "Enter a paper bill",
@@ -2553,7 +2568,8 @@
             "PIN_INVALID": "Wrong PIN, or this manager cannot approve here.",
             "PIN_LOCKED": "Too many wrong PINs. Try again later.",
             "SESSION_MISMATCH": "This bill was made at another counter session. Take a return instead.",
-            "PROBABLY_SAVED": "This was most likely saved already: its answer did not reach this screen. Check before you do it again."
+            "PROBABLY_SAVED": "This was most likely saved already: its answer did not reach this screen. Check before you do it again.",
+            "QUANTITY_STEP": "Sold in steps of {{step}}. Change the length on the bill."
         },
         "registers": {
             "title": "Counters",
@@ -2846,10 +2862,12 @@
             "reversedAt": "Reversed on {{time}}",
             "typeCost": "Type cost",
             "unitCost": "Cost per unit (₹)",
-            "costHint": "Cost per base unit, tax not included.",
+            "costHint": "Cost of one unit (one metre for goods sold by length), tax not included.",
             "costProblem": "Type a cost like 120 or 120.50.",
             "costSaved": "Cost saved",
-            "unknownItem": "Item"
+            "unknownItem": "Item",
+            "costDecimals": "Use at most {{count}} decimal place(s) in the cost per unit.",
+            "unitCostPer": "Cost per {{unit}} (₹)"
         },
         "transfers": {
             "title": "Transfer",
@@ -2908,7 +2926,8 @@
             "notOnTransfer": "This is not on this transfer.",
             "allReceived": "All of this item is already received.",
             "quantityStep": "This item goes in fixed steps; change the quantity.",
-            "quantityRange": "That quantity is not allowed."
+            "quantityRange": "That quantity is not allowed.",
+            "typeLength": "Type the length of {{item}} in its box."
         },
         "dispatch": {
             "value": "Value",
@@ -3215,6 +3234,13 @@
             "TRANSFER_CHANGED": "The transfer changed while it was being sent. Check it and send again.",
             "LOCATION_NOT_FOUND": "This place was not found.",
             "COUNT_CHANGED": "Lines of this count, or the stock of items not counted, changed since it was reviewed. Check the review again before posting."
+        }
+    },
+    "units": {
+        "problems": {
+            "format": "Enter a number, like 2.5.",
+            "decimals": "Use at most {{count}} decimal place(s), like 2.5. Nothing is rounded.",
+            "whole": "Enter a whole number."
         }
     }
 }

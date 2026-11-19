@@ -52,6 +52,8 @@ export const POS_ERROR_CODES = [
     'PIN_LOCKED',
     // POS review follow-ups (D5): a void or payment change from another counter's drawer.
     'SESSION_MISMATCH',
+    // WP-44 (B7): a length that is not on the sale step ("line l1 is sold in steps of 0.5 m").
+    'QUANTITY_STEP',
     // Screen-side, not a server code: a write whose answer never came was saved under another body.
     'PROBABLY_SAVED',
 ] as const;
@@ -143,4 +145,5 @@ export const showPosServerSentence = (error: PosError): boolean =>
     !!error.message &&
     (error.code === 'VALIDATION' ||
         error.code === 'SESSION_ALREADY_OPEN' ||
+        error.code === 'QUANTITY_STEP' ||
         (!error.posKey && error.showServerSentence));

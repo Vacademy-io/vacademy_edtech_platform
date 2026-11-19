@@ -1,5 +1,6 @@
 import type { TFunction } from 'i18next';
 import { formatNumber } from '@/lib/formatters';
+import { lengthNumber, unitWord } from '@/routes/commerce/-shared/units';
 import type { StaffOrderRow } from './order-types';
 
 /**
@@ -21,15 +22,20 @@ export const displayQuantity = (qty: number, qtyScale: number | null | undefined
     return qty / scale;
 };
 
-/** Back from what people type (2.5 m) to the stored integer (25). */
+/**
+ * Back from a number (2.5 m) to the stored integer (25). Only for numbers the
+ * screen made itself; typed text goes through `parseLength`, which refuses
+ * extra decimals instead of rounding them away.
+ */
 export const storedQuantity = (typed: number, qtyScale: number | null | undefined): number => {
     const scale = qtyScale && qtyScale > 1 ? qtyScale : 1;
     return Math.round(typed * scale);
 };
 
 /**
- * A quantity for the screen. Measured goods (scale > 1) get one decimal per
- * power of ten and their unit ("2.5 m"); counted goods are whole numbers.
+ * A quantity for the screen. Measured goods (scale > 1) print at most one
+ * decimal per power of ten, trailing zeros dropped, and their unit ("2.5 m",
+ * "3 m"; metres in the admin's word); counted goods are whole numbers.
  */
 export function formatQuantity(
     qty: number,
@@ -39,13 +45,9 @@ export function formatQuantity(
 ): string {
     const scale = qtyScale && qtyScale > 1 ? qtyScale : 1;
     if (scale === 1) return formatNumber(qty);
-    const digits = Math.max(1, Math.round(Math.log10(scale)));
-    const value = formatNumber(qty / scale, {
-        minimumFractionDigits: digits,
-        maximumFractionDigits: digits,
-    });
-    const unitLabel = unit || t('orders.units.metre');
-    return `${value} ${unitLabel}`;
+    const word = unitWord(unit, t);
+    const value = lengthNumber(qty, scale);
+    return word ? `${value} ${word}` : value;
 }
 
 export function ageSince(iso: string | null | undefined, now: number): { days: number; hours: number } | null {

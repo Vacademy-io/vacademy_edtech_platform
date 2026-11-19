@@ -7,11 +7,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { PlainSelect } from '@/routes/commerce/-components/CatalogueBits';
 import { itemLines, liveShipment, openQuantity } from '@/routes/commerce/orders/-shared/order-actions';
 import { cancelOrderLine } from '@/routes/commerce/orders/-shared/order-api';
-import {
-    displayQuantity,
-    formatQuantity,
-    storedQuantity,
-} from '@/routes/commerce/orders/-shared/order-format';
+import { lengthProblemText, unitWord } from '@/routes/commerce/-shared/units';
+import { cancelStartText, typedQuantity } from '@/routes/commerce/orders/-shared/length-entry';
+import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import type { LineCancelBody } from '@/routes/commerce/orders/-shared/order-types';
 import { DialogButtons, Field, OrderErrorAlert, OrderNotice, TextAreaField, inputClass } from '../order-ui';
 import type { OrderDialogProps } from './dialog-types';
@@ -42,8 +40,10 @@ export function CancelLineDialog({ open, onOpenChange, detail }: OrderDialogProp
     );
     useEffect(() => {
         if (!open) return;
-        setLineId(lines.length === 1 ? (lines[0]?.id ?? '') : '');
-        setQuantity('1');
+        const only = lines.length === 1 ? (lines[0] ?? null) : null;
+        setLineId(only?.id ?? '');
+        // D8: a measured line starts at its whole open length, not "1" (= 1 m).
+        setQuantity(cancelStartText(only, only ? openQuantity(only) : 0));
         setReason('');
         setNote('');
         setPicked([]);
@@ -58,18 +58,18 @@ export function CancelLineDialog({ open, onOpenChange, detail }: OrderDialogProp
     const pieceCodes = order.status === 'PACKED' ? (shipLine?.piece_codes ?? []) : [];
     const needsPieces = pieceCodes.length > 0;
     const open$ = line ? openQuantity(line) : 0;
-    const stored = line ? storedQuantity(Number(quantity), line.qty_scale) : 0;
+    const typed = line ? typedQuantity(quantity, line.qty_scale) : null;
+    const stored = typed && 'stored' in typed ? typed.stored : 0;
+    const typedProblem = typed && 'problem' in typed ? lengthProblemText(typed.problem, line?.qty_scale, t) : null;
 
     const problems = {
         line: !line ? 'orders.dialogs.cancelLine.lineRequired' : null,
         quantity:
-            line && (!Number.isFinite(stored) || stored < 1 || stored > open$)
-                ? 'orders.dialogs.cancelLine.quantityRange'
-                : null,
+            line && !typedProblem && (stored < 1 || stored > open$) ? 'orders.dialogs.cancelLine.quantityRange' : null,
         reason: !reason.trim() ? 'orders.dialogs.reasonRequired' : null,
         pieces: needsPieces && picked.length !== stored ? 'orders.dialogs.cancelLine.pickPieces' : null,
     };
-    const invalid = Object.values(problems).some(Boolean);
+    const invalid = Object.values(problems).some(Boolean) || !!typedProblem;
 
     const submit = async () => {
         setTouched(true);
@@ -120,7 +120,8 @@ export function CancelLineDialog({ open, onOpenChange, detail }: OrderDialogProp
                     onChange={(value) => {
                         setLineId(value);
                         setPicked([]);
-                        setQuantity('1');
+                        const next = lines.find((l) => l.id === value) ?? null;
+                        setQuantity(cancelStartText(next, next ? openQuantity(next) : 0));
                     }}
                     options={lines.map((l) => ({
                         value: l.id,
@@ -135,21 +136,21 @@ export function CancelLineDialog({ open, onOpenChange, detail }: OrderDialogProp
                 )}
                 {line && (
                     <Field
-                        label={t('orders.dialogs.cancelLine.quantity')}
+                        label={
+                            line.qty_scale > 1
+                                ? t('orders.units.lengthLabel', { unit: unitWord(line.unit, t) ?? '' })
+                                : t('orders.dialogs.cancelLine.quantity')
+                        }
                         htmlFor="cancel-line-qty"
                         required
                         hint={t('orders.dialogs.cancelLine.openHint', {
                             quantity: formatQuantity(open$, line.qty_scale, line.unit, t),
                         })}
-                        error={show(problems.quantity)}
+                        error={(touched || quantity.trim() !== '') && typedProblem ? typedProblem : show(problems.quantity)}
                     >
                         <input
                             id="cancel-line-qty"
-                            type="number"
-                            inputMode="decimal"
-                            min={line.qty_scale > 1 ? 1 / line.qty_scale : 1}
-                            max={displayQuantity(open$, line.qty_scale)}
-                            step={line.qty_scale > 1 ? 1 / line.qty_scale : 1}
+                            inputMode={line.qty_scale > 1 ? 'decimal' : 'numeric'}
                             className={inputClass}
                             value={quantity}
                             onChange={(event) => setQuantity(event.target.value)}
