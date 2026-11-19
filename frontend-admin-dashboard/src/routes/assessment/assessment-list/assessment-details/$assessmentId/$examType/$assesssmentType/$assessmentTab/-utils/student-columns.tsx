@@ -13,6 +13,7 @@ import { ResultCell } from '../-components/submission-review/ResultCell';
 import { OpenCell, OpenScoreCell, pageAttemptIds } from '../-components/submission-review/OpenCell';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { useSidebar } from '@/components/ui/sidebar';
+import { useSubmissionsSidePanel, type SubmissionsSidePanel } from '../-components/submission-review/side-view-store';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { useTranslation } from 'react-i18next';
@@ -45,9 +46,15 @@ const SerialCell = ({
     return <span className="text-body text-neutral-500">{offset + row.index + 1}</span>;
 };
 
-const useClickHandlers = () => {
+/**
+ * Which side view a click opens. The Name cell opens the learner ("student"); any other
+ * cell of an Attempted row opens that attempt's submission ("submission"), which links on
+ * to the learner. Rows with no attempt (Pending, Ongoing) only have the learner.
+ */
+const useClickHandlers = (opens: SubmissionsSidePanel = 'student') => {
     const { setSelectedStudent, selectedStudent } = useStudentSidebar();
     const { setOpen, open } = useSidebar();
+    const { panel, setPanel } = useSubmissionsSidePanel();
 
     // Opens the detail sidebar on the click itself. This used to sit behind a 250ms
     // setTimeout so that a double-click could cancel it, which made every row in the
@@ -56,8 +63,13 @@ const useClickHandlers = () => {
     // immediately toggling it shut again.
     const handleClick = (event: React.MouseEvent, row: Row<StudentTable>) => {
         if (event.detail > 1) return;
-        if (selectedStudent?.id != row.original.id) {
+        const target: SubmissionsSidePanel =
+            opens === 'submission' && (row.original as StudentTable & { attempt_id?: string }).attempt_id
+                ? 'submission'
+                : 'student';
+        if (selectedStudent?.id != row.original.id || panel !== target) {
             setSelectedStudent(row.original);
+            setPanel(target);
             setOpen(true);
         } else {
             setOpen(!open);
@@ -67,8 +79,16 @@ const useClickHandlers = () => {
     return { handleClick };
 };
 
-const CreateClickableCell = ({ row, columnId }: { row: Row<StudentTable>; columnId: string }) => {
-    const { handleClick } = useClickHandlers();
+const CreateClickableCell = ({
+    row,
+    columnId,
+    opens,
+}: {
+    row: Row<StudentTable>;
+    columnId: string;
+    opens?: SubmissionsSidePanel;
+}) => {
+    const { handleClick } = useClickHandlers(opens);
 
     return (
         <div onClick={(event) => handleClick(event, row)} className="cursor-pointer">
@@ -80,9 +100,9 @@ const CreateClickableCell = ({ row, columnId }: { row: Row<StudentTable>; column
 // Duration cell that flags a near-zero attempt time. A "0.00 min" duration means
 // the learner submitted almost instantly — usually a non-attempt or auto-submit,
 // which a teacher scanning submissions should be able to spot at a glance.
-const DurationCell = ({ row }: { row: Row<StudentTable> }) => {
+const DurationCell = ({ row, opens }: { row: Row<StudentTable>; opens?: SubmissionsSidePanel }) => {
     const { t } = useTranslation('assessmentStudentColumns');
-    const { handleClick } = useClickHandlers();
+    const { handleClick } = useClickHandlers(opens);
     const value = String(row.getValue('duration') ?? '');
     const minutes = parseFloat(value);
     const isInstant = !Number.isNaN(minutes) && minutes <= 0;
@@ -229,8 +249,8 @@ const EndTimeHeaderCell = () => {
 };
 
 // W1 (submission review): "Marking" and "Result" replace the three-state chip, and an
-// "Open" column (plus the Score cell) opens the Submission page. The Name cell keeps
-// opening the student sidebar.
+// "Open" column (plus the Score cell) opens the Submission page. The Name cell opens the
+// student side view; the row's other cells open the submission side view.
 const MarkingHeaderCell = () => {
     const { t } = useTranslation('assessmentSubmissionReviewList');
     return <>{t('columns.marking')}</>;
@@ -355,27 +375,27 @@ export const assessmentStatusStudentAttemptedColumnsInternal: ColumnDef<StudentT
     {
         accessorKey: 'package_session_id',
         header: getTerminology(ContentTerms.Batch, SystemTerms.Batch),
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="package_session_id" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="package_session_id" />,
     },
     {
         accessorKey: 'attempt_date',
         header: AttemptDateHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="attempt_date" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="attempt_date" />,
     },
     {
         accessorKey: 'start_time',
         header: StartTimeHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="start_time" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="start_time" />,
     },
     {
         accessorKey: 'end_time',
         header: EndTimeHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="end_time" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="end_time" />,
     },
     {
         accessorKey: 'duration',
         header: DurationHeaderCell,
-        cell: ({ row }) => <DurationCell row={row} />,
+        cell: ({ row }) => <DurationCell row={row} opens="submission" />,
     },
     // Marking replaces the evaluation chip (it keeps the evaluated-copy eye button).
     markingColumn,
@@ -389,17 +409,17 @@ export const assessmentStatusStudentAttemptedColumnsInternal: ColumnDef<StudentT
     {
         accessorKey: 'email',
         header: 'Email',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="email" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="email" />,
     },
     {
         accessorKey: 'mobile_number',
         header: 'Phone Number',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="mobile_number" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="mobile_number" />,
     },
     {
         accessorKey: 'username',
         header: 'Username',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="username" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="username" />,
     },
     {
         id: 'options',
@@ -643,22 +663,22 @@ export const assessmentStatusStudentAttemptedColumnsExternal: ColumnDef<StudentT
     {
         accessorKey: 'attempt_date',
         header: AttemptDateHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="attempt_date" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="attempt_date" />,
     },
     {
         accessorKey: 'start_time',
         header: StartTimeHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="start_time" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="start_time" />,
     },
     {
         accessorKey: 'end_time',
         header: EndTimeHeaderCell,
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="end_time" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="end_time" />,
     },
     {
         accessorKey: 'duration',
         header: DurationHeaderCell,
-        cell: ({ row }) => <DurationCell row={row} />,
+        cell: ({ row }) => <DurationCell row={row} opens="submission" />,
     },
     markingColumn,
     attemptedScoreColumn,
@@ -671,17 +691,17 @@ export const assessmentStatusStudentAttemptedColumnsExternal: ColumnDef<StudentT
     {
         accessorKey: 'email',
         header: 'Email',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="email" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="email" />,
     },
     {
         accessorKey: 'mobile_number',
         header: 'Phone Number',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="mobile_number" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="mobile_number" />,
     },
     {
         accessorKey: 'username',
         header: 'Username',
-        cell: ({ row }) => <CreateClickableCell row={row} columnId="username" />,
+        cell: ({ row }) => <CreateClickableCell opens="submission" row={row} columnId="username" />,
     },
     {
         id: 'options',

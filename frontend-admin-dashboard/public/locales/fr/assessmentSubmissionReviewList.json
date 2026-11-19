@@ -120,5 +120,23 @@
         "releaseAiDrafts_one": "{{count}} réponse a une note IA que personne n’a vérifiée. Publier vaut accord.",
         "releaseAiDrafts_many": "{{count}} réponses ont des notes IA que personne n’a vérifiées. Publier vaut accord.",
         "releaseAiDrafts_other": "{{count}} réponses ont des notes IA que personne n’a vérifiées. Publier vaut accord."
+    },
+    "sideView": {
+        "title": "Copie",
+        "close": "Fermer",
+        "studentDetails": "Fiche de l'élève",
+        "openFull": "Ouvrir la copie complète",
+        "answerSheet": "Voir la feuille de réponses",
+        "attemptDate": "Date de passage",
+        "start": "Heure de début",
+        "end": "Heure de fin",
+        "duration": "Durée",
+        "questions_one": "{{count}} question",
+        "questions_other": "{{count}} questions",
+        "edit": "Modifier la note de Q{{number}}",
+        "openQuestion": "Ouvrir Q{{number}} sur la page complète",
+        "aiChecking": "L'IA corrige : {{done}} sur {{total}} questions",
+        "aiCheckingNoCount": "L'IA corrige cette copie",
+        "back": "Retour à la copie"
     }
 }

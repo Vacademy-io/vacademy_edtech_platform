@@ -106,5 +106,23 @@
         "actionFailed": "That didn't work. Try again.",
         "releaseAiDrafts_one": "{{count}} answer has an AI mark nobody checked. Releasing counts as your OK.",
         "releaseAiDrafts_other": "{{count}} answers have AI marks nobody checked. Releasing counts as your OK."
+    },
+    "sideView": {
+        "title": "Submission",
+        "close": "Close",
+        "studentDetails": "Student details",
+        "openFull": "Open full submission",
+        "answerSheet": "View answer sheet",
+        "attemptDate": "Attempt date",
+        "start": "Start time",
+        "end": "End time",
+        "duration": "Duration",
+        "questions_one": "{{count}} question",
+        "questions_other": "{{count}} questions",
+        "edit": "Edit marks for Q{{number}}",
+        "openQuestion": "Open Q{{number}} on the full page",
+        "aiChecking": "AI is checking: {{done}} of {{total}} questions",
+        "aiCheckingNoCount": "AI is checking this submission",
+        "back": "Back to submission"
     }
 }

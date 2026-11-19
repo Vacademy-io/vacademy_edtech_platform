@@ -67,6 +67,8 @@ import { AssessmentSubmissionsStudentTable } from './AssessmentSubmissionsStuden
 import { SubmissionsSummaryStrip } from './SubmissionsSummaryStrip';
 import { MarkingStatusLine } from './submission-review/MarkingStatusLine';
 import { seedPageMarkings } from './submission-review/use-attempt-marking';
+import { SubmissionSideView } from './submission-review/SubmissionSideView';
+import { useSubmissionsSidePanel } from './submission-review/side-view-store';
 import { AssessmentReportZipExportDialog } from './AssessmentReportZipExportDialog';
 import { AiAssessmentReportDialog } from './AiAssessmentReportDialog';
 import { AssessmentExportCsvDialog } from './AssessmentExportCsvDialog';
@@ -463,6 +465,16 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
               ? 'ADMIN_PRE_REGISTRATION'
               : 'BATCH_PREVIEW_REGISTRATION';
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    // Name cell → the learner; any other cell of an Attempted row → that submission.
+    const sidePanel = useSubmissionsSidePanel((s) => s.panel);
+    const setSidePanel = useSubmissionsSidePanel((s) => s.setPanel);
+    const sideFromSubmission = useSubmissionsSidePanel((s) => s.fromSubmission);
+    const { t: tSide } = useTranslation('assessmentSubmissionReviewList');
+    useEffect(() => () => setSidePanel('student'), [setSidePanel]);
+    const backToSubmission =
+        sideFromSubmission && selectedTab === 'Attempted' && selectedStudent?.attempt_id
+            ? { label: tSide('sideView.back'), onClick: () => setSidePanel('submission') }
+            : undefined;
     // Bumped to force the summary strip to refetch its aggregate stats.
     const [summaryRefreshKey, setSummaryRefreshKey] = useState(0);
 
@@ -1984,10 +1996,23 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                 currentPage={page}
                                 isLoading={isParticipantsLoading}
                             />
-                            {selectedParticipantsTab === 'external' ? (
+                            {sidePanel === 'submission' &&
+                            selectedTab === 'Attempted' &&
+                            selectedStudent?.attempt_id ? (
+                                <SubmissionSideView
+                                    student={selectedStudent}
+                                    assessmentId={assessmentId}
+                                    pageAttemptIds={() =>
+                                        (participantsData.content ?? [])
+                                            .map((student: StudentTable) => student.attempt_id)
+                                            .filter((id): id is string => !!id)
+                                    }
+                                    onChanged={handleRefreshLeaderboard}
+                                />
+                            ) : selectedParticipantsTab === 'external' ? (
                                 // External participants registered via the public form
                                 // — show the form answers and custom-field responses.
-                                <OpenStudentSidebar />
+                                <OpenStudentSidebar back={backToSubmission} />
                             ) : (
                                 // Internal participants (whether the assessment is
                                 // PRIVATE or PUBLIC) get the full student profile
@@ -1997,6 +2022,7 @@ const AssessmentSubmissionsTab = ({ type }: { type: string }) => {
                                     examType={examType}
                                     selectedStudent={selectedStudent}
                                     isSubmissionTab={true}
+                                    back={backToSubmission}
                                 />
                             )}
                         </SidebarProvider>

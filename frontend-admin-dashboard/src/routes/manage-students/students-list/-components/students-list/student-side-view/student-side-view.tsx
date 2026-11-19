@@ -126,6 +126,7 @@ export const StudentSidebar = ({
     className,
     packageSessionId,
     defaultLeadProfile,
+    back,
 }: {
     selectedTab?: string;
     examType?: string;
@@ -138,6 +139,8 @@ export const StudentSidebar = ({
     packageSessionId?: string;
     /** Open the Lead Profile tab by default each time a lead is opened (lead lists). */
     defaultLeadProfile?: boolean;
+    /** A way back to the panel this one was opened from (Submissions: "Back to submission"). */
+    back?: { label: string; onClick: () => void };
 }) => {
     const { t } = useTranslation('manageStudentsSideView');
     const { state, setOpen, setOpenMobile } = useSidebar();
@@ -399,6 +402,17 @@ export const StudentSidebar = ({
                     <div className="flex flex-col gap-1.5 px-3 pb-2 pt-1.5">
                         {/* Identity row: avatar + name/status + actions */}
                         <div className="flex items-center gap-2">
+                            {back && (
+                                <button
+                                    type="button"
+                                    onClick={back.onClick}
+                                    className="flex size-8 shrink-0 items-center justify-center rounded-md text-neutral-500 transition-colors hover:bg-primary-50 hover:text-primary-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-400"
+                                    aria-label={back.label}
+                                    title={back.label}
+                                >
+                                    <CaretLeft className="size-5 rtl:rotate-180" />
+                                </button>
+                            )}
                             <div className="flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-neutral-100 ring-1 ring-primary-100">
                                 {faceLoader ? (
                                     <div className="size-4 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />

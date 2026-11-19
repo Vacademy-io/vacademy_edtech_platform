@@ -162,5 +162,27 @@
         "releaseAiDrafts_few": "{{count}} من الإجابات بدرجات ذكاء اصطناعي لم يراجعها أحد. النشر يُعدّ موافقتك.",
         "releaseAiDrafts_many": "{{count}} من الإجابات بدرجات ذكاء اصطناعي لم يراجعها أحد. النشر يُعدّ موافقتك.",
         "releaseAiDrafts_other": "{{count}} من الإجابات بدرجات ذكاء اصطناعي لم يراجعها أحد. النشر يُعدّ موافقتك."
+    },
+    "sideView": {
+        "title": "الإجابة المقدَّمة",
+        "close": "إغلاق",
+        "studentDetails": "بيانات الطالب",
+        "openFull": "فتح الإجابة كاملة",
+        "answerSheet": "عرض ورقة الإجابة",
+        "attemptDate": "تاريخ المحاولة",
+        "start": "وقت البدء",
+        "end": "وقت الانتهاء",
+        "duration": "المدة",
+        "questions_zero": "لا أسئلة",
+        "questions_one": "سؤال واحد",
+        "questions_two": "سؤالان",
+        "questions_few": "{{count}} أسئلة",
+        "questions_many": "{{count}} سؤالًا",
+        "questions_other": "{{count}} سؤال",
+        "edit": "تعديل درجات س{{number}}",
+        "openQuestion": "فتح س{{number}} في الصفحة الكاملة",
+        "aiChecking": "الذكاء الاصطناعي يصحح: {{done}} من {{total}} أسئلة",
+        "aiCheckingNoCount": "الذكاء الاصطناعي يصحح هذه الإجابة",
+        "back": "العودة إلى الإجابة المقدَّمة"
     }
 }

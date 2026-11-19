@@ -106,5 +106,23 @@
         "actionFailed": "यह नहीं हुआ। फिर कोशिश करें।",
         "releaseAiDrafts_one": "{{count}} उत्तरों में AI अंक हैं जिन्हें किसी ने नहीं देखा। जारी करना आपकी मंज़ूरी माना जाएगा।",
         "releaseAiDrafts_other": "{{count}} उत्तरों में AI अंक हैं जिन्हें किसी ने नहीं देखा। जारी करना आपकी मंज़ूरी माना जाएगा।"
+    },
+    "sideView": {
+        "title": "सबमिशन",
+        "close": "बंद करें",
+        "studentDetails": "छात्र विवरण",
+        "openFull": "पूरा सबमिशन खोलें",
+        "answerSheet": "उत्तर पुस्तिका देखें",
+        "attemptDate": "प्रयास की तारीख",
+        "start": "शुरू होने का समय",
+        "end": "समाप्ति का समय",
+        "duration": "अवधि",
+        "questions_one": "{{count}} प्रश्न",
+        "questions_other": "{{count}} प्रश्न",
+        "edit": "Q{{number}} के अंक बदलें",
+        "openQuestion": "Q{{number}} पूरे पेज पर खोलें",
+        "aiChecking": "AI जाँच रहा है: {{total}} में से {{done}} प्रश्न",
+        "aiCheckingNoCount": "AI यह सबमिशन जाँच रहा है",
+        "back": "सबमिशन पर वापस जाएँ"
     }
 }
