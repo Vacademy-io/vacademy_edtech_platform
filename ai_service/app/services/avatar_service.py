@@ -13,6 +13,12 @@ from typing import Any, Dict
 
 import requests
 
+try:
+    from .vendor_call_log import record_vendor_failure
+except Exception:  # noqa: BLE001
+    def record_vendor_failure(*args, **kwargs):  # type: ignore[misc]
+        return None
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,8 +62,13 @@ class RunPodAvatarProvider(AvatarProvider):
         run_url = f"https://api.runpod.ai/v2/{self.endpoint_id}/run"
         payload = {"input": {"image_url": image_url, "audio_url": audio_url}}
         logger.info("Submitting RunPod job to %s", run_url)
-        resp = requests.post(run_url, headers=headers, json=payload, timeout=30)
-        resp.raise_for_status()
+        try:
+            resp = requests.post(run_url, headers=headers, json=payload, timeout=30)
+            resp.raise_for_status()
+        except requests.RequestException as exc:
+            record_vendor_failure(run_url, "submit avatar job", request=payload,
+                                  response=getattr(exc.response, "text", None), error=exc)
+            raise
         job_id = resp.json()["id"]
         logger.info("RunPod job submitted: %s", job_id)
         return job_id
@@ -67,8 +78,13 @@ class RunPodAvatarProvider(AvatarProvider):
         'stage', and 'video_url' (only when COMPLETED) or 'error' (only when FAILED)."""
         headers = {"Authorization": f"Bearer {self.api_key}"}
         status_url = f"https://api.runpod.ai/v2/{self.endpoint_id}/status/{job_id}"
-        resp = requests.get(status_url, headers=headers, timeout=30)
-        resp.raise_for_status()
+        try:
+            resp = requests.get(status_url, headers=headers, timeout=30)
+            resp.raise_for_status()
+        except requests.RequestException as exc:
+            record_vendor_failure(status_url, "check avatar job status",
+                                  response=getattr(exc.response, "text", None), error=exc)
+            raise
         data = resp.json()
         status = data.get("status", "UNKNOWN")
 
@@ -135,8 +151,13 @@ class FalAvatarProvider(AvatarProvider):
             "prompt": "A person speaking naturally with subtle head movements",
         }
         logger.info("Submitting fal.ai job to %s", submit_url)
-        resp = requests.post(submit_url, headers=headers, json=payload, timeout=30)
-        resp.raise_for_status()
+        try:
+            resp = requests.post(submit_url, headers=headers, json=payload, timeout=30)
+            resp.raise_for_status()
+        except requests.RequestException as exc:
+            record_vendor_failure(submit_url, "submit avatar job", request=payload,
+                                  response=getattr(exc.response, "text", None), error=exc)
+            raise
         data = resp.json()
 
         # fal.ai queue returns a request_id + status_url
@@ -148,8 +169,13 @@ class FalAvatarProvider(AvatarProvider):
         deadline = time.time() + self.TIMEOUT_SECONDS
         while time.time() < deadline:
             time.sleep(self.POLL_INTERVAL_SECONDS)
-            poll = requests.get(status_url, headers=headers, timeout=30)
-            poll.raise_for_status()
+            try:
+                poll = requests.get(status_url, headers=headers, timeout=30)
+                poll.raise_for_status()
+            except requests.RequestException as exc:
+                record_vendor_failure(status_url, "check avatar job status",
+                                      response=getattr(exc.response, "text", None), error=exc)
+                raise
             result = poll.json()
             status = result.get("status")
             logger.info("fal.ai job status: %s", status)

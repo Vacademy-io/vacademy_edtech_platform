@@ -108,6 +108,8 @@ def test_a_failure_keeps_what_we_sent_and_what_the_vendor_said(capture):
     assert response.status_code == 402 and response.json()["error"]["code"] == "insufficient_quota_error"
     call = calls[0]
     assert call["status"] == "FAILED"
+    # Kept even while external_apis.auto_capture is off: only successes wait for it.
+    assert call["automatic"] is False
     sent, got = call["request_summary"], call["response_summary"]
     assert sent["method"] == "POST" and sent["path"] == "/text-to-speech"
     assert sent["query_params"] == ["api-key"]

@@ -20,6 +20,16 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, Optional
 
+try:
+    try:
+        from app.services.vendor_call_log import record_vendor_failure
+    except ModuleNotFoundError:
+        # Loaded flat via sys.path (hyphenated dir); in the container the package is ai_service.app.
+        from ai_service.app.services.vendor_call_log import record_vendor_failure
+except Exception:  # noqa: BLE001
+    def record_vendor_failure(*args, **kwargs):  # type: ignore[misc]
+        return None
+
 logger = logging.getLogger(__name__)
 
 
@@ -100,6 +110,7 @@ class PexelsService:
                     data = json.loads(response.read().decode("utf-8"))
                     return data
             except urllib.error.HTTPError as e:
+                record_vendor_failure(url, "search media", error=e)
                 if e.code == 429:
                     logger.warning(f"[Pexels] Rate limited (429) on key {key_index}, rotating...")
                     self._rotate_key()
@@ -111,6 +122,7 @@ class PexelsService:
                     logger.error(f"[Pexels] HTTP {e.code}: {e.reason}")
                     return None
             except (urllib.error.URLError, TimeoutError, OSError) as e:
+                record_vendor_failure(url, "search media", error=e)
                 logger.error(f"[Pexels] Network error: {e}")
                 return None
             except Exception as e:

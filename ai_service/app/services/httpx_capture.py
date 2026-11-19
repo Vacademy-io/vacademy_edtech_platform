@@ -7,9 +7,10 @@ then appears on the health dashboard, named by its host, with no change here or 
 Only metadata is kept: host, method, the first two path segments, status and timing. Bodies,
 headers and query strings are never read, because they hold keys and learner content.
 
-Installing is safe: while external_apis.auto_capture is off, rows are dropped on the log's
-pool thread. Nothing here can change or fail the request it observes, and a streamed
-response is timed to its headers.
+Installing is safe: failures are always recorded; successes only while
+external_apis.auto_capture is on, and otherwise dropped on the log's pool thread. Nothing
+here can change or fail the request it observes, and a streamed response is timed to its
+headers.
 """
 from __future__ import annotations
 
@@ -104,7 +105,9 @@ def _record(request: httpx.Request, started: float, status: Optional[int], error
             # Bodies only for failures: that is what someone debugs, and successes are many.
             request_summary=_request_summary(request) if failed else None,
             response_summary=_response_summary(response, streamed) if failed else None,
-            automatic=True,
+            # Failures are always kept: they are what the dashboard is for. Only successes
+            # wait for external_apis.auto_capture.
+            automatic=not failed,
         )
     except Exception as exc:  # noqa: BLE001
         logger.debug("httpx-capture: skipped: %s", exc)

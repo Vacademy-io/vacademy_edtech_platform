@@ -38,7 +38,7 @@ INTEGRATED_VENDORS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
     ("Serper", ("google.serper.dev",)),
     ("Pexels", ("api.pexels.com",)),
     ("Pixabay", ("pixabay.com",)),
-    ("Google APIs", ("www.googleapis.com", "oauth2.googleapis.com", "meet.googleapis.com",
+    ("Google APIs", ("www.googleapis.com", "oauth2.googleapis.com", "openidconnect.googleapis.com", "meet.googleapis.com",
                      "workspaceevents.googleapis.com")),
     ("Plivo", ("api.plivo.com",)),
     ("Exotel", ("exotel.com", "exotel.in")),
@@ -53,9 +53,14 @@ INTEGRATED_VENDORS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
     ("WATI", ("wati.io",)),
     ("Meta", ("graph.facebook.com",)),
     ("Zoom", ("api.zoom.us", "zoom.us")),
-    ("Zoho", ("zohoapis.in", "zohoapis.com", "zoho.in")),
+    ("Zoho", ("zohoapis.in", "zohoapis.com", "zoho.in", "zoho.com")),
     ("Cloudflare", ("api.cloudflare.com",)),
     ("FX rates", ("open.er-api.com",)),
+    ("Firebase", ("fcm.googleapis.com", "firebase.googleapis.com")),
+    ("Google Play", ("androidpublisher.googleapis.com",)),
+    ("App Store Connect", ("api.appstoreconnect.apple.com",)),
+    ("GitHub", ("api.github.com",)),
+    ("Microsoft Partner Center", ("manage.devcenter.microsoft.com", "login.microsoftonline.com")),
 )
 
 

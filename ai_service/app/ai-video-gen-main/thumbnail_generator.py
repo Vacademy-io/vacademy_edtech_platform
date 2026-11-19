@@ -37,6 +37,16 @@ try:
 except ImportError:  # pragma: no cover — only if loaded inside a real package
     from . import thumbnail_prompts as tp  # type: ignore[no-redef]
 
+try:
+    try:
+        from app.services.vendor_call_log import record_vendor_failure
+    except ModuleNotFoundError:
+        # Loaded flat via sys.path (hyphenated dir); in the container the package is ai_service.app.
+        from ai_service.app.services.vendor_call_log import record_vendor_failure
+except Exception:  # noqa: BLE001
+    def record_vendor_failure(*args, **kwargs):  # type: ignore[misc]
+        return None
+
 
 _S3_BUCKET = "vacademy-media-storage-public"
 _S3_KEY_PREFIX = "AI_THUMBNAILS"
@@ -106,9 +116,11 @@ def make_standalone_seedream_call(api_key: str) -> Callable[..., Tuple[Optional[
             with urllib.request.urlopen(req, timeout=180) as response:
                 data = json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
+            record_vendor_failure("https://openrouter.ai/api/v1/chat/completions", "generate thumbnail image", request=payload, error=e)
             print(f"   ⚠️ Standalone Recraft HTTP {e.code}: {e}")
             return None, None
         except Exception as e:
+            record_vendor_failure("https://openrouter.ai/api/v1/chat/completions", "generate thumbnail image", request=payload, error=e)
             print(f"   ⚠️ Standalone Recraft call failed: {e}")
             return None, None
 

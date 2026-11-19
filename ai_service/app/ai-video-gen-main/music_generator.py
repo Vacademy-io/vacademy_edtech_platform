@@ -22,6 +22,16 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+try:
+    try:
+        from app.services.vendor_call_log import record_vendor_failure
+    except ModuleNotFoundError:
+        # Loaded flat via sys.path (hyphenated dir); in the container the package is ai_service.app.
+        from ai_service.app.services.vendor_call_log import record_vendor_failure
+except Exception:  # noqa: BLE001
+    def record_vendor_failure(*args, **kwargs):  # type: ignore[misc]
+        return None
+
 _log = logging.getLogger(__name__)
 
 # Vertex AI / Lyria defaults. Override via env vars for rollout without a code change.
@@ -178,13 +188,19 @@ def _call_lyria_v2(prompt: str, model: str, credentials, project_id: str,
     if seed is not None:
         instance["seed"] = int(seed)
 
-    resp = requests.post(
-        endpoint,
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        json={"instances": [instance], "parameters": {}},
-        timeout=180,
-    )
+    try:
+        resp = requests.post(
+            endpoint,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json={"instances": [instance], "parameters": {}},
+            timeout=180,
+        )
+    except requests.RequestException as exc:
+        record_vendor_failure(endpoint, "generate music", request={"instances": [instance], "parameters": {}}, error=exc)
+        raise
     if resp.status_code != 200:
+        record_vendor_failure(endpoint, "generate music", request={"instances": [instance], "parameters": {}},
+                              status=resp.status_code, response=resp.text)
         raise RuntimeError(f"Lyria v2 predict failed ({resp.status_code}): {resp.text[:500]}")
 
     preds = resp.json().get("predictions") or []
@@ -217,13 +233,19 @@ def _call_lyria_v3(prompt: str, model: str, credentials, project_id: str) -> byt
         "input": [{"type": "text", "text": prompt}],
     }
 
-    resp = requests.post(
-        endpoint,
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
-        json=payload,
-        timeout=300,  # full-song generation can take longer than instrumental loops
-    )
+    try:
+        resp = requests.post(
+            endpoint,
+            headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=300,  # full-song generation can take longer than instrumental loops
+        )
+    except requests.RequestException as exc:
+        record_vendor_failure(endpoint, "generate music", request=payload, error=exc)
+        raise
     if resp.status_code != 200:
+        record_vendor_failure(endpoint, "generate music", request=payload,
+                              status=resp.status_code, response=resp.text)
         raise RuntimeError(f"Lyria v3 interactions failed ({resp.status_code}): {resp.text[:500]}")
 
     data = resp.json()

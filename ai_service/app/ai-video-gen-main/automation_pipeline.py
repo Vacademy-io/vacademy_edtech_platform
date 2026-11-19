@@ -45,6 +45,16 @@ import time
 import functools
 from contextvars import ContextVar
 
+try:
+    try:
+        from app.services.vendor_call_log import record_vendor_failure
+    except ModuleNotFoundError:
+        # Loaded flat via sys.path (hyphenated dir); in the container the package is ai_service.app.
+        from ai_service.app.services.vendor_call_log import record_vendor_failure
+except Exception:  # noqa: BLE001
+    def record_vendor_failure(*args, **kwargs):  # type: ignore[misc]
+        return None
+
 
 # ── Cost-tracking ContextVars (Pillar 1) ──────────────────────────────────
 # Set by call-sites that wrap an LLM call (regen / retry path). Read inside
@@ -2125,6 +2135,7 @@ class OpenRouterClient:
         try:
             return urllib.request.urlopen(_req(url, headers, wire), timeout=timeout)
         except Exception as exc:
+            record_vendor_failure(url, "chat completion", request=wire, error=exc)
             router = _llm_router() if route is not None else None
             if router is None:
                 raise
@@ -2136,7 +2147,11 @@ class OpenRouterClient:
                 f"   ↪ {route.label} failed for {model} at stage '{_llm_stage.get()}' "
                 f"({status or type(exc).__name__}) — retrying the same model on OpenRouter"
             )
-            return urllib.request.urlopen(_req(self.base_url, self.headers, openrouter_payload), timeout=timeout)
+            try:
+                return urllib.request.urlopen(_req(self.base_url, self.headers, openrouter_payload), timeout=timeout)
+            except Exception as exc2:
+                record_vendor_failure(self.base_url, "chat completion", request=openrouter_payload, error=exc2)
+                raise
 
     @retry_with_backoff(max_retries=4, initial_delay=2.0, exceptions=(urllib.error.URLError, RuntimeError))
     def chat(
@@ -30082,6 +30097,7 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                 return None, None
 
             except urllib.error.HTTPError as e:
+                record_vendor_failure(url, "generate image", request=payload, error=e)
                 if e.code == 429:
                     retry_after = 15.0
                     raw_hdr = e.headers.get("Retry-After")
@@ -30105,6 +30121,8 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                 return None, None
 
             except Exception as e:
+                if isinstance(e, (urllib.error.URLError, TimeoutError, OSError)):
+                    record_vendor_failure(url, "generate image", request=payload, error=e)
                 if attempt < max_retries - 1:
                     wait = (1.5 ** attempt) * _random.uniform(0.5, 1.5)
                     print(f"    ⚠️  Recraft image attempt {attempt+1}/{max_retries} failed "
@@ -30166,6 +30184,7 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                 print(f"    ⚠️  {model} response had no image payload for '{label[:50]}...'")
                 return None, None
             except urllib.error.HTTPError as e:
+                record_vendor_failure(_OPENROUTER_IMAGES_API_URL, "generate image", request=body, error=e)
                 if e.code == 429:
                     retry_after = 15.0
                     raw_hdr = e.headers.get("Retry-After") if e.headers else None
@@ -30186,6 +30205,8 @@ gsap.to('{selectors}', {{opacity: 1, y: 0, duration: 0.5, stagger: 0.15, delay: 
                 print(f"    ❌ {model} image HTTP {e.code} for '{label[:50]}...': {e}")
                 return None, None
             except Exception as e:  # noqa: BLE001
+                if isinstance(e, (urllib.error.URLError, TimeoutError, OSError)):
+                    record_vendor_failure(_OPENROUTER_IMAGES_API_URL, "generate image", request=body, error=e)
                 if attempt < max_retries - 1:
                     wait = (1.5 ** attempt) * _random.uniform(0.5, 1.5)
                     print(f"    ⚠️  {model} image attempt {attempt+1}/{max_retries} failed: {e}. "
