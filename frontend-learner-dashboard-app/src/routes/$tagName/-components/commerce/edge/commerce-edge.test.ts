@@ -542,9 +542,21 @@ describe('redirects from the old site', () => {
         expect(redirectLookupPath('/X%2541/')).toBe('/x%2541');
         expect(redirectLookupPath('/hi/%E0%A4%B2/', '?a=%E0%A4%B2')).toBe('/hi/ल?a=%E0%A4%B2');
         expect(redirectLookupPath('/100%25', '?')).toBe('/100%25');
-        // A malformed escape is kept as sent, and its percent sign written as %25.
-        expect(redirectLookupPath('/a%zz')).toBe('/a%25zz');
         expect(redirectLookupPath('/product/red-saree/')).toBe('/product/red-saree');
+    });
+
+    it('sends a path it cannot decode with its escapes as they are, as before', () => {
+        // Latin-1 escapes are not UTF-8: the resolver decodes them itself, as it always did.
+        expect(redirectLookupPath('/caf%E9')).toBe('/caf%e9');
+        expect(redirectLookupPath('/old%FF/', '?a=1')).toBe('/old%ff?a=1');
+        expect(redirectLookupPath('/old%e9t%e9')).toBe('/old%e9t%e9');
+        // A % that starts no escape: the whole path is sent as it came.
+        expect(redirectLookupPath('/50%-off')).toBe('/50%-off');
+        expect(redirectLookupPath('/%E0%A4%B8-50%-off')).toBe('/%e0%a4%b8-50%-off');
+        expect(redirectLookupPath('/a%zz')).toBe('/a%zz');
+        // A path that decodes still has its literal percent signs written as %25.
+        expect(redirectLookupPath('/a%2541')).toBe('/a%2541');
+        expect(redirectLookupPath('/100%25-off')).toBe('/100%25-off');
     });
 
     it('still finds a loop when the target is written in Devanagari and the request is encoded', () => {

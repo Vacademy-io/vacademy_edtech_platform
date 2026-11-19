@@ -509,11 +509,20 @@ export const normalizeRedirectPath = (pathname: string, search = ''): string => 
  * The `path` the edge asks the resolver for: the request in the stored normal form, with each `%`
  * of the decoded path written as `%25`. The resolver decodes the path once more; without this, a
  * path that holds a literal `%41` once decoded (the request `/%2541`) would be decoded twice and
- * looked up as `/a`. The query string is passed as the browser sent it.
+ * looked up as `/a`. A path the edge cannot decode (an escape that is not UTF-8, such as a Latin-1
+ * `/caf%E9`, or a `%` that starts no escape) is sent with its escapes as they are, so the resolver
+ * reads it as it always did and finds the row the import stored for it. The query string is
+ * passed as the browser sent it.
  */
 export const redirectLookupPath = (pathname: string, search = ''): string => {
+    let decoded = true;
+    try {
+        decodeURIComponent(pathname);
+    } catch {
+        decoded = false;
+    }
     const normal = normalizeRedirectPath(pathname);
-    return `${normal.replace(/%/g, '%25')}${search && search !== '?' ? search : ''}`;
+    return `${decoded ? normal.replace(/%/g, '%25') : normal}${search && search !== '?' ? search : ''}`;
 };
 
 export type RedirectDecision = { status: 301; location: string } | { status: 410 } | null;

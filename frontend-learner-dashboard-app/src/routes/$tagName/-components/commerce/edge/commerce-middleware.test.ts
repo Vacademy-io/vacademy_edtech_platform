@@ -496,6 +496,16 @@ describe('review follow-ups', () => {
         const asked = calls.find((c) => c.url.includes('/redirects/resolve'))!;
         expect(new URL(asked.url).searchParams.get('path')).toBe('/x%2541');
     });
+
+    it('asks for an old address with a Latin-1 escape with that escape as it is', async () => {
+        // "/caf%E9" is not UTF-8: the resolver decodes it itself, so the escape must reach it unchanged.
+        const redirects = { '/caf%e9': { status_code: 301, to_path: '/p/red-saree' } };
+        const { response, calls } = await run('https://shop.example/caf%E9', { shopHosts: SHOP_HOST, globalSettings: SHOP_SETTINGS, redirects });
+        expect(response.status).toBe(301);
+        expect(response.headers.get('location')).toBe('https://shop.example/p/red-saree');
+        const asked = calls.find((c) => c.url.includes('/redirects/resolve'))!;
+        expect(new URL(asked.url).searchParams.get('path')).toBe('/caf%e9');
+    });
 });
 
 describe('a site without a shop', () => {
