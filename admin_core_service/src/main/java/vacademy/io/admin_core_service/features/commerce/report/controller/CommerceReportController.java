@@ -12,13 +12,19 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.commerce.pos.service.PosUserNames;
 import vacademy.io.admin_core_service.features.commerce.report.dto.ReportDtos.ReportAnswer;
+import vacademy.io.admin_core_service.features.commerce.report.service.CodDuesReportService;
+import vacademy.io.admin_core_service.features.commerce.report.service.DayBookService;
 import vacademy.io.admin_core_service.features.commerce.report.service.GstReportService;
+import vacademy.io.admin_core_service.features.commerce.report.service.PaymentModesService;
+import vacademy.io.admin_core_service.features.commerce.report.service.PosSessionsReportService;
 import vacademy.io.admin_core_service.features.commerce.report.service.ReportAccess;
 import vacademy.io.admin_core_service.features.commerce.report.service.ReportQuery;
 import vacademy.io.admin_core_service.features.commerce.report.service.ReportRange;
 import vacademy.io.admin_core_service.features.commerce.report.service.ReportRunner;
 import vacademy.io.admin_core_service.features.commerce.report.service.ReportScope;
+import vacademy.io.admin_core_service.features.commerce.report.service.SalesReportService;
 import vacademy.io.admin_core_service.features.commerce.stock.service.StockClock;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.InvalidRequestException;
@@ -29,6 +35,7 @@ import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -53,18 +60,36 @@ public class CommerceReportController {
     static final MediaType XLSX = MediaType.parseMediaType(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     private static final Set<String> CHANNELS = Set.of("ONLINE", "ADMIN", "POS");
+    /** Reports that name staff (cashier, staff column, staff grouping). */
+    private static final Set<String> NAMES_STAFF = Set.of(DayBookService.DAY_BOOK,
+            PosSessionsReportService.POS_SESSIONS, SalesReportService.SALES);
 
     private final ReportAccess access;
     private final ReportRunner runner;
     private final StockClock clock;
     private final GstReportService gst;
+    private final DayBookService dayBook;
+    private final PaymentModesService paymentModes;
+    private final CodDuesReportService codDues;
+    private final PosSessionsReportService sessions;
+    private final SalesReportService sales;
+    private final PosUserNames userNames;
 
     public CommerceReportController(ReportAccess access, ReportRunner runner, StockClock clock,
-                                    GstReportService gst) {
+                                    GstReportService gst, DayBookService dayBook,
+                                    PaymentModesService paymentModes, CodDuesReportService codDues,
+                                    PosSessionsReportService sessions, SalesReportService sales,
+                                    PosUserNames userNames) {
         this.access = access;
         this.runner = runner;
         this.clock = clock;
         this.gst = gst;
+        this.dayBook = dayBook;
+        this.paymentModes = paymentModes;
+        this.codDues = codDues;
+        this.sessions = sessions;
+        this.sales = sales;
+        this.userNames = userNames;
     }
 
     @GetMapping("/{name}")
@@ -105,7 +130,13 @@ public class CommerceReportController {
         LocalDate today = clock.today(instituteId);
         ReportRange range = month != null && !month.isBlank()
                 ? ReportRange.month(month, today)
+                : DayBookService.DAY_BOOK.equals(name)
+                ? ReportRange.ofOrToday(from, to, today, ReportRange.DAY_BOOK_MAX_DAYS)
                 : ReportRange.of(from, to, today, ReportRange.MAX_DAYS);
+        if (DayBookService.DAY_BOOK.equals(name) && range.days() > ReportRange.DAY_BOOK_MAX_DAYS) {
+            throw new InvalidRequestException("VALIDATION: the range is at most " + ReportRange.DAY_BOOK_MAX_DAYS
+                    + " days");
+        }
         ReportQuery query = ReportQuery.builder()
                 .instituteId(instituteId)
                 .range(range)
@@ -122,16 +153,24 @@ public class CommerceReportController {
                 .today(today)
                 .month(month == null || month.isBlank() ? null : month.trim())
                 .build();
+        // Staff names come from the account service: read after a short read of the ids, never
+        // inside the report's transaction.
+        ReportQuery named = query;
+        List<String> staff = NAMES_STAFF.contains(name) ? runner.screen(() -> staffIds(name, named)) : List.of();
+        if (!staff.isEmpty()) {
+            query = query.toBuilder().staffNames(userNames.names(staff)).build();
+        }
+        ReportQuery q = query;
 
         if ("json".equals(fmt)) {
-            ReportAnswer answer = runner.screen(() -> json(name, query));
+            ReportAnswer answer = runner.screen(() -> json(name, q));
             return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(answer);
         }
         String fileFormat = fmt;
         ReportRunner.ExportResult file = runner.export(
                 new ReportRunner.ExportAudit(instituteId, user.getUserId(), scope.locationId(), name,
-                        range.from().toString(), range.to().toString(), query.filters(), fileFormat),
-                (out, maxRows) -> export(name, query, fileFormat, out, maxRows));
+                        range.from().toString(), range.to().toString(), q.filters(), fileFormat),
+                (out, maxRows) -> export(name, q, fileFormat, out, maxRows));
         String fileName = name + "-" + range.from() + "-" + range.to() + "." + fileFormat;
         return ResponseEntity.ok()
                 .contentType("csv".equals(fileFormat) ? CSV : XLSX)
@@ -149,7 +188,24 @@ public class CommerceReportController {
             case GstReportService.HSN_SUMMARY -> gst.hsnSummary(q);
             case GstReportService.GSTR1 -> gst.gstr1(q);
             case GstReportService.DOCUMENTS_ISSUED -> gst.documentsIssued(q);
+            case DayBookService.DAY_BOOK -> dayBook.dayBook(q);
+            case PaymentModesService.PAYMENT_MODES -> paymentModes.paymentModes(q);
+            case CodDuesReportService.COD_OUTSTANDING -> codDues.codOutstanding(q);
+            case CodDuesReportService.CUSTOMER_DUES -> codDues.customerDues(q);
+            case PosSessionsReportService.POS_SESSIONS -> sessions.sessions(q);
+            case SalesReportService.SALES -> sales.sales(q);
+            case SalesReportService.PRODUCTS -> sales.products(q);
             default -> throw notBuilt(name);
+        };
+    }
+
+    /** The staff a report names (empty for reports that name none); read inside a short read-only transaction. */
+    List<String> staffIds(String name, ReportQuery q) {
+        return switch (name) {
+            case DayBookService.DAY_BOOK -> dayBook.staffIds(q);
+            case PosSessionsReportService.POS_SESSIONS -> sessions.staffIds(q);
+            case SalesReportService.SALES -> sales.staffIds(q);
+            default -> List.of();
         };
     }
 
@@ -161,6 +217,13 @@ public class CommerceReportController {
             case GstReportService.TAX_BY_RATE, GstReportService.HSN_SUMMARY, GstReportService.GSTR1,
                  GstReportService.DOCUMENTS_ISSUED -> gst.exportAnswer(json(name, q), format, q.hindi(), out, maxRows);
             case GstReportService.GST_PACK -> gst.gstPack(q, out, maxRows);
+            case DayBookService.DAY_BOOK -> dayBook.export(q, format, out, maxRows);
+            case PaymentModesService.PAYMENT_MODES -> paymentModes.export(q, format, out, maxRows);
+            case CodDuesReportService.COD_OUTSTANDING -> codDues.exportCod(q, format, out, maxRows);
+            case CodDuesReportService.CUSTOMER_DUES -> codDues.exportDues(q, format, out, maxRows);
+            case PosSessionsReportService.POS_SESSIONS -> sessions.export(q, format, out, maxRows);
+            case SalesReportService.SALES -> sales.exportSales(q, format, out, maxRows);
+            case SalesReportService.PRODUCTS -> sales.exportProducts(q, format, out, maxRows);
             default -> throw notBuilt(name);
         };
     }

@@ -22,11 +22,14 @@ import java.util.Map;
  * @param groupBy     sales and products: the grouping (B2)
  * @param asOf        COD outstanding: the as-of date (B2)
  * @param today       the India date "today" from the clock
+ * @param staffNames  full names of the staff the answer names, read before the report's
+ *                    transaction (never inside it); null or missing: the user id is shown
  */
 @Builder(toBuilder = true)
 public record ReportQuery(String instituteId, ReportRange range, ReportScope scope, String channel,
                           String sellerGstin, String status, BigDecimal b2clLimit, String cursor, int size,
-                          boolean hindi, String groupBy, LocalDate asOf, LocalDate today, String month) {
+                          boolean hindi, String groupBy, LocalDate asOf, LocalDate today, String month,
+                          Map<String, String> staffNames) {
 
     public static final int DEFAULT_SIZE = 100;
     public static final int MAX_SIZE = 200;
@@ -38,6 +41,15 @@ public record ReportQuery(String instituteId, ReportRange range, ReportScope sco
             return DEFAULT_SIZE;
         }
         return Math.min(size, MAX_SIZE);
+    }
+
+    /** The full name of a staff user; the id when the account service gave none; null for null. */
+    public String staffName(String userId) {
+        if (userId == null) {
+            return null;
+        }
+        String name = staffNames == null ? null : staffNames.get(userId);
+        return name == null || name.isBlank() ? userId : name;
     }
 
     public BigDecimal b2clLimitOrDefault() {
