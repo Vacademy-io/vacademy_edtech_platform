@@ -359,11 +359,76 @@ describe('redirects from the old site', () => {
         expect(html).toBe(INDEX_HTML);
     });
 
+    it('sends a Devanagari target as an ASCII Location that reads back as the same path', async () => {
+        const slug = 'लाल-साड़ी';
+        const rows = { '/hi/product/old': { status_code: 301, to_path: `/p/${slug}` } };
+        const { response, shellServed } = await run('https://shop.example/hi/product/old/', { globalSettings: SHOP_SETTINGS, redirects: rows, shopHosts: HOSTS });
+        expect(response.status).toBe(301);
+        const location = response.headers.get('location')!;
+        expect(location).toMatch(/^[\x21-\x7e]+$/);
+        expect(location).toBe(`https://shop.example/p/${encodeURIComponent(slug)}`);
+        expect(decodeURIComponent(new URL(location).pathname)).toBe(`/p/${slug}`);
+        expect(shellServed).toBe(0);
+    });
+
+    it('does not encode an already encoded target a second time', async () => {
+        const encoded = `/p/${encodeURIComponent('साड़ी')}?lang=en`;
+        const rows = { '/product/old': { status_code: 301, to_path: encoded } };
+        const { response } = await run('https://shop.example/product/old', { globalSettings: SHOP_SETTINGS, redirects: rows, shopHosts: HOSTS });
+        expect(response.status).toBe(301);
+        expect(response.headers.get('location')).toBe(`https://shop.example${encoded}`);
+    });
+
     it('is not asked at all by a shop that has no redirects', async () => {
         const settings = { ...SHOP_SETTINGS, commerce: { ...SHOP_SETTINGS.commerce, redirects: false } };
         const { calls, html } = await run('https://shop.example/product/red-saree/', { globalSettings: settings, redirects, shopHosts: HOSTS });
         expect(html).toBe(INDEX_HTML);
         expect(calls.some((c) => c.url.includes('/redirects/resolve'))).toBe(false);
+    });
+});
+
+describe('a platform host the deployment names', () => {
+    // A staging copy of a shop on a platform subdomain, listed by name in the Pages variable.
+    const REVIEW = 'shop-review.vacademy.io';
+    const redirects = { '/product/red-saree': { status_code: 301, to_path: '/p/red-saree?lang=en' } };
+
+    it('gets product heads when it is listed', async () => {
+        const { response, html } = await run(`https://${REVIEW}/p/red-saree`, { shopHosts: `shop.example, ${REVIEW}`, globalSettings: SHOP_SETTINGS });
+        expect(response.status).toBe(200);
+        expect(html).toContain(`<link rel="canonical" href="https://${REVIEW}/p/red-saree" data-commerce-edge="1" />`);
+        expect(html).toContain('<title>लाल साड़ी | Example Brand</title>');
+    });
+
+    it('gets old-site redirects when it is listed', async () => {
+        const { response } = await run(`https://${REVIEW}/product/red-saree/`, { shopHosts: REVIEW, globalSettings: SHOP_SETTINGS, redirects });
+        expect(response.status).toBe(301);
+        expect(response.headers.get('location')).toBe(`https://${REVIEW}/p/red-saree?lang=en`);
+    });
+
+    it('answers 404 for an unknown product when it is listed', async () => {
+        const { response, html } = await run(`https://${REVIEW}/p/nope`, { shopHosts: REVIEW, globalSettings: SHOP_SETTINGS });
+        expect(response.status).toBe(404);
+        expect(html).toContain('<meta name="robots" content="noindex"');
+    });
+
+    it('is left alone, with no backend call, when it is not listed', async () => {
+        for (const hosts of [undefined, '', 'shop.example', 'other-review.vacademy.io', 'vacademy.io']) {
+            for (const path of ['/p/red-saree', '/product/red-saree/']) {
+                const { response, html, calls } = await run(`https://${REVIEW}${path}`, { shopHosts: hosts, globalSettings: SHOP_SETTINGS, redirects });
+                expect(response.status, `${hosts} ${path}`).toBe(200);
+                expect(html, `${hosts} ${path}`).toBe(INDEX_HTML);
+                expect(calls, `${hosts} ${path}`).toEqual([]);
+            }
+        }
+    });
+
+    it('leaves the learner host unchanged when another platform host is listed', async () => {
+        for (const path of ['/p/red-saree', '/product/red-saree/', '/some-tag/about']) {
+            const { response, html, calls } = await run(`https://learner.vacademy.io${path}`, { shopHosts: REVIEW, globalSettings: SHOP_SETTINGS, redirects });
+            expect(response.status, path).toBe(200);
+            expect(html, path).toBe(INDEX_HTML);
+            expect(calls, path).toEqual([]);
+        }
     });
 });
 

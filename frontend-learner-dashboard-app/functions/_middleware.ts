@@ -999,7 +999,9 @@ const COMMERCE_LOOKUP_TIMEOUT_MS = 1500;
 /**
  * Hosts the edge treats as shops (product and collection heads, old-site redirects): the Pages
  * variable COMMERCE_SHOP_HOSTS, a comma- or space-separated list ("shop.example.org"). Empty by
- * default, so no host pays a backend lookup for a path that is simply not a shop page.
+ * default, so no host pays a backend lookup for a path that is simply not a shop page. Every
+ * entry is an exact host name (no wildcard); a platform host such as "review.vacademy.io" counts
+ * only when it is named here.
  */
 function commerceShopHosts(env: unknown): Set<string> {
   const raw = (env as { COMMERCE_SHOP_HOSTS?: unknown } | null | undefined)?.COMMERCE_SHOP_HOSTS;
@@ -1138,11 +1140,10 @@ async function commerceResponse(
     const hostname = url.hostname;
     // Only a host the deployment names (COMMERCE_SHOP_HOSTS) is ever looked up, for product
     // and collection heads and for old-site redirects. Every other host returns here, before
-    // any call, exactly as it did before the shop existed.
-    if (
-      isVacademyHost(hostname) ||
-      !commerceShopHosts(context.env).has(hostname.toLowerCase().replace(/^www\./, ""))
-    ) {
+    // any call, exactly as it did before the shop existed. The test is the name alone, so a
+    // host under the platform's own domain (a staging copy of a shop) that is listed by name
+    // is a shop host too, and every platform host that is not listed is left alone.
+    if (!commerceShopHosts(context.env).has(hostname.toLowerCase().replace(/^www\./, ""))) {
       return null;
     }
     const productLike = looksLikeCommercePath(segs);

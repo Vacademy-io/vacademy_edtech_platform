@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Category, ProductCard, ProductDetail } from '../api/types';
 import {
+    asciiLocation,
     collectionHead,
     edgeLocale,
     edgeShopOf,
@@ -502,6 +503,39 @@ describe('redirects from the old site', () => {
             location: '/p/red-saree?lang=en',
         });
         expect(redirectDecision({ statusCode: 301, toPath: '/shop' }, '/shop-en/')).toEqual({ status: 301, location: '/shop' });
+    });
+
+    it('makes the Location ASCII: a Devanagari target is percent-encoded and reads back the same', () => {
+        const slug = 'लाल-साड़ी'.normalize('NFC');
+        const decision = redirectDecision({ status_code: 301, to_path: `/p/${slug}?lang=en` }, '/hi/product/old/');
+        expect(decision).toEqual({ status: 301, location: `/p/${encodeURIComponent(slug)}?lang=en` });
+        const location = (decision as { location: string }).location;
+        expect(location).toMatch(/^[\x21-\x7e]+$/);
+        expect(decodeURIComponent(location.split('?')[0]!)).toBe(`/p/${slug}`);
+        // A non-ASCII query value is encoded too; the query's own signs keep their meaning.
+        expect(redirectDecision({ status_code: 301, to_path: '/shop?filter.colour=लाल&lang=en' }, '/x')).toEqual({
+            status: 301,
+            location: `/shop?filter.colour=${encodeURIComponent('लाल')}&lang=en`,
+        });
+    });
+
+    it('never encodes an encoded target a second time', () => {
+        const encoded = `/p/${encodeURIComponent('साड़ी')}`;
+        expect(asciiLocation(encoded)).toBe(encoded);
+        expect(asciiLocation(`/p/${encodeURIComponent('साड़ी').toLowerCase()}`)).toBe(`/p/${encodeURIComponent('साड़ी').toLowerCase()}`);
+        expect(asciiLocation('/news#about-us')).toBe('/news#about-us');
+        expect(asciiLocation('/p/a b')).toBe('/p/a%20b');
+        expect(asciiLocation('/p/100%')).toBe('/p/100%25');
+        expect(asciiLocation('/p/50%zz')).toBe('/p/50%25zz');
+        expect(asciiLocation('/p/\uD800x')).toBe('/p/%EF%BF%BDx');
+        expect(asciiLocation('/p/caf\u00e9')).toBe('/p/caf%C3%A9');
+    });
+
+    it('still finds a loop when the target is written in Devanagari and the request is encoded', () => {
+        const slug = 'साड़ी';
+        expect(redirectDecision({ status_code: 301, to_path: `/hi/${slug}/` }, `/hi/${encodeURIComponent(slug)}`)).toBeNull();
+        expect(redirectDecision({ status_code: 301, to_path: `/hi/${encodeURIComponent(slug)}` }, `/hi/${slug}`)).toBeNull();
+        expect(redirectDecision({ status_code: 301, to_path: `/hi/${slug}#top` }, `/hi/${slug}`)).toBeNull();
     });
 
     it('answers 410 for a row with no target', () => {

@@ -507,9 +507,37 @@ export const normalizeRedirectPath = (pathname: string, search = ''): string => 
 
 export type RedirectDecision = { status: 301; location: string } | { status: 410 } | null;
 
+const UTF8 = new TextEncoder();
+
+/**
+ * A redirect target as a `Location` header can carry it: every character outside printable
+ * ASCII (a Devanagari slug, a space) is percent-encoded as UTF-8, so the header is always
+ * ASCII. What is already ASCII is left as it is: an existing `%XX` escape is not encoded again
+ * and the query string's `?`, `&` and `=` keep their meaning. A `%` that starts no escape
+ * becomes `%25`. A header value with a non-ASCII character is refused by the runtime, so
+ * without this the visitor would get no redirect at all.
+ */
+export const asciiLocation = (target: string): string => {
+    let out = '';
+    for (let i = 0; i < target.length; ) {
+        const code = target.codePointAt(i) ?? 0;
+        const char = String.fromCodePoint(code);
+        i += char.length;
+        if (code === 0x25) {
+            out += /^[0-9a-f]{2}$/i.test(target.slice(i, i + 2)) ? '%' : '%25';
+        } else if (code > 0x20 && code < 0x7f) {
+            out += char;
+        } else {
+            // A lone surrogate is encoded as U+FFFD, as TextEncoder does.
+            for (const byte of UTF8.encode(char)) out += `%${byte.toString(16).toUpperCase().padStart(2, '0')}`;
+        }
+    }
+    return out;
+};
+
 /**
  * The answer of GET /open/commerce/v1/redirects/resolve?path= turned into what the edge does.
- * Contract coded against (the endpoint is not built yet): 200 with
+ * The endpoint answers 200 with
  * {"status_code": 301, "to_path": "/p/x?lang=en"} or {"status_code": 410}; 404 when no row
  * matches. A target is followed only when it is a path on this site: an absolute URL, a
  * protocol-relative one or a target equal to the request would be an open redirect or a loop.
@@ -523,7 +551,7 @@ export const redirectDecision = (body: unknown, requestPath: string, basePath = 
     const raw = data.to_path ?? data.toPath;
     const target = typeof raw === 'string' ? raw.trim() : '';
     if (!target.startsWith('/') || target.startsWith('//') || target.includes('\\') || /[\r\n]/.test(target)) return null;
-    const location = `${basePath}${target}`;
-    if (normalizeRedirectPath(location.split('?')[0] || '/') === normalizeRedirectPath(requestPath)) return null;
+    const location = asciiLocation(`${basePath}${target}`);
+    if (normalizeRedirectPath(location.split(/[?#]/)[0] || '/') === normalizeRedirectPath(requestPath)) return null;
     return { status: 301, location };
 };
