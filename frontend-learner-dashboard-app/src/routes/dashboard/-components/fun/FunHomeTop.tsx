@@ -11,6 +11,7 @@ import { firstGrapheme } from "@/components/design-system/fun/CourseArt";
 import { brandNearLiveRed } from "@/components/design-system/fun/brand-colours";
 import { courseIdsNeedingBatchNames, useBatchNames } from "@/components/design-system/fun/batch-names";
 import { useHideProgress } from "@/hooks/use-hide-progress";
+import { useNeonCity } from "@/hooks/use-neon-city";
 import { useEnrolledFurthestPercent, useEnrolledStanding } from "@/hooks/use-enrolled-standing";
 import { countWorthShowing, NEARLY_DONE_PERCENT, shownCoursePercent } from "@/lib/learner-state/course-progress";
 import { getTerminology, getTerminologyPlural } from "@/components/common/layout-container/sidebar/utils";
@@ -107,8 +108,22 @@ function openCourseDetails(navigate: ReturnType<typeof useNavigate>, course: Enr
  * to start, and the hero card for whichever state the learner is in (see funHeroKind).
  * On a phone the Today cards follow; on a laptop they sit in the rail.
  */
+/** Neon City's "Next mission" label: a map pin and the words, above the course name. */
+function MissionLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="neon-mission fun-t-eyebrow">
+      <svg className="neon-mission__pin" viewBox="0 0 14 16" aria-hidden="true" focusable="false">
+        <path d="M7 0C3 0 0 3 0 6.6 0 11 7 16 7 16s7-5 7-9.4C14 3 11 0 7 0z" fill="currentColor" />
+        <circle cx="7" cy="6.5" r="2.4" className="neon-mission__pin-hole" />
+      </svg>
+      {children}
+    </p>
+  );
+}
+
 export function FunHomeTop(props: FunHomeTopProps) {
   const { t } = useTranslation("funHome");
+  const neon = useNeonCity();
   const { t: tDashboard } = useTranslation("dashboard");
   const navigate = useNavigate();
   const now = useNow();
@@ -204,6 +219,7 @@ export function FunHomeTop(props: FunHomeTopProps) {
           className={cn("fun-hero fun-hero--course fun-on-colour", heroCourseId ? courseColourClass(heroCourseId) : "fun-hero--no-course")}
         >
           <HeroArt name={resume.courseName || resume.slideTitle} imageUrl={heroImage} />
+          {neon && <MissionLabel>{t("neon.nextMission")}</MissionLabel>}
           {resume.courseName && (
             <p className="fun-hero__eyebrow fun-t-eyebrow">
               <bdi>{resume.courseName}</bdi>
@@ -259,7 +275,7 @@ export function FunHomeTop(props: FunHomeTopProps) {
           <HeroArt name={c.name} imageUrl={heroImage} />
           <div className="fun-hero__eyebrow-row">
             <NewChip />
-            <span className="fun-hero__eyebrow fun-t-eyebrow">{t("hero.startHere")}</span>
+            <span className="fun-hero__eyebrow fun-t-eyebrow">{neon ? t("neon.firstMission") : t("hero.startHere")}</span>
           </div>
           <h2 className="fun-hero__title fun-hero__title--start fun-clamp-2">
             <bdi>{c.name}</bdi>

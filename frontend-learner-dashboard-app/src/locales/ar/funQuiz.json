@@ -113,6 +113,9 @@
     "notes_other": "{{count}} ملاحظة",
     "viewingPast": "أنت تعرض محاولة سابقة.",
     "noRecorded": "لا توجد إجابات مسجلة في هذه المحاولة، لذا تظهر كل الأسئلة متروكة.",
-    "backToLatest": "العودة إلى الأحدث"
+    "backToLatest": "العودة إلى الأحدث",
+    "neonCleared": "تم اجتياز الاختبار",
+    "neonNotYet": "ليس بعد",
+    "neonStars": "{{count}} من 3 نجوم"
   }
 }

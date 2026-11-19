@@ -1,3 +1,4 @@
+import { useNeonCity } from "@/hooks/use-neon-city";
 import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowCounterClockwise, CaretDown, CaretRight, ChatCircleText, Paperclip } from "@phosphor-icons/react";
@@ -32,6 +33,7 @@ import {
   type ResultAction,
   type ResultScore,
   type TileKind,
+  neonStars,
 } from "./result-facts";
 
 export type RowStatus = "correct" | "partial" | "wrong" | "skipped";
@@ -109,6 +111,7 @@ export function FunQuizResult(props: FunQuizResultProps) {
     onBackToLatest,
   } = props;
   const { t } = useTranslation("funQuiz");
+  const neon = useNeonCity();
   const place = useQuizPlace();
   // The lesson viewer's Next while it is open; otherwise the way out is the course page.
   const onNext = useLessonNext();
@@ -144,6 +147,15 @@ export function FunQuizResult(props: FunQuizResultProps) {
       : verdict === "notPassed"
         ? t("result.notPassed")
         : t("result.done");
+  // Neon City names the latest result the game way (a quiz with no pass mark is
+  // cleared once it is done); an earlier attempt keeps its plain words.
+  const neonHeadline =
+    neon && !viewingPast
+      ? verdict === "notPassed"
+        ? t("result.neonNotYet")
+        : t("result.neonCleared")
+      : null;
+  const stars = neon && hasScore ? neonStars(percent, verdict) : null;
 
   const marksLine = hasScore
     ? [
@@ -201,7 +213,14 @@ export function FunQuizResult(props: FunQuizResultProps) {
           />
         )}
         {/* The screen's one h1, as on A-Result. */}
-        <h1 className="fun-quiz-result__headline">{headline}</h1>
+        {stars !== null && <NeonStars count={stars} label={t("result.neonStars", { count: stars })} />}
+        {neonHeadline ? (
+          <div className="neon-ribbon" data-verdict={verdict}>
+            <h1 className="fun-quiz-result__headline neon-ribbon__text">{neonHeadline}</h1>
+          </div>
+        ) : (
+          <h1 className="fun-quiz-result__headline">{headline}</h1>
+        )}
         {marksLine && <p className="fun-quiz-result__marks">{marksLine}</p>}
         {!stacked && attemptLabel && (
           <p className="fun-quiz-result__attempt-chip">
@@ -314,6 +333,27 @@ function ScoreRing({
         {formatNumber(percent)}%
       </text>
     </svg>
+  );
+}
+
+const STAR_PATH = "M12 2l2.9 6.3 6.9.7-5.2 4.6 1.5 6.8L12 17l-6.1 3.4 1.5-6.8L2.2 9l6.9-.7z";
+
+function NeonStars({ count, label }: { count: number; label: string }) {
+  return (
+    <p className="neon-stars" role="img" aria-label={label}>
+      {[0, 1, 2].map((i) => (
+        <svg
+          key={i}
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          focusable="false"
+          className={i === 1 ? "neon-stars__star neon-stars__star--mid" : "neon-stars__star"}
+          data-on={i < count ? "true" : "false"}
+        >
+          <path d={STAR_PATH} />
+        </svg>
+      ))}
+    </p>
   );
 }
 

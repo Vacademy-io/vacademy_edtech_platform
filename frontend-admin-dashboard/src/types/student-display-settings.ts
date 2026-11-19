@@ -164,7 +164,8 @@ export type StudentUiType =
     | 'play'
     | 'cleanerPlay'
     | 'corporate'
-    | 'fun';
+    | 'fun'
+    | 'neonCity';
 export interface StudentUiSettings {
     type: StudentUiType;
 }

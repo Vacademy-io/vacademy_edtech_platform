@@ -67,7 +67,7 @@ import { useOfflineInit } from "@/hooks/offline/useOfflineInit";
 import { RevokedDeviceDialog } from "@/components/common/offline/revoked-device-dialog";
 import { useLiveTestStore } from "@/stores/live-test-store";
 import { resolveUiSkin } from "@/utils/institute-theme-roles";
-import { applyAppSkinClass } from "@/lib/app-skin";
+import { applyAppSkinClass, uiSkinClasses } from "@/lib/app-skin";
 import { useFunSkinRuntime } from "@/components/design-system/fun/use-fun-skin-runtime";
 import { matchesCataloguePost } from "@/lib/catalogue-post-route";
 import { clearArrivalTokens, readArrivalTokens } from "@/lib/auth/arrival-tokens";
@@ -419,14 +419,7 @@ const RootComponent = () => {
     // Apply global ui-vibrant class based on override/settings and expose debug helpers
     // Through lib/app-skin so a themed exam screen, which holds the skin
     // off <html> while it is open, gets it back only when it closes.
-    const applyUiType = (t: StudentUIType) => {
-      if (t === "vibrant") applyAppSkinClass("ui-vibrant");
-      else if (t === "play") applyAppSkinClass("ui-play");
-      else if (t === "cleanerPlay") applyAppSkinClass("ui-cleaner-play");
-      else if (t === "corporate") applyAppSkinClass("ui-corporate");
-      else if (t === "fun") applyAppSkinClass("ui-fun");
-      else applyAppSkinClass(null);
-    };
+    const applyUiType = (t: StudentUIType) => applyAppSkinClass(uiSkinClasses(t));
 
     const DEBUG_KEY = "DEBUG_UI_TYPE";
     try {
@@ -437,7 +430,8 @@ const RootComponent = () => {
         override === "play" ||
         override === "cleanerPlay" ||
         override === "corporate" ||
-        override === "fun"
+        override === "fun" ||
+        override === "neonCity"
       ) {
         applyUiType(override);
       } else {
@@ -517,7 +511,7 @@ const RootComponent = () => {
         /* ignore */
       }
       if (
-        !["vibrant", "default", "play", "cleanerPlay", "corporate", "fun"].includes(
+        !["vibrant", "default", "play", "cleanerPlay", "corporate", "fun", "neonCity"].includes(
           override
         )
       ) {

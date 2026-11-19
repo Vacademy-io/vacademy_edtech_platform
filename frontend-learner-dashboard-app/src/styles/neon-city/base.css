@@ -1,0 +1,159 @@
+/* =====================================================================
+   Neon City skin: tokens.
+   Neon City repaints Fun's screens at night: <html> carries BOTH ui-fun and
+   ui-neon-city (lib/app-skin uiSkinClasses), so every Fun rule applies and
+   this sheet only re-points Fun's tokens and adds the city art.
+   Every selector here starts with html.ui-neon-city (or html.ui-fun.ui-neon-city
+   for the token block, which must outrank html.ui-fun's own token block).
+
+   Night ground, sunset accents, slanted Anton headings, dark text on every
+   bright fill. Contrast (WCAG 2.x): white on night 19:1, quiet text #C4B8E8
+   on cards 9.3:1, night on action pink 5.7:1, aqua on cards 10.9:1.
+   ===================================================================== */
+
+html.ui-fun.ui-neon-city {
+  color-scheme: dark;
+
+  /* ── Night palette (also used by the art and the app-wide layer) ──── */
+  --neon-night: #120A2A;          /* page */
+  --neon-card: #1E1342;           /* cards, sheets */
+  --neon-raised: #2A1B57;         /* tracks, chips, hover */
+  --neon-line: #3A2A70;           /* borders */
+  --neon-text: #FFFFFF;
+  --neon-text-soft: #E7DDFF;
+  --neon-text-quiet: #C4B8E8;
+  --neon-pink: #FF3D8B;           /* action: night text on it 5.7 */
+  --neon-pink-lip: #A3155A;
+  --neon-pink-text: #FF6FA8;      /* links on night 7.3 */
+  --neon-gold: #FFC94A;           /* reward, stars */
+  --neon-gold-lip: #A87A12;
+  --neon-aqua: #2EE6D6;           /* progress */
+  --neon-coral: #FF6B6B;          /* live */
+  --neon-coral-text: #FF8C8C;
+  --neon-display: 'Anton', 'Teko', Impact, 'Arial Narrow', sans-serif;
+  --neon-slant: -8deg;
+
+  /* ── Fun's tokens, re-pointed ─────────────────────────────────────── */
+  --fun-ink: var(--neon-text);
+  --fun-ink-2: var(--neon-text-soft);
+  --fun-muted: var(--neon-text-quiet);
+  --fun-line-control: #6E5BA8;
+  --fun-line-card: var(--neon-line);
+  --fun-line-nav: var(--neon-raised);
+  --fun-line-button: var(--neon-line);
+  /* "White" in Fun means both the card surface and the text on a colour fill.
+     At night both are the card colour: cards are night-blue, and text on a
+     bright fill is dark. */
+  --fun-ground: var(--neon-card);
+
+  --fun-success: #5BE38A;
+  --fun-success-strong: #5BE38A;
+  --fun-success-tint: #16312A;
+  --fun-success-text: #7CF0A6;
+  --fun-success-text-strong: #A6F5C2;
+  --fun-success-track: #235040;
+
+  --fun-live: var(--neon-coral);
+  --fun-live-text: var(--neon-coral-text);
+  --fun-live-tint: #3A1430;
+  --fun-live-tint-text: #FFB3B3;
+  --fun-live-tint-text-2: #FF9E9E;
+
+  --fun-test-tint: #2E2440;
+  --fun-test-text: #FFD27A;
+  --fun-test-text-strong: #FFE6A8;
+  --fun-test-text-2: #FFD27A;
+  --fun-test-icon-bg: #4A3A1A;
+  --fun-quiz: var(--neon-gold);
+  --fun-quiz-tint: #3A2E14;
+
+  --fun-info: #4CC2FF;
+  --fun-info-tint: #142A4A;
+  --fun-info-text: #8FD6FF;
+
+  --fun-highlight: var(--neon-gold);
+  --fun-highlight-text: var(--neon-night);
+
+  --fun-streak-bg: #3A1E1A;
+  --fun-streak-text: #FFB27A;
+  --fun-flame: #FF8A3D;
+  --fun-flame-core: var(--neon-gold);
+
+  /* The action colour is the skin's own, never the institute brand
+     (use-fun-skin-runtime does not write the brand while Neon City is on). */
+  --fun-brand: var(--neon-pink);
+  --fun-brand-tint: #3A1446;
+  --fun-brand-lip: var(--neon-pink-lip);
+
+  /* Lane values the Fun screens hard-code for a white page. */
+  --fun-home-live-deco: #FF8C8C;
+  --fun-home-done-deco: #9AF0B6;
+  --fun-home-done-text: var(--neon-night);
+  --fun-home-empty-art: #3A2E30;
+  --fun-home-note-bg: var(--neon-raised);
+  --fun-home-note-text: var(--neon-text-soft);
+  --fun-course-locked-bg: #170F36;
+
+  --fun-font-family: 'Manrope', 'Noto Sans Devanagari', 'Noto Naskh Arabic', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* ── Course colours: bright fills with night text ─────────────────── */
+/* Same slots as Fun (index = FNV-1a of the course id % 8, course-palette.ts).
+   --fc-text is the course colour as text on a card; --fc-on-band is text on
+   the fill. Fallback tints first, color-mix where the browser has it. */
+html.ui-neon-city .fun-course-0 { --fc-solid: #9B7BFF; --fc-text: #B8A3FF; --fc-tint: #2A2160; --fc-deco: #B8A3FF; --fc-lip: #5A3FC0; }
+html.ui-neon-city .fun-course-1 { --fc-solid: #2EE6D6; --fc-text: #2EE6D6; --fc-tint: #163A4A; --fc-deco: #8AF3EA; --fc-lip: #12968A; }
+html.ui-neon-city .fun-course-2 { --fc-solid: #FF8A3D; --fc-text: #FFA266; --fc-tint: #3A2236; --fc-deco: #FFB688; --fc-lip: #B4521A; }
+html.ui-neon-city .fun-course-3 { --fc-solid: #FF6FA8; --fc-text: #FF8AB9; --fc-tint: #3A1846; --fc-deco: #FFA3C6; --fc-lip: #B03270; }
+html.ui-neon-city .fun-course-4 { --fc-solid: #FFC94A; --fc-text: #FFC94A; --fc-tint: #3A2E30; --fc-deco: #FFE08F; --fc-lip: #A87A12; }
+html.ui-neon-city .fun-course-5 { --fc-solid: #4CC2FF; --fc-text: #6FCEFF; --fc-tint: #17305A; --fc-deco: #96DCFF; --fc-lip: #1C78AE; }
+html.ui-neon-city .fun-course-6 { --fc-solid: #D69BFF; --fc-text: #DDAEFF; --fc-tint: #34205E; --fc-deco: #E6C2FF; --fc-lip: #8A4FB8; }
+html.ui-neon-city .fun-course-7 { --fc-solid: #5BE38A; --fc-text: #5BE38A; --fc-tint: #183A3A; --fc-deco: #9AF0B6; --fc-lip: #24924A; }
+html.ui-neon-city :is(.fun-course-0, .fun-course-1, .fun-course-2, .fun-course-3, .fun-course-4, .fun-course-5, .fun-course-6, .fun-course-7) {
+  --fc-on-band: var(--neon-night);
+  --fc-track: rgba(18, 10, 42, 0.28);
+}
+
+/* ── Headings: Anton, capitals, slanted ───────────────────────────── */
+html.ui-neon-city :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title) {
+  font-family: var(--neon-display);
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  transform: skewX(var(--neon-slant));
+  transform-origin: left bottom;
+}
+html.ui-neon-city:is([lang="hi"], [lang="mr"]) :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title) {
+  font-family: 'Teko', var(--neon-display);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+}
+html.ui-neon-city[dir="rtl"] :is(.fun-t-display, .fun-t-title, .fun-t-section, .fun-learn-head__title) {
+  transform: skewX(calc(var(--neon-slant) * -1));
+  transform-origin: right bottom;
+}
+
+/* ── Buttons: Anton labels on the filled ones ─────────────────────── */
+html.ui-neon-city .fun-btn--primary {
+  font-family: var(--neon-display);
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+html.ui-neon-city:is([lang="hi"], [lang="mr"]) .fun-btn--primary {
+  font-family: var(--fun-font-family);
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: none;
+}
+html.ui-neon-city .fun-btn:focus-visible { outline-color: var(--neon-text); }
+html.ui-neon-city .fun-on-colour .fun-btn:focus-visible { outline-color: var(--neon-night); }
+
+/* The quiz lane's own values (declared on .fun-quiz). */
+html.ui-neon-city .fun-quiz {
+  --fun-quiz-option-line: var(--neon-line);
+  --fun-quiz-wrong-line: #7A2A4A;
+  --fun-quiz-wrong-bg: #2E1338;
+  --fun-quiz-pass-text: var(--neon-text-soft);
+}

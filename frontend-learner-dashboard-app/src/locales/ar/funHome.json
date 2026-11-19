@@ -149,5 +149,9 @@
   },
   "nav": {
     "allPages": "كل الصفحات"
+  },
+  "neon": {
+    "nextMission": "المهمة التالية",
+    "firstMission": "المهمة الأولى"
   }
 }

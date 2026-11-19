@@ -1,0 +1,167 @@
+/* =====================================================================
+   Neon City: the rest of the app at night.
+   Fun's own screens are repainted through its tokens (base.css). Every other
+   screen (tests list, live classes, profile, settings, dialogs) is built from
+   the shared shadcn tokens plus literal Tailwind greys and white, so this file
+   turns those to night colours while Neon City is on. A test being taken
+   never gets here: the live-test shell holds the skin off
+   (use-exam-skin-isolation).
+   Unlayered on purpose, like the Fun sheets: it must win over Tailwind's
+   @layer utilities.
+   ===================================================================== */
+
+/* ── shadcn and app tokens (HSL channels) ─────────────────────────── */
+/* !important where theme-provider writes the value inline on <html>
+   (primary, secondary, tertiary and nav roles follow the institute brand,
+   which Neon City replaces with its own pink). */
+html.ui-neon-city {
+  --background: 254 55% 17% !important;      /* #1E1342 surfaces (dialogs, tabs, inputs) */
+  --canvas: 255 61% 10% !important;          /* #120A2A page */
+  --foreground: 0 0% 100%;
+  --card: 254 55% 17%;
+  --card-foreground: 0 0% 100%;
+  --popover: 254 55% 17%;
+  --popover-foreground: 0 0% 100%;
+  --primary: 336 100% 62% !important;
+  --primary-foreground: 255 61% 10% !important;
+  --secondary: 255 53% 22%;
+  --secondary-foreground: 0 0% 100%;
+  --muted: 255 53% 22%;
+  --muted-foreground: 255 51% 82%;
+  --accent: 255 53% 22%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 100% 71%;
+  --destructive-foreground: 255 61% 10%;
+  --border: 254 45% 30%;
+  --input: 254 45% 30%;
+  --ring: 335 100% 72%;
+  --surface: 254 55% 17%;
+  --surface-muted: 255 53% 22%;
+  --text-primary: 0 0% 100%;
+  --text-secondary: 255 51% 82%;
+  --text-muted: 255 51% 82%;
+  --base-black: 0 0% 100%;
+
+  /* Brand scale → neon pink: 500 is text and fills, 50-200 are night tints
+     behind pink text. */
+  --primary-50: 290 49% 15% !important;
+  --primary-100: 300 45% 19% !important;
+  --primary-200: 315 45% 26% !important;
+  --primary-300: 330 60% 45% !important;
+  --primary-400: 335 100% 70% !important;
+  --primary-500: 336 100% 62% !important;
+  --secondary-50: 254 55% 17% !important;
+  --secondary-100: 255 53% 22% !important;
+  --secondary-200: 254 45% 30% !important;
+  --secondary-300: 256 40% 50% !important;
+  --secondary-400: 255 51% 82% !important;
+  --secondary-500: 174 79% 54% !important;
+  --tertiary-50: 254 55% 17% !important;
+  --tertiary-100: 255 53% 22% !important;
+  --tertiary-200: 254 45% 30% !important;
+  --tertiary-300: 256 40% 50% !important;
+  --tertiary-400: 255 51% 82% !important;
+  --tertiary-500: 43 100% 65% !important;
+
+  --nav-surface: 255 61% 10% !important;
+  --nav-surface-hover: 255 53% 22% !important;
+  --nav-active: 336 100% 62% !important;
+  --nav-active-text: 255 61% 10% !important;
+  --nav-text: 256 49% 90% !important;
+  --sidebar-background: 255 61% 10%;
+  --sidebar-foreground: 256 49% 90%;
+  --sidebar-primary: 336 100% 62%;
+  --sidebar-primary-foreground: 255 61% 10%;
+  --sidebar-accent: 255 53% 22%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 254 45% 30%;
+  --sidebar-ring: 335 100% 72%;
+
+  /* Status scales: 50-200 are night tints, 500-700 light enough to read. */
+  --success-50: 158 40% 14%;
+  --success-100: 158 40% 18%;
+  --success-200: 155 38% 24%;
+  --success-500: 141 71% 62%;
+  --success-600: 141 71% 66%;
+  --success-700: 141 78% 72%;
+  --warning-50: 40 40% 14%;
+  --warning-100: 40 40% 18%;
+  --warning-200: 40 40% 24%;
+  --warning-500: 43 100% 65%;
+  --warning-600: 40 100% 68%;
+  --warning-700: 40 100% 74%;
+  --danger-50: 330 45% 15%;
+  --danger-100: 330 45% 19%;
+  --danger-200: 330 42% 25%;
+  --danger-500: 0 100% 71%;
+  --danger-600: 0 100% 74%;
+  --danger-700: 0 100% 78%;
+  --info-50: 215 55% 15%;
+  --info-100: 215 55% 19%;
+  --info-200: 215 50% 26%;
+  --info-500: 200 100% 65%;
+  --info-600: 200 100% 70%;
+  --info-700: 200 100% 76%;
+
+  --shadow-xs: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.35);
+  --shadow-md: 0 4px 12px -2px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 12px 28px -6px rgb(0 0 0 / 0.45);
+  --shadow-xl: 0 24px 48px -12px rgb(0 0 0 / 0.5);
+}
+
+html.ui-neon-city body {
+  background-color: #120A2A;
+  color: #FFFFFF;
+}
+
+/* ── Literal Tailwind greys and white ─────────────────────────────── */
+/* Surfaces */
+html.ui-neon-city :is(.bg-white, .bg-gray-50, .bg-neutral-50, .bg-slate-50, .bg-zinc-50) { background-color: #1E1342; }
+html.ui-neon-city :is(.bg-gray-100, .bg-neutral-100, .bg-slate-100, .bg-gray-200, .bg-neutral-200, .bg-slate-200) { background-color: #2A1B57; }
+html.ui-neon-city :is(.bg-white\/90, .bg-white\/95, .bg-white\/80) { background-color: rgb(30 19 66 / 0.92); }
+html.ui-neon-city :is(.bg-white\/60, .bg-white\/70, .bg-white\/50) { background-color: rgb(30 19 66 / 0.7); }
+html.ui-neon-city :is(.hover\:bg-gray-50, .hover\:bg-neutral-50, .hover\:bg-gray-100, .hover\:bg-neutral-100, .hover\:bg-slate-50):hover { background-color: #2A1B57; }
+html.ui-neon-city :is(.from-white, .from-gray-50, .from-neutral-50) { --tw-gradient-from: #1E1342 var(--tw-gradient-from-position); --tw-gradient-to: rgb(30 19 66 / 0) var(--tw-gradient-to-position); --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to); }
+html.ui-neon-city :is(.to-white, .to-gray-50, .to-neutral-50) { --tw-gradient-to: #1E1342 var(--tw-gradient-to-position); }
+
+/* Text, darkest to lightest grey → white to quiet lilac */
+html.ui-neon-city :is(.text-black, .text-gray-900, .text-neutral-900, .text-slate-900, .text-zinc-900, .text-gray-800, .text-neutral-800, .text-slate-800) { color: #FFFFFF; }
+html.ui-neon-city :is(.text-gray-700, .text-neutral-700, .text-slate-700, .text-gray-600, .text-neutral-600, .text-slate-600) { color: #E7DDFF; }
+html.ui-neon-city :is(.text-gray-500, .text-neutral-500, .text-slate-500, .text-gray-400, .text-neutral-400, .text-slate-400) { color: #C4B8E8; }
+html.ui-neon-city :is(.text-gray-300, .text-neutral-300) { color: #8F80C4; }
+
+/* Lines */
+html.ui-neon-city :is(.border-gray-100, .border-neutral-100, .border-gray-200, .border-neutral-200, .border-slate-200, .border-gray-300, .border-neutral-300, .border-slate-300) { border-color: #3A2A70; }
+html.ui-neon-city :is(.divide-gray-100, .divide-neutral-100, .divide-gray-200, .divide-neutral-200) > :not([hidden]) ~ :not([hidden]) { border-color: #3A2A70; }
+
+/* White text on a brand fill would be 3.1:1 on the pink: night text instead. */
+html.ui-neon-city :is(.bg-primary-500, .bg-primary, .bg-primary-400):is(.text-white, :not([class*="text-"])),
+html.ui-neon-city :is(.bg-primary-500, .bg-primary, .bg-primary-400) :is(.text-white, svg) {
+  color: #120A2A;
+}
+
+/* Inputs and selects */
+html.ui-neon-city :is(input, textarea, select):not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+  color: #FFFFFF;
+  background-color: #1E1342;
+}
+html.ui-neon-city ::placeholder { color: #A99BD6; opacity: 1; }
+
+/* Scrollbars and selection */
+html.ui-neon-city { scrollbar-color: #3A2A70 #120A2A; }
+html.ui-neon-city ::selection { background: #FF3D8B; color: #120A2A; }
+
+/* Tailwind's important variants (!text-*, !bg-white) carry !important, so
+   the night value has to as well. */
+html.ui-neon-city :is(.\!text-black, .\!text-gray-900, .\!text-neutral-900, .\!text-gray-800, .\!text-neutral-800) { color: #FFFFFF !important; }
+html.ui-neon-city :is(.\!text-gray-700, .\!text-neutral-700, .\!text-gray-600, .\!text-neutral-600) { color: #E7DDFF !important; }
+html.ui-neon-city :is(.\!text-gray-500, .\!text-neutral-500, .\!text-gray-400, .\!text-neutral-400) { color: #C4B8E8 !important; }
+html.ui-neon-city :is(.\!bg-white, .\!bg-gray-50, .\!bg-neutral-50) { background-color: #1E1342 !important; }
+
+/* Gradients that start from white in a state variant (active tabs,
+   data-[state=active]:from-white) start from the card colour. */
+html.ui-neon-city [class*="from-white"] {
+  --tw-gradient-from: #1E1342 var(--tw-gradient-from-position);
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}

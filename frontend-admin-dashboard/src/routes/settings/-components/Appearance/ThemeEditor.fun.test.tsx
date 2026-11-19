@@ -78,7 +78,9 @@ async function openEditor() {
     render(<ThemeEditor onLegacySkinWritten={onLegacySkinWritten} />);
     const button = await screen.findByRole('button', { name: 'save.save' });
     // Hydration has run once the saved skin is the checked one.
-    await waitFor(() => expect(screen.getAllByRole('radio', { checked: true }).length).toBeGreaterThan(0));
+    await waitFor(() =>
+        expect(screen.getAllByRole('radio', { checked: true }).length).toBeGreaterThan(0)
+    );
     return button;
 }
 
@@ -113,7 +115,15 @@ describe('ThemeEditor and the Fun skin', () => {
         savedTheme = theme('default');
         legacyType = 'default';
         await openEditor();
-        for (const skin of ['default', 'vibrant', 'play', 'cleanerPlay', 'corporate', 'fun']) {
+        for (const skin of [
+            'default',
+            'vibrant',
+            'play',
+            'cleanerPlay',
+            'corporate',
+            'fun',
+            'neonCity',
+        ]) {
             expect(radio(`learnerUi.skin.${skin}`)).toBeTruthy();
         }
     });
@@ -246,5 +256,9 @@ describe('legacySkinFor', () => {
         expect(legacySkinFor('corporate', 'fun')).toBe('corporate');
         expect(legacySkinFor('corporate', 'cleanerPlay')).toBeNull();
         expect(legacySkinFor('default', null)).toBeNull();
+        // Neon City is as new as Fun: older apps get the same nearest look.
+        expect(legacySkinFor('neonCity', null)).toBe('cleanerPlay');
+        expect(legacySkinFor('neonCity', 'fun')).toBe('cleanerPlay');
+        expect(legacySkinFor('corporate', 'neonCity')).toBe('corporate');
     });
 });

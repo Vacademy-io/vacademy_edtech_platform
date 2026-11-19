@@ -60,11 +60,16 @@ export function removeFunFonts(doc: Document = document): void {
   doc.getElementById(FUN_FONTS_LINK_ID)?.remove();
 }
 
+/** Neon City rides on ui-fun with its own faces, so Nunito is not fetched for it. */
+const readNunitoWanted = (): boolean =>
+  read() && !document.documentElement.classList.contains("ui-neon-city");
+
 export function useFunTheme(): boolean {
   const on = useSyncExternalStore(subscribe, read, () => false);
+  const nunito = useSyncExternalStore(subscribe, readNunitoWanted, () => false);
   useEffect(() => {
-    if (on) ensureFunFonts();
+    if (nunito) ensureFunFonts();
     else removeFunFonts();
-  }, [on]);
+  }, [nunito]);
   return on;
 }

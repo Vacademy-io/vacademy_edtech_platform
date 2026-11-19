@@ -187,6 +187,7 @@ export function resolveUiSkin(
     "cleanerPlay",
     "corporate",
     "fun",
+    "neonCity",
   ];
   const fromTheme = readThemeRoleSettings()?.roles?.skin;
   if (fromTheme && allowed.includes(fromTheme)) return fromTheme;

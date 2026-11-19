@@ -13,7 +13,7 @@ import {
 } from "@/types/student-display-settings";
 import { DEFAULT_STUDENT_DISPLAY_SETTINGS } from "@/constants/display-settings/student-defaults";
 import { resolveUiSkin } from "@/utils/institute-theme-roles";
-import { applyAppSkinClass } from "@/lib/app-skin";
+import { applyAppSkinClass, uiSkinClasses } from "@/lib/app-skin";
 import { readStudentPreviewDraft } from "@/lib/student-preview";
 import { setLastStudentLayout } from "@/lib/student-layout";
 import { externalHref } from "@/routes/$tagName/-utils/catalogue-route-search";
@@ -643,7 +643,8 @@ export function applyUiSkinFromSettings(
       override === "play" ||
       override === "cleanerPlay" ||
       override === "corporate" ||
-      override === "fun"
+      override === "fun" ||
+      override === "neonCity"
     ) {
       return; // QA override wins; __root's debug helpers manage it
     }
@@ -651,12 +652,7 @@ export function applyUiSkinFromSettings(
     const t = resolveUiSkin(settings?.ui?.type ?? null);
     // Through lib/app-skin, so a themed exam screen that holds the skin off
     // <html> gets the new skin only when it closes.
-    if (t === "vibrant") applyAppSkinClass("ui-vibrant");
-    else if (t === "play") applyAppSkinClass("ui-play");
-    else if (t === "cleanerPlay") applyAppSkinClass("ui-cleaner-play");
-    else if (t === "corporate") applyAppSkinClass("ui-corporate");
-    else if (t === "fun") applyAppSkinClass("ui-fun");
-    else applyAppSkinClass(null);
+    applyAppSkinClass(uiSkinClasses(t));
   } catch {
     // noop — never let skin application break a login flow
   }

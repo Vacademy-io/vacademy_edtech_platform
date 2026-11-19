@@ -166,6 +166,35 @@ export const FUN = {
     confetti: ['#F472B6', '#60A5FA', '#34D399', '#A78BFA', '#FB923C'], // design-lint-ignore: Fun result confetti
 } as const;
 
+/** styles/neon-city/base.css and the Neon City design */
+export const NEON = {
+    night: '#120A2A', // design-lint-ignore: learner Neon City token --neon-night
+    card: '#1E1342', // design-lint-ignore: learner Neon City token --neon-card
+    raised: '#2A1B57', // design-lint-ignore: learner Neon City token --neon-raised
+    line: '#3A2A70', // design-lint-ignore: learner Neon City token --neon-line
+    text: '#FFFFFF', // design-lint-ignore: learner Neon City token --neon-text
+    soft: '#E7DDFF', // design-lint-ignore: learner Neon City token --neon-text-soft
+    quiet: '#C4B8E8', // design-lint-ignore: learner Neon City token --neon-text-quiet
+    pink: '#FF3D8B', // design-lint-ignore: learner Neon City token --neon-pink
+    pinkLip: '#A3155A', // design-lint-ignore: learner Neon City token --neon-pink-lip
+    gold: '#FFC94A', // design-lint-ignore: learner Neon City token --neon-gold
+    goldLip: '#A87A12', // design-lint-ignore: learner Neon City token --neon-gold-lip
+    aqua: '#2EE6D6', // design-lint-ignore: learner Neon City token --neon-aqua
+    coral: '#FF6B6B', // design-lint-ignore: learner Neon City token --neon-coral
+    starOff: '#6E5BA8', // design-lint-ignore: Neon City empty star
+    /** The sunset: sky top to horizon, the sun's two ends, the buildings. */
+    sky: ['#170A36', '#4E1873', '#B8267C', '#FF6A4D'], // design-lint-ignore: Neon City scene
+    sun: ['#FFE27A', '#FF3D8B'], // design-lint-ignore: Neon City scene
+    building: '#1B0A36', // design-lint-ignore: Neon City scene
+    palm: '#0D0520', // design-lint-ignore: Neon City scene
+    /** Course colours, in list order (bright fills, night text on them). */
+    courses: ['#2EE6D6', '#FF8A3D', '#9B7BFF'], // design-lint-ignore: Neon City course colours
+} as const;
+
+/** Neon City's type: Anton for headings, Manrope for the rest. */
+export const NEON_DISPLAY = "Anton, Impact, 'Arial Narrow', sans-serif";
+export const NEON_FONT = 'Manrope, system-ui, sans-serif';
+
 /** The Play and Cleaner Play mascot, drawn as simple shapes. */
 export const MASCOT = {
     skin: '#F1C7A0', // design-lint-ignore: mascot artwork

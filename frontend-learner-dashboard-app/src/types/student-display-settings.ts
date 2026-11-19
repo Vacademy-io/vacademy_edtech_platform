@@ -380,7 +380,9 @@ export type StudentUIType =
   | "cleanerPlay"
   | "corporate"
   /** Course colours, lip buttons and Nunito: the root carries ui-fun only. */
-  | "fun";
+  | "fun"
+  /** Fun's screens repainted at night: the root carries ui-fun AND ui-neon-city. */
+  | "neonCity";
 
 export interface StudentUISettings {
   type: StudentUIType;

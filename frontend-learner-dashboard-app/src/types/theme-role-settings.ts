@@ -75,7 +75,8 @@ export type StudentUiTypeMirror =
   | "play"
   | "cleanerPlay"
   | "corporate"
-  | "fun";
+  | "fun"
+  | "neonCity";
 
 export type UiDensity = "compact" | "default" | "comfortable";
 export type UiCorners = "sharp" | "rounded" | "pill";

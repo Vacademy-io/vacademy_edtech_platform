@@ -22,6 +22,7 @@ const ALL_SKINS: StudentUiType[] = [
     'cleanerPlay',
     'corporate',
     'fun',
+    'neonCity',
 ];
 const BRAND = '#2563eb'; // design-lint-ignore: test data
 
@@ -128,8 +129,8 @@ describe('SkinPicker', () => {
         fireEvent.keyDown(radio('cleanerPlay'), { key: 'ArrowUp' });
         expect(onChange).toHaveBeenLastCalledWith('play');
         fireEvent.keyDown(radio('play'), { key: 'End' });
-        expect(onChange).toHaveBeenLastCalledWith('fun');
-        fireEvent.keyDown(radio('fun'), { key: 'ArrowDown' });
+        expect(onChange).toHaveBeenLastCalledWith('neonCity');
+        fireEvent.keyDown(radio('neonCity'), { key: 'ArrowDown' });
         expect(onChange).toHaveBeenLastCalledWith('default');
     });
 
