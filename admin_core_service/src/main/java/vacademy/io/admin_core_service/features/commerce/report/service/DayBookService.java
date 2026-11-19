@@ -19,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static vacademy.io.admin_core_service.features.commerce.report.export.ReportTable.date;
+import static vacademy.io.admin_core_service.features.commerce.report.export.ReportTable.integer;
 import static vacademy.io.admin_core_service.features.commerce.report.export.ReportTable.money;
 import static vacademy.io.admin_core_service.features.commerce.report.export.ReportTable.text;
 import static vacademy.io.admin_core_service.features.commerce.report.export.ReportTable.time;
@@ -29,15 +30,22 @@ import static vacademy.io.admin_core_service.features.commerce.report.export.Rep
  *
  * <ul>
  *   <li><b>Documents</b> ({@code documents}): invoices (live or cancelled) and credit notes by
- *       their {@code document_date}; a value, no money. A paper bill shows when it was entered.</li>
+ *       their {@code document_date}; a value, no money. {@code value} is signed (a credit note
+ *       negative), so its column sums to the documents' net; a cancelled invoice keeps its number
+ *       and status and its amount moves to {@code cancelled_value}. A paper bill shows when it was
+ *       entered. A bill reissued with the buyer's GSTIN counts once (warning
+ *       {@code REISSUE_COUNTED_ONCE}; the GST registers list the reissue note and new invoice).</li>
  *   <li><b>Money</b> ({@code money}): sale payments, receipts on credit (a RECEIVED tender of a
  *       staff order written after the order), COD collected (dated by the remittance's
- *       {@code received_on}), refunds paid, counter cash in and out. A credit note used at the
- *       counter and an exchange credit are listed with their value and no money. PENDING and
- *       VOID tenders are not money.</li>
+ *       {@code received_on}) and what the courier kept of it (deductions, short remittance),
+ *       refunds paid, counter cash in and out. A credit note used at the counter and an exchange
+ *       credit are listed with their value and no money. PENDING and VOID tenders are not
+ *       money.</li>
  *   <li><b>Footer</b>: money in and out by mode ({@code by_mode}); the counter sessions
- *       ({@code sessions}) and "cash at the tills" = Σ counted of closed sessions + Σ cash
- *       expected so far of sessions still open.</li>
+ *       ({@code sessions}); and "cash at the tills" ({@code tills}): per India day and location,
+ *       Σ cash counted of the sessions closed that day. A session still open shows the cash
+ *       expected by the end of the range and is not in it. The total {@code cash_at_tills} is
+ *       given for a one-day book only (days do not add up: the same cash is counted each day).</li>
  * </ul>
  */
 @Service
@@ -54,10 +62,14 @@ public class DayBookService {
     public static final String EXCHANGE_CREDIT = "EXCHANGE_CREDIT";
     public static final String CASH_IN = "CASH_IN";
     public static final String CASH_OUT = "CASH_OUT";
+    /** What a courier kept of a remittance: deductions, a short remittance; or paid over. */
+    public static final String COD_DEDUCTION = "COD_DEDUCTION";
+    public static final String COD_SHORT = "COD_SHORT";
+    public static final String COD_EXCESS = "COD_EXCESS";
 
     /** Kinds that bring money in; {@link #MONEY_OUT} take it out; the rest are not money. */
-    static final Set<String> MONEY_IN = Set.of(SALE_PAYMENT, RECEIPT_ON_CREDIT, COD_COLLECTED, CASH_IN);
-    static final Set<String> MONEY_OUT = Set.of(REFUND_PAID, CASH_OUT);
+    static final Set<String> MONEY_IN = Set.of(SALE_PAYMENT, RECEIPT_ON_CREDIT, COD_COLLECTED, CASH_IN, COD_EXCESS);
+    static final Set<String> MONEY_OUT = Set.of(REFUND_PAID, CASH_OUT, COD_DEDUCTION, COD_SHORT);
 
     /** Shown for an event with a date and no time of its own. */
     static final String NO_TIME = "—";
@@ -68,7 +80,8 @@ public class DayBookService {
             text("type", "Type", "प्रकार"),
             text("number", "Number", "नंबर"),
             text("party", "Party", "पार्टी"),
-            money("value", "Value", "मूल्य"),
+            money("value", "Value (credit notes negative)", "मूल्य (क्रेडिट नोट घटाकर)"),
+            money("cancelled_value", "Cancelled invoice value (not counted)", "रद्द इनवॉइस की राशि (गिनी नहीं)"),
             text("status", "Status", "स्थिति"),
             text("note", "Note", "टिप्पणी"),
             text("staff", "Staff", "कर्मचारी"),
@@ -106,8 +119,14 @@ public class DayBookService {
             money("expected", "Expected cash", "अपेक्षित नकद"),
             money("counted", "Counted cash", "गिना गया नकद"),
             money("variance", "Variance", "अंतर"),
-            money("cash_at_till", "Cash at the till", "काउंटर पर नकद"),
+            money("cash_at_till", "Cash at the till (closed in these dates)", "काउंटर पर नकद (इन तारीख़ों में बंद)"),
             text("note", "Note", "टिप्पणी"));
+
+    static final ReportTable TILLS = ReportTable.of(
+            date("date", "Closed on", "बंद होने की तारीख़"),
+            text("location", "Location", "जगह"),
+            integer("sessions", "Sessions closed", "बंद सत्र"),
+            money("cash_at_tills", "Cash at the tills", "काउंटरों पर नकद"));
 
     private final MoneyReportRepository repository;
 
@@ -136,8 +155,9 @@ public class DayBookService {
         ReportWarnings warnings = new ReportWarnings();
         ReportAnswer a = MoneyReportSupport.answer(q, DAY_BOOK);
 
+        MoneyReportSupport.RowBudget budget = new MoneyReportSupport.RowBudget(export, maxRows);
         // Documents.
-        MoneyReportSupport.Rows documents = new MoneyReportSupport.Rows(export, maxRows);
+        MoneyReportSupport.Rows documents = new MoneyReportSupport.Rows(budget);
         DocumentTotals docTotals = new DocumentTotals();
         repository.documentRows(f, row -> {
             docTotals.add(row);
@@ -146,30 +166,64 @@ public class DayBookService {
         documents.warnIfCut(warnings, "documents");
 
         // Money.
-        MoneyReportSupport.Rows money = new MoneyReportSupport.Rows(export, maxRows);
+        MoneyReportSupport.Rows money = new MoneyReportSupport.Rows(budget);
         MoneyTotals moneyTotals = new MoneyTotals();
+        boolean[] cod = {false};
         repository.moneyRows(f, q.range().storedFrom(), q.range().storedToExclusive(), row -> {
             moneyTotals.add(row);
+            cod[0] |= COD_COLLECTED.equals(row.kind());
             money.add(moneyRow(q, row, locations));
         });
         money.warnIfCut(warnings, "money");
+        if (cod[0] && f.locationIn() != null) {
+            warnings.add(ReportWarnings.COD_GROSS, "COD is shown at the order amount: what the courier kept "
+                    + "(deductions, short remittance) has no location and shows in the all-locations day book", null);
+        }
+        for (String pair : repository.reissuesInRange(f)) {
+            warnings.add(ReportWarnings.REISSUE_COUNTED_ONCE, "a bill reissued with the buyer's GSTIN counts once "
+                    + "here (the first bill); the GST registers list its credit note and new invoice", pair);
+        }
 
-        // Sessions footer.
+        // Sessions footer and cash at the tills: per India day and location, the sessions closed that day.
+        boolean oneDay = q.range().from().equals(q.range().to());
         List<Map<String, Object>> sessions = new ArrayList<>();
-        BigDecimal[] tills = {BigDecimal.ZERO};
+        Map<String, BigDecimal> tillCash = new java.util.TreeMap<>();
+        Map<String, Long> tillSessions = new java.util.TreeMap<>();
         repository.footerSessions(f, q.range().storedFrom(), q.range().storedToExclusive(), s -> {
             Map<String, Object> row = sessionRow(q, s, locations);
-            tills[0] = tills[0].add((BigDecimal) row.get("cash_at_till"));
+            if (row.get("cash_at_till") != null) {
+                String key = s.closedDay() + "\u0000" + MoneyReportSupport.locationName(locations, s.locationId());
+                tillCash.merge(key, (BigDecimal) row.get("cash_at_till"), BigDecimal::add);
+                tillSessions.merge(key, 1L, Long::sum);
+            }
             sessions.add(row);
         });
-        BigDecimal cashAtTills = ReportTable.money(tills[0]);
+        List<Map<String, Object>> tills = new ArrayList<>();
+        BigDecimal tillTotal = BigDecimal.ZERO;
+        for (Map.Entry<String, BigDecimal> e : tillCash.entrySet()) {
+            String[] parts = e.getKey().split("\u0000", 2);
+            Map<String, Object> row = ReportTable.row();
+            row.put("date", parts[0]);
+            row.put("location", parts[1]);
+            row.put("sessions", tillSessions.get(e.getKey()));
+            row.put("cash_at_tills", ReportTable.money(e.getValue()));
+            tills.add(row);
+            tillTotal = tillTotal.add(e.getValue());
+        }
+        BigDecimal cashAtTills = oneDay ? ReportTable.money(tillTotal) : null;
 
         Map<String, Object> documentTotals = docTotals.totals();
         Map<String, Object> moneyTotalsMap = moneyTotals.totals();
         Map<String, Object> sessionTotals = MoneyReportSupport.totals();
-        sessionTotals.put("cash_at_till", cashAtTills);
-        sessionTotals.put("cash_at_tills", cashAtTills);
+        if (oneDay) {
+            sessionTotals.put("cash_at_till", cashAtTills);
+        }
         sessionTotals.put("sessions", (long) sessions.size());
+        Map<String, Object> tillTotals = MoneyReportSupport.totals();
+        tillTotals.put("sessions", tillSessions.values().stream().mapToLong(Long::longValue).sum());
+        if (oneDay) {
+            tillTotals.put("cash_at_tills", cashAtTills);
+        }
 
         a.getSections().add(MoneyReportSupport.section("documents", "Documents", "दस्तावेज़", DOCUMENTS,
                 documents.list(), documentTotals));
@@ -179,6 +233,8 @@ public class DayBookService {
                 BY_MODE, moneyTotals.byModeRows(), moneyTotals.byModeTotals()));
         a.getSections().add(MoneyReportSupport.section("sessions", "Counter sessions", "काउंटर सत्र", SESSIONS,
                 sessions, sessionTotals));
+        a.getSections().add(MoneyReportSupport.section("tills", "Cash at the tills", "काउंटरों पर नकद", TILLS,
+                tills, tillTotals));
 
         Map<String, Object> totals = MoneyReportSupport.totals();
         totals.put("invoices", documentTotals.get("invoices"));
@@ -207,15 +263,18 @@ public class DayBookService {
         row.put("type", "CREDIT_NOTE".equals(d.kind()) ? "CREDIT_NOTE" : paper ? "PAPER_BILL" : d.documentType());
         row.put("number", paper ? d.paperNumber() : d.number());
         row.put("party", d.party());
-        row.put("value", ReportTable.money(d.value()));
+        boolean note = "CREDIT_NOTE".equals(d.kind());
+        BigDecimal value = ReportTable.money(d.value());
+        row.put("value", d.cancelled() ? null : note && value != null ? value.negate() : value);
+        row.put("cancelled_value", d.cancelled() ? value : null);
         row.put("status", d.cancelled() ? "CANCELLED" : "ACTIVE");
-        String note = null;
+        String text = null;
         if (paper) {
-            note = "paper bill, entered on " + d.enteredOn() + (d.number() == null ? "" : " as " + d.number());
+            text = "paper bill, entered on " + d.enteredOn() + (d.number() == null ? "" : " as " + d.number());
         } else if (!sameDay && d.enteredOn() != null) {
-            note = "entered on " + d.enteredOn();
+            text = "entered on " + d.enteredOn();
         }
-        row.put("note", note);
+        row.put("note", text);
         row.put("staff", q.staffName(d.staffId()));
         row.put("location", MoneyReportSupport.locationName(locations, d.locationId()));
         row.put("row_kind", "DOCUMENT");
@@ -247,7 +306,7 @@ public class DayBookService {
      * dated another day than it was keyed.
      */
     static boolean dateOnly(MoneyRow m) {
-        if (COD_COLLECTED.equals(m.kind())) {
+        if (COD_COLLECTED.equals(m.kind()) || "REMITTANCE".equals(m.source())) {
             return true;
         }
         if (RECEIPT_ON_CREDIT.equals(m.kind())) {
@@ -277,20 +336,24 @@ public class DayBookService {
         row.put("expected", ReportTable.money(expected));
         row.put("counted", open ? null : ReportTable.money(s.countedCash()));
         row.put("variance", open ? null : ReportTable.money(s.variance()));
-        row.put("cash_at_till", ReportTable.moneyOrZero(open ? s.expectedSoFar() : s.countedCash()));
-        row.put("note", open ? "still open: cash expected so far" : s.closeNote());
+        boolean closedInRange = !open && s.closedDay() != null && !s.closedDay().isBefore(q.range().from())
+                && !s.closedDay().isAfter(q.range().to());
+        row.put("cash_at_till", closedInRange ? ReportTable.moneyOrZero(s.countedCash()) : null);
+        row.put("note", open ? "still open: cash expected by the end of " + q.range().to()
+                : !closedInRange ? "closed on " + s.closedDay() + ", after these dates" : s.closeNote());
         return row;
     }
 
     // ------------------------------------------------------------------ totals
 
-    /** Documents: live invoices (count, value), cancelled count, credit notes, net. */
+    /** Documents: live invoices (count, value), cancelled (count, value), credit notes, net. */
     static final class DocumentTotals {
         long invoices;
         long cancelled;
         long notes;
         BigDecimal invoicesValue = BigDecimal.ZERO;
         BigDecimal notesValue = BigDecimal.ZERO;
+        BigDecimal cancelledValue = BigDecimal.ZERO;
 
         void add(DocumentRow d) {
             if ("CREDIT_NOTE".equals(d.kind())) {
@@ -298,6 +361,7 @@ public class DayBookService {
                 notesValue = notesValue.add(d.value());
             } else if (d.cancelled()) {
                 cancelled++;
+                cancelledValue = cancelledValue.add(d.value());
             } else {
                 invoices++;
                 invoicesValue = invoicesValue.add(d.value());
@@ -312,6 +376,9 @@ public class DayBookService {
             t.put("credit_notes", notes);
             t.put("credit_notes_value", ReportTable.money(notesValue));
             t.put("net", ReportTable.money(invoicesValue.subtract(notesValue)));
+            // The sums of the two money columns: value (credit notes negative) and cancelled_value.
+            t.put("value", ReportTable.money(invoicesValue.subtract(notesValue)));
+            t.put("cancelled_value", ReportTable.money(cancelledValue));
             return t;
         }
     }

@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.commerce.report.repository;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -26,7 +25,6 @@ import java.math.BigDecimal;
 import java.sql.Date;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -72,9 +70,7 @@ public class MoneyReportRepository {
     private final NamedParameterJdbcTemplate jdbc;
 
     public MoneyReportRepository(NamedParameterJdbcTemplate jdbc) {
-        JdbcTemplate streaming = new JdbcTemplate(jdbc.getJdbcTemplate().getDataSource());
-        streaming.setFetchSize(1000);
-        this.jdbc = new NamedParameterJdbcTemplate(streaming);
+        this.jdbc = ReportJdbcTemplate.named(jdbc);
     }
 
     // ================================================================== shared
@@ -94,10 +90,13 @@ public class MoneyReportRepository {
      * The money events of the range, oldest first: RECEIVED tenders (by the India day of
      * {@code received_at}; a COD tender turns RECEIVED at its remittance with {@code received_at}
      * at the India midnight of {@code received_on}), PROCESSED refunds (by {@code paid_on}, else the
-     * India day of {@code processed_at}) and counter cash in and out (by {@code document_date},
-     * else the India day of {@code created_at}). PENDING and VOID tenders, and CREDIT tenders, are
-     * not money and never read. Location: the counter session's, else the order's fulfilment
-     * location.
+     * India day of {@code processed_at}), counter cash in and out (by {@code document_date},
+     * else the India day of {@code created_at}), and per courier remittance received in the range
+     * what the courier kept: its deductions ({@code COD_DEDUCTION}) and a short remittance
+     * ({@code COD_SHORT}, orders total − gross), or an over-payment ({@code COD_EXCESS}), so COD
+     * books at what reached the bank. PENDING and VOID tenders, and CREDIT tenders, are not money
+     * and never read. Location: the counter session's, else the order's fulfilment location; a
+     * remittance has none (ADMIN and all-location staff only).
      */
     public void moneyRows(DocFilter f, LocalDateTime storedFrom, LocalDateTime storedTo, Consumer<MoneyRow> sink) {
         MapSqlParameterSource p = range(f, storedFrom, storedTo);
@@ -174,6 +173,29 @@ public class MoneyReportRepository {
                     WHERE c.institute_id = :instituteId
                       AND ((c.document_date IS NOT NULL AND c.document_date >= :from AND c.document_date <= :to)
                            OR (c.document_date IS NULL AND c.created_at >= :storedFrom AND c.created_at < :storedTo))
+                    UNION ALL
+                    SELECT 'REMITTANCE' AS source,
+                           x.kind,
+                           r.id || ':' || x.kind,
+                           r.received_on,
+                           NULL,
+                           r.received_on,
+                           'COD',
+                           x.amount,
+                           r.reference,
+                           r.courier_name,
+                           r.recorded_by,
+                           NULL,
+                           r.reference
+                    FROM commerce_cod_remittance r
+                    CROSS JOIN LATERAL (VALUES
+                        ('COD_DEDUCTION', r.deductions),
+                        ('COD_SHORT', GREATEST(r.orders_total - r.gross_amount, 0)),
+                        ('COD_EXCESS', GREATEST(r.gross_amount - r.orders_total, 0))) AS x(kind, amount)
+                    WHERE r.institute_id = :instituteId
+                      AND r.received_on >= :from
+                      AND r.received_on <= :to
+                      AND x.amount > 0
                 ) m
                 WHERE m.day >= :from
                   AND m.day <= :to"""
@@ -197,7 +219,12 @@ public class MoneyReportRepository {
                 rs.getString("reference"))));
     }
 
-    /** The day book's documents: invoices (live or cancelled) and credit notes, by their India {@code document_date}. */
+    /**
+     * The day book's documents: invoices (live or cancelled) and credit notes, by their India
+     * {@code document_date}. A bill reissued with the buyer's GSTIN counts once ({@link ReportSql}):
+     * the first bill stays, the reissue note and the new invoice are left out (the GST registers
+     * list them).
+     */
     public void documentRows(DocFilter f, Consumer<DocumentRow> sink) {
         MapSqlParameterSource p = base(f);
         String sql = """
@@ -223,7 +250,8 @@ public class MoneyReportRepository {
                     WHERE i.institute_id = :instituteId
                       AND i.document_type IS NOT NULL
                       AND i.document_date >= :from
-                      AND i.document_date <= :to"""
+                      AND i.document_date <= :to
+                      AND""" + ReportSql.notReissueReplacement("i")
                 + ReportReadRepository.location(f, p, "i.location_id")
                 + """
 
@@ -249,7 +277,8 @@ public class MoneyReportRepository {
                     LEFT JOIN commerce_order o ON o.id = i.commerce_order_id
                     WHERE n.institute_id = :instituteId
                       AND n.document_date >= :from
-                      AND n.document_date <= :to"""
+                      AND n.document_date <= :to
+                      AND""" + ReportSql.notReissueNote("n")
                 + ReportReadRepository.location(f, p, "i.location_id")
                 + """
 
@@ -275,8 +304,8 @@ public class MoneyReportRepository {
     /**
      * Counter sessions that were open at some time in the range (opened before its end, not closed
      * before its start), with the stored close figures and, for a session still open, the cash
-     * expected so far (opening + cash received + cash in − cash out − cash refunds paid, the
-     * counter's own rule).
+     * expected by the end of the range (opening + cash received + cash in − cash out − cash refunds
+     * paid before the range end, the counter's own rule).
      */
     public void footerSessions(DocFilter f, LocalDateTime storedFrom, LocalDateTime storedTo,
                                Consumer<SessionRow> sink) {
@@ -314,6 +343,8 @@ public class MoneyReportRepository {
                    s.status,
                    """ + indiaDay("s.opened_at") + """
              AS opened_day,
+                   """ + indiaDay("s.closed_at") + """
+             AS closed_day,
                    """ + indiaTime("s.opened_at") + """
              AS opened_text,
                    to_char(s.opened_at, 'YYYY-MM-DD"T"HH24:MI:SS.US') AS opened_raw,
@@ -329,12 +360,14 @@ public class MoneyReportRepository {
                    s.variance,
                    CASE WHEN s.status = 'OPEN' THEN s.opening_cash
                         + COALESCE((SELECT SUM(t.amount) FROM commerce_order_tender t
-                                    WHERE t.pos_session_id = s.id AND t.status = 'RECEIVED' AND t.mode = 'CASH'), 0)
+                                    WHERE t.pos_session_id = s.id AND t.status = 'RECEIVED' AND t.mode = 'CASH'
+                                      AND t.received_at < :storedTo), 0)
                         + COALESCE((SELECT SUM(CASE WHEN c.type = 'CASH_IN' THEN c.amount ELSE -c.amount END)
-                                    FROM pos_cash_movement c WHERE c.session_id = s.id), 0)
+                                    FROM pos_cash_movement c WHERE c.session_id = s.id
+                                      AND c.created_at < :storedTo), 0)
                         - COALESCE((SELECT SUM(rf.amount) FROM commerce_refund rf
                                     WHERE rf.pos_session_id = s.id AND rf.status = 'PROCESSED'
-                                      AND rf.method = 'CASH'), 0)
+                                      AND rf.method = 'CASH' AND rf.processed_at < :storedTo), 0)
                    END AS expected_so_far,
                    s.close_note,
                    CAST(s.z_report_json AS TEXT) AS z_report
@@ -344,8 +377,8 @@ public class MoneyReportRepository {
     /**
      * Σ total of the live invoices of the POS orders of these sessions. A bill reissued with the
      * buyer's GSTIN has two live invoices (the first, credited in full by the reissue, and the new
-     * one): only the new one is the bill, so an invoice replaced by a reissue is left out (its
-     * credit note carries the key {@code REISSUE:<invoice id>}, CommerceInvoiceService.reissueAsB2b).
+     * one): it counts once, as every management report counts it ({@link ReportSql#liveSale}: the
+     * first bill, which the Z-report holds; the replacing invoice left out).
      */
     public BigDecimal liveInvoicesOfSessions(String instituteId, List<String> sessionIds) {
         if (sessionIds.isEmpty()) {
@@ -359,14 +392,9 @@ public class MoneyReportRepository {
                 JOIN commerce_order o ON o.id = i.commerce_order_id
                 WHERE i.institute_id = :instituteId
                   AND i.document_type IS NOT NULL
-                  AND i.cancelled_at IS NULL
                   AND o.institute_id = :instituteId
                   AND o.pos_session_id IN (:sessionIds)
-                  AND NOT EXISTS (
-                      SELECT 1 FROM commerce_credit_note n
-                      WHERE n.institute_id = :instituteId
-                        AND n.invoice_id = i.id
-                        AND n.client_request_id = 'REISSUE:' || i.id)""", p, BigDecimal.class);
+                  AND""" + ReportSql.liveSale("i"), p, BigDecimal.class);
         return sum == null ? BigDecimal.ZERO : sum;
     }
 
@@ -450,7 +478,7 @@ public class MoneyReportRepository {
     public void codOutstanding(DocFilter f, LocalDate asOf, LocalDateTime asOfEnd, Consumer<CodOrderRow> sink) {
         MapSqlParameterSource p = new MapSqlParameterSource("instituteId", f.instituteId())
                 .addValue("asOf", Date.valueOf(asOf))
-                .addValue("asOfEnd", Timestamp.valueOf(asOfEnd));
+                .addValue("asOfEnd", asOfEnd);
         String sql = COD_SELECT + """
 
                 WHERE o.institute_id = :instituteId
@@ -472,7 +500,7 @@ public class MoneyReportRepository {
     /** Cash-on-delivery orders in transit as of a day: shipped before its end, not delivered nor returned by then. */
     public void codInTransit(DocFilter f, LocalDateTime asOfEnd, Consumer<CodOrderRow> sink) {
         MapSqlParameterSource p = new MapSqlParameterSource("instituteId", f.instituteId())
-                .addValue("asOfEnd", Timestamp.valueOf(asOfEnd));
+                .addValue("asOfEnd", asOfEnd);
         String sql = COD_SELECT + """
 
                 WHERE o.institute_id = :instituteId
@@ -490,32 +518,45 @@ public class MoneyReportRepository {
     }
 
     /**
-     * Courier remittances received in the range. A location-limited reader sees the remittances
-     * that paid at least one order of their locations (the remittance itself has no location).
+     * Courier remittances received in the range. A remittance has no location: a reader of every
+     * location sees each one whole (gross, deductions, net, orders, difference reason). A
+     * location-limited reader sees only the remittances that paid an order of their locations, and
+     * of each only their own orders' share (order count and orders total); the batch figures, which
+     * include other places, are left empty.
      */
     public void remittances(DocFilter f, Consumer<RemittanceRow> sink) {
         MapSqlParameterSource p = base(f);
-        String scope = "";
-        if (f.locationIn() != null) {
-            scope = """
-
-                      AND EXISTS (
-                          SELECT 1 FROM commerce_order o
-                          WHERE o.cod_remittance_id = r.id"""
+        String sql;
+        if (f.locationIn() == null) {
+            sql = """
+                    SELECT r.id, r.received_on, r.reference, r.courier_name, r.order_count, r.orders_total,
+                           r.gross_amount, r.deductions, r.net_amount, r.difference_reason
+                    FROM commerce_cod_remittance r
+                    WHERE r.institute_id = :instituteId
+                      AND r.received_on >= :from
+                      AND r.received_on <= :to
+                    ORDER BY r.received_on, r.reference, r.id""";
+        } else {
+            sql = """
+                    SELECT r.id, r.received_on, r.reference, r.courier_name, x.order_count, x.orders_total,
+                           CAST(NULL AS NUMERIC) AS gross_amount, CAST(NULL AS NUMERIC) AS deductions,
+                           CAST(NULL AS NUMERIC) AS net_amount, CAST(NULL AS VARCHAR) AS difference_reason
+                    FROM commerce_cod_remittance r
+                    JOIN LATERAL (
+                        SELECT COUNT(*) AS order_count,
+                               COALESCE(SUM(COALESCE(o.cod_amount, o.total)), 0) AS orders_total
+                        FROM commerce_order o
+                        WHERE o.cod_remittance_id = r.id
+                          AND o.institute_id = :instituteId"""
                     + ReportReadRepository.location(f, p, "o.fulfilment_location_id")
-                    + ")";
-        }
-        String sql = """
-                SELECT r.id, r.received_on, r.reference, r.courier_name, r.order_count, r.orders_total,
-                       r.gross_amount, r.deductions, r.net_amount, r.difference_reason
-                FROM commerce_cod_remittance r
-                WHERE r.institute_id = :instituteId
-                  AND r.received_on >= :from
-                  AND r.received_on <= :to"""
-                + scope
-                + """
+                    + """
 
-                ORDER BY r.received_on, r.reference, r.id""";
+                    ) x ON x.order_count > 0
+                    WHERE r.institute_id = :instituteId
+                      AND r.received_on >= :from
+                      AND r.received_on <= :to
+                    ORDER BY r.received_on, r.reference, r.id""";
+        }
         jdbc.query(sql, p, (RowCallbackHandler) rs -> sink.accept(new RemittanceRow(
                 rs.getString("id"),
                 date(rs, "received_on"),
@@ -523,9 +564,9 @@ public class MoneyReportRepository {
                 rs.getString("courier_name"),
                 rs.getInt("order_count"),
                 money(rs, "orders_total"),
-                money(rs, "gross_amount"),
-                money(rs, "deductions"),
-                money(rs, "net_amount"),
+                rs.getBigDecimal("gross_amount"),
+                rs.getBigDecimal("deductions"),
+                rs.getBigDecimal("net_amount"),
                 rs.getString("difference_reason"))));
     }
 
@@ -648,7 +689,8 @@ public class MoneyReportRepository {
      * Sales documents of the range: every live invoice with its line sums (taxable, tax, line
      * amount, discount, items: a counted line adds its quantity, a measured line adds 1, delivery
      * and COD-charge lines nothing), then every credit note by its own date, with the order facts
-     * the grouping needs (channel, location and payment method of the invoice).
+     * the grouping needs (channel, location and payment method of the invoice). A bill reissued
+     * with the buyer's GSTIN counts once ({@link ReportSql}): no second sale, no return.
      */
     public void salesDocuments(DocFilter f, Consumer<SalesDocument> sink) {
         MapSqlParameterSource p = base(f);
@@ -688,9 +730,9 @@ public class MoneyReportRepository {
                     WHERE li.invoice_id = i.id) x ON TRUE
                 WHERE i.institute_id = :instituteId
                   AND i.document_type IS NOT NULL
-                  AND i.cancelled_at IS NULL
                   AND i.document_date >= :from
-                  AND i.document_date <= :to"""
+                  AND i.document_date <= :to
+                  AND""" + ReportSql.liveSale("i")
                 + ReportReadRepository.location(f, p, "i.location_id")
                 + ReportReadRepository.channel(f, p, "i.channel");
         String notes = """
@@ -712,7 +754,8 @@ public class MoneyReportRepository {
                 LEFT JOIN commerce_order o ON o.id = i.commerce_order_id
                 WHERE n.institute_id = :instituteId
                   AND n.document_date >= :from
-                  AND n.document_date <= :to"""
+                  AND n.document_date <= :to
+                  AND""" + ReportSql.notReissueNote("n")
                 + ReportReadRepository.location(f, p, "i.location_id")
                 + ReportReadRepository.channel(f, p, "i.channel");
         jdbc.query(invoices + notes, p, (RowCallbackHandler) rs -> sink.accept(new SalesDocument(
@@ -765,11 +808,11 @@ public class MoneyReportRepository {
                 LEFT JOIN package pk ON pk.id = v.package_id
                 WHERE i.institute_id = :instituteId
                   AND i.document_type IS NOT NULL
-                  AND i.cancelled_at IS NULL
                   AND i.document_date >= :from
                   AND i.document_date <= :to
                   AND li.package_session_id IS NOT NULL
-                  AND NOT\s""" + SERVICE
+                  AND""" + ReportSql.liveSale("i") + """
+                AND NOT\s""" + SERVICE
                 + ReportReadRepository.location(f, p, "i.location_id")
                 + ReportReadRepository.channel(f, p, "i.channel");
         String notes = """
@@ -803,7 +846,8 @@ public class MoneyReportRepository {
                   AND n.document_date >= :from
                   AND n.document_date <= :to
                   AND COALESCE(cl.package_session_id, li.package_session_id) IS NOT NULL
-                  AND NOT\s""" + SERVICE
+                  AND""" + ReportSql.notReissueNote("n") + """
+                AND NOT\s""" + SERVICE
                 + ReportReadRepository.location(f, p, "i.location_id")
                 + ReportReadRepository.channel(f, p, "i.channel");
         jdbc.query(invoices + notes, p, (RowCallbackHandler) rs -> sink.accept(new ProductLine(
@@ -819,6 +863,37 @@ public class MoneyReportRepository {
                 rs.getString("unit"),
                 money(rs, "amount"),
                 money(rs, "taxable"))));
+    }
+
+    /**
+     * The bills reissued with a GSTIN whose reissue note or replacing invoice is dated in the range
+     * (location and channel of the first bill): "first bill number → new invoice number (note
+     * number)", at most 100. The management reports name them in warning
+     * {@code REISSUE_COUNTED_ONCE}.
+     */
+    public List<String> reissuesInRange(DocFilter f) {
+        MapSqlParameterSource p = base(f);
+        String sql = """
+                SELECT ro.invoice_number || ' -> ' || COALESCE(rp.invoice_number, '?')
+                       || ' (' || rn.credit_note_number || ')' AS pair
+                FROM commerce_credit_note rn
+                JOIN invoice ro ON ro.id = rn.invoice_id
+                LEFT JOIN invoice rp ON rp.institute_id = ro.institute_id
+                                    AND rp.commerce_order_id = ro.commerce_order_id
+                                    AND rp.id <> ro.id
+                                    AND rp.invoice_data_json::jsonb ->> 'replaces_invoice_number' = ro.invoice_number
+                WHERE rn.institute_id = :instituteId
+                  AND rn.client_request_id LIKE 'REISSUE:%'
+                  AND rn.client_request_id = 'REISSUE:' || rn.invoice_id
+                  AND ((rn.document_date >= :from AND rn.document_date <= :to)
+                       OR (rp.document_date >= :from AND rp.document_date <= :to))"""
+                + ReportReadRepository.location(f, p, "ro.location_id")
+                + ReportReadRepository.channel(f, p, "ro.channel")
+                + """
+
+                ORDER BY 1
+                LIMIT 100""";
+        return jdbc.queryForList(sql, p, String.class);
     }
 
     /** ACTIVE products of the institute, by name (the "never sold" block subtracts the sold ones). */
@@ -892,6 +967,10 @@ public class MoneyReportRepository {
                     WHERE s.institute_id = :instituteId
                       AND s.opened_at < :storedTo
                       AND (s.closed_at IS NULL OR s.closed_at >= :storedFrom)
+                    UNION
+                    SELECT r.recorded_by FROM commerce_cod_remittance r
+                    WHERE r.institute_id = :instituteId
+                      AND r.received_on >= :from AND r.received_on <= :to
                 ) x
                 WHERE u IS NOT NULL
                 LIMIT 1000""";
@@ -947,8 +1026,8 @@ public class MoneyReportRepository {
 
     private static MapSqlParameterSource range(DocFilter f, LocalDateTime storedFrom, LocalDateTime storedTo) {
         return base(f)
-                .addValue("storedFrom", Timestamp.valueOf(storedFrom))
-                .addValue("storedTo", Timestamp.valueOf(storedTo));
+                .addValue("storedFrom", storedFrom)
+                .addValue("storedTo", storedTo);
     }
 
     private static String limit(Integer limit, MapSqlParameterSource p) {
@@ -964,6 +1043,7 @@ public class MoneyReportRepository {
                 rs.getString("id"),
                 rs.getString("status"),
                 date(rs, "opened_day"),
+                date(rs, "closed_day"),
                 rs.getString("opened_text"),
                 rs.getString("opened_raw"),
                 rs.getString("closed_text"),

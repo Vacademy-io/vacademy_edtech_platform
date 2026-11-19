@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.commerce.report.repository;
 
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -90,9 +88,7 @@ public class AuditReadRepository {
     private final NamedParameterJdbcTemplate jdbc;
 
     public AuditReadRepository(NamedParameterJdbcTemplate jdbc) {
-        JdbcTemplate streaming = new JdbcTemplate(jdbc.getJdbcTemplate().getDataSource());
-        streaming.setFetchSize(1000);
-        this.jdbc = new NamedParameterJdbcTemplate(streaming);
+        this.jdbc = ReportJdbcTemplate.named(jdbc);
     }
 
     /** Audit rows of the filter, newest first, after the keyset; at most {@code limit} (null: all). */
@@ -191,15 +187,24 @@ public class AuditReadRepository {
                 rs.getString("location_name"))));
     }
 
-    /** The distinct kinds of the institute, for the filter list. */
-    public List<String> kinds(String instituteId) {
-        return jdbc.queryForList("""
+    /**
+     * The distinct kinds of the institute, for the filter list; a location-limited reader gets the
+     * kinds of the rows of their locations only ({@code locationIn} null: every row).
+     */
+    public List<String> kinds(String instituteId, Set<String> locationIn) {
+        MapSqlParameterSource p = new MapSqlParameterSource("instituteId", instituteId);
+        AuditFilter scope = new AuditFilter(instituteId, null, null, null, null, locationIn, null);
+        String sql = """
                 SELECT k FROM (
                     SELECT DISTINCT a.kind AS k FROM commerce_audit a
-                    WHERE a.institute_id = :instituteId
+                    WHERE a.institute_id = :instituteId"""
+                + location(scope, p, "a.location_id")
+                + """
+
                 ) x
                 ORDER BY k
-                LIMIT 200""", new MapSqlParameterSource("instituteId", instituteId), String.class);
+                LIMIT 200""";
+        return jdbc.queryForList(sql, p, String.class);
     }
 
     /** The staff the filtered audit rows name (for names read outside the transaction). */
@@ -281,8 +286,8 @@ public class AuditReadRepository {
     private static MapSqlParameterSource params(AuditFilter f) {
         return new MapSqlParameterSource()
                 .addValue("instituteId", f.instituteId())
-                .addValue("storedFrom", Timestamp.valueOf(f.storedFrom()))
-                .addValue("storedTo", Timestamp.valueOf(f.storedTo()));
+                .addValue("storedFrom", f.storedFrom())
+                .addValue("storedTo", f.storedTo());
     }
 
     private static String filters(AuditFilter f, MapSqlParameterSource p, String alias) {
@@ -325,7 +330,7 @@ public class AuditReadRepository {
         if (after == null) {
             return "";
         }
-        p.addValue("cursorAt", Timestamp.valueOf(after.createdAt()));
+        p.addValue("cursorAt", after.createdAt());
         p.addValue("cursorId", after.id());
         return "\n  AND (" + alias + ".created_at, " + alias + ".id) < (:cursorAt, :cursorId)";
     }
@@ -338,8 +343,8 @@ public class AuditReadRepository {
         return "\nLIMIT :pageLimit";
     }
 
+    /** A stored timestamp as its wall time, read without the JVM's zone. */
     private static LocalDateTime time(ResultSet rs, String column) throws SQLException {
-        Timestamp value = rs.getTimestamp(column);
-        return value == null ? null : value.toLocalDateTime();
+        return rs.getObject(column, LocalDateTime.class);
     }
 }

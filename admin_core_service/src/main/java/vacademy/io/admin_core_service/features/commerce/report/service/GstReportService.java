@@ -77,8 +77,10 @@ public class GstReportService {
     // ================================================================== GSTIN and filters
 
     /**
-     * The seller GSTIN the GST reports filter on: the one named; else null when the range holds
-     * documents of at most one GSTIN; else 400 {@code GSTIN_REQUIRED}.
+     * The seller GSTIN the GST reports filter on: the one named; else the only GSTIN of the range;
+     * else 400 {@code GSTIN_REQUIRED}. Null only when the range holds no document with a GSTIN.
+     * Documents without a seller GSTIN (issued while unregistered) are never mixed into a GSTIN's
+     * report: they are counted in warning {@code NO_GSTIN} instead.
      */
     public String resolveGstin(ReportQuery q) {
         if (q.sellerGstin() != null) {
@@ -89,7 +91,19 @@ public class GstReportService {
             throw new InvalidRequestException("GSTIN_REQUIRED: the dates hold documents of more than one GSTIN ("
                     + String.join(", ", gstins) + "); pick one");
         }
-        return null;
+        return gstins.isEmpty() ? null : gstins.get(0);
+    }
+
+    /** Warning {@code NO_GSTIN} when the report is cut to a GSTIN and documents without one are in the range. */
+    private void warnNoGstin(ReportQuery q, String gstin, ReportWarnings warnings) {
+        if (gstin == null) {
+            return;
+        }
+        long without = readRepository.documentsWithoutGstin(filter(q, null, null));
+        if (without > 0) {
+            warnings.add(ReportWarnings.NO_GSTIN, without + " invoices or credit notes of these dates have no seller "
+                    + "GSTIN (issued while unregistered); they are not in this report", null);
+        }
     }
 
     static DocFilter filter(ReportQuery q, String gstin, String status) {
@@ -134,6 +148,7 @@ public class GstReportService {
             last = row;
         }
         ReportWarnings warnings = new ReportWarnings();
+        warnNoGstin(q, gstin, warnings);
         ReportAnswer a = answer(q, SALES_REGISTER, gstin);
         a.setColumns(GstColumns.SALES_REGISTER.dto());
         SalesRows assembler = new SalesRows(warnings);
@@ -178,6 +193,9 @@ public class GstReportService {
     /**
      * Sales register rows from the groups: invoice number, date, round-off, total, payment mode
      * and status on the first row of an invoice only; the other invoice cells on every row.
+     * A cancelled invoice keeps its number, date and status, but its money cells are empty: its
+     * total is in {@code cancelled_value} (first row), so the sum of any money column of the file
+     * equals the register's totals (live invoices only).
      */
     static final class SalesRows {
         private final ReportWarnings warnings;
@@ -212,15 +230,17 @@ public class GstReportService {
             row.put("place_of_supply", placeOfSupply(r.placeOfSupply()));
             row.put("hsn", r.hsn());
             row.put("rate", ReportTable.rate(r.rate()));
-            row.put("taxable_value", ReportTable.money(r.taxable()));
-            row.put("cgst", ReportTable.money(r.cgst()));
-            row.put("sgst", ReportTable.money(r.sgst()));
-            row.put("igst", ReportTable.money(r.igst()));
-            row.put("cess", ReportTable.money(r.cess()));
-            row.put("round_off", first ? ReportTable.money(r.roundOff()) : null);
-            row.put("invoice_total", first ? ReportTable.money(r.invoiceTotal()) : null);
+            boolean live = !r.cancelled();
+            row.put("taxable_value", live ? ReportTable.money(r.taxable()) : null);
+            row.put("cgst", live ? ReportTable.money(r.cgst()) : null);
+            row.put("sgst", live ? ReportTable.money(r.sgst()) : null);
+            row.put("igst", live ? ReportTable.money(r.igst()) : null);
+            row.put("cess", live ? ReportTable.money(r.cess()) : null);
+            row.put("round_off", first && live ? ReportTable.money(r.roundOff()) : null);
+            row.put("invoice_total", first && live ? ReportTable.money(r.invoiceTotal()) : null);
+            row.put("cancelled_value", first && !live ? ReportTable.money(r.invoiceTotal()) : null);
             row.put("payment_mode", first ? r.paymentModes() : null);
-            row.put("status", first ? (r.cancelled() ? "CANCELLED" : "ACTIVE") : null);
+            row.put("status", first ? (live ? "ACTIVE" : "CANCELLED") : null);
             row.put("seller_gstin", r.sellerGstin());
             return row;
         }
@@ -238,6 +258,7 @@ public class GstReportService {
         totals.put("invoices", t.invoices());
         totals.put("cancelled_invoices", t.cancelledInvoices());
         totals.put("cancelled_total", ReportTable.money(t.cancelledTotal()));
+        totals.put("cancelled_value", ReportTable.money(t.cancelledTotal()));
         return totals;
     }
 
@@ -281,6 +302,7 @@ public class GstReportService {
             last = row;
         }
         ReportWarnings warnings = new ReportWarnings();
+        warnNoGstin(q, gstin, warnings);
         ReportAnswer a = answer(q, CREDIT_NOTES, gstin);
         a.setColumns(GstColumns.CREDIT_NOTES.dto());
         NoteRows assembler = new NoteRows(warnings);
@@ -415,6 +437,7 @@ public class GstReportService {
 
         Summary(ReportQuery q, String gstin) {
             this.filter = filter(q, gstin, null);
+            warnNoGstin(q, gstin, warnings);
             this.gstr1 = new Gstr1Builder(q.b2clLimitOrDefault(), warnings);
             readRepository.invoiceLines(filter, line -> {
                 gstr1.invoiceLine(line);
@@ -449,7 +472,10 @@ public class GstReportService {
     /** Tax by rate (contract 2.3): invoices, credit notes and net blocks. */
     public ReportAnswer taxByRate(ReportQuery q) {
         String gstin = resolveGstin(q);
-        Summary s = new Summary(q, gstin);
+        return taxByRate(q, gstin, new Summary(q, gstin));
+    }
+
+    private ReportAnswer taxByRate(ReportQuery q, String gstin, Summary s) {
         ReportAnswer a = answer(q, TAX_BY_RATE, gstin);
         a.setSections(s.taxByRate.sections());
         Map<String, Object> totals = new LinkedHashMap<>();
@@ -503,7 +529,10 @@ public class GstReportService {
     /** GSTR-1 (contract 2.5): every section for one GSTIN and range, and the check block. */
     public ReportAnswer gstr1(ReportQuery q) {
         String gstin = resolveGstin(q);
-        Summary s = new Summary(q, gstin);
+        return gstr1(q, gstin, new Summary(q, gstin));
+    }
+
+    private ReportAnswer gstr1(ReportQuery q, String gstin, Summary s) {
         ReportAnswer a = answer(q, GSTR1, gstin);
         a.getFilters().put("b2cl_limit", q.b2clLimitOrDefault().toPlainString());
         Map<String, String> names = receiverNames(q.instituteId(), s.gstr1.receiverInvoiceIds());
@@ -513,7 +542,7 @@ public class GstReportService {
         DocumentsIssuedService.Blocks docs = documentsIssuedService.blocks(s.filter, s.warnings);
         a.getSections().add(docs.system("docs", "Documents", "दस्तावेज़"));
         a.getSections().add(docs.books("docs_bill_books", "Paper bill books", "काग़ज़ी बिल बुक"));
-        a.setCheck(s.gstr1.check());
+        a.setCheck(s.gstr1.check(Gstr1Builder.documents(readRepository.taxInvoiceDocumentSums(s.filter))));
         a.setWarnings(s.warnings.list());
         return a;
     }
@@ -522,6 +551,7 @@ public class GstReportService {
     public ReportAnswer documentsIssued(ReportQuery q) {
         String gstin = resolveGstin(q);
         ReportWarnings warnings = new ReportWarnings();
+        warnNoGstin(q, gstin, warnings);
         DocumentsIssuedService.Blocks docs = documentsIssuedService.blocks(filter(q, gstin, null), warnings);
         ReportAnswer a = answer(q, DOCUMENTS_ISSUED, gstin);
         a.getSections().add(docs.system("system", "System numbers", "सिस्टम नंबर"));
@@ -546,8 +576,10 @@ public class GstReportService {
     public int gstPack(ReportQuery q, OutputStream out, int maxRows) throws IOException {
         String gstin = resolveGstin(q);
         ReportQuery named = q.toBuilder().sellerGstin(gstin).build();
-        ReportAnswer gstr1 = gstr1(named);
-        ReportAnswer taxByRate = taxByRate(named);
+        // One pass over the lines of the month serves GSTR-1 and tax by rate.
+        Summary summary = new Summary(named, gstin);
+        ReportAnswer gstr1 = gstr1(named, gstin, summary);
+        ReportAnswer taxByRate = taxByRate(named, gstin, summary);
         Map<String, ReportDtos.Section> sections = new HashMap<>();
         for (ReportDtos.Section section : gstr1.getSections()) {
             sections.put(section.getKey(), section);

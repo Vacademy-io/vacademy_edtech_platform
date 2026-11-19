@@ -68,7 +68,10 @@ class ReportReadRepositorySqlTest {
 
     private void runEverything() {
         Keyset after = new Keyset(LocalDate.of(2026, 11, 3), "INV/2627-00003", "inv-3");
-        repository.activeLocationIds("inst-1");
+        repository.locationIds("inst-1");
+        repository.places("inst-1");
+        quietly(() -> repository.documentsWithoutGstin(filter));
+        quietly(() -> repository.taxInvoiceDocumentSums(filter));
         repository.sellerGstins(filter);
         repository.salesRegister(filter, after, 101, row -> { });
         repository.salesRegister(filter, null, null, row -> { });
@@ -95,7 +98,7 @@ class ReportReadRepositorySqlTest {
     @Test
     void everyStatementFiltersTheInstituteAndReadsNoServerClock() {
         runEverything();
-        assertEquals(15, statements.size(), "statements: " + statements);
+        assertEquals(19, statements.size(), "statements: " + statements);
         for (String sql : statements) {
             assertTrue(sql.contains("institute_id = ?"), sql);
             String lower = sql.toLowerCase(Locale.ROOT);

@@ -11,7 +11,6 @@ import vacademy.io.admin_core_service.features.commerce.report.repository.MoneyR
 import vacademy.io.admin_core_service.features.commerce.report.repository.MoneyRows.DueTotals;
 import vacademy.io.admin_core_service.features.commerce.report.repository.MoneyRows.RtoRow;
 import vacademy.io.admin_core_service.features.commerce.report.repository.ReportRows.DocFilter;
-import vacademy.io.admin_core_service.features.commerce.stock.service.StockClock;
 import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.io.IOException;
@@ -121,13 +120,13 @@ public class CodDuesReportService {
 
     // ================================================================== COD outstanding
 
-    /** The as-of day: the one asked (not after today), else today. */
+    /** The as-of day: the one asked (not after today, at most 3 years back), else today. */
     static LocalDate asOf(ReportQuery q) {
         LocalDate asOf = q.asOf() == null ? q.today() : q.asOf();
         if (asOf.isAfter(q.today())) {
             throw new InvalidRequestException("VALIDATION: asOf must not be after today");
         }
-        return asOf;
+        return ReportRange.checkedDay(asOf, q.today(), "asOf");
     }
 
     public ReportAnswer codOutstanding(ReportQuery q) {
@@ -148,10 +147,11 @@ public class CodDuesReportService {
         a.getFilters().put("as_of", asOf.toString());
         a.getFilters().put("red_flag_days", RED_FLAG_DAYS);
 
-        MoneyReportSupport.Rows outstanding = new MoneyReportSupport.Rows(export, maxRows);
+        MoneyReportSupport.RowBudget budget = new MoneyReportSupport.RowBudget(export, maxRows);
+        MoneyReportSupport.Rows outstanding = new MoneyReportSupport.Rows(budget);
         Sum owed = new Sum();
         long[] red = {0};
-        repository.codOutstanding(f, asOf, StockClock.storedStartOf(asOf.plusDays(1)), r -> {
+        repository.codOutstanding(f, asOf, ReportRange.storedStartOf(asOf.plusDays(1)), r -> {
             Map<String, Object> row = codRow(r, locations);
             long days = r.deliveredOn() == null ? 0 : Math.max(0, ChronoUnit.DAYS.between(r.deliveredOn(), asOf));
             row.put("days_outstanding", days);
@@ -165,9 +165,9 @@ public class CodDuesReportService {
         });
         outstanding.warnIfCut(warnings, "outstanding");
 
-        MoneyReportSupport.Rows transit = new MoneyReportSupport.Rows(export, maxRows);
+        MoneyReportSupport.Rows transit = new MoneyReportSupport.Rows(budget);
         Sum moving = new Sum();
-        repository.codInTransit(f, StockClock.storedStartOf(asOf.plusDays(1)), r -> {
+        repository.codInTransit(f, ReportRange.storedStartOf(asOf.plusDays(1)), r -> {
             Map<String, Object> row = codRow(r, locations);
             row.remove("delivered_date");
             row.put("days_in_transit", r.shippedOn() == null ? 0
@@ -177,9 +177,12 @@ public class CodDuesReportService {
         });
         transit.warnIfCut(warnings, "in_transit");
 
-        MoneyReportSupport.Rows remittances = new MoneyReportSupport.Rows(export, maxRows);
+        MoneyReportSupport.Rows remittances = new MoneyReportSupport.Rows(budget);
         BigDecimal[] remitted = {BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO};
         long[] remittedOrders = {0, 0};
+        // A location-limited reader gets their own orders' share of each remittance; the batch
+        // figures (gross, deductions, net, reason) include other places and stay empty.
+        boolean share = f.locationIn() != null;
         repository.remittances(f, r -> {
             Map<String, Object> row = ReportTable.row();
             row.put("received_on", r.receivedOn() == null ? null : r.receivedOn().toString());
@@ -192,17 +195,17 @@ public class CodDuesReportService {
             row.put("net", ReportTable.money(r.net()));
             row.put("difference_reason", r.differenceReason());
             remitted[0] = remitted[0].add(r.ordersTotal());
-            remitted[1] = remitted[1].add(r.gross());
-            remitted[2] = remitted[2].add(r.deductions());
-            remitted[3] = remitted[3].add(r.net());
+            remitted[1] = remitted[1].add(MoneyReportSupport.nz(r.gross()));
+            remitted[2] = remitted[2].add(MoneyReportSupport.nz(r.deductions()));
+            remitted[3] = remitted[3].add(MoneyReportSupport.nz(r.net()));
             remittedOrders[0] += r.orders();
             remittedOrders[1]++;
             remittances.add(row);
         });
         remittances.warnIfCut(warnings, "remittances");
-        if (f.locationIn() != null && remittedOrders[1] > 0) {
-            warnings.add("REMITTANCE_HAS_NO_LOCATION", "a remittance has no location: the remittances that paid "
-                    + "an order of your locations are listed whole", null);
+        if (share && remittedOrders[1] > 0) {
+            warnings.add("REMITTANCE_HAS_NO_LOCATION", "a remittance has no location: each one shows only your "
+                    + "locations' orders; its gross, deductions and net cover other places and are left empty", null);
         }
 
         List<Map<String, Object>> rto = new ArrayList<>();
@@ -229,9 +232,11 @@ public class CodDuesReportService {
         Map<String, Object> remittanceTotals = MoneyReportSupport.totals();
         remittanceTotals.put("orders", remittedOrders[0]);
         remittanceTotals.put("orders_total", ReportTable.money(remitted[0]));
-        remittanceTotals.put("gross", ReportTable.money(remitted[1]));
-        remittanceTotals.put("deductions", ReportTable.money(remitted[2]));
-        remittanceTotals.put("net", ReportTable.money(remitted[3]));
+        if (!share) {
+            remittanceTotals.put("gross", ReportTable.money(remitted[1]));
+            remittanceTotals.put("deductions", ReportTable.money(remitted[2]));
+            remittanceTotals.put("net", ReportTable.money(remitted[3]));
+        }
         remittanceTotals.put("remittances", remittedOrders[1]);
         Map<String, Object> rtoTotals = MoneyReportSupport.totals();
         rtoTotals.put("shipped", shipped);
@@ -253,9 +258,11 @@ public class CodDuesReportService {
         totals.put("red_flag_count", red[0]);
         totals.put("in_transit_count", moving.count);
         totals.put("in_transit_amount", ReportTable.money(moving.amount));
-        totals.put("gross", ReportTable.money(remitted[1]));
-        totals.put("deductions", ReportTable.money(remitted[2]));
-        totals.put("net", ReportTable.money(remitted[3]));
+        if (!share) {
+            totals.put("gross", ReportTable.money(remitted[1]));
+            totals.put("deductions", ReportTable.money(remitted[2]));
+            totals.put("net", ReportTable.money(remitted[3]));
+        }
         a.setTotals(totals);
         a.setWarnings(warnings.list());
         return a;

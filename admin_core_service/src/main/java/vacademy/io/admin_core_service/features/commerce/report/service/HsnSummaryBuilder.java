@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.commerce.report.service;
 
+import vacademy.io.admin_core_service.features.commerce.common.CommerceUnits;
 import vacademy.io.admin_core_service.features.commerce.report.dto.ReportDtos;
 import vacademy.io.admin_core_service.features.commerce.report.export.ReportTable;
 import vacademy.io.admin_core_service.features.commerce.report.repository.ReportRows.InvoiceLine;
@@ -25,8 +26,10 @@ import java.util.TreeMap;
  * <ul>
  *   <li>Quantity: Σ base units ÷ the line's scale, exact, printed to two places; a sum that
  *       needs more places is rounded half up with warning {@code QTY_ROUNDED}.</li>
- *   <li>UQC: the stored unit code in upper case; delivery and COD-charge lines are services:
- *       UQC {@code NA}, quantity 0. A code outside the GST list: warning {@code UQC_UNKNOWN}.</li>
+ *   <li>UQC: the stored unit code in upper case, every piece spelling the platform allows (PCS,
+ *       NOS, PC, NO, PIECE, PIECES) as {@code PCS}, so the rows merge; delivery and COD-charge
+ *       lines are services: UQC {@code NA}, quantity 0. A code outside the GST list: warning
+ *       {@code UQC_UNKNOWN}.</li>
  *   <li>Scale: the order line's, else the invoice snapshot's (both resolved in SQL); neither:
  *       scale 1 and warning {@code SCALE_UNKNOWN}.</li>
  *   <li>Description: the current tax-class name (a label only), else the line text of a service.</li>
@@ -57,6 +60,18 @@ final class HsnSummaryBuilder {
             this.uqc = uqc;
             this.rate = rate;
         }
+    }
+
+    /**
+     * The piece codes the platform accepts for a counted item (and the GST code NOS): one GST UQC,
+     * {@code PCS}, so one HSN at one rate is one row whatever spelling a tax class used.
+     */
+    static final Set<String> PIECE_ALIASES = CommerceUnits.PIECE_CODES;
+
+    /** The GST UQC of a stored unit: upper case, piece aliases as {@code PCS}. */
+    static String uqc(String unit) {
+        String code = unit == null ? "" : unit.trim().toUpperCase(Locale.ROOT);
+        return PIECE_ALIASES.contains(code) ? "PCS" : code;
     }
 
     private final ReportWarnings warnings;
@@ -105,7 +120,7 @@ final class HsnSummaryBuilder {
             uqc = "NA";
             displayQuantity = BigDecimal.ZERO;
         } else {
-            uqc = unit == null ? "" : unit.trim().toUpperCase(Locale.ROOT);
+            uqc = uqc(unit);
             if (!GST_UQC.contains(uqc)) {
                 warnings.add(ReportWarnings.UQC_UNKNOWN, "unit is not a GST UQC code; map it before filing",
                         uqc.isEmpty() ? "(blank)" : uqc);

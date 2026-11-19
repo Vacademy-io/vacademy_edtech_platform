@@ -72,10 +72,12 @@ class CodDuesReportServiceTest {
     void outstandingIsReadAsOfTheEndOfTheIndiaDay() {
         LocalDate asOf = LocalDate.of(2026, 11, 11);
         service.codOutstanding(query.toBuilder().asOf(asOf).build());
-        verify(repository).codOutstanding(any(), eq(asOf), eq(StockClock.storedStartOf(asOf.plusDays(1))), any());
-        verify(repository).codInTransit(any(), eq(StockClock.storedStartOf(asOf.plusDays(1))), any());
+        // The end of the India day as a stored UTC wall time, whatever the JVM's zone.
+        java.time.LocalDateTime end = java.time.LocalDateTime.of(2026, 11, 11, 18, 30);
+        verify(repository).codOutstanding(any(), eq(asOf), eq(end), any());
+        verify(repository).codInTransit(any(), eq(end), any());
         service.codOutstanding(query);
-        verify(repository).codOutstanding(any(), eq(TODAY), eq(StockClock.storedStartOf(TODAY.plusDays(1))), any());
+        verify(repository).codOutstanding(any(), eq(TODAY), eq(ReportRange.storedStartOf(TODAY.plusDays(1))), any());
     }
 
     @Test

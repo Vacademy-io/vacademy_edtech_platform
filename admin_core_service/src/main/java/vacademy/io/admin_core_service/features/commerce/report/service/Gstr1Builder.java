@@ -64,8 +64,6 @@ final class Gstr1Builder {
     private final Map<String, DocRate> cdnur = new LinkedHashMap<>();
     private final Map<ExempBucket, TaxSums> exemp = new EnumMap<>(ExempBucket.class);
 
-    private final TaxSums invoiceDocuments = new TaxSums();
-    private final TaxSums noteDocuments = new TaxSums();
     private final Set<String> notTaxInvoices = new HashSet<>();
     private final Set<String> notTaxNotes = new HashSet<>();
 
@@ -85,7 +83,6 @@ final class Gstr1Builder {
             notTaxInvoices.add(l.invoiceId());
             return;
         }
-        invoiceDocuments.add(1, l.taxable(), l.cgst(), l.sgst(), l.igst(), l.cess());
         switch (section) {
             case B2B, B2CL -> {
                 Map<String, DocRate> target = section == Section.B2B ? b2b : b2cl;
@@ -121,7 +118,6 @@ final class Gstr1Builder {
             notTaxNotes.add(l.noteId());
             return;
         }
-        noteDocuments.add(1, l.taxable(), l.cgst(), l.sgst(), l.igst(), l.cess());
         switch (section) {
             case CDNR, CDNUR, B2CS -> {
                 Map<String, DocRate> target = section == Section.CDNR ? cdnr : section == Section.CDNUR ? cdnur
@@ -238,12 +234,24 @@ final class Gstr1Builder {
         return out;
     }
 
+    /** The check's "documents" side from {@code ReportReadRepository#taxInvoiceDocumentSums}: invoices − notes. */
+    static TaxSums documents(Map<String, BigDecimal> sums) {
+        TaxSums documents = new TaxSums();
+        documents.add(1, sums.get("invoices_taxable_value"), sums.get("invoices_cgst"), sums.get("invoices_sgst"),
+                sums.get("invoices_igst"), sums.get("invoices_cess"));
+        documents.add(-1, sums.get("notes_taxable_value"), sums.get("notes_cgst"), sums.get("notes_sgst"),
+                sums.get("notes_igst"), sums.get("notes_cess"));
+        return documents;
+    }
+
     /**
-     * The check: per column, b2b + b2cl + b2cs (net) + exemp (net) − cdnr − cdnur against Σ live
-     * tax-invoice lines − Σ their credit-note lines. {@code difference} is the sum of the absolute
-     * differences; non-zero adds warning {@code GSTR1_DOES_NOT_ADD_UP}.
+     * The check (contract 2.5, gate 9): per column, b2b + b2cl + b2cs (net) + exemp (net) − cdnr −
+     * cdnur against {@code documents}: Σ live tax-invoice lines − Σ their credit-note lines, read
+     * by a separate aggregate straight from the document tables (never from the lines the sections
+     * were built from, so a line the section read lost shows here). {@code difference} is the sum of
+     * the absolute differences; non-zero adds warning {@code GSTR1_DOES_NOT_ADD_UP}.
      */
-    Map<String, Object> check() {
+    Map<String, Object> check(TaxSums documents) {
         TaxSums sections = new TaxSums();
         b2b.values().forEach(r -> sections.add(1, r.sums));
         b2cl.values().forEach(r -> sections.add(1, r.sums));
@@ -251,9 +259,6 @@ final class Gstr1Builder {
         exemp.values().forEach(s -> sections.add(1, s));
         cdnr.values().forEach(r -> sections.add(-1, r.sums));
         cdnur.values().forEach(r -> sections.add(-1, r.sums));
-        TaxSums documents = new TaxSums();
-        documents.add(1, invoiceDocuments);
-        documents.add(-1, noteDocuments);
 
         List<Map<String, Object>> columns = new ArrayList<>();
         BigDecimal difference = BigDecimal.ZERO;

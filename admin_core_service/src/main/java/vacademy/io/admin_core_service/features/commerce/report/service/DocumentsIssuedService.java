@@ -34,8 +34,11 @@ import java.util.TreeSet;
  *       first and last whose document is dated outside the range (a back-dated credit note) is
  *       listed as "dated in another period", not as missing.</li>
  *   <li><b>Paper bill books:</b> one row per book with an entry dated in the range: first and last
- *       page entered, total, cancelled (voided bills) and the pages "not entered": pages between
- *       the lowest and the highest page ever entered in the book that have no bill.</li>
+ *       page entered, total, cancelled (voided bills) and the pages "not entered": every page
+ *       from the first page of the book ({@code book_from}) to the highest page ever entered that
+ *       has no bill (contract 2.6), counted, with warning {@code BILL_BOOK_PAGES_NOT_ENTERED}.</li>
+ *   <li>A document with no number series cannot be placed in a series row: warning
+ *       {@code DOCUMENT_WITHOUT_SERIES} with the count, never silently left out.</li>
  * </ul>
  */
 @Service
@@ -70,11 +73,18 @@ public class DocumentsIssuedService {
     /** Reads and builds both blocks for the filter's range, GSTIN and location. */
     public Blocks blocks(DocFilter filter, ReportWarnings warnings) {
         List<DocumentRow> inRange = new ArrayList<>();
+        long[] withoutSeries = {0};
         readRepository.documentsInRange(filter, row -> {
             if (row.seriesId() != null) {
                 inRange.add(row);
+            } else {
+                withoutSeries[0]++;
             }
         });
+        if (withoutSeries[0] > 0) {
+            warnings.add(ReportWarnings.DOCUMENT_WITHOUT_SERIES, withoutSeries[0] + " documents of these dates have "
+                    + "no number series and are not in this table", null);
+        }
         Set<String> seriesIds = new LinkedHashSet<>();
         for (DocumentRow row : inRange) {
             seriesIds.add(row.seriesId());
@@ -97,6 +107,11 @@ public class DocumentsIssuedService {
             List<DocumentRow> all = allTime.getOrDefault(s.id(), List.of());
             if (MANUAL_BOOK.equals(s.kind())) {
                 Map<String, Object> row = bookRow(s, range, all);
+                long notEntered = (long) row.get("not_entered_count");
+                if (notEntered > 0) {
+                    warnings.add(ReportWarnings.BILL_BOOK_PAGES_NOT_ENTERED, notEntered + " pages of the book have no "
+                            + "bill entered: " + row.get("not_entered"), label(s));
+                }
                 bookRows.add(row);
                 bookSums[0] += (long) row.get("total");
                 bookSums[1] += (long) row.get("cancelled");
@@ -253,7 +268,7 @@ public class DocumentsIssuedService {
                 allPages.add(page);
             }
         }
-        List<Long> notEntered = notEntered(allPages);
+        NotEntered notEntered = notEntered(s.bookFrom(), allPages);
         Map<String, Object> row = ReportTable.row();
         row.put("prefix", s.prefix());
         row.put("financial_year", s.financialYear());
@@ -264,28 +279,47 @@ public class DocumentsIssuedService {
         row.put("total", (long) range.size());
         row.put("cancelled", cancelled);
         row.put("net_issued", range.size() - cancelled);
-        row.put("not_entered_count", (long) notEntered.size());
-        List<String> pages = new ArrayList<>(notEntered.size());
-        for (Long page : notEntered) {
-            pages.add(String.valueOf(page));
-        }
-        row.put("not_entered", pages.isEmpty() ? null : join(pages));
+        row.put("not_entered_count", notEntered.count());
+        row.put("not_entered", notEntered.text());
         return row;
     }
 
-    /** Pages between the lowest and the highest page entered that have no bill. */
-    public static List<Long> notEntered(Collection<Long> pagesEntered) {
-        List<Long> out = new ArrayList<>();
+    /**
+     * Pages from the first page of the book to the highest page entered that have no bill
+     * (contract 2.6); from the lowest page entered when the book's first page is unknown. A
+     * {@code bookFrom} above every entry (a typed page below the book) starts at the lowest entry.
+     */
+    public static NotEntered notEntered(Long bookFrom, Collection<Long> pagesEntered) {
         if (pagesEntered.isEmpty()) {
-            return out;
+            return new NotEntered(0, List.of());
         }
         TreeSet<Long> pages = new TreeSet<>(pagesEntered);
-        for (long page = pages.first(); page <= pages.last(); page++) {
+        long start = bookFrom == null ? pages.first() : Math.min(bookFrom, pages.first());
+        // Counted, not walked: a book of a million pages costs no more than one of a hundred.
+        long count = pages.last() - start + 1 - pages.size();
+        List<Long> first = new ArrayList<>();
+        for (long page = start; page <= pages.last() && first.size() <= LIST_CAP; page++) {
             if (!pages.contains(page)) {
-                out.add(page);
+                first.add(page);
             }
         }
-        return out;
+        return new NotEntered(count, first);
+    }
+
+    /** Pages not entered: how many, and the first ones (at most {@link #LIST_CAP} + 1, for the "… more" text). */
+    public record NotEntered(long count, List<Long> first) {
+        /** The pages as text: at most {@link #LIST_CAP}, then "… (N more)"; null when none. */
+        String text() {
+            if (count == 0) {
+                return null;
+            }
+            List<String> shown = new ArrayList<>();
+            for (Long page : first.subList(0, (int) Math.min(first.size(), LIST_CAP))) {
+                shown.add(String.valueOf(page));
+            }
+            return count <= LIST_CAP ? String.join(", ", shown)
+                    : String.join(", ", shown) + " … (" + (count - LIST_CAP) + " more)";
+        }
     }
 
     /** The paper page of a bill-book entry: the typed number, else the sequence of the stored number. */

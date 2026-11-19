@@ -35,7 +35,8 @@ import static vacademy.io.admin_core_service.features.commerce.report.export.Rep
  * Sales (contract 2.12) and products (contract 2.13). Sales are documents, not orders: live
  * invoices by their {@code document_date}; "returns" are credit notes by their own date. No
  * figure comes from an order total or a live setting; names (staff, product, collection) are
- * labels only.
+ * labels only. A bill reissued with the buyer's GSTIN counts once: one sale, no return (warning
+ * {@code REISSUE_COUNTED_ONCE} names it).
  */
 @Service
 public class SalesReportService {
@@ -77,7 +78,7 @@ public class SalesReportService {
     // ================================================================== sales
 
     /** The sales grouping: day (default), month, channel, location, staff, payment_method. */
-    static String salesGroup(String groupBy) {
+    public static String salesGroup(String groupBy) {
         String value = groupBy == null || groupBy.isBlank() ? "day" : groupBy.trim().toLowerCase(Locale.ROOT);
         if (!SALES_GROUPS.contains(value)) {
             throw new InvalidRequestException("VALIDATION: groupBy must be one of " + String.join(", ", SALES_GROUPS));
@@ -131,6 +132,7 @@ public class SalesReportService {
             all.add(d);
         });
         ReportWarnings warnings = new ReportWarnings();
+        warnReissues(f, warnings);
         MoneyReportSupport.Rows rows = new MoneyReportSupport.Rows(export, maxRows);
         String groupColumn = table.columns().get(0).key();
         groups.forEach((key, sums) -> {
@@ -147,6 +149,13 @@ public class SalesReportService {
         a.setTotals(totals);
         a.setWarnings(warnings.list());
         return a;
+    }
+
+    private void warnReissues(DocFilter f, ReportWarnings warnings) {
+        for (String pair : repository.reissuesInRange(f)) {
+            warnings.add(ReportWarnings.REISSUE_COUNTED_ONCE, "a bill reissued with the buyer's GSTIN counts once "
+                    + "(the first bill; no return): the GST registers list its credit note and new invoice", pair);
+        }
     }
 
     static String groupKey(ReportQuery q, String group, SalesDocument d, Map<String, String> locations) {
@@ -215,7 +224,7 @@ public class SalesReportService {
 
     // ================================================================== products
 
-    static String productGroup(String groupBy) {
+    public static String productGroup(String groupBy) {
         String value = groupBy == null || groupBy.isBlank() ? "variant" : groupBy.trim().toLowerCase(Locale.ROOT);
         if (!PRODUCT_GROUPS.contains(value)) {
             throw new InvalidRequestException("VALIDATION: groupBy must be one of "
@@ -243,7 +252,7 @@ public class SalesReportService {
         columns.add(text("returned_text", "Returned (with unit)", "वापस आया (इकाई सहित)"));
         columns.add(qty("net_units", "Net units", "शुद्ध मात्रा"));
         columns.add(text("net_text", "Net (with unit)", "शुद्ध (इकाई सहित)"));
-        columns.add(money("net_value", "Net value", "शुद्ध मूल्य"));
+        columns.add(money("net_value", "Net value (goods only)", "शुद्ध मूल्य (केवल सामान)"));
         columns.add(money("taxable", "Taxable value", "कर योग्य मूल्य"));
         columns.add(money("average_rate", "Average rate per unit", "प्रति इकाई औसत दर"));
         columns.add(text("average_rate_text", "Average rate", "औसत दर"));
@@ -270,6 +279,7 @@ public class SalesReportService {
         ReportTable table = productsTable(group);
         DocFilter f = MoneyReportSupport.filter(q);
         ReportWarnings warnings = new ReportWarnings();
+        warnReissues(f, warnings);
         ReportAnswer a = MoneyReportSupport.answer(q, PRODUCTS);
         a.getFilters().put("group_by", group);
 
@@ -320,7 +330,9 @@ public class SalesReportService {
         } else {
             totals.put("net_value", ReportTable.money(all.netValue()));
             totals.put("taxable", ReportTable.money(all.taxable));
-            totals.put("invoices", (long) all.invoices.size());
+            // Distinct invoices with goods: not the sum of the column (an invoice of two products
+            // is one invoice), so it has its own key and the column's total cell stays empty.
+            totals.put("distinct_invoices", (long) all.invoices.size());
             totals.put("sold_text", all.sold.text());
             totals.put("returned_text", all.returned.text());
             totals.put("net_text", all.net().text());

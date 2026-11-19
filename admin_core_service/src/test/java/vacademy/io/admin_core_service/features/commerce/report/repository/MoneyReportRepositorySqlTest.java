@@ -100,7 +100,8 @@ class MoneyReportRepositorySqlTest {
         AuditKeyset auditAfter = new AuditKeyset(LocalDateTime.of(2026, 11, 7, 7, 0), "a-2");
         audit.audit(auditFilter, auditAfter, 101, row -> { });
         audit.approvals(auditFilter, auditAfter, 101, row -> { });
-        audit.kinds("inst-1");
+        audit.kinds("inst-1", Set.of("loc-1"));
+        money.reissuesInRange(filter);
         audit.actors(auditFilter);
         audit.referenceIds("inst-1", "INV/2627-00003");
     }
@@ -113,7 +114,7 @@ class MoneyReportRepositorySqlTest {
     @Test
     void everyStatementFiltersTheInstituteAndReadsNoServerClock() {
         runEverything();
-        assertEquals(25, statements.size(), "statements: " + statements.size());
+        assertEquals(26, statements.size(), "statements: " + statements.size());
         for (String sql : statements) {
             assertTrue(sql.contains("institute_id = ?"), sql);
             String lower = sql.toLowerCase(Locale.ROOT);
@@ -199,7 +200,7 @@ class MoneyReportRepositorySqlTest {
     @Test
     void codAsOfAndDuesFollowTheDesk() {
         runEverything();
-        String outstanding = statementWith("r.received_on <= ?");
+        String outstanding = statementWith("o.delivered_at < ?");
         assertTrue(outstanding.contains("o.delivered_at < ?"));
         assertTrue(outstanding.contains("o.payment_method = 'COD'"));
         String dues = statementWith("ORDER BY 3, o.order_number, o.id");

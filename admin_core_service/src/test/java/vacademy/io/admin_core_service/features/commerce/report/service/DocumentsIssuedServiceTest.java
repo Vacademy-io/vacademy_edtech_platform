@@ -123,10 +123,28 @@ class DocumentsIssuedServiceTest {
         assertEquals("103", row.get("to_page"));
         assertEquals(2L, row.get("total"));
         assertEquals(1L, row.get("cancelled"), "a voided paper bill");
-        assertEquals("102", row.get("not_entered"));
-        assertEquals(1L, row.get("not_entered_count"));
-        assertEquals(List.of(102L), DocumentsIssuedService.notEntered(List.of(101L, 103L)));
-        assertEquals(List.of(), DocumentsIssuedService.notEntered(List.of()));
+        // Contract 2.6: every page from the book's first page (100) to the highest entered.
+        assertEquals("100, 102", row.get("not_entered"));
+        assertEquals(2L, row.get("not_entered_count"));
+        assertTrue(a.getWarnings().stream().anyMatch(w -> "BILL_BOOK_PAGES_NOT_ENTERED".equals(w.getCode())
+                && w.getMessage().startsWith("2 pages")));
+        assertEquals(List.of(100L, 102L), DocumentsIssuedService.notEntered(100L, List.of(101L, 103L)).first());
+        assertEquals(List.of(102L), DocumentsIssuedService.notEntered(null, List.of(101L, 103L)).first());
+        assertEquals(0L, DocumentsIssuedService.notEntered(100L, List.of()).count());
+    }
+
+    @Test
+    void aHugeGapInABookIsCountedNotWalked() {
+        DocumentsIssuedService.NotEntered gap = DocumentsIssuedService.notEntered(1L, List.of(1L, 999_999_999L));
+        assertEquals(999_999_997L, gap.count());
+        assertEquals(DocumentsIssuedService.LIST_CAP + 1, gap.first().size());
+    }
+
+    @Test
+    void aDocumentWithoutASeriesIsWarnedNotDropped() {
+        doc("INVOICE", null, "LEGACY-1", null, IN, false);
+        ReportAnswer a = service.documentsIssued(query());
+        assertTrue(a.getWarnings().stream().anyMatch(w -> "DOCUMENT_WITHOUT_SERIES".equals(w.getCode())));
     }
 
     @Test

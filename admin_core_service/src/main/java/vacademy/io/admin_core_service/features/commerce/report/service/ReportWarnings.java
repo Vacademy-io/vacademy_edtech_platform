@@ -31,6 +31,16 @@ public final class ReportWarnings {
     public static final String REGISTER_DOES_NOT_ADD_UP = "REGISTER_DOES_NOT_ADD_UP";
     public static final String HSN_DOES_NOT_ADD_UP = "HSN_DOES_NOT_ADD_UP";
     public static final String NUMBER_NOT_PARSED = "NUMBER_NOT_PARSED";
+    /** A GST report cut to one GSTIN left out documents that carry no seller GSTIN. */
+    public static final String NO_GSTIN = "NO_GSTIN";
+    /** Bill-book pages between the first page of the book and the highest page entered have no bill. */
+    public static final String BILL_BOOK_PAGES_NOT_ENTERED = "BILL_BOOK_PAGES_NOT_ENTERED";
+    /** A document with no number series is not in the documents-issued table. */
+    public static final String DOCUMENT_WITHOUT_SERIES = "DOCUMENT_WITHOUT_SERIES";
+    /** A bill reissued with the buyer's GSTIN is counted once (the first bill; the reissue pair left out). */
+    public static final String REISSUE_COUNTED_ONCE = "REISSUE_COUNTED_ONCE";
+    /** COD is shown at the order amount: courier deductions and short remittances are not in this view. */
+    public static final String COD_GROSS = "COD_GROSS";
 
     private final List<ReportDtos.Warning> listed = new ArrayList<>();
     private final Set<String> seen = new HashSet<>();

@@ -73,11 +73,11 @@ class DayBookServiceTest {
                 new DocumentRow("CREDIT_NOTE", "n-1", DAY, "2026-11-05 15:00", DAY, "CN/1", null, "CREDIT_NOTE",
                         new BigDecimal("155.12"), false, "Walk-in", "ORD-1", null, "L1")));
         feed(SessionRow.class, inv -> repository.footerSessions(any(), any(), any(), inv), List.of(
-                new SessionRow("s-1", "CLOSED", DAY, "2026-11-05 08:30", "2026-11-05T03:00:00.000000",
+                new SessionRow("s-1", "CLOSED", DAY, DAY, "2026-11-05 08:30", "2026-11-05T03:00:00.000000",
                         "2026-11-05 18:30", "R1", "Counter one", "L1", "u-cashier", new BigDecimal("1000.00"),
                         new BigDecimal("1300.00"), new BigDecimal("1290.00"), new BigDecimal("-10.00"), null,
                         "short", null),
-                new SessionRow("s-2", "OPEN", DAY, "2026-11-05 09:00", "2026-11-05T03:30:00.000000", null, "R2",
+                new SessionRow("s-2", "OPEN", DAY, null, "2026-11-05 09:00", "2026-11-05T03:30:00.000000", null, "R2",
                         "Counter two", "L2", "u-other", new BigDecimal("500.00"), null, null, null,
                         new BigDecimal("600.00"), null, null)));
         feed(PaidNotInvoicedRow.class, inv -> repository.paidNotInvoiced(any(), any(), any(), inv), List.of(
@@ -116,7 +116,7 @@ class DayBookServiceTest {
     @Test
     void documentsAndMoneyAreTwoBlocksWithTheFooter() {
         ReportAnswer a = dayBook.dayBook(query);
-        assertEquals(List.of("documents", "money", "by_mode", "sessions"),
+        assertEquals(List.of("documents", "money", "by_mode", "sessions", "tills"),
                 a.getSections().stream().map(ReportDtos.Section::getKey).toList());
         ReportDtos.Section documents = section(a, "documents");
         assertEquals(4, documents.getRows().size());
@@ -126,6 +126,15 @@ class DayBookServiceTest {
         assertEquals(new BigDecimal("391.50"), documents.getTotals().get("invoices_value"));
         assertEquals(new BigDecimal("155.12"), documents.getTotals().get("credit_notes_value"));
         assertEquals(new BigDecimal("236.38"), documents.getTotals().get("net"));
+        // R2: the cancelled invoice keeps its number and status, its money moves to cancelled_value;
+        // the value column is signed (a note negative) and sums to the net.
+        assertNull(documents.getRows().get(1).get("value"));
+        assertEquals(new BigDecimal("52.50"), documents.getRows().get(1).get("cancelled_value"));
+        assertEquals(new BigDecimal("-155.12"), documents.getRows().get(3).get("value"));
+        BigDecimal valueColumn = documents.getRows().stream().map(r -> amount(r.get("value")))
+                .filter(java.util.Objects::nonNull).reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertEquals(documents.getTotals().get("value"), valueColumn);
+        assertEquals(new BigDecimal("52.50"), documents.getTotals().get("cancelled_value"));
         // A paper bill shows its paper number, no time, and when it was entered.
         Map<String, Object> paper = documents.getRows().get(2);
         assertEquals("PAPER_BILL", paper.get("type"));
@@ -174,14 +183,71 @@ class DayBookServiceTest {
     }
 
     @Test
-    void cashAtTheTillsIsCountedForClosedAndExpectedSoFarForOpen() {
+    void cashAtTheTillsIsCountedForSessionsClosedThatDayOnly() {
         ReportAnswer a = dayBook.dayBook(query);
         ReportDtos.Section sessions = section(a, "sessions");
         assertEquals(new BigDecimal("1290.00"), sessions.getRows().get(0).get("cash_at_till"));
-        assertEquals(new BigDecimal("600.00"), sessions.getRows().get(1).get("cash_at_till"));
+        assertNull(sessions.getRows().get(1).get("cash_at_till"), "a session still open is not cash at the tills");
+        assertEquals(new BigDecimal("600.00"), sessions.getRows().get(1).get("expected"),
+                "it shows the cash expected by the end of the day");
         assertNull(sessions.getRows().get(1).get("counted"), "an open session has no count yet");
-        assertEquals(new BigDecimal("1890.00"), a.getTotals().get("cash_at_tills"));
-        assertEquals(new BigDecimal("1890.00"), sessions.getTotals().get("cash_at_tills"));
+        assertEquals(new BigDecimal("1290.00"), a.getTotals().get("cash_at_tills"));
+        ReportDtos.Section tills = section(a, "tills");
+        assertEquals(1, tills.getRows().size());
+        assertEquals("Test City store", tills.getRows().get(0).get("location"));
+        assertEquals(new BigDecimal("1290.00"), tills.getTotals().get("cash_at_tills"));
+    }
+
+    @Test
+    void severalDaysGiveCashAtTheTillsPerDayAndNoTotal() {
+        LocalDate next = DAY.plusDays(1);
+        feed(SessionRow.class, inv -> repository.footerSessions(any(), any(), any(), inv), List.of(
+                new SessionRow("s-1", "CLOSED", DAY, DAY, "2026-11-05 08:30", "2026-11-05T03:00:00.000000",
+                        "2026-11-05 18:30", "R1", "Counter one", "L1", "u-cashier", new BigDecimal("1000.00"),
+                        new BigDecimal("6000.00"), new BigDecimal("6000.00"), BigDecimal.ZERO, null, null, null),
+                new SessionRow("s-2", "CLOSED", next, next, "2026-11-06 08:30", "2026-11-06T03:00:00.000000",
+                        "2026-11-06 18:30", "R1", "Counter one", "L1", "u-cashier", new BigDecimal("1000.00"),
+                        new BigDecimal("6000.00"), new BigDecimal("6000.00"), BigDecimal.ZERO, null, null, null),
+                new SessionRow("s-3", "CLOSED", next, next.plusDays(1), "2026-11-06 20:00",
+                        "2026-11-06T14:30:00.000000", "2026-11-07 01:00", "R2", "Counter two", "L2", "u-cashier",
+                        new BigDecimal("500.00"), new BigDecimal("700.00"), new BigDecimal("700.00"),
+                        BigDecimal.ZERO, null, null, null)));
+        ReportAnswer a = dayBook.dayBook(query.toBuilder().range(new ReportRange(DAY, next)).build());
+        ReportDtos.Section tills = section(a, "tills");
+        assertEquals(List.of("2026-11-05", "2026-11-06"), tills.getRows().stream().map(r -> r.get("date")).toList());
+        assertNull(a.getTotals().get("cash_at_tills"), "the same cash is counted each day: no total over days");
+        assertNull(tills.getTotals().get("cash_at_tills"));
+        assertNull(section(a, "sessions").getRows().get(2).get("cash_at_till"), "closed after the range");
+    }
+
+    @Test
+    void codKeptByTheCourierIsMoneyOutAndBothReportsAgree() {
+        feedMoney(List.of(
+                money("TENDER", DayBookService.COD_COLLECTED, "COD", "1200.00", "L1", null, DAY),
+                new MoneyRow("REMITTANCE", DayBookService.COD_DEDUCTION, "r-1:D", DAY, null, DAY, "COD",
+                        new BigDecimal("30.00"), "STMT-1", "Test Post", null, null, "STMT-1"),
+                new MoneyRow("REMITTANCE", DayBookService.COD_SHORT, "r-1:S", DAY, null, DAY, "COD",
+                        new BigDecimal("20.00"), "STMT-1", "Test Post", null, null, "STMT-1")));
+        ReportAnswer book = dayBook.dayBook(query);
+        assertEquals(new BigDecimal("1150.00"), book.getTotals().get("net_money"), "1200 less 30 and 20 kept");
+        Map<String, Object> deduction = section(book, "money").getRows().get(1);
+        assertEquals(new BigDecimal("30.00"), deduction.get("amount_out"));
+        assertEquals(DayBookService.NO_TIME, deduction.get("time"));
+        ReportAnswer modes = paymentModes.paymentModes(query);
+        assertEquals(new BigDecimal("1200.00"), modes.getTotals().get("cod_collected"));
+        assertEquals(new BigDecimal("50.00"), modes.getTotals().get("cod_deductions"));
+        assertEquals(new BigDecimal("1150.00"), modes.getTotals().get("net_money"));
+        ReportAnswer limited = dayBook.dayBook(query.toBuilder()
+                .scope(new ReportScope(false, Set.of("L1"), false, null)).build());
+        assertTrue(limited.getWarnings().stream().anyMatch(w -> "COD_GROSS".equals(w.getCode())));
+    }
+
+    @Test
+    void aReissuedBillIsNamedInAWarning() {
+        when(repository.reissuesInRange(any())).thenReturn(List.of("RA-1 -> RA-2 (CA-1)"));
+        ReportAnswer a = dayBook.dayBook(query);
+        assertTrue(a.getWarnings().stream().anyMatch(w -> "REISSUE_COUNTED_ONCE".equals(w.getCode())
+                && "RA-1 -> RA-2 (CA-1)".equals(w.getRef())));
     }
 
     @Test
@@ -220,10 +286,10 @@ class DayBookServiceTest {
     @Test
     void theDayBookReadsWithTheIndiaBoundsOfItsDays() {
         dayBook.dayBook(query);
-        verify(repository).moneyRows(any(), eq(StockClock.storedStartOf(DAY)), eq(StockClock.storedStartOf(
-                DAY.plusDays(1))), any());
-        verify(repository).footerSessions(any(), eq(StockClock.storedStartOf(DAY)),
-                eq(StockClock.storedStartOf(DAY.plusDays(1))), any());
+        verify(repository).moneyRows(any(), eq(java.time.LocalDateTime.of(2026, 11, 4, 18, 30)),
+                eq(java.time.LocalDateTime.of(2026, 11, 5, 18, 30)), any());
+        verify(repository).footerSessions(any(), eq(java.time.LocalDateTime.of(2026, 11, 4, 18, 30)),
+                eq(java.time.LocalDateTime.of(2026, 11, 5, 18, 30)), any());
     }
 
     @Test

@@ -207,9 +207,50 @@ final class ReportFixtures {
                             org.mockito.Mockito.mock(javax.sql.DataSource.class))));
         }
 
+        /** Documents without a seller GSTIN in the range. */
+        long withoutGstin;
+        /** The GSTR-1 check's documents side; null: summed from the lines below (tax invoices). */
+        Map<String, BigDecimal> documentSums;
+
         @Override
-        public List<String> activeLocationIds(String instituteId) {
+        public List<String> locationIds(String instituteId) {
             return List.of("loc-1", "loc-2");
+        }
+
+        @Override
+        public long documentsWithoutGstin(DocFilter f) {
+            return withoutGstin;
+        }
+
+        @Override
+        public Map<String, BigDecimal> taxInvoiceDocumentSums(DocFilter f) {
+            if (documentSums != null) {
+                return documentSums;
+            }
+            Map<String, BigDecimal> out = new HashMap<>();
+            for (String k : List.of("taxable_value", "cgst", "sgst", "igst", "cess")) {
+                out.put("invoices_" + k, BigDecimal.ZERO);
+                out.put("notes_" + k, BigDecimal.ZERO);
+            }
+            for (InvoiceLine l : invoiceLines) {
+                if ("TAX_INVOICE".equals(l.documentType())) {
+                    out.merge("invoices_taxable_value", l.taxable(), BigDecimal::add);
+                    out.merge("invoices_cgst", l.cgst(), BigDecimal::add);
+                    out.merge("invoices_sgst", l.sgst(), BigDecimal::add);
+                    out.merge("invoices_igst", l.igst(), BigDecimal::add);
+                    out.merge("invoices_cess", l.cess(), BigDecimal::add);
+                }
+            }
+            for (NoteLine l : noteLines) {
+                if ("TAX_INVOICE".equals(l.invoiceDocumentType())) {
+                    out.merge("notes_taxable_value", l.taxable(), BigDecimal::add);
+                    out.merge("notes_cgst", l.cgst(), BigDecimal::add);
+                    out.merge("notes_sgst", l.sgst(), BigDecimal::add);
+                    out.merge("notes_igst", l.igst(), BigDecimal::add);
+                    out.merge("notes_cess", l.cess(), BigDecimal::add);
+                }
+            }
+            return out;
         }
 
         @Override

@@ -28,6 +28,7 @@ public class CorsConfig implements WebMvcConfigurer {
                 // wildcard it. Without this, the browser hides Server-Timing
                 // from JS on cross-origin calls — silently, with no error.
                 // Retry-After: the shop reads it on a 429 of the public commerce routes.
-                .exposedHeaders("Server-Timing", "Retry-After");
+                // Content-Disposition: the admin's report downloads take the server's file name.
+                .exposedHeaders("Server-Timing", "Retry-After", "Content-Disposition");
     }
 }

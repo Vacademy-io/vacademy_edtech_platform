@@ -82,8 +82,8 @@ class CommerceAuditQueryServiceTest {
         assertEquals("POS_VOID", f.kind());
         assertNull(f.locationIn(), "an ADMIN sees rows with and without a location");
         assertNull(f.referenceIds());
-        assertEquals(StockClock.storedStartOf(LocalDate.of(2026, 11, 1)), f.storedFrom());
-        assertEquals(StockClock.storedStartOf(LocalDate.of(2026, 11, 20)), f.storedTo());
+        assertEquals(java.time.LocalDateTime.of(2026, 10, 31, 18, 30), f.storedFrom(), "India day start, in UTC");
+        assertEquals(java.time.LocalDateTime.of(2026, 11, 19, 18, 30), f.storedTo());
         verify(repository).audit(any(), eq(null), eq(ReportQuery.DEFAULT_SIZE + 1), any());
     }
 
@@ -147,11 +147,18 @@ class CommerceAuditQueryServiceTest {
         rows(List.of(row("a-1", LocalDateTime.of(2026, 11, 10, 7, 0), null, null)));
         AuditEntry e = service.audit(new AuditQuery("inst-1", RANGE, ADMIN, null, null, null, null, 0))
                 .getRows().get(0);
-        // Stored times are UTC wall times in production (the JVM runs in UTC).
-        String expected = LocalDateTime.of(2026, 11, 10, 7, 0).atZone(java.time.ZoneId.systemDefault())
-                .withZoneSameInstant(java.time.ZoneId.of("Asia/Kolkata")).toOffsetDateTime().toString();
-        assertEquals(expected, e.getCreatedAt());
-        assertTrue(e.getCreatedAt().endsWith("+05:30"));
+        // Stored times are UTC wall times (contract 3.1), read as UTC whatever the JVM's zone.
+        assertEquals("2026-11-10T12:30+05:30", e.getCreatedAt());
+        assertEquals("2026-11-10 12:30:00", e.getWhen());
+        java.util.TimeZone saved = java.util.TimeZone.getDefault();
+        try {
+            java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("America/New_York"));
+            AuditEntry again = service.audit(new AuditQuery("inst-1", RANGE, ADMIN, null, null, null, null, 0))
+                    .getRows().get(0);
+            assertEquals("2026-11-10T12:30+05:30", again.getCreatedAt(), "the JVM zone is never read");
+        } finally {
+            java.util.TimeZone.setDefault(saved);
+        }
     }
 
     @Test

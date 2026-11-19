@@ -11,6 +11,8 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.SimpleTransactionStatus;
 import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditService;
+import vacademy.io.admin_core_service.features.commerce.report.repository.ReportDeadline;
+import vacademy.io.admin_core_service.features.commerce.report.repository.ReportJdbcTemplate;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.nio.charset.StandardCharsets;
@@ -158,14 +160,146 @@ class ReportRunnerTest {
     }
 
     @Test
-    void anotherSqlErrorIsNotATimeout() {
-        assertThrows(DataAccessResourceFailureException.class, () -> runner.screen(() -> {
-            throw new DataAccessResourceFailureException("other", new SQLException("other", "42P01"));
+    void anotherSqlErrorIsNotATimeoutAndNeverShowsItsSql() {
+        VacademyException e = assertThrows(VacademyException.class, () -> runner.screen(() -> {
+            throw new org.springframework.jdbc.BadSqlGrammarException("report", "SELECT secret FROM x",
+                    new SQLException("syntax error", "42601"));
+        }));
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, e.getStatus());
+        assertTrue(e.getMessage().startsWith("REPORT_FAILED:"));
+        assertFalse(e.getMessage().contains("SELECT"), e.getMessage());
+        assertThrows(VacademyException.class, () -> runner.screen(() -> {
+            throw new DataAccessResourceFailureException("other", new SQLException("other", "08006"));
         }));
     }
 
+    @Test
+    void atMostFourScreenRequestsAtOnceThenReportsBusyWithRetryAfter() throws Exception {
+        CountDownLatch inside = new CountDownLatch(ReportRunner.SCREEN_SLOTS);
+        CountDownLatch release = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(ReportRunner.SCREEN_SLOTS);
+        try {
+            List<Future<String>> held = new ArrayList<>();
+            for (int i = 0; i < ReportRunner.SCREEN_SLOTS; i++) {
+                held.add(pool.submit(() -> runner.screen(() -> {
+                    inside.countDown();
+                    try {
+                        assertTrue(release.await(20, TimeUnit.SECONDS));
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    return "ok";
+                })));
+            }
+            assertTrue(inside.await(10, TimeUnit.SECONDS));
+            ReportRunner.ReportBusyException busy = assertThrows(ReportRunner.ReportBusyException.class,
+                    () -> runner.screen(() -> "fifth"));
+            assertEquals(HttpStatus.TOO_MANY_REQUESTS, busy.getStatus());
+            assertTrue(busy.getMessage().startsWith("REPORTS_BUSY:"));
+            assertEquals(ReportRunner.RETRY_AFTER_SECONDS, busy.getRetryAfterSeconds());
+            release.countDown();
+            for (Future<String> f : held) {
+                assertEquals("ok", f.get(10, TimeUnit.SECONDS));
+            }
+            assertEquals("again", runner.screen(() -> "again"), "the slots are back");
+        } finally {
+            release.countDown();
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void readsInsideOneRequestShareItsSlotAndDeadline() {
+        ReportRunner one = new ReportRunner(named(), txManager, audit, 50_000, 1, 2, 25_000, 50_000);
+        String result = one.screenRequest(() -> one.screen(() -> "a") + one.screen(() -> "b"));
+        assertEquals("ab", result, "a request of two reads holds one slot");
+        assertFalse(ReportDeadline.active(), "the deadline ends with the request");
+    }
+
+    @Test
+    void theWholeRequestHasOneDeadline() {
+        ReportRunner quick = new ReportRunner(named(), txManager, audit, 50_000, 4, 2, 50, 100);
+        VacademyException e = assertThrows(VacademyException.class, () -> quick.screenRequest(() -> {
+            quick.screen(() -> "first read");
+            try {
+                Thread.sleep(80);
+            } catch (InterruptedException ie) {
+                Thread.currentThread().interrupt();
+            }
+            // The next statement would start after the request's 50 ms: refused before the database.
+            return quick.screen(() -> ReportDeadline.secondsForNextStatement());
+        }));
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, e.getStatus());
+        assertTrue(e.getMessage().startsWith("REPORT_TIMEOUT:"));
+        assertFalse(ReportDeadline.active());
+    }
+
+    @Test
+    void everyStatementGetsTheTimeLeftAsItsQueryTimeout() throws Exception {
+        ReportJdbcTemplate template = new ReportJdbcTemplate(org.mockito.Mockito.mock(javax.sql.DataSource.class));
+        java.sql.Statement statement = org.mockito.Mockito.mock(java.sql.Statement.class);
+        java.lang.reflect.Method apply = org.springframework.jdbc.core.JdbcTemplate.class
+                .getDeclaredMethod("applyStatementSettings", java.sql.Statement.class);
+        apply.setAccessible(true);
+        apply.invoke(template, statement);
+        verify(statement, never()).setQueryTimeout(org.mockito.ArgumentMatchers.anyInt());
+        ReportDeadline.start(7_500);
+        try {
+            apply.invoke(template, statement);
+            verify(statement).setQueryTimeout(8);
+            verify(statement, org.mockito.Mockito.atLeastOnce()).setFetchSize(1000);
+        } finally {
+            ReportDeadline.clear();
+        }
+    }
+
+    @Test
+    void exportsAreTwoPerPodAndOnePerInstitute() throws Exception {
+        CountDownLatch started = new CountDownLatch(2);
+        CountDownLatch release = new CountDownLatch(1);
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        try {
+            List<Future<ReportRunner.ExportResult>> held = new ArrayList<>();
+            for (String institute : List.of("inst-1", "inst-2")) {
+                held.add(pool.submit(() -> runner.export(audit("gstr1", institute), (out, max) -> {
+                    started.countDown();
+                    try {
+                        assertTrue(release.await(20, TimeUnit.SECONDS));
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                    return 1;
+                })));
+            }
+            assertTrue(started.await(10, TimeUnit.SECONDS), "two institutes export at once");
+            ReportRunner.ReportBusyException same = assertThrows(ReportRunner.ReportBusyException.class,
+                    () -> runner.export(audit("sales", "inst-1"), (out, max) -> 1));
+            assertTrue(same.getMessage().startsWith("REPORT_BUSY:"));
+            assertThrows(ReportRunner.ReportBusyException.class,
+                    () -> runner.export(audit("sales", "inst-3"), (out, max) -> 1), "a third export on the pod");
+            release.countDown();
+            for (Future<ReportRunner.ExportResult> f : held) {
+                assertEquals(1, f.get(10, TimeUnit.SECONDS).rows());
+            }
+            assertEquals(2, runner.export(audit("sales", "inst-3"), (out, max) -> 2).rows());
+        } finally {
+            release.countDown();
+            pool.shutdownNow();
+        }
+    }
+
+    private NamedParameterJdbcTemplate named() {
+        NamedParameterJdbcTemplate named = mock(NamedParameterJdbcTemplate.class);
+        when(named.getJdbcOperations()).thenReturn(jdbc);
+        return named;
+    }
+
     private static ReportRunner.ExportAudit audit(String report) {
-        return new ReportRunner.ExportAudit("inst-1", "u-1", "loc-1", report, "2026-11-01", "2026-11-19",
+        return audit(report, "inst-1");
+    }
+
+    private static ReportRunner.ExportAudit audit(String report, String institute) {
+        return new ReportRunner.ExportAudit(institute, "u-1", "loc-1", report, "2026-11-01", "2026-11-19",
                 Map.of("channel", "POS"), "csv");
     }
 }

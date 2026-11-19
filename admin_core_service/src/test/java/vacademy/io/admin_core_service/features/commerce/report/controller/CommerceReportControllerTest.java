@@ -92,11 +92,14 @@ class CommerceReportControllerTest {
         CommerceAccessGuard guard = new CommerceAccessGuard(capabilities, mock(CommerceStaffLocationRepository.class));
         stockAccess = mock(StockAccess.class);
         ReportReadRepository readRepository = mock(ReportReadRepository.class);
-        when(readRepository.activeLocationIds(INSTITUTE)).thenReturn(List.of("L1", "L2"));
+        when(readRepository.locationIds(INSTITUTE)).thenReturn(List.of("L1", "L2"));
+        when(readRepository.places(INSTITUTE)).thenReturn(List.of(
+                new ReportReadRepository.Place("L1", "C1", "One", "09AAACH7409R1ZZ", "ACTIVE")));
         ReportAccess access = new ReportAccess(guard, stockAccess, readRepository);
 
         runner = mock(ReportRunner.class);
         when(runner.screen(any())).thenAnswer(inv -> ((Supplier<Object>) inv.getArgument(0)).get());
+        when(runner.screenRequest(any())).thenAnswer(inv -> ((Supplier<Object>) inv.getArgument(0)).get());
         when(runner.export(any(), any())).thenAnswer(inv -> {
             ReportRunner.ExportBody body = inv.getArgument(1);
             ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -152,6 +155,100 @@ class CommerceReportControllerTest {
 
     private ResponseEntity<?> call(String name, String format) {
         return call(user("ADMIN"), name, null, null, format);
+    }
+
+    /** A report call with one of the filters set (the rest absent). */
+    private ResponseEntity<?> with(String name, String param, String value) {
+        return controller.report(user("ADMIN"), name, INSTITUTE, null, null, null,
+                "locationId".equals(param) ? value : null, "channel".equals(param) ? value : null,
+                "sellerGstin".equals(param) ? value : null, "status".equals(param) ? value : null,
+                "b2clLimit".equals(param) ? value : null, "cursor".equals(param) ? value : null,
+                "size".equals(param) ? Integer.valueOf(value) : null, "groupBy".equals(param) ? value : null,
+                "asOf".equals(param) ? LocalDate.parse(value) : null, null, null, null);
+    }
+
+    private static void validation(org.junit.jupiter.api.function.Executable call, String what) {
+        InvalidRequestException e = assertThrows(InvalidRequestException.class, call, what);
+        assertTrue(e.getMessage().startsWith("VALIDATION:"), what + ": " + e.getMessage());
+    }
+
+    @Test
+    void numbersAreBoundedBeforeTheyAreParsed() {
+        // A huge exponent never reaches BigDecimal.toPlainString (heap): refused as text.
+        validation(() -> with("gstr1", "b2clLimit", "1E999999999"), "exponent");
+        validation(() -> with("gstr1", "b2clLimit", "1e3"), "exponent, small");
+        validation(() -> with("gstr1", "b2clLimit", "0"), "below 1");
+        validation(() -> with("gstr1", "b2clLimit", "10000000.01"), "above 1 crore");
+        validation(() -> with("gstr1", "b2clLimit", "500.123"), "three decimals");
+        validation(() -> with("gstr1", "b2clLimit", "-5"), "negative");
+        with("gstr1", "b2clLimit", "250000.50");
+        verify(gst).gstr1(argThat((ReportQuery q) -> new java.math.BigDecimal("250000.50").equals(q.b2clLimit())));
+        validation(() -> with("sales-register", "size", "0"), "size 0");
+        validation(() -> with("sales-register", "size", "201"), "size 201");
+        with("sales-register", "size", "200");
+        validation(() -> call(user("ADMIN"), "sales", TODAY.minusYears(3).minusDays(1), TODAY.minusYears(3), null),
+                "more than 3 years back");
+        call(user("ADMIN"), "sales", TODAY.minusYears(3), TODAY.minusYears(3).plusDays(5), null);
+        validation(() -> with("cod-outstanding", "asOf", TODAY.minusYears(4).toString()), "as of 4 years back");
+        validation(() -> with("cod-outstanding", "asOf", TODAY.plusDays(1).toString()), "as of tomorrow");
+        validation(() -> with("sales-register", "cursor", "abc\u0000def"), "control character in cursor");
+        validation(() -> with("sales-register", "cursor", "x".repeat(401)), "cursor too long");
+    }
+
+    @Test
+    void aFilterAReportDoesNotTakeIsRefusedNotIgnored() {
+        validation(() -> with("day-book", "channel", "POS"), "day book channel");
+        validation(() -> with("payment-modes", "channel", "POS"), "payment modes channel");
+        validation(() -> with("gstr1", "locationId", "L1"), "GSTR-1 location: a partial return");
+        validation(() -> with("hsn-summary", "channel", "POS"), "HSN channel");
+        validation(() -> with("gst-pack", "locationId", "L1"), "GST pack location");
+        validation(() -> with("documents-issued", "channel", "POS"), "documents issued channel");
+        validation(() -> with("sales", "status", "ACTIVE"), "status outside the sales register");
+        validation(() -> with("sales", "b2clLimit", "500"), "b2clLimit outside GSTR-1");
+        validation(() -> with("gstr1", "groupBy", "day"), "groupBy outside sales and products");
+        validation(() -> with("sales", "groupBy", "nonsense"), "unknown grouping");
+        validation(() -> with("sales", "asOf", TODAY.toString()), "asOf outside COD");
+        validation(() -> with("sales", "sellerGstin", "09AAACH7409R1ZZ"), "GSTIN outside the GST reports");
+        with("sales", "channel", "POS");
+        with("documents-issued", "locationId", "L1");
+        with("sales-register", "status", "CANCELLED");
+        with("products", "groupBy", "product");
+        verify(sales).products(argThat((ReportQuery q) -> "product".equals(q.groupBy())));
+    }
+
+    @Test
+    void placesNameTheCallersLocationsInsideAScreenSlot() {
+        ResponseEntity<ReportAccess.Places> places = controller.places(user("ADMIN"), INSTITUTE);
+        assertEquals("L1", places.getBody().places().get(0).id());
+        assertEquals("09AAACH7409R1ZZ", places.getBody().places().get(0).gstin());
+        assertTrue(places.getBody().allPlaces());
+        verify(runner).screenRequest(any());
+        assertThrows(CommerceAccessDeniedException.class,
+                () -> controller.places(user("COMMERCE_POS_CASHIER"), INSTITUTE));
+    }
+
+    @Test
+    void auditActorsAreTheStaffOfTheCallersRowsByName() {
+        when(audit.actors(any())).thenReturn(List.of("u-2", "u-1", "u-2"));
+        when(userNames.names(List.of("u-2", "u-1", "u-2"))).thenReturn(Map.of("u-1", "Zara", "u-2", "Amit"));
+        CommerceAuditQueryService.Actors actors = auditController.actors(user("ADMIN"), INSTITUTE, null, null, null)
+                .getBody();
+        assertEquals(List.of("u-2", "u-1"), actors.getActors().stream()
+                .map(CommerceAuditQueryService.Actor::getUserId).toList(), "by name, once each");
+        assertEquals("Amit", actors.getActors().get(0).getName());
+        verify(audit).actors(argThat(q -> q.actorUserId() == null && q.kind() == null && q.reference() == null));
+    }
+
+    @Test
+    void theAuditListTakesBoundedSizesAndCleanText() {
+        validation(() -> auditController.list(user("ADMIN"), INSTITUTE, null, null, null, null, null, null, null,
+                500, null), "size 500");
+        validation(() -> auditController.list(user("ADMIN"), INSTITUTE, null, null, null, null, null,
+                "INV\u0000-1", null, null, null), "control character in reference");
+        validation(() -> auditController.approvals(user("ADMIN"), INSTITUTE, null, null, null, null, null, 0),
+                "approvals size 0");
+        auditController.kinds(user("ADMIN"), INSTITUTE);
+        verify(audit).kinds(eq(INSTITUTE), argThat(scope -> scope.allLocations()));
     }
 
     @Test

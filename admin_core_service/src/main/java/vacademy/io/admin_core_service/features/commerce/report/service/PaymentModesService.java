@@ -26,8 +26,11 @@ import static vacademy.io.admin_core_service.features.commerce.report.export.Rep
  *
  * <p>Columns: money received by mode (cash, UPI, card, bank transfer, cheque, gateway, COD
  * collected) and their sum {@code received}; credit notes used at the counter (not money);
- * refunds paid by method and their sum {@code refunded}; counter cash in and out; and
- * {@code net_money} = received + cash in − refunded − cash out (= the day book's net money).
+ * refunds paid by method and their sum {@code refunded}; counter cash in and out; what couriers
+ * kept of COD remittances received ({@code cod_deductions}: deductions and short remittances, an
+ * over-payment negative; dated by the remittance, no location); and {@code net_money} = received
+ * − cod_deductions + cash in − refunded − cash out (= the day book's net money). A
+ * location-limited view books COD at the order amount (warning {@code COD_GROSS}).
  * Block {@code paid_not_invoiced}: orders with money received in the range and no live invoice
  * at the range end (prepaid orders not packed yet), so money can be tied to sales.
  */
@@ -56,6 +59,7 @@ public class PaymentModesService {
             money("gateway", "Online payment", "ऑनलाइन भुगतान"),
             money("cod_collected", "COD collected", "COD वसूली"),
             money("received", "Received", "मिली रकम"),
+            money("cod_deductions", "COD kept by the courier", "कूरियर की कटौती (COD)"),
             money("credit_note_used", "Credit note used (not money)", "क्रेडिट नोट से (पैसा नहीं)"),
             money("refund_cash", "Refund cash", "नकद वापसी"),
             money("refund_upi", "Refund UPI", "UPI वापसी"),
@@ -76,7 +80,7 @@ public class PaymentModesService {
             money("received", "Received", "मिली रकम"));
 
     private static final List<String> MONEY_KEYS = List.of("cash", "upi", "card", "bank_transfer", "cheque",
-            "gateway", "cod_collected", "received", "credit_note_used", "refund_cash", "refund_upi",
+            "gateway", "cod_collected", "received", "cod_deductions", "credit_note_used", "refund_cash", "refund_upi",
             "refund_bank_transfer", "refund_gateway", "refunded", "cash_in", "cash_out", "net_money");
 
     private final MoneyReportRepository repository;
@@ -102,13 +106,16 @@ public class PaymentModesService {
 
         Map<String, Map<String, BigDecimal>> byDayLocation = new TreeMap<>();
         Map<String, BigDecimal> totals = emptyMoney();
+        boolean[] cod = {false};
         repository.moneyRows(f, q.range().storedFrom(), q.range().storedToExclusive(), m -> {
+            cod[0] |= DayBookService.COD_COLLECTED.equals(m.kind());
             String key = m.day() + "\u0000" + MoneyReportSupport.locationName(locations, m.locationId());
             Map<String, BigDecimal> row = byDayLocation.computeIfAbsent(key, k -> emptyMoney());
             add(row, m);
             add(totals, m);
         });
-        MoneyReportSupport.Rows rows = new MoneyReportSupport.Rows(export, maxRows);
+        MoneyReportSupport.RowBudget budget = new MoneyReportSupport.RowBudget(export, maxRows);
+        MoneyReportSupport.Rows rows = new MoneyReportSupport.Rows(budget);
         for (Map.Entry<String, Map<String, BigDecimal>> e : byDayLocation.entrySet()) {
             String[] parts = e.getKey().split("\u0000", 2);
             Map<String, Object> row = ReportTable.row();
@@ -118,11 +125,15 @@ public class PaymentModesService {
             rows.add(row);
         }
         rows.warnIfCut(warnings, "days");
+        if (cod[0] && f.locationIn() != null) {
+            warnings.add(ReportWarnings.COD_GROSS, "COD is shown at the order amount: what the courier kept "
+                    + "(deductions, short remittance) has no location and shows in the all-locations view", null);
+        }
         a.setColumns(TABLE.dto());
         a.setRows(rows.list());
 
         // Paid, not yet invoiced.
-        MoneyReportSupport.Rows paid = new MoneyReportSupport.Rows(export, maxRows);
+        MoneyReportSupport.Rows paid = new MoneyReportSupport.Rows(budget);
         BigDecimal[] paidTotal = {BigDecimal.ZERO};
         long[] paidOrders = {0};
         repository.paidNotInvoiced(f, q.range().storedFrom(), q.range().storedToExclusive(), r -> {
@@ -190,6 +201,14 @@ public class PaymentModesService {
             case DayBookService.CASH_OUT -> {
                 row.merge("cash_out", amount, BigDecimal::add);
                 row.merge("net_money", amount.negate(), BigDecimal::add);
+            }
+            case DayBookService.COD_DEDUCTION, DayBookService.COD_SHORT -> {
+                row.merge("cod_deductions", amount, BigDecimal::add);
+                row.merge("net_money", amount.negate(), BigDecimal::add);
+            }
+            case DayBookService.COD_EXCESS -> {
+                row.merge("cod_deductions", amount.negate(), BigDecimal::add);
+                row.merge("net_money", amount, BigDecimal::add);
             }
             default -> {
                 // EXCHANGE_CREDIT: not money (its credit note is used on the new bill).

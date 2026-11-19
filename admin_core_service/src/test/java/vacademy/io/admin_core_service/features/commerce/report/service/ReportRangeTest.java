@@ -39,6 +39,34 @@ class ReportRangeTest {
     }
 
     @Test
+    void theBoundsDoNotDependOnTheJvmZone() {
+        // The same India day gives the same stored (UTC) bounds in any JVM zone, a DST zone included.
+        for (String zone : java.util.List.of("Asia/Kolkata", "America/New_York", "Pacific/Chatham")) {
+            TimeZone.setDefault(TimeZone.getTimeZone(zone));
+            ReportRange range = ReportRange.of(LocalDate.of(2026, 11, 1), LocalDate.of(2026, 11, 19), TODAY,
+                    ReportRange.MAX_DAYS);
+            assertEquals(LocalDateTime.of(2026, 10, 31, 18, 30), range.storedFrom(), zone);
+            assertEquals(LocalDateTime.of(2026, 11, 19, 18, 30), range.storedToExclusive(), zone);
+            assertEquals(LocalDateTime.of(2026, 3, 7, 18, 30), ReportRange.storedStartOf(LocalDate.of(2026, 3, 8)),
+                    zone + " on a DST change day");
+        }
+    }
+
+    @Test
+    void reportsReachBackThreeYearsAtMost() {
+        LocalDate earliest = TODAY.minusYears(3);
+        ReportRange.of(earliest, earliest.plusDays(10), TODAY, ReportRange.MAX_DAYS);
+        InvalidRequestException e = assertThrows(InvalidRequestException.class,
+                () -> ReportRange.of(earliest.minusDays(1), earliest.plusDays(10), TODAY, ReportRange.MAX_DAYS));
+        assertTrue(e.getMessage().startsWith("VALIDATION:"));
+        assertThrows(InvalidRequestException.class, () -> ReportRange.month("2023-10", TODAY));
+        assertEquals(LocalDate.of(2023, 11, 30), ReportRange.month("2023-11", TODAY).to());
+        assertThrows(InvalidRequestException.class, () -> ReportRange.checkedDay(TODAY.plusDays(1), TODAY, "asOf"));
+        assertThrows(InvalidRequestException.class,
+                () -> ReportRange.checkedDay(earliest.minusDays(1), TODAY, "asOf"));
+    }
+
+    @Test
     void threeHundredSixtySixDaysPassAndThreeHundredSixtySevenAreRefused() {
         LocalDate from = LocalDate.of(2025, 11, 19);
         ReportRange ok = ReportRange.of(from, from.plusDays(365), TODAY.plusYears(1), ReportRange.MAX_DAYS);

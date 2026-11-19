@@ -59,6 +59,7 @@ final class GstColumns {
             CESS,
             ROUND_OFF,
             money("invoice_total", "Invoice total", "इनवॉइस की कुल राशि"),
+            money("cancelled_value", "Cancelled invoice value (not counted)", "रद्द इनवॉइस की राशि (गिनी नहीं)"),
             text("payment_mode", "Payment mode", "भुगतान का तरीका"),
             text("status", "Status", "स्थिति"),
             SELLER_GSTIN);

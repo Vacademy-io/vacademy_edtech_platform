@@ -23,6 +23,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -148,6 +149,38 @@ public class CommerceAuditQueryService {
         private List<String> kinds = new ArrayList<>();
     }
 
+    /** {@code {actors: [{user_id, name}]}}: the "who" filter of the audit screen, by name. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class Actors {
+        private List<Actor> actors = new ArrayList<>();
+    }
+
+    /** One actor: the user id the list filters on ({@code actorUserId}) and the name to show. */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class Actor {
+        private String userId;
+        private String name;
+    }
+
+    /** The actors with their names (the id when the account service gave none), by name then id. */
+    public static Actors actors(List<String> ids, Map<String, String> names) {
+        List<Actor> out = new ArrayList<>();
+        for (String id : new LinkedHashSet<>(ids)) {
+            if (id != null) {
+                out.add(new Actor(id, name(names, id)));
+            }
+        }
+        out.sort(java.util.Comparator.comparing((Actor a) -> a.getName().toLowerCase(java.util.Locale.ROOT))
+                .thenComparing(Actor::getUserId));
+        return new Actors(out);
+    }
+
     // ================================================================== reads (inside the runner's transaction)
 
     /** The page of audit rows (names filled later, outside the transaction, by {@link #fillNames}). */
@@ -206,8 +239,9 @@ public class CommerceAuditQueryService {
         return out;
     }
 
-    public Kinds kinds(String instituteId) {
-        return new Kinds(repository.kinds(instituteId));
+    /** The kinds of the rows the caller may see (a location-limited reader: their locations' rows). */
+    public Kinds kinds(String instituteId, ReportScope scope) {
+        return new Kinds(repository.kinds(instituteId, scope == null ? null : scope.locationIn()));
     }
 
     /** The staff the filtered rows name (CSV: names are read before the export's transaction). */
@@ -364,15 +398,15 @@ public class CommerceAuditQueryService {
         return node.isValueNode() ? node.asText() : node.toString();
     }
 
-    /** A stored (UTC wall, JVM zone) time as ISO with the India offset. */
+    /** A stored time (UTC wall time, contract 3.1) as ISO with the India offset; never through the JVM zone. */
     static String iso(LocalDateTime stored) {
         return stored == null ? null
-                : stored.atZone(ZoneId.systemDefault()).withZoneSameInstant(INDIA).toOffsetDateTime().toString();
+                : stored.atZone(ZoneOffset.UTC).withZoneSameInstant(INDIA).toOffsetDateTime().toString();
     }
 
     static String when(LocalDateTime stored) {
         return stored == null ? null
-                : stored.atZone(ZoneId.systemDefault()).withZoneSameInstant(INDIA).format(WHEN);
+                : stored.atZone(ZoneOffset.UTC).withZoneSameInstant(INDIA).format(WHEN);
     }
 
     static String encode(String createdAtRaw, String id) {
@@ -385,12 +419,20 @@ public class CommerceAuditQueryService {
             return null;
         }
         try {
-            String raw = new String(Base64.getUrlDecoder().decode(cursor.trim()), StandardCharsets.UTF_8);
+            String trimmed = cursor.trim();
+            if (trimmed.length() > ReportCursor.MAX_LENGTH) {
+                throw new IllegalArgumentException("length");
+            }
+            String raw = new String(Base64.getUrlDecoder().decode(trimmed), StandardCharsets.UTF_8);
             int bar = raw.indexOf('|');
             if (bar <= 0 || bar == raw.length() - 1) {
                 throw new IllegalArgumentException("parts");
             }
-            return new AuditKeyset(LocalDateTime.parse(raw.substring(0, bar)), raw.substring(bar + 1));
+            String id = raw.substring(bar + 1);
+            if (!ReportCursor.ID.matcher(id).matches()) {
+                throw new IllegalArgumentException("id");
+            }
+            return new AuditKeyset(LocalDateTime.parse(raw.substring(0, bar)), id);
         } catch (RuntimeException e) {
             throw new InvalidRequestException("VALIDATION: cursor is not valid; start from the first page");
         }

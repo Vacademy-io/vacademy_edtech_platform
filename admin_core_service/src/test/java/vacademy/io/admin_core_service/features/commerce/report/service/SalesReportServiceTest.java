@@ -170,6 +170,9 @@ class SalesReportServiceTest {
         assertEquals("Silk scarf", never.getRows().get(0).get("product"));
         assertEquals("4.7 m, 2 pcs", a.getTotals().get("net_text"));
         assertEquals(new BigDecimal("779.98"), a.getTotals().get("net_value"));
+        // Distinct invoices are a count of their own, never the column's sum: the column total stays empty.
+        assertNull(a.getTotals().get("invoices"));
+        assertTrue(a.getTotals().get("distinct_invoices") instanceof Long);
     }
 
     @Test

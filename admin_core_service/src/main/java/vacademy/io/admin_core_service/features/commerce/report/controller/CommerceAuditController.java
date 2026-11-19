@@ -37,7 +37,11 @@ import java.util.Map;
  *       {@code locationId}, {@code kind}, {@code reference} (a document number), {@code cursor},
  *       {@code size} (≤ 200), {@code format=json|csv}. Answer {@code {rows, next_cursor, from, to}}.</li>
  *   <li>{@code GET /audit/approvals}: PIN approvals, same dates, {@code reference}, paging.</li>
- *   <li>{@code GET /audit/kinds}: {@code {kinds: [...]}}.</li>
+ *   <li>{@code GET /audit/kinds}: {@code {kinds: [...]}} (a location-limited reader: the kinds of
+ *       their locations' rows).</li>
+ *   <li>{@code GET /reports/audit/actors}: {@code {actors: [{user_id, name}]}}, the staff seen in the
+ *       caller's audit rows of {@code from}–{@code to} (same defaults and location scope as the
+ *       list), for the "who" filter.</li>
  * </ul>
  * Feature {@code commerce.tax_reports} or {@code commerce.orders}; store manager or accountant
  * (institute ADMIN always). Rows with a location only for the caller's locations; rows without
@@ -45,7 +49,7 @@ import java.util.Map;
  * transaction, never inside it. A CSV download is audited like a report export.
  */
 @RestController
-@RequestMapping("/admin-core-service/commerce/v1/audit")
+@RequestMapping("/admin-core-service/commerce/v1")
 public class CommerceAuditController {
 
     private final ReportAccess access;
@@ -63,7 +67,7 @@ public class CommerceAuditController {
         this.userNames = userNames;
     }
 
-    @GetMapping
+    @GetMapping("/audit")
     public ResponseEntity<?> list(@RequestAttribute("user") CustomUserDetails user,
                                   @RequestParam("instituteId") String instituteId,
                                   @RequestParam(value = "from", required = false)
@@ -84,8 +88,11 @@ public class CommerceAuditController {
         }
         AuditQuery q = query(instituteId, from, to, scope, actorUserId, kind, reference, cursor, size);
         if ("json".equals(fmt)) {
-            Page<AuditEntry> page = runner.screen(() -> audit.audit(q));
-            CommerceAuditQueryService.fillNames(page, userNames.names(CommerceAuditQueryService.userIds(page)));
+            Page<AuditEntry> page = runner.screenRequest(() -> {
+                Page<AuditEntry> read = runner.screen(() -> audit.audit(q));
+                CommerceAuditQueryService.fillNames(read, userNames.names(CommerceAuditQueryService.userIds(read)));
+                return read;
+            });
             return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(page);
         }
         List<String> actors = runner.screen(() -> audit.actors(q));
@@ -108,7 +115,7 @@ public class CommerceAuditController {
                 .body(file.bytes());
     }
 
-    @GetMapping("/approvals")
+    @GetMapping("/audit/approvals")
     public ResponseEntity<Page<ApprovalEntry>> approvals(@RequestAttribute("user") CustomUserDetails user,
                                                          @RequestParam("instituteId") String instituteId,
                                                          @RequestParam(value = "from", required = false)
@@ -123,36 +130,49 @@ public class CommerceAuditController {
                                                          @RequestParam(value = "size", required = false) Integer size) {
         ReportScope scope = access.require(ReportAccess.Kind.AUDIT, user, instituteId, locationId);
         AuditQuery q = query(instituteId, from, to, scope, null, null, reference, cursor, size);
-        Page<ApprovalEntry> page = runner.screen(() -> audit.approvals(q));
-        CommerceAuditQueryService.fillNames(page, userNames.names(CommerceAuditQueryService.userIds(page)));
+        Page<ApprovalEntry> page = runner.screenRequest(() -> {
+            Page<ApprovalEntry> read = runner.screen(() -> audit.approvals(q));
+            CommerceAuditQueryService.fillNames(read, userNames.names(CommerceAuditQueryService.userIds(read)));
+            return read;
+        });
         return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(page);
     }
 
-    @GetMapping("/kinds")
+    @GetMapping("/audit/kinds")
     public ResponseEntity<CommerceAuditQueryService.Kinds> kinds(@RequestAttribute("user") CustomUserDetails user,
                                                                  @RequestParam("instituteId") String instituteId) {
-        access.require(ReportAccess.Kind.AUDIT, user, instituteId, null);
+        ReportScope scope = access.require(ReportAccess.Kind.AUDIT, user, instituteId, null);
         return ResponseEntity.ok().cacheControl(CacheControl.noStore())
-                .body(runner.screen(() -> audit.kinds(instituteId)));
+                .body(runner.screen(() -> audit.kinds(instituteId, scope)));
+    }
+
+    /** The staff seen in the caller's audit rows of the range (ids, then names outside the read). */
+    @GetMapping("/reports/audit/actors")
+    public ResponseEntity<CommerceAuditQueryService.Actors> actors(@RequestAttribute("user") CustomUserDetails user,
+                                                                   @RequestParam("instituteId") String instituteId,
+                                                                   @RequestParam(value = "from", required = false)
+                                                                   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                                                                   LocalDate from,
+                                                                   @RequestParam(value = "to", required = false)
+                                                                   @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                                                                   LocalDate to,
+                                                                   @RequestParam(value = "locationId", required = false)
+                                                                   String locationId) {
+        ReportScope scope = access.require(ReportAccess.Kind.AUDIT, user, instituteId, locationId);
+        AuditQuery q = query(instituteId, from, to, scope, null, null, null, null, null);
+        CommerceAuditQueryService.Actors actors = runner.screenRequest(() -> {
+            List<String> ids = runner.screen(() -> audit.actors(q));
+            return CommerceAuditQueryService.actors(ids, userNames.names(ids));
+        });
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(actors);
     }
 
     private AuditQuery query(String instituteId, LocalDate from, LocalDate to, ReportScope scope, String actorUserId,
                              String kind, String reference, String cursor, Integer size) {
         ReportRange range = ReportRange.of(from, to, clock.today(instituteId), ReportRange.MAX_DAYS);
-        return new AuditQuery(instituteId, range, scope, blank(actorUserId, 36, "actorUserId"),
-                upper(blank(kind, 32, "kind")), blank(reference, 100, "reference"), cursor,
-                size == null ? 0 : size);
-    }
-
-    private static String blank(String value, int max, String field) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        String trimmed = value.trim();
-        if (trimmed.length() > max) {
-            throw new InvalidRequestException("VALIDATION: " + field + " is at most " + max + " characters");
-        }
-        return trimmed;
+        return new AuditQuery(instituteId, range, scope, ReportParams.text(actorUserId, 36, "actorUserId"),
+                upper(ReportParams.text(kind, 32, "kind")), ReportParams.text(reference, 100, "reference"),
+                ReportParams.text(cursor, 400, "cursor"), ReportParams.size(size));
     }
 
     private static String upper(String value) {

@@ -77,6 +77,7 @@ class GstReportServiceTest {
         for (String key : List.of("invoice_number", "date", "invoice_total", "round_off", "payment_mode", "status")) {
             assertNull(second.get(key), key + " only on the first row");
         }
+        assertNull(first.get("cancelled_value"));
         assertEquals("=HYPERLINK(\"http://x\")", second.get("customer"), "other invoice cells on every row");
         assertEquals("9965", second.get("hsn"));
         assertEquals(d("18"), second.get("rate"));
@@ -98,6 +99,13 @@ class GstReportServiceTest {
         ReportAnswer a = service.salesRegister(query());
 
         assertEquals("CANCELLED", a.getRows().get(0).get("status"));
+        assertEquals("INV/2627-00009", a.getRows().get(0).get("invoice_number"), "it keeps its identity");
+        // Its money is not in the summable cells: a column sum of the file equals the live totals.
+        for (String key : List.of("taxable_value", "cgst", "sgst", "igst", "cess", "round_off", "invoice_total")) {
+            assertNull(a.getRows().get(0).get(key), key + " of a cancelled invoice");
+        }
+        assertEquals(d("1102.00"), a.getRows().get(0).get("cancelled_value"));
+        assertEquals(d("1102.00"), a.getTotals().get("cancelled_value"));
         assertEquals(d("0.00"), a.getTotals().get("invoice_total"), "a cancelled invoice is out of the totals");
         assertEquals(1L, a.getTotals().get("cancelled_invoices"));
         assertEquals(d("1102.00"), a.getTotals().get("cancelled_total"));
@@ -135,6 +143,20 @@ class GstReportServiceTest {
         ReportAnswer named = service.salesRegister(query().toBuilder().sellerGstin("33BBBBB1111B1Z5").build());
         assertEquals("33BBBBB1111B1Z5", named.getFilters().get("seller_gstin"));
         assertEquals("33BBBBB1111B1Z5", repo.filters.get(repo.filters.size() - 1).sellerGstin());
+    }
+
+    @Test
+    void oneGstinInTheRangeIsStillAFilterAndDocumentsWithoutOneAreCountedApart() {
+        repo.gstins.add("29AAAAA0000A1Z5");
+        repo.withoutGstin = 4;
+        ReportAnswer a = service.salesRegister(query());
+        assertEquals("29AAAAA0000A1Z5", repo.filters.get(repo.filters.size() - 1).sellerGstin(),
+                "the only GSTIN filters the register: documents without one never mix in");
+        assertEquals("29AAAAA0000A1Z5", a.getFilters().get("seller_gstin"));
+        assertTrue(a.getWarnings().stream().anyMatch(w -> "NO_GSTIN".equals(w.getCode())
+                && w.getMessage().startsWith("4 ")));
+        repo.withoutGstin = 0;
+        assertTrue(service.salesRegister(query()).getWarnings().stream().noneMatch(w -> "NO_GSTIN".equals(w.getCode())));
     }
 
     // ------------------------------------------------------------------ credit notes
@@ -259,6 +281,16 @@ class GstReportServiceTest {
         assertTrue(t.get("b2cl").getRows().isEmpty());
         assertTrue(t.get("cdnur").getRows().isEmpty());
         assertEquals(d("0.00"), byDefault.getCheck().get("difference"));
+
+        // The check reads the documents apart from the section lines: a line the sections never got
+        // (here the documents hold 100.00 more taxable and 5.00 more CGST) shows as a difference.
+        Map<String, java.math.BigDecimal> documents = new java.util.HashMap<>(repo.taxInvoiceDocumentSums(null));
+        documents.merge("invoices_taxable_value", d("100.00"), java.math.BigDecimal::add);
+        documents.merge("invoices_cgst", d("5.00"), java.math.BigDecimal::add);
+        repo.documentSums = documents;
+        ReportAnswer short_ = service.gstr1(query());
+        assertEquals(d("105.00"), short_.getCheck().get("difference"));
+        assertTrue(short_.getWarnings().stream().anyMatch(w -> w.getCode().equals("GSTR1_DOES_NOT_ADD_UP")));
     }
 
     @Test

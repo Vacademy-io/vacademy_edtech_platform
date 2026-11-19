@@ -70,7 +70,7 @@ class PosSessionsReportServiceTest {
     }
 
     private static SessionRow session(String id, String status, String openedRaw, String z) {
-        return new SessionRow(id, status, DAY, "2026-11-05 08:30", openedRaw, "CLOSED".equals(status)
+        return new SessionRow(id, status, DAY, "CLOSED".equals(status) ? DAY : null, "2026-11-05 08:30", openedRaw, "CLOSED".equals(status)
                 ? "2026-11-05 18:30" : null, "R1", "Counter one", "L1", "u-1", new BigDecimal("1000.00"),
                 null, null, null, null, "note " + id, z);
     }

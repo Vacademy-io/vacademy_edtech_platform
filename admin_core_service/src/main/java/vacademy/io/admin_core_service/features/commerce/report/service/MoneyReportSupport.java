@@ -88,27 +88,49 @@ final class MoneyReportSupport {
     }
 
     /**
+     * The rows one answer may still keep. On screen each block keeps its first
+     * {@link #SCREEN_ROWS}; for a file the export cap counts every block of the answer together,
+     * so a file of several blocks never holds more than the cap in memory.
+     */
+    static final class RowBudget {
+        private final boolean export;
+        private final int maxExportRows;
+        private long kept;
+
+        RowBudget(boolean export, int maxExportRows) {
+            this.export = export;
+            this.maxExportRows = maxExportRows;
+        }
+    }
+
+    /**
      * Collects the rows of one block. On screen the first {@link #SCREEN_ROWS} are kept and the
      * rest only counted (warning {@link #ROWS_CUT}); for a file every row is kept up to the
-     * export cap, then {@code EXPORT_TOO_LARGE}.
+     * export cap of the whole answer ({@link RowBudget}), then {@code EXPORT_TOO_LARGE}.
      */
     static final class Rows {
         private final List<Map<String, Object>> kept = new ArrayList<>();
-        private final int limit;
-        private final boolean export;
+        private final RowBudget budget;
         private long seen;
 
         Rows(boolean export, int maxExportRows) {
-            this.export = export;
-            this.limit = export ? maxExportRows : SCREEN_ROWS;
+            this(new RowBudget(export, maxExportRows));
+        }
+
+        Rows(RowBudget budget) {
+            this.budget = budget;
         }
 
         void add(Map<String, Object> row) {
             seen++;
-            if (kept.size() < limit) {
+            if (budget.export) {
+                if (budget.kept >= budget.maxExportRows) {
+                    throw ReportCsvWriter.tooLarge(budget.maxExportRows);
+                }
+                budget.kept++;
                 kept.add(row);
-            } else if (export) {
-                throw ReportCsvWriter.tooLarge(limit);
+            } else if (kept.size() < SCREEN_ROWS) {
+                kept.add(row);
             }
         }
 

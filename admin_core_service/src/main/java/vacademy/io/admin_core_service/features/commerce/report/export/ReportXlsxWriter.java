@@ -65,6 +65,8 @@ public final class ReportXlsxWriter implements Closeable {
     public ReportXlsxWriter(boolean hindi, int maxRows) {
         this.hindi = hindi;
         this.maxRows = maxRows;
+        // The rows streamed out of memory go to a temp file; gzip it (tens of MB raw at the cap).
+        workbook.setCompressTempFiles(true);
         DataFormat format = workbook.createDataFormat();
         Font boldFont = workbook.createFont();
         boldFont.setBold(true);

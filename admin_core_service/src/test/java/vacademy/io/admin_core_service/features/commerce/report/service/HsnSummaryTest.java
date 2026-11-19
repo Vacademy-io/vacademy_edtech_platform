@@ -131,6 +131,24 @@ class HsnSummaryTest {
     }
 
     @Test
+    void everyPieceSpellingIsOnePcsRow() {
+        String[] units = {"PCS", "PIECE", "pieces", "PC", "NO", "NOS"};
+        int n = 1;
+        for (String unit : units) {
+            repo.invoiceLines.add(inv().id("inv-" + n, "INV/2627-0000" + n).hsn("6204", unit, "5").qty(2, 1)
+                    .value("100", "5.00").build());
+            n++;
+        }
+        ReportAnswer a = run();
+        Map<String, Object> pcs = row(a, "hsn_b2c", "6204", "PCS");
+        assertEquals(0, d("12").compareTo((BigDecimal) pcs.get("quantity")), "six lines of 2 pieces, one row");
+        assertEquals(d("600.00"), pcs.get("taxable_value"));
+        assertEquals(1, a.getSections().stream().filter(sec -> sec.getKey().equals("hsn_b2c")).findFirst()
+                .orElseThrow().getRows().size());
+        assertTrue(!codes(a).contains("UQC_UNKNOWN"), codes(a).toString());
+    }
+
+    @Test
     void theGstr1HsnSheetsAreTheSameRows() {
         repo.invoiceLines.add(inv().qty(25, 10).value("308.50", "15.42").total("324.00", "0.08").build());
         ReportAnswer hsn = run();

@@ -32,11 +32,11 @@ import vacademy.io.common.exceptions.ResourceNotFoundException;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -92,6 +92,18 @@ public class CommerceReportController {
         this.userNames = userNames;
     }
 
+    /**
+     * The places the caller may report on, and what they may open:
+     * {@code {places: [{id, code, name, gstin, status}], all_places, gst_reports, tax_reports, orders}}.
+     * Any report feature, a reader role (as the audit list).
+     */
+    @GetMapping("/places")
+    public ResponseEntity<ReportAccess.Places> places(@RequestAttribute("user") CustomUserDetails user,
+                                                      @RequestParam("instituteId") String instituteId) {
+        ReportAccess.Places places = runner.screenRequest(() -> access.places(user, instituteId));
+        return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(places);
+    }
+
     @GetMapping("/{name}")
     public ResponseEntity<?> report(@RequestAttribute("user") CustomUserDetails user,
                                     @PathVariable("name") String name,
@@ -120,6 +132,17 @@ public class CommerceReportController {
             throw new ResourceNotFoundException("REPORT_NOT_FOUND: there is no report called " + name);
         }
         ReportScope scope = access.require(kind, user, instituteId, locationId);
+        Filters filters = FILTERS.get(name);
+        ReportParams.refuse(ReportParams.given(locationId) && !filters.location(), "locationId", name);
+        ReportParams.refuse(ReportParams.given(channel) && !filters.channel(), "channel", name);
+        ReportParams.refuse(ReportParams.given(sellerGstin) && kind != ReportAccess.Kind.GST, "sellerGstin", name);
+        ReportParams.refuse(ReportParams.given(status) && !GstReportService.SALES_REGISTER.equals(name), "status",
+                name);
+        ReportParams.refuse(ReportParams.given(b2clLimit) && !GstReportService.GSTR1.equals(name)
+                && !GstReportService.GST_PACK.equals(name), "b2clLimit", name);
+        ReportParams.refuse(ReportParams.given(groupBy) && !SalesReportService.SALES.equals(name)
+                && !SalesReportService.PRODUCTS.equals(name), "groupBy", name);
+        ReportParams.refuse(asOf != null && !CodDuesReportService.COD_OUTSTANDING.equals(name), "asOf", name);
         String fmt = GstReportService.format(format);
         if (GstReportService.GST_PACK.equals(name)) {
             if (format != null && !format.isBlank() && !"xlsx".equals(fmt)) {
@@ -137,6 +160,7 @@ public class CommerceReportController {
             throw new InvalidRequestException("VALIDATION: the range is at most " + ReportRange.DAY_BOOK_MAX_DAYS
                     + " days");
         }
+        String group = ReportParams.text(groupBy, 32, "groupBy");
         ReportQuery query = ReportQuery.builder()
                 .instituteId(instituteId)
                 .range(range)
@@ -144,28 +168,28 @@ public class CommerceReportController {
                 .channel(channel(channel))
                 .sellerGstin(gstin(sellerGstin))
                 .status(status(status))
-                .b2clLimit(limit(b2clLimit))
-                .cursor(cursor)
-                .size(size == null ? 0 : size)
+                .b2clLimit(ReportParams.b2clLimit(b2clLimit))
+                .cursor(ReportParams.text(cursor, 400, "cursor"))
+                .size(ReportParams.size(size))
                 .hindi(hindi(lang, acceptLanguage))
-                .groupBy(groupBy == null || groupBy.isBlank() ? null : groupBy.trim())
-                .asOf(asOf)
+                .groupBy(group == null ? null : SalesReportService.SALES.equals(name)
+                        ? SalesReportService.salesGroup(group) : SalesReportService.productGroup(group))
+                .asOf(ReportRange.checkedDay(asOf, today, "asOf"))
                 .today(today)
                 .month(month == null || month.isBlank() ? null : month.trim())
                 .build();
-        // Staff names come from the account service: read after a short read of the ids, never
-        // inside the report's transaction.
-        ReportQuery named = query;
-        List<String> staff = NAMES_STAFF.contains(name) ? runner.screen(() -> staffIds(name, named)) : List.of();
-        if (!staff.isEmpty()) {
-            query = query.toBuilder().staffNames(userNames.names(staff)).build();
-        }
-        ReportQuery q = query;
 
         if ("json".equals(fmt)) {
-            ReportAnswer answer = runner.screen(() -> json(name, q));
+            // One screen slot and one deadline for the whole request: the staff ids, their names
+            // (account service, never inside a report transaction) and the report.
+            ReportQuery asked = query;
+            ReportAnswer answer = runner.screenRequest(() -> {
+                ReportQuery q = named(name, asked);
+                return runner.screen(() -> json(name, q));
+            });
             return ResponseEntity.ok().cacheControl(CacheControl.noStore()).body(answer);
         }
+        ReportQuery q = named(name, query);
         String fileFormat = fmt;
         ReportRunner.ExportResult file = runner.export(
                 new ReportRunner.ExportAudit(instituteId, user.getUserId(), scope.locationId(), name,
@@ -178,6 +202,40 @@ public class CommerceReportController {
                 .cacheControl(CacheControl.noStore())
                 .body(file.bytes());
     }
+
+    /** The query with the names of the staff the report names (ids read in a short read, names outside it). */
+    private ReportQuery named(String name, ReportQuery query) {
+        if (!NAMES_STAFF.contains(name)) {
+            return query;
+        }
+        List<String> staff = runner.screen(() -> staffIds(name, query));
+        return staff.isEmpty() ? query : query.toBuilder().staffNames(userNames.names(staff)).build();
+    }
+
+    /** Which of the location and channel filters a report takes (the others are refused, never ignored). */
+    record Filters(boolean location, boolean channel) {
+    }
+
+    /**
+     * GSTR-1, the HSN summary and the GST pack are whole returns of a GSTIN: a location or channel
+     * would give a partial return that still "adds up", so they take neither. The money, counter,
+     * COD and dues reports have no channel. Documents issued is per series: a location, no channel.
+     */
+    static final Map<String, Filters> FILTERS = Map.ofEntries(
+            Map.entry(GstReportService.SALES_REGISTER, new Filters(true, true)),
+            Map.entry(GstReportService.CREDIT_NOTES, new Filters(true, true)),
+            Map.entry(GstReportService.TAX_BY_RATE, new Filters(true, true)),
+            Map.entry(GstReportService.HSN_SUMMARY, new Filters(false, false)),
+            Map.entry(GstReportService.GSTR1, new Filters(false, false)),
+            Map.entry(GstReportService.DOCUMENTS_ISSUED, new Filters(true, false)),
+            Map.entry(GstReportService.GST_PACK, new Filters(false, false)),
+            Map.entry(DayBookService.DAY_BOOK, new Filters(true, false)),
+            Map.entry(PaymentModesService.PAYMENT_MODES, new Filters(true, false)),
+            Map.entry(CodDuesReportService.COD_OUTSTANDING, new Filters(true, false)),
+            Map.entry(CodDuesReportService.CUSTOMER_DUES, new Filters(true, false)),
+            Map.entry(PosSessionsReportService.POS_SESSIONS, new Filters(true, false)),
+            Map.entry(SalesReportService.SALES, new Filters(true, true)),
+            Map.entry(SalesReportService.PRODUCTS, new Filters(true, true)));
 
     /** The JSON answer of a report (inside the runner's transaction). */
     ReportAnswer json(String name, ReportQuery q) {
@@ -265,21 +323,6 @@ public class CommerceReportController {
             throw new InvalidRequestException("VALIDATION: sellerGstin is not a GSTIN");
         }
         return value;
-    }
-
-    static BigDecimal limit(String limit) {
-        if (limit == null || limit.isBlank()) {
-            return null;
-        }
-        try {
-            BigDecimal value = new BigDecimal(limit.trim());
-            if (value.signum() < 0) {
-                throw new NumberFormatException("negative");
-            }
-            return value;
-        } catch (NumberFormatException e) {
-            throw new InvalidRequestException("VALIDATION: b2clLimit must be an amount in rupees");
-        }
     }
 
     static boolean hindi(String lang, String acceptLanguage) {

@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.commerce.report.repository;
 
-import org.springframework.jdbc.core.JdbcTemplate;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -73,19 +74,110 @@ public class ReportReadRepository {
     private final NamedParameterJdbcTemplate jdbc;
 
     public ReportReadRepository(NamedParameterJdbcTemplate jdbc) {
-        JdbcTemplate streaming = new JdbcTemplate(jdbc.getJdbcTemplate().getDataSource());
-        streaming.setFetchSize(1000);
-        this.jdbc = new NamedParameterJdbcTemplate(streaming);
+        this.jdbc = ReportJdbcTemplate.named(jdbc);
     }
 
     // ================================================================== access
 
-    /** The ids of the institute's active locations. */
-    public List<String> activeLocationIds(String instituteId) {
+    /**
+     * The ids of every location of the institute, whatever its status: "assigned to every
+     * location" is measured against all of them, so switching a place to INACTIVE never widens
+     * what a location-limited reader sees.
+     */
+    public List<String> locationIds(String instituteId) {
         return jdbc.queryForList("""
                 SELECT id FROM stock_location
+                WHERE institute_id = :instituteId""", new MapSqlParameterSource("instituteId", instituteId),
+                String.class);
+    }
+
+    /** The institute's locations (id, code, name, GSTIN, status), by code: the places picker of the screens. */
+    public List<Place> places(String instituteId) {
+        return jdbc.query("""
+                SELECT id, code, name, gstin, status FROM stock_location
                 WHERE institute_id = :instituteId
-                  AND status = 'ACTIVE'""", new MapSqlParameterSource("instituteId", instituteId), String.class);
+                ORDER BY code, id""", new MapSqlParameterSource("instituteId", instituteId),
+                (rs, n) -> new Place(rs.getString("id"), rs.getString("code"), rs.getString("name"),
+                        rs.getString("gstin"), rs.getString("status")));
+    }
+
+    /** One location as the places picker shows it. */
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public record Place(String id, String code, String name, String gstin, String status) {
+    }
+
+    /**
+     * Invoices and credit notes in the range that carry no seller GSTIN (issued while the
+     * institute was unregistered), location filter applied: a GST report filtered on a GSTIN
+     * leaves them out and says how many.
+     */
+    public long documentsWithoutGstin(DocFilter f) {
+        MapSqlParameterSource p = base(f);
+        String sql = """
+                SELECT (SELECT COUNT(*) FROM invoice i
+                        WHERE i.institute_id = :instituteId
+                          AND i.document_type IS NOT NULL
+                          AND i.seller_gstin IS NULL
+                          AND i.document_date >= :from
+                          AND i.document_date <= :to"""
+                + location(f, p, "i.location_id")
+                + """
+                ) + (SELECT COUNT(*) FROM commerce_credit_note n
+                        JOIN invoice i ON i.id = n.invoice_id
+                        WHERE n.institute_id = :instituteId
+                          AND n.seller_gstin IS NULL
+                          AND n.document_date >= :from
+                          AND n.document_date <= :to"""
+                + location(f, p, "i.location_id")
+                + """
+                )""";
+        Long n = jdbc.queryForObject(sql, p, Long.class);
+        return n == null ? 0 : n;
+    }
+
+    /**
+     * The GSTR-1 check's "documents" side, read straight from the document tables and apart from
+     * the line stream the sections are built from: Σ taxable and taxes of the lines of live TAX
+     * INVOICES (sign +1) and of the credit notes on tax invoices (sign −1), for the filter's
+     * GSTIN and range. Keys: taxable_value, cgst, sgst, igst, cess, each with an
+     * {@code invoices_} and a {@code notes_} sum.
+     */
+    public Map<String, BigDecimal> taxInvoiceDocumentSums(DocFilter f) {
+        MapSqlParameterSource p = base(f);
+        Map<String, Object> invoices = jdbc.queryForMap("""
+                SELECT COALESCE(SUM(li.taxable_value), 0) AS taxable_value,
+                       COALESCE(SUM(li.cgst), 0) AS cgst,
+                       COALESCE(SUM(li.sgst), 0) AS sgst,
+                       COALESCE(SUM(li.igst), 0) AS igst,
+                       COALESCE(SUM(li.cess), 0) AS cess
+                FROM invoice i
+                JOIN invoice_line_item li ON li.invoice_id = i.id
+                WHERE i.institute_id = :instituteId
+                  AND i.document_type = 'TAX_INVOICE'
+                  AND i.cancelled_at IS NULL
+                  AND i.document_date >= :from
+                  AND i.document_date <= :to"""
+                + gstin(f, p, "i.seller_gstin")
+                + location(f, p, "i.location_id")
+                + channel(f, p, "i.channel"), p);
+        Map<String, Object> notes = jdbc.queryForMap("""
+                SELECT COALESCE(SUM(cl.taxable_value), 0) AS taxable_value,
+                       COALESCE(SUM(cl.cgst), 0) AS cgst,
+                       COALESCE(SUM(cl.sgst), 0) AS sgst,
+                       COALESCE(SUM(cl.igst), 0) AS igst,
+                       COALESCE(SUM(cl.cess), 0) AS cess
+                FROM commerce_credit_note n
+                JOIN invoice i ON i.id = n.invoice_id
+                JOIN commerce_credit_note_line cl ON cl.credit_note_id = n.id
+                WHERE n.institute_id = :instituteId
+                  AND i.document_type = 'TAX_INVOICE'
+                  AND n.document_date >= :from
+                  AND n.document_date <= :to"""
+                + noteFilters(f, p), p);
+        Map<String, BigDecimal> out = new HashMap<>();
+        invoices.forEach((k, v) -> out.put("invoices_" + k, dec(v)));
+        notes.forEach((k, v) -> out.put("notes_" + k, dec(v)));
+        return out;
     }
 
     /** Distinct seller GSTINs of the invoices and credit notes in the range (location filter applied). */

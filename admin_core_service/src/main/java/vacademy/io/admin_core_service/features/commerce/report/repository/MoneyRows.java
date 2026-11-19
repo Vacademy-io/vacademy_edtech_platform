@@ -41,7 +41,8 @@ public final class MoneyRows {
     }
 
     /** A counter session as the day book footer and the sessions report read it. */
-    public record SessionRow(String id, String status, LocalDate openedDay, String openedAt, String openedAtRaw,
+    public record SessionRow(String id, String status, LocalDate openedDay, LocalDate closedDay, String openedAt,
+                             String openedAtRaw,
                              String closedAt, String registerCode, String registerName, String locationId,
                              String cashierId, BigDecimal openingCash, BigDecimal expectedCash,
                              BigDecimal countedCash, BigDecimal variance, BigDecimal expectedSoFar,
