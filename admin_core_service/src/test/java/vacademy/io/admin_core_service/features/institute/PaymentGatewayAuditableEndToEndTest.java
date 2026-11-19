@@ -171,6 +171,51 @@ class PaymentGatewayAuditableEndToEndTest {
     }
 
     @Test
+    @DisplayName("re-activating a gateway records who switched it back on")
+    void recordsActivate() {
+        bindRequest("PUT", "/admin-core-service/v1/institute/payment-gateways/" + MAPPING + "/activate");
+        when(gatewayService.auditSnapshot(INSTITUTE, MAPPING)).thenReturn(mapping("INACTIVE"));
+
+        endpoints.activate(actor, INSTITUTE, MAPPING);
+
+        AdminActivityLog row = savedRow();
+        assertEquals("PAYMENT_GATEWAY", row.getEntityType());
+        assertEquals("MAKE_ACTIVE", row.getAction());
+        assertEquals("re-activated RAZORPAY payment gateway", row.getDescription());
+        assertEquals(MAPPING, row.getEntityId());
+        assertEquals("user-admin", row.getActorId());
+        assertTrue(row.getBeforePayload().contains("\"status\":\"INACTIVE\""));
+    }
+
+    @Test
+    @DisplayName("activating a gateway that is already active writes nothing")
+    void skipsNoOpActivate() {
+        bindRequest("PUT", "/admin-core-service/v1/institute/payment-gateways/" + MAPPING + "/activate");
+        when(gatewayService.auditSnapshot(INSTITUTE, MAPPING)).thenReturn(mapping("ACTIVE"));
+
+        endpoints.activate(actor, INSTITUTE, MAPPING);
+
+        verify(repository, never()).save(any(AdminActivityLog.class));
+    }
+
+    @Test
+    @DisplayName("adding a vendor whose row was deactivated is logged as a re-activation, keys masked")
+    void recordsCreateThatRevivesInactiveRow() {
+        bindRequest("POST", "/admin-core-service/v1/institute/payment-gateways");
+        when(gatewayService.auditSnapshotByVendor(INSTITUTE, "RAZORPAY")).thenReturn(mapping("INACTIVE"));
+        PaymentGatewayMappingUpsertRequest request = razorpayRequest(null);
+        request.setVendor("RAZORPAY");
+
+        endpoints.create(actor, INSTITUTE, request);
+
+        AdminActivityLog row = savedRow();
+        assertEquals("MAKE_ACTIVE", row.getAction());
+        assertEquals("re-activated RAZORPAY payment gateway", row.getDescription());
+        assertEquals(MAPPING, row.getEntityId());
+        assertNoSecrets(row);
+    }
+
+    @Test
     @DisplayName("every gateway credential key is masked by the audit redactor")
     void redactorMasksEveryGatewayCredentialKey() {
         PayloadRedactor redactor = new PayloadRedactor();
@@ -250,8 +295,13 @@ class PaymentGatewayAuditableEndToEndTest {
         @Auditable(
                 entityType = "PAYMENT_GATEWAY",
                 action = "CREATE",
+                actionExpr = "#before == null ? 'CREATE'"
+                        + " : (#result?.body?.status == 'ACTIVE' ? 'MAKE_ACTIVE' : 'UPDATE')",
                 entityIdExpr = "#result?.body?.id",
-                descriptionExpr = "'added ' + #result?.body?.vendor + ' payment gateway'")
+                descriptionExpr = "(#before == null ? 'added '"
+                        + " : (#result?.body?.status == 'ACTIVE' ? 're-activated ' : 'updated credentials of '))"
+                        + " + #result?.body?.vendor + ' payment gateway'",
+                captureBefore = "@institutePaymentGatewayMappingService.auditSnapshotByVendor(#instituteId, #request?.vendor)")
         public ResponseEntity<PaymentGatewayMappingDTO> create(
                 @RequestAttribute("user") CustomUserDetails user,
                 @RequestParam("instituteId") String instituteId,
@@ -291,6 +341,20 @@ class PaymentGatewayAuditableEndToEndTest {
                 @RequestParam("instituteId") String instituteId,
                 @PathVariable("mappingId") String mappingId) {
             return ResponseEntity.ok(Map.of("status", "INACTIVE", "id", mappingId));
+        }
+
+        @Auditable(
+                entityType = "PAYMENT_GATEWAY",
+                action = "MAKE_ACTIVE",
+                conditionExpr = "#before == null || #before.status != 'ACTIVE'",
+                entityIdExpr = "#mappingId",
+                descriptionExpr = "'re-activated ' + #result?.body?.vendor + ' payment gateway'",
+                captureBefore = "@institutePaymentGatewayMappingService.auditSnapshot(#instituteId, #mappingId)")
+        public ResponseEntity<PaymentGatewayMappingDTO> activate(
+                @RequestAttribute("user") CustomUserDetails user,
+                @RequestParam("instituteId") String instituteId,
+                @PathVariable("mappingId") String mappingId) {
+            return ResponseEntity.ok(mapping("ACTIVE"));
         }
     }
 

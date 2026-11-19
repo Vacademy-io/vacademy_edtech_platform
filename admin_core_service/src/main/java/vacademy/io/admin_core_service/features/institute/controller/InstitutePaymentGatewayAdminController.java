@@ -16,6 +16,7 @@ import vacademy.io.admin_core_service.core.security.InstituteAccessValidator;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.institute.dto.PaymentGatewayMappingDTO;
 import vacademy.io.admin_core_service.features.institute.dto.PaymentGatewayMappingUpsertRequest;
+import vacademy.io.admin_core_service.features.institute.dto.PaymentGatewayUsageDTO;
 import vacademy.io.admin_core_service.features.institute.service.InstitutePaymentGatewayMappingService;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -65,8 +66,14 @@ public class InstitutePaymentGatewayAdminController {
     @Auditable(
             entityType = "PAYMENT_GATEWAY",
             action = "CREATE",
+            // Adding a vendor that has a deactivated row re-activates that row (same id).
+            actionExpr = "#before == null ? 'CREATE'"
+                    + " : (#result?.body?.status == 'ACTIVE' ? 'MAKE_ACTIVE' : 'UPDATE')",
             entityIdExpr = "#result?.body?.id",
-            descriptionExpr = "'added ' + #result?.body?.vendor + ' payment gateway'")
+            descriptionExpr = "(#before == null ? 'added '"
+                    + " : (#result?.body?.status == 'ACTIVE' ? 're-activated ' : 'updated credentials of '))"
+                    + " + #result?.body?.vendor + ' payment gateway'",
+            captureBefore = "@institutePaymentGatewayMappingService.auditSnapshotByVendor(#instituteId, #request?.vendor)")
     public ResponseEntity<PaymentGatewayMappingDTO> create(
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId,
@@ -112,5 +119,33 @@ public class InstitutePaymentGatewayAdminController {
         instituteAccessValidator.requireAdminAccess(user, instituteId);
         paymentGatewayMappingService.deactivateMapping(instituteId, mappingId);
         return ResponseEntity.ok(Map.of("status", "INACTIVE", "id", mappingId));
+    }
+
+    /** Switches a deactivated gateway back on with its stored keys (same row, so invites keep working). */
+    @PutMapping("/{mappingId}/activate")
+    @Auditable(
+            entityType = "PAYMENT_GATEWAY",
+            action = "MAKE_ACTIVE",
+            // Activating a gateway that is already active changes nothing; do not log it.
+            conditionExpr = "#before == null || #before.status != 'ACTIVE'",
+            entityIdExpr = "#mappingId",
+            descriptionExpr = "'re-activated ' + #result?.body?.vendor + ' payment gateway'",
+            captureBefore = "@institutePaymentGatewayMappingService.auditSnapshot(#instituteId, #mappingId)")
+    public ResponseEntity<PaymentGatewayMappingDTO> activate(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam("instituteId") String instituteId,
+            @PathVariable("mappingId") String mappingId) {
+        instituteAccessValidator.requireAdminAccess(user, instituteId);
+        return ResponseEntity.ok(paymentGatewayMappingService.activateMapping(instituteId, mappingId));
+    }
+
+    /** Live invite links on this gateway; shown before an admin deactivates it. */
+    @GetMapping("/{mappingId}/usage")
+    public ResponseEntity<PaymentGatewayUsageDTO> usage(
+            @RequestAttribute("user") CustomUserDetails user,
+            @RequestParam("instituteId") String instituteId,
+            @PathVariable("mappingId") String mappingId) {
+        instituteAccessValidator.validateUserAccess(user, instituteId);
+        return ResponseEntity.ok(paymentGatewayMappingService.usageFor(instituteId, mappingId));
     }
 }
