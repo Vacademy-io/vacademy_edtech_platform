@@ -254,9 +254,43 @@ describe('measured goods on a staff order (WP-44 FA3)', () => {
         expect(validateNewOrder(filled({ lines: [line({ ...linen, quantity: '2.3' })] }))['line.k1.quantity']).toBe(
             'orders.new.problems.quantityStep'
         );
+        // n2: extra decimals read as every length box reads them, not "metres to one decimal".
         expect(validateNewOrder(filled({ lines: [line({ ...linen, quantity: '2.55' })] }))['line.k1.quantity']).toBe(
+            'units.problems.decimals'
+        );
+    });
+
+    it('W4 / n3: the quantity and price boxes of a row both refuse a comma; huge lengths are "too large"', () => {
+        const problems = validateNewOrder(filled({ lines: [line({ ...cloth, quantity: '2,5', priceOverride: '123,40' })] }));
+        expect(problems['line.k1.quantity']).toBe('units.problems.comma');
+        expect(problems['line.k1.price']).toBe('units.problems.comma');
+        // "123,40" was read as 12340 a metre before.
+        expect(overrideBasePrice(line({ ...cloth, priceOverride: '123,40' }))).toBe('comma');
+        expect(overrideBasePrice(line({ ...cloth, priceOverride: '1,23,400' }))).toBe('comma');
+        expect(validateNewOrder(filled({ lines: [line({ ...cloth, quantity: '9999999' })] }))['line.k1.quantity']).toBe(
+            'units.problems.tooLarge'
+        );
+        expect(validateNewOrder(filled({ lines: [line({ ...cloth, quantity: '0' })] }))['line.k1.quantity']).toBe(
             'orders.new.problems.quantity'
         );
+    });
+
+    it('W4: trailing zeros and Hindi digits are fine in both boxes', () => {
+        const typed = line({ ...cloth, quantity: '२.५०', priceOverride: '123.400' });
+        expect(validateNewOrder(filled({ lines: [typed] }))).toEqual({});
+        expect(buildStaffOrderBody(filled({ lines: [typed] })).lines[0]).toEqual({
+            variant_id: 'ps-cloth',
+            quantity: 25,
+            unit_price_override: 12.34,
+        });
+    });
+
+    it('MO NIT-3: a price of 0 is refused on the screen (the server refuses it with a 400)', () => {
+        expect(overrideBasePrice(line({ ...cloth, priceOverride: '0' }))).toBe('zero');
+        expect(validateNewOrder(filled({ lines: [line({ ...cloth, priceOverride: '0.00' })] }))['line.k1.price']).toBe(
+            'orders.new.problems.priceZero'
+        );
+        expect(overrideBasePrice(line({ ...cloth, priceOverride: '0.10' }))).toBe(0.01);
     });
 
     it('a new measured line starts at 1 m when 1 m is on the step, else one step', () => {
@@ -265,5 +299,14 @@ describe('measured goods on a staff order (WP-44 FA3)', () => {
         expect(firstQuantity({ qtyScale: 10, qtyStep: 3 })).toBe('0.3');
         expect(firstQuantity({ qtyScale: 1, qtyStep: 1 })).toBe('1');
         expect(addItem([], { ...cloth, qtyStep: 3 })?.[0]?.quantity).toBe('0.3');
+    });
+
+    it('K N4: a counted item sold in packs of 6 starts at 6 and goes up by 6', () => {
+        const packs: LineSource = { ...scarf, variantId: 'ps-pack', qtyStep: 6 };
+        expect(firstQuantity(packs)).toBe('6');
+        const once = addItem([], packs)!;
+        expect(once[0]?.quantity).toBe('6');
+        expect(offStep(once[0]!)).toBe(false);
+        expect(addItem(once, packs)![0]?.quantity).toBe('12');
     });
 });

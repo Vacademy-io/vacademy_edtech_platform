@@ -23,7 +23,9 @@ describe('Qty', () => {
 describe('parseDisplayQuantity (WP-44 FA1)', () => {
     it('refuses extra decimals instead of rounding them', () => {
         expect(parseDisplayQuantity('2.55', 10)).toBeNull();
-        expect(parseDisplayQuantity('2,5', 10)).toBe(25);
+        // W4: a comma is refused ("use a dot"), never read as a decimal point or thousands.
+        expect(parseDisplayQuantity('2,5', 10)).toBeNull();
+        expect(parseDisplayQuantity('2.50', 10)).toBe(25);
         expect(parseDisplayQuantity('3', 10)).toBe(30);
         expect(parseDisplayQuantity('1.5', 1)).toBeNull();
         expect(parseDisplayQuantity('12', 1)).toBe(12);

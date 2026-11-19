@@ -1,3 +1,4 @@
+import { typedBoxProblem } from '@/routes/commerce/-shared/units';
 import type {
     ReceiveTransferBody,
     ShortfallReason,
@@ -79,10 +80,11 @@ const isPieceItem = (item: DraftItem) => (item.stock_mode ?? '').toUpperCase() =
 /** Cloth by the metre and the like: a length is typed, never added a step at a time. */
 const isMeasuredItem = (item: DraftItem) => item.qty_scale > 1 && !isPieceItem(item);
 /**
- * The sale step does not apply to stock movements (WP-44 D3): a measured line
- * moves in any whole base unit (a 23.7 m roll at a 0.5 m sale step is 237).
+ * The sale step never applies to stock movements (WP-44 D3, W10): every line
+ * moves in any whole base unit (a 23.7 m roll at a 0.5 m sale step is 237; 7
+ * bottles of an item sold in packs of 6), the same before and after a save.
  */
-const step = (item: DraftItem) => (isMeasuredItem(item) ? 1 : Math.max(1, Math.floor(item.qty_step ?? 1)));
+const TRANSFER_STEP = 1;
 const isUntracked = (item: DraftItem) => (item.stock_policy ?? '').toUpperCase() === 'UNTRACKED';
 
 /** The draft's lines as the server sent them (variant lines and piece lines). */
@@ -132,10 +134,10 @@ export function applyDraft(state: DraftState, event: DraftEvent): Outcome<DraftS
                 variant_name: item.variant_name,
                 unit: item.unit,
                 qty_scale: item.qty_scale,
-                qty_step: step(item),
+                qty_step: TRANSFER_STEP,
                 piece_id: null,
                 piece_code: null,
-                quantity: isMeasuredItem(item) ? 0 : step(item),
+                quantity: isMeasuredItem(item) ? 0 : TRANSFER_STEP,
             };
             return {
                 state: { ...state, lines: [...state.lines, line] },
@@ -186,6 +188,18 @@ export function applyDraft(state: DraftState, event: DraftEvent): Outcome<DraftS
 export const linesWithoutLength = (state: DraftState): DraftLine[] =>
     state.lines.filter((line) => !line.piece_id && line.quantity < 1);
 
+/**
+ * The first typed box that stops Save and Dispatch (WP-44 W5): blank, refused
+ * or out of range. The draft keeps the last good keystroke, so sending it
+ * while the box reads something else would move a length nobody confirmed.
+ */
+export function badDraftBox(state: DraftState, typed: Record<string, string>): string | null {
+    const bad = state.lines.find(
+        (line) => !line.piece_id && typedBoxProblem(typed[line.key], line.qty_scale, { min: 1, max: MAX_BASE_UNITS }) !== null
+    );
+    return bad?.key ?? null;
+}
+
 /** The draft's lines as the server takes them: every line once, base units. */
 export function toTransferLines(state: DraftState): TransferLineBody[] {
     return state.lines.map((line) =>
@@ -199,6 +213,8 @@ export interface ReceiveLine {
     line_id: string;
     package_session_id: string;
     piece_code: string | null;
+    /** 10 for cloth by the metre: its received length is typed, never counted a scan at a time. */
+    qty_scale: number;
     sent: number;
     received: number;
     reason: ShortfallReason | null;
@@ -221,6 +237,7 @@ export function receiveFromView(view: TransferView): ReceiveState {
             line_id: line.id,
             package_session_id: line.package_session_id,
             piece_code: line.piece_code,
+            qty_scale: line.qty_scale ?? 1,
             sent: line.qty_sent,
             received: line.piece_id ? 0 : line.qty_sent,
             reason: null,
@@ -247,6 +264,8 @@ export function applyReceive(state: ReceiveState, event: ReceiveEvent): Outcome<
         case 'RECEIVE_SCAN_VARIANT': {
             const line = state.lines.find((l) => !l.piece_code && l.package_session_id === event.packageSessionId);
             if (!line) return refuse('notOnTransfer');
+            // A roll: a scan opens its length box (K M5); adding 0.1 m per scan is never right.
+            if (line.qty_scale > 1) return refuse('typeLength');
             if (line.received >= line.sent) return refuse('allReceived');
             return {
                 state: withLine(state, line.line_id, (l) => settleReason({ ...l, received: l.received + 1 })),
@@ -272,6 +291,17 @@ export const linesMissingReason = (state: ReceiveState): ReceiveLine[] =>
     state.lines.filter((l) => l.received < l.sent && !l.reason);
 
 export const canReceive = (state: ReceiveState): boolean => state.lines.length > 0 && linesMissingReason(state).length === 0;
+
+/**
+ * The first received box that stops Receive (WP-44 W5): blank (never read as
+ * the full sent quantity), refused, or above what was sent.
+ */
+export function badReceiveBox(state: ReceiveState, typed: Record<string, string>): string | null {
+    const bad = state.lines.find(
+        (line) => !line.piece_code && typedBoxProblem(typed[line.line_id], line.qty_scale, { min: 0, max: line.sent }) !== null
+    );
+    return bad?.line_id ?? null;
+}
 
 export function toReceiveBody(state: ReceiveState): Omit<ReceiveTransferBody, 'client_request_id' | 'approval'> {
     return {

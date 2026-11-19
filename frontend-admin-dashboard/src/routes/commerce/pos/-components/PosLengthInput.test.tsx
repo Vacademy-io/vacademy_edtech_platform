@@ -21,7 +21,9 @@ describe('parseLength and decimalsFor', () => {
 
     it('refuses extra decimals, off-step and out-of-range lengths; never rounds', () => {
         expect(parseLength('3.4', 10, 1)).toEqual({ stored: 34 });
-        expect(parseLength('3,4', 10, 1)).toEqual({ stored: 34 });
+        // W4: a comma is refused ("use a dot"), never read as a decimal point.
+        expect(parseLength('3,4', 10, 1)).toEqual({ problem: 'comma' });
+        expect(parseLength('3.40', 10, 1)).toEqual({ stored: 34 });
         expect(parseLength('3.45', 10, 1)).toEqual({ problem: 'decimals' });
         expect(parseLength('2.3', 10, 5)).toEqual({ problem: 'quantityStep' });
         expect(parseLength('2.5', 10, 5)).toEqual({ stored: 25 });
@@ -91,6 +93,81 @@ describe('PosLengthInput', () => {
         fireEvent.keyDown(input, { key: 'Enter' });
         expect(onSave).toHaveBeenCalledWith(20);
         expect(onOpenChange).toHaveBeenCalledWith(false);
+    });
+});
+
+/** One key as a browser types it: it replaces the selected text (the box opens with its length selected). */
+const typeKey = (input: HTMLInputElement, key: string) => {
+    fireEvent.keyDown(input, { key });
+    const start = input.selectionStart ?? input.value.length;
+    const end = input.selectionEnd ?? input.value.length;
+    fireEvent.change(input, { target: { value: input.value.slice(0, start) + key + input.value.slice(end) } });
+};
+
+describe('PosLengthInput: keyboard and scanner at the counter (WP-44 W5, W6, n8)', () => {
+    it('opens with the length selected: typing "2" over "1" saves 2 m, never 12 m', () => {
+        const { input, onSave } = box({ quantity: 10 });
+        expect(input.value).toBe('1');
+        expect(document.activeElement).toBe(input);
+        expect([input.selectionStart, input.selectionEnd]).toEqual([0, 1]);
+        typeKey(input, '2');
+        expect(input.value).toBe('2');
+        fireEvent.keyDown(input, { key: 'Enter' });
+        expect(onSave).toHaveBeenCalledWith(20);
+    });
+
+    it('a repeat scan reopening "3" takes "4" as 4 m, never 34 m', () => {
+        const { input, onSave } = box({ quantity: 30 });
+        typeKey(input, '4');
+        fireEvent.keyDown(input, { key: 'Enter' });
+        expect(onSave).toHaveBeenCalledWith(40);
+    });
+
+    it('a label scanned into the box goes to the scan, not into the length', () => {
+        const onScan = vi.fn();
+        const { input, onSave } = box({ quantity: 10, onScan });
+        // A scanner types a few ms apart and ends with Enter.
+        ['V', '1', '2', 'Enter'].forEach((key) => fireEvent.keyDown(input, { key }));
+        expect(onScan).toHaveBeenCalledWith('V12');
+        expect(onSave).not.toHaveBeenCalled();
+        expect(input.value).toBe('1');
+    });
+
+    it('Save is disabled while the box is blank or refused', () => {
+        const { input } = box();
+        const save = screen.getByTestId('pos-length-save');
+        expect(save).not.toBeDisabled();
+        fireEvent.change(input, { target: { value: '' } });
+        expect(save).toBeDisabled();
+        fireEvent.change(input, { target: { value: '3.45' } });
+        expect(save).toBeDisabled();
+        fireEvent.change(input, { target: { value: '2,5' } });
+        expect(save).toBeDisabled();
+        expect(screen.getByRole('alert').textContent).toBe('Use a dot for decimals, like 2.5.');
+        fireEvent.change(input, { target: { value: '२.५' } });
+        expect(save).not.toBeDisabled();
+    });
+
+    it('an off-step length is said before Save (not only after)', () => {
+        const { input } = box({ qtyStep: 5, quantity: 25 });
+        fireEvent.change(input, { target: { value: '2.3' } });
+        expect(screen.getByRole('alert').textContent).toBe('The length must be in steps of 0.5 m.');
+        expect(screen.getByTestId('pos-length-save')).toBeDisabled();
+    });
+
+    it('n8: when the bill refuses the length the box stays open', () => {
+        const { input, onSave, onOpenChange } = box();
+        onSave.mockReturnValue(false);
+        fireEvent.change(input, { target: { value: '2' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+        expect(onSave).toHaveBeenCalledWith(20);
+        expect(onOpenChange).not.toHaveBeenCalled();
+    });
+
+    it('the line total applies the line discount, as the bill does', () => {
+        const { input } = box({ lineDiscount: 19.56 });
+        fireEvent.change(input, { target: { value: '3.4' } });
+        expect(screen.getByTestId('pos-length-total').textContent).toBe('₹400.00');
     });
 });
 

@@ -5,7 +5,8 @@ import type { TFunction } from 'i18next';
 /**
  * Tests only: a `t` that reads the real English (or Hindi) commerce strings and
  * fills their {{placeholders}}, so a test can assert what a person reads
- * ("2.5 m × ₹123.40 / m"). Unknown keys come back as the key.
+ * ("2.5 m × ₹123.40 / m"); a `count` picks `key_one` / `key_other` as i18next
+ * does. Unknown keys come back as the key.
  */
 type Tree = { [key: string]: Tree | string };
 
@@ -24,8 +25,11 @@ export function localeT(lng: 'en' | 'hi' = 'en'): TFunction {
         }
         return typeof node === 'string' ? node : undefined;
     };
+    const plural = new Intl.PluralRules(lng);
     const t = (key: string, options: Record<string, unknown> = {}) => {
-        const text = lookup(key);
+        // i18next plurals: `key_one` / `key_other` when a count is given, else the key itself.
+        const count = typeof options.count === 'number' ? options.count : null;
+        const text = (count !== null ? lookup(`${key}_${plural.select(count)}`) : undefined) ?? lookup(key);
         if (text === undefined) return key;
         return text.replace(/{{\s*(\w+)\s*}}/g, (_, name: string) => String(options[name] ?? ''));
     };

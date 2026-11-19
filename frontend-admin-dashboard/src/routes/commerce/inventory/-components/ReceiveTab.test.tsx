@@ -160,8 +160,10 @@ describe('ReceiveTab fix round', () => {
         fireEvent.click(screen.getByText('inventory.receive.sourceOpening'));
         scan('VCLOTH0001');
         await waitFor(() => expect(screen.getByTestId('receive-lines').textContent).toContain('Cotton cloth'));
+        // W5: the empty length box says so and Save waits for it.
+        expect(screen.getByTestId('receive-save')).toBeDisabled();
+        expect(screen.getByText('units.problems.blank')).toBeTruthy();
         fireEvent.click(screen.getByTestId('receive-save'));
-        expect(await screen.findByText('inventory.receive.problems.quantities')).toBeTruthy();
         expect(mocked.createReceipt).not.toHaveBeenCalled();
         fireEvent.change(screen.getByLabelText('inventory.receive.quantity'), { target: { value: '12.5' } });
         fireEvent.click(screen.getByTestId('receive-save'));
@@ -188,5 +190,50 @@ describe('ReceiveTab fix round', () => {
         await waitFor(() => expect(mocked.createReceipt).toHaveBeenCalledTimes(2));
         const [a, b] = mocked.createReceipt.mock.calls.map((call) => call[0]);
         expect(b?.client_request_id).toBe(a?.client_request_id);
+    });
+});
+
+describe('ReceiveTab: measured goods fix round (WP-44 W5, W6)', () => {
+    const cloth = () =>
+        variantScan({ package_session_id: 'ps-cloth', sku: 'CLOTH-1', product_name: 'Cotton cloth', unit: 'MTR', qty_scale: 10 });
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        state.access = accessFor(WAREHOUSE);
+        scanCode.mockResolvedValue(cloth());
+        mocked.createReceipt.mockResolvedValue(receipt);
+    });
+
+    const startWithRoll = async () => {
+        renderTab();
+        fireEvent.click(screen.getByText('inventory.receive.sourceOpening'));
+        scan('VCLOTH0001');
+        await waitFor(() => expect(screen.getByTestId('receive-lines').textContent).toContain('Cotton cloth'));
+        return screen.getByLabelText('inventory.receive.quantity') as HTMLInputElement;
+    };
+
+    it('W5: "23.75" typed after "23.7" blocks Save; the line is never posted at 23.7 m', async () => {
+        const box = await startWithRoll();
+        fireEvent.change(box, { target: { value: '23.7' } });
+        expect(screen.getByTestId('receive-save')).not.toBeDisabled();
+        fireEvent.change(box, { target: { value: '23.75' } });
+        expect(screen.getByTestId('receive-save')).toBeDisabled();
+        expect(screen.getByText('units.problems.decimals')).toBeTruthy();
+        fireEvent.click(screen.getByTestId('receive-save'));
+        expect(mocked.createReceipt).not.toHaveBeenCalled();
+        fireEvent.change(box, { target: { value: '23.5' } });
+        fireEvent.click(screen.getByTestId('receive-save'));
+        await waitFor(() => expect(mocked.createReceipt).toHaveBeenCalledTimes(1));
+        expect(mocked.createReceipt.mock.calls[0]?.[0].lines).toEqual([{ package_session_id: 'ps-cloth', quantity: 235 }]);
+    });
+
+    it('W6: a label scanned into the length box is looked up as a scan and the box keeps its length', async () => {
+        const box = await startWithRoll();
+        fireEvent.change(box, { target: { value: '2' } });
+        scanCode.mockClear();
+        // A scanner: keys a few ms apart, then Enter.
+        ['V', '1', '2', 'Enter'].forEach((key) => fireEvent.keyDown(box, { key }));
+        await waitFor(() => expect(scanCode).toHaveBeenCalledWith('V12'));
+        expect(box.value).toBe('2');
     });
 });

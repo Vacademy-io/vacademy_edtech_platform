@@ -13,7 +13,8 @@ describe('formatQuantity', () => {
         expect(formatQuantity(34, 10, 'MTR', en)).toBe('3.4 m');
         expect(formatQuantity(25, 10, 'MTR', hi)).toBe('2.5 मीटर');
         expect(formatQuantity(155, 10, 'KGS', en)).toBe('15.5 kg');
-        expect(formatQuantity(25, 10, null, en)).toBe('2.5 m');
+        // A blank unit is not guessed to be metres (W13): the number alone.
+        expect(formatQuantity(25, 10, null, en)).toBe('2.5');
     });
 
     it('counted goods are whole numbers with no unit', () => {

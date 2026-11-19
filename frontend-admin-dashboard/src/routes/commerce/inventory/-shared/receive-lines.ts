@@ -1,3 +1,4 @@
+import { typedBoxProblem } from '@/routes/commerce/-shared/units';
 import type { ReceiveSource } from './inventory-types';
 import { MAX_BASE_UNITS } from './transfer-lines';
 
@@ -61,6 +62,23 @@ export function addReceiveItem(
     return { lines: [...lines, { ...item, qty_step: step, quantity: step }], refusal: null };
 }
 
+/** One-of-a-kind items come at most 200 a line (each gets a label). */
+const MAX_PIECES = 200;
+const maxOf = (line: ReceiveItem): number =>
+    (line.stock_mode ?? '').toUpperCase() === 'PIECE' ? MAX_PIECES : MAX_BASE_UNITS;
+
+/**
+ * The first line whose typed box stops Save receipt (WP-44 W5): blank, refused
+ * or out of range. The line keeps its last good keystroke ("23.7" while the
+ * box reads "23.75"), so saving then would post a length nobody confirmed.
+ */
+export function badReceiptBox(lines: ReceiptLineDraft[], typed: Record<string, string>): string | null {
+    const bad = lines.find(
+        (line) => typedBoxProblem(typed[line.package_session_id], line.qty_scale, { min: 1, max: maxOf(line) }) !== null
+    );
+    return bad?.package_session_id ?? null;
+}
+
 export function setReceiveQuantity(
     lines: ReceiptLineDraft[],
     packageSessionId: string,
@@ -68,8 +86,7 @@ export function setReceiveQuantity(
 ): { lines: ReceiptLineDraft[]; refusal: ReceiveRefusal | null } {
     const line = lines.find((l) => l.package_session_id === packageSessionId);
     if (!line) return { lines, refusal: null };
-    const piece = (line.stock_mode ?? '').toUpperCase() === 'PIECE';
-    if (quantity === null || quantity < 1 || quantity > MAX_BASE_UNITS || (piece && quantity > 200)) {
+    if (quantity === null || quantity < 1 || quantity > maxOf(line)) {
         return { lines, refusal: 'quantityRange' };
     }
     return {

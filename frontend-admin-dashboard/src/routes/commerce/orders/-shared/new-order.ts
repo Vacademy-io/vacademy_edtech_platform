@@ -1,5 +1,12 @@
 import { gstinProblem, normalizeGstin } from '@/routes/commerce/-shared/gstin';
-import { lengthInputText, parseLength, perUnitToBasePrice, toPaise } from '@/routes/commerce/-shared/units';
+import {
+    type LengthProblem,
+    lengthInputText,
+    parseLength,
+    perUnitToBasePrice,
+    readDecimal,
+    toPaise,
+} from '@/routes/commerce/-shared/units';
 import { round2 } from './order-format';
 import type {
     OrderAddress,
@@ -148,6 +155,20 @@ export function lineStoredQuantity(line: Pick<NewOrderLine, 'quantity' | 'qtySca
 /** The sale step of a line in base units (1 when unknown). */
 export const lineStep = (line: Pick<NewOrderLine, 'qtyStep'>): number => Math.max(1, Math.floor(line.qtyStep ?? 1));
 
+/**
+ * Why a line's typed quantity is refused, in the words every length box uses
+ * (WP-44 n2): extra decimals, a comma, too large… `blank` for nothing or 0.
+ */
+export function lineQuantityProblem(
+    line: Pick<NewOrderLine, 'quantity' | 'qtyScale' | 'pieceCodes'>
+): LengthProblem | 'blank' | null {
+    if (line.pieceCodes.length > 0) return null;
+    if (line.quantity.trim() === '') return 'blank';
+    const parsed = parseLength(line.quantity, line.qtyScale);
+    if ('problem' in parsed) return parsed.problem;
+    return parsed.stored < 1 ? 'blank' : null;
+}
+
 /** A valid quantity that is not on the sale step (2.3 m at a 0.5 m step); the server answers `QUANTITY_STEP`. */
 export function offStep(line: Pick<NewOrderLine, 'quantity' | 'qtyScale' | 'qtyStep' | 'pieceCodes'>): boolean {
     const stored = lineStoredQuantity(line);
@@ -157,18 +178,21 @@ export function offStep(line: Pick<NewOrderLine, 'quantity' | 'qtyScale' | 'qtyS
 /**
  * "Price for this order" as the per-base-unit price the server takes (`unit_price_override`):
  * typed per metre, split into `qty_scale` equal paise (123.40 → 12.34). Null when blank;
- * 'invalid' when not a price; 'notDivisible' when it does not split (123.45 at scale 10).
+ * 'invalid' when not a price; 'comma' for "123,40" (the length box beside it refuses a comma
+ * too: never read as thousands, W4); 'notDivisible' when it does not split (123.45 at scale 10);
+ * 'zero' below one paisa per base unit (the server refuses it, MO NIT-3).
  */
 export function overrideBasePrice(
     line: Pick<NewOrderLine, 'priceOverride' | 'qtyScale'>
-): number | null | 'invalid' | 'notDivisible' {
-    const text = line.priceOverride.trim().replace(/,/g, '');
-    if (text === '') return null;
-    // Rupees and paise only: a third decimal is refused, not rounded.
-    if (!/^\d{1,9}(\.\d{1,2})?$/.test(text)) return 'invalid';
-    const typed = Number(text);
-    const base = perUnitToBasePrice(typed, line.qtyScale);
-    return base === null ? 'notDivisible' : base;
+): number | null | 'invalid' | 'comma' | 'notDivisible' | 'zero' {
+    if (line.priceOverride.trim() === '') return null;
+    const read = readDecimal(line.priceOverride);
+    if ('problem' in read) return read.problem === 'comma' ? 'comma' : 'invalid';
+    // Rupees and paise only: a third decimal is refused, not rounded ("123.40" and "123.400" are fine).
+    if (read.whole.length > 9 || read.fraction.length > 2) return 'invalid';
+    const base = perUnitToBasePrice(Number(`${read.whole}.${read.fraction || '0'}`), line.qtyScale);
+    if (base === null) return 'notDivisible';
+    return base < 0.01 ? 'zero' : base;
 }
 
 /** The per-base-unit price this line is sold at: the override, else the list price. */
@@ -220,10 +244,15 @@ export function validateNewOrder(form: NewOrderForm): NewOrderProblems {
     if (form.lines.length === 0) out.lines = 'orders.new.problems.noLines';
     if (form.lines.length > MAX_ORDER_LINES) out.lines = 'orders.new.problems.tooManyLines';
     form.lines.forEach((line) => {
-        if (lineStoredQuantity(line) === null) out[`line.${line.key}.quantity`] = 'orders.new.problems.quantity';
+        const quantity = lineQuantityProblem(line);
+        // A refused length reads as every length box does ("Use at most 1 decimal place…"), n2.
+        if (quantity === 'blank') out[`line.${line.key}.quantity`] = 'orders.new.problems.quantity';
+        else if (quantity) out[`line.${line.key}.quantity`] = `units.problems.${quantity}`;
         else if (offStep(line)) out[`line.${line.key}.quantity`] = 'orders.new.problems.quantityStep';
         const override = overrideBasePrice(line);
         if (override === 'invalid') out[`line.${line.key}.price`] = 'orders.new.problems.price';
+        if (override === 'comma') out[`line.${line.key}.price`] = 'units.problems.comma';
+        if (override === 'zero') out[`line.${line.key}.price`] = 'orders.new.problems.priceZero';
         if (override === 'notDivisible') out[`line.${line.key}.price`] = 'orders.new.problems.priceNotDivisible';
     });
 
@@ -357,20 +386,22 @@ const sameItem = (line: NewOrderLine, source: Pick<LineSource, 'variantId' | 'sk
     source.variantId ? line.variantId === source.variantId : !!source.sku && !line.variantId && line.sku === source.sku;
 
 /**
- * The first length of a new measured line: 1 m when 1 m is on the sale step,
- * else one step (0.3 m steps start at 0.3 m).
+ * The first quantity of a new line: a measured line 1 m when 1 m is on the
+ * sale step, else one step (0.3 m steps start at 0.3 m); a counted item one
+ * step (a pack of 6 starts at 6, K N4).
  */
 export function firstQuantity(source: Pick<LineSource, 'qtyScale' | 'qtyStep'>): string {
     const scale = Math.max(1, source.qtyScale);
-    if (scale === 1) return '1';
     const step = Math.max(1, Math.floor(source.qtyStep ?? 1));
+    if (scale === 1) return String(step);
     return lengthInputText(scale % step === 0 ? scale : step, scale);
 }
 
 /**
  * Adds one unit of an item (a scanned product label, a picked variant or a
- * typed SKU): a counted line goes up by one, a measured line is added once
- * with 1 m (or one step) for the person to change. Null = the order already has 50 lines.
+ * typed SKU): a counted line goes up by its sale step (1, or a pack), a
+ * measured line is added once with 1 m (or one step) for the person to
+ * change. Null = the order already has 50 lines.
  */
 export function addItem(lines: NewOrderLine[], source: LineSource): NewOrderLine[] | null {
     const index = lines.findIndex((line) => sameItem(line, source) && line.pieceCodes.length === 0);
@@ -378,7 +409,7 @@ export function addItem(lines: NewOrderLine[], source: LineSource): NewOrderLine
         const line = lines[index] as NewOrderLine;
         if (line.qtyScale > 1) return lines;
         const current = Number(line.quantity) || 0;
-        return lines.map((l, i) => (i === index ? { ...l, quantity: String(current + 1) } : l));
+        return lines.map((l, i) => (i === index ? { ...l, quantity: String(current + lineStep(l)) } : l));
     }
     if (lines.length >= MAX_ORDER_LINES) return null;
     return [...lines, { key: nextKey(), ...source, quantity: firstQuantity(source), priceOverride: '', pieceCodes: [] }];
@@ -418,6 +449,7 @@ export const NEW_ORDER_PROBLEM_KEYS = [
     'quantity',
     'quantityStep',
     'price',
+    'priceZero',
     'priceNotDivisible',
     'pincode',
     'gstin',

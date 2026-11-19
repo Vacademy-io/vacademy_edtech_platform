@@ -20,7 +20,9 @@ import { useInventoryWrite } from './use-inventory-write';
 export function costLines(
     receipt: Pick<ReceiptView, 'lines'>,
     costs: Record<string, string>
-): { lines: { line_id: string; unit_cost: string }[] } | { problemLineId: string | null; decimals: number | null } {
+):
+    | { lines: { line_id: string; unit_cost: string }[] }
+    | { problemLineId: string | null; decimals: number | null; comma?: true } {
     const byId = new Map(receipt.lines.map((line) => [line.id, line]));
     const lines: { line_id: string; unit_cost: string }[] = [];
     for (const [lineId, value] of Object.entries(costs)) {
@@ -28,6 +30,8 @@ export function costLines(
         const scale = byId.get(lineId)?.qty_scale ?? 1;
         const parsed = parseCostPerUnit(value, scale);
         if ('problem' in parsed) {
+            // A comma is refused with "use a dot", as in every admin money and length box (WP-44 W4).
+            if (parsed.problem === 'comma') return { problemLineId: lineId, decimals: null, comma: true };
             return { problemLineId: lineId, decimals: parsed.problem === 'decimals' ? costDecimalsFor(scale) : null };
         }
         lines.push({ line_id: lineId, unit_cost: parsed.baseCost });
@@ -59,6 +63,7 @@ export function TypeCostDialog({
         setError(null);
         const outcome = costLines(receipt, costs);
         if (!('lines' in outcome)) {
+            if (outcome.comma) return setProblem(t('units.problems.comma'));
             return setProblem(
                 outcome.decimals !== null
                     ? t('inventory.receipt.costDecimals', { count: outcome.decimals })

@@ -70,6 +70,7 @@ vi.mock('../-shared/inventory-api', () => ({
     searchVariants: vi.fn(async () => []),
 }));
 
+import * as orderApi from '@/routes/commerce/orders/-shared/order-api';
 import * as api from '../-shared/inventory-api';
 import { accessFor, MANAGER, place, serverError, transferView, WAREHOUSE } from '../-shared/inventory-test-fixtures';
 import { TransferPage } from './TransferPage';
@@ -167,5 +168,96 @@ describe('TransferPage', () => {
         expect(first?.approval).toBeUndefined();
         expect(second?.approval).toEqual({ approver_user_id: 'm-1', pin: '123456' });
         expect(second?.client_request_id).toBe(first?.client_request_id);
+    });
+});
+
+describe('TransferPage: measured goods fix round (WP-44 W5, W6, K M5)', () => {
+    const clothLine = (over: Record<string, unknown> = {}) => ({
+        ...transferView().lines[0]!,
+        id: 'line-cloth',
+        package_session_id: 'ps-cloth',
+        sku: 'CLOTH-1',
+        item_name: 'Cotton cloth',
+        unit: 'MTR',
+        qty_scale: 10,
+        qty_sent: 237,
+        ...over,
+    });
+    const scanCode = vi.mocked(orderApi.scanCode);
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        mocked.fetchInventoryLocations.mockResolvedValue([place('L1', 'ST1'), place('L2', 'WH1')]);
+        state.access = accessFor(MANAGER);
+    });
+
+    it('W5: "23.75" after "23.7" blocks Save and Dispatch; a good length saves what the box reads', async () => {
+        mocked.fetchTransfer.mockResolvedValue(transferView({ lines: [clothLine()] }));
+        mocked.updateTransfer.mockResolvedValue(transferView({ lines: [clothLine({ qty_sent: 235 })] }));
+        renderPage();
+        const box = (await screen.findByDisplayValue('23.7')) as HTMLInputElement;
+        fireEvent.change(box, { target: { value: '23.75' } });
+        expect(screen.getByTestId('transfer-save')).toBeDisabled();
+        expect(screen.getByTestId('open-dispatch')).toBeDisabled();
+        expect(screen.getByText('units.problems.decimals')).toBeTruthy();
+        fireEvent.change(box, { target: { value: '0' } });
+        expect(screen.getByTestId('transfer-save')).toBeDisabled();
+        expect(screen.getByText('units.problems.aboveZero')).toBeTruthy();
+        fireEvent.change(box, { target: { value: '23.5' } });
+        expect(screen.getByTestId('transfer-save')).not.toBeDisabled();
+        fireEvent.click(screen.getByTestId('transfer-save'));
+        await waitFor(() => expect(mocked.updateTransfer).toHaveBeenCalledTimes(1));
+        expect(mocked.updateTransfer.mock.calls[0]?.[1].lines).toEqual([{ package_session_id: 'ps-cloth', quantity: 235 }]);
+    });
+
+    it('W6: a label scanned into a length box goes to the scan lookup; the box keeps its length', async () => {
+        scanCode.mockResolvedValue(null as never);
+        mocked.fetchTransfer.mockResolvedValue(transferView({ lines: [clothLine()] }));
+        renderPage();
+        const box = (await screen.findByDisplayValue('23.7')) as HTMLInputElement;
+        ['V', '1', '2', 'Enter'].forEach((key) => fireEvent.keyDown(box, { key }));
+        await waitFor(() => expect(scanCode).toHaveBeenCalledWith('V12'));
+        expect(box.value).toBe('23.7');
+        expect(mocked.updateTransfer).not.toHaveBeenCalled();
+    });
+
+    it('W5: receive: a cleared box is never the full sent length; Receive waits', async () => {
+        state.access = accessFor(WAREHOUSE);
+        mocked.fetchTransfer.mockResolvedValue(transferView({ status: 'DISPATCHED', lines: [clothLine({ qty_sent: 30 })] }));
+        renderPage();
+        const box = await screen.findByDisplayValue('3');
+        expect(screen.getByTestId('receive-transfer')).not.toBeDisabled();
+        fireEvent.change(box, { target: { value: '' } });
+        expect(screen.getByTestId('receive-transfer')).toBeDisabled();
+        expect(screen.getByText('units.problems.blank')).toBeTruthy();
+        fireEvent.change(box, { target: { value: '3.5' } });
+        expect(screen.getByTestId('receive-transfer')).toBeDisabled();
+        fireEvent.click(screen.getByTestId('receive-transfer'));
+        expect(mocked.receiveTransfer).not.toHaveBeenCalled();
+    });
+
+    it('K M5: scanning a roll on receive opens its box and keeps the other typed boxes', async () => {
+        state.access = accessFor(WAREHOUSE);
+        const bottle = transferView().lines[0]!;
+        mocked.fetchTransfer.mockResolvedValue(
+            transferView({ status: 'DISPATCHED', lines: [bottle, clothLine({ qty_sent: 30 })] })
+        );
+        scanCode.mockResolvedValue({
+            kind: 'VARIANT',
+            variant: { package_session_id: 'ps-cloth', sku: 'CLOTH-1', product_name: 'Cotton cloth', qty_scale: 10, unit: 'MTR' },
+        } as never);
+        renderPage();
+        const bottleBox = await screen.findByDisplayValue('10');
+        fireEvent.change(bottleBox, { target: { value: '8' } });
+        const clothBox = screen.getByDisplayValue('3');
+        fireEvent.change(clothBox, { target: { value: '2' } });
+        const scanBox = screen.getByTestId('receive-scan') as HTMLInputElement;
+        fireEvent.change(scanBox, { target: { value: 'VCLOTH0001' } });
+        fireEvent.keyDown(scanBox, { key: 'Enter' });
+        await waitFor(() => expect(scanCode).toHaveBeenCalledWith('VCLOTH0001'));
+        await waitFor(() => expect(screen.getByText('inventory.transferLines.typeLength')).toBeTruthy());
+        // Nothing added a scan's worth (0.1 m) and the bottle's typed 8 is still there.
+        expect((screen.getByDisplayValue('2') as HTMLInputElement).id).toBe('receive-qty-line-cloth');
+        expect(screen.getByDisplayValue('8')).toBeTruthy();
     });
 });

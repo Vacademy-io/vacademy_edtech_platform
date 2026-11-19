@@ -27,13 +27,15 @@ import {
     type ProductFormValues,
     type SoldAs,
     stepToBase,
+    taxUnitWarning,
 } from '@/routes/commerce/-shared/product-form';
+import { unitWord } from '@/routes/commerce/-shared/units';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 
 const SOLD_AS: SoldAs[] = ['QUANTITY', 'PIECE', 'MEASURED'];
 const toWhole = (raw: string) => raw.replace(/\D/g, '').slice(0, 9);
-/** The smallest cut is typed in units ("0.5"): digits and one point or comma. */
-const toLength = (raw: string) => raw.replace(/[^\d.,]/g, '').slice(0, 10);
+/** The smallest cut is typed in units ("0.5"): digits (Hindi too) and a point; a comma is kept to be refused. */
+const toLength = (raw: string) => raw.replace(/[^\d.,०-९]/g, '').slice(0, 10);
 
 /**
  * "How it is sold": stocked by quantity, a one-of-a-kind
@@ -161,6 +163,10 @@ export function ProductTaxSection({
     );
     const chosen = taxClasses.find((taxClass) => taxClass.id === value);
     const needed = taxMode === 'REGULAR';
+    const soldAs = useWatch({ control: form.control, name: 'sold_as' });
+    const unit = useWatch({ control: form.control, name: 'unit' }) ?? '';
+    const unitWarning = chosen ? taxUnitWarning({ sold_as: soldAs, unit }, chosen.unit) : null;
+    const itemUnit = unitWord(unit.trim() || DEFAULT_MEASURE_UNIT, t) ?? '';
 
     return (
         <SectionCard id={sectionDomId('tax')} title={t('products.tax.title')}>
@@ -208,6 +214,17 @@ export function ProductTaxSection({
                     className="rounded-md bg-warning-50 p-2 text-caption text-warning-600"
                 >
                     {t('products.tax.neededToPublish')}
+                </p>
+            )}
+            {unitWarning && (
+                <p
+                    role="status"
+                    data-testid="tax-unit-warning"
+                    className="rounded-md bg-warning-50 p-2 text-caption text-warning-600"
+                >
+                    {unitWarning === 'pieces'
+                        ? t('products.tax.unitPieces', { unit: itemUnit })
+                        : t('products.tax.unitMismatch', { taxUnit: unitWord(chosen?.unit, t) ?? '', unit: itemUnit })}
                 </p>
             )}
             {taxMode && !needed && (

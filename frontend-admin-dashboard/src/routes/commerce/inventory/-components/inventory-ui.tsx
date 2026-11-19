@@ -11,7 +11,7 @@ import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { type InventoryError, inventoryErrorKey, readInventoryError } from '../-shared/inventory-errors';
 import type { InventoryLocation, LabelRow } from '../-shared/inventory-types';
 import { labelQuantity } from '../-shared/label-print';
-import { lengthProblemText, parseLength, unitWord } from '@/routes/commerce/-shared/units';
+import { boxProblemText, lengthProblemText, parseLength, typedBoxProblem, unitWord } from '@/routes/commerce/-shared/units';
 
 /**
  * Small pieces the inventory screens share: the error sentence, an item cell,
@@ -308,15 +308,35 @@ export function parseDisplayQuantity(text: string, scale: number): number | null
     return 'stored' in parsed ? parsed.stored : null;
 }
 
-/** The sentence under a length box when the typed text is refused (nothing while it is fine or empty). */
-export function LengthProblem({ text, scale, id }: { text: string | undefined; scale: number; id?: string }) {
+/**
+ * The sentence under a length box when the typed text is refused (nothing while
+ * it is fine or untouched). With `range` a blank box and a quantity outside it
+ * are said too: those boxes stop Save (WP-44 W5).
+ */
+export function LengthProblem({
+    text,
+    scale,
+    id,
+    range,
+}: {
+    text: string | undefined;
+    scale: number;
+    id?: string;
+    range?: { min: number; max?: number; text: string };
+}) {
     const { t } = useTranslation('commerce');
-    if (text === undefined || text.trim() === '') return null;
-    const parsed = parseLength(text, scale);
-    if ('stored' in parsed) return null;
+    let sentence: string | null = null;
+    if (range) {
+        const problem = typedBoxProblem(text, scale, range);
+        sentence = problem ? boxProblemText(problem, scale, t, range.text) : null;
+    } else if (text !== undefined && text.trim() !== '') {
+        const parsed = parseLength(text, scale);
+        sentence = 'problem' in parsed ? lengthProblemText(parsed.problem, scale, t) : null;
+    }
+    if (!sentence) return null;
     return (
         <span id={id} role="alert" className="text-caption text-danger-600">
-            {lengthProblemText(parsed.problem, scale, t)}
+            {sentence}
         </span>
     );
 }

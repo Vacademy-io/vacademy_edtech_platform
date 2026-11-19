@@ -9,6 +9,7 @@ import { CommercePage } from '@/routes/commerce/-components/CommercePage';
 import { CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
 import { OrderNotice, TextAreaField } from '@/routes/commerce/orders/-components/order-ui';
 import { lengthInputText } from '@/routes/commerce/-shared/units';
+import { useScanBurst } from '@/routes/commerce/-shared/use-scan-burst';
 import { cancelTransfer, updateTransfer } from '../-shared/inventory-api';
 import {
     assignedLocations,
@@ -20,10 +21,13 @@ import {
 import { SHORTFALL_REASONS, type TransferView } from '../-shared/inventory-types';
 import {
     applyDraft,
+    badDraftBox,
     type DraftEvent,
+    type DraftLine,
     type DraftState,
     draftFromView,
     linesWithoutLength,
+    MAX_BASE_UNITS,
     toTransferLines,
 } from '../-shared/transfer-lines';
 import { type StockScan, useStockScan } from '../-shared/use-stock-scan';
@@ -261,11 +265,32 @@ function DraftEditor({ view, canDispatch, canCancel }: { view: TransferView; can
         }
     };
     const scan = useStockScan(onScan, { paused: dispatching || cancelling || write.pinOpen });
+    // A label scanned into a length box is a scan, not a length (W6).
+    const burst = useScanBurst((code) => scan.submit(code));
 
+    /** A length box's text: shown as typed; the draft moves only when it is a good length. */
+    const typeInto = (line: DraftLine, text: string) => {
+        setTyped((previous) => ({ ...previous, [line.key]: text }));
+        const base = parseDisplayQuantity(text, line.qty_scale);
+        if (base !== null) {
+            const outcome = applyDraft(draft, { type: 'SET_QUANTITY', key: line.key, quantity: base });
+            if (!outcome.refusal) {
+                setDraft(outcome.state);
+                setDirty(true);
+            }
+        }
+    };
+
+    // W5: a blank or refused box stops Save and Dispatch (the draft holds the last good keystroke).
+    const badKey = badDraftBox(draft, typed);
     const body = { ...(note.trim() ? { note: note.trim() } : {}), lines: toTransferLines(draft) };
 
     const save = async (): Promise<boolean> => {
         setError(null);
+        if (badKey) {
+            document.getElementById(`transfer-qty-${badKey}`)?.focus();
+            return false;
+        }
         const waiting = linesWithoutLength(draft)[0];
         if (waiting) {
             askLength(waiting.key, waiting.name ?? waiting.sku ?? '');
@@ -332,21 +357,23 @@ function DraftEditor({ view, canDispatch, canCancel }: { view: TransferView; can
                                             aria-label={t('inventory.transfers.quantity')}
                                             inputMode={line.qty_scale > 1 ? 'decimal' : 'numeric'}
                                             value={typed[line.key] ?? lengthInputText(line.quantity, line.qty_scale)}
-                                            onChange={(event) => {
-                                                const text = event.target.value;
-                                                setTyped({ ...typed, [line.key]: text });
-                                                const base = parseDisplayQuantity(text, line.qty_scale);
-                                                if (base !== null) {
-                                                    const outcome = applyDraft(draft, { type: 'SET_QUANTITY', key: line.key, quantity: base });
-                                                    if (!outcome.refusal) {
-                                                        setDraft(outcome.state);
-                                                        setDirty(true);
-                                                    }
+                                            onChange={(event) => typeInto(line, event.target.value)}
+                                            onKeyDown={(event) => {
+                                                const scanned = burst(event);
+                                                if (scanned) return typeInto(line, scanned.restore);
+                                                // A good length: back to the scan box for the next label (m5).
+                                                if (event.key === 'Enter' && badDraftBox(draft, typed) !== line.key) {
+                                                    event.preventDefault();
+                                                    scan.inputRef.current?.focus();
                                                 }
                                             }}
                                             className="h-12 w-28 rounded-md border border-neutral-300 bg-background px-3 text-end text-body tabular-nums focus:border-primary-500 focus:outline-none"
                                         />
-                                        <LengthProblem text={typed[line.key]} scale={line.qty_scale} />
+                                        <LengthProblem
+                                            text={typed[line.key]}
+                                            scale={line.qty_scale}
+                                            range={{ min: 1, max: MAX_BASE_UNITS, text: t('inventory.transferLines.quantityRange') }}
+                                        />
                                     </div>
                                 )}
                                 <button
@@ -379,7 +406,15 @@ function DraftEditor({ view, canDispatch, canCancel }: { view: TransferView; can
                         {t('inventory.transfers.cancel')}
                     </MyButton>
                 )}
-                <MyButton type="button" buttonType="secondary" scale="large" className={TOUCH} disable={dirty ? undefined : true} onAsyncClick={async () => void (await save())}>
+                <MyButton
+                    type="button"
+                    buttonType="secondary"
+                    scale="large"
+                    className={TOUCH}
+                    disable={dirty && !badKey ? undefined : true}
+                    onAsyncClick={async () => void (await save())}
+                    data-testid="transfer-save"
+                >
                     {t('common.save')}
                 </MyButton>
                 {canDispatch && (
@@ -388,6 +423,7 @@ function DraftEditor({ view, canDispatch, canCancel }: { view: TransferView; can
                         buttonType="primary"
                         scale="large"
                         className="h-14"
+                        disable={badKey ? true : undefined}
                         onAsyncClick={async () => {
                             if (dirty && !(await save())) return;
                             setDispatching(true);

@@ -51,6 +51,7 @@ import * as api from '../-shared/pos-api';
 import { CommerceGate } from '@/routes/commerce/-components/CommercePage';
 import { hose, item, piece, quote, scarf, session } from '../-shared/pos-test-fixtures';
 import type { CartExchange } from '../-shared/pos-cart';
+import { PosBillBookPage } from './PosBillBookPage';
 import { PosSellPage } from './PosSellPage';
 
 const mocked = vi.mocked(api);
@@ -270,5 +271,92 @@ describe('PosSellPage', () => {
         renderSell();
         expect(await screen.findByText('noAccess.title')).toBeTruthy();
         expect(mocked.fetchSession).not.toHaveBeenCalled();
+    });
+});
+
+describe('PosSellPage: measured goods fix round (WP-44 W6, W8)', () => {
+    const lengthBox = async () => {
+        const total = await screen.findByTestId('pos-length-total');
+        return total.closest('[role="dialog"]')?.querySelector('input') as HTMLInputElement;
+    };
+    /** A scanner typing into whatever has the focus: keys a few ms apart, then Enter. */
+    const burstInto = (input: HTMLInputElement, code: string) =>
+        [...code.split(''), 'Enter'].forEach((key) => fireEvent.keyDown(input, { key }));
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        setOnline(true);
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+        } catch {
+            // no storage in this environment
+        }
+        setRoles([COMMERCE_ROLE.POS_CASHIER]);
+        mocked.fetchSession.mockResolvedValue(session());
+        mocked.fetchCatalogue.mockResolvedValue({
+            register_id: 'reg-1',
+            location_id: 'loc-1',
+            generated_at: null,
+            truncated: false,
+            items: [item(), hose(), hose({ variant_id: 'ps-hose-2', sku: 'HSE-2', label_code: 'V-HOSE2' })],
+        });
+        mocked.fetchPosSettings.mockResolvedValue({
+            cashier_discount_percent: 5,
+            cash_refund_limit: 0,
+            cash_variance_limit: 0,
+            configured: false,
+        });
+        mocked.quoteBill.mockResolvedValue(quote(900, [{ ref: 'l1', net: 900 }]));
+    });
+
+    it('W6: a label scanned into an open length box adds that item; the roll keeps its box', async () => {
+        renderSell();
+        await screen.findByTestId('pos-scan');
+        await catalogueLoaded();
+        scanInto('V-HOSE');
+        const input = await lengthBox();
+        expect(input.value).toBe('0.5');
+        burstInto(input, 'V-BOTTLE');
+        expect(await screen.findByTestId('pos-line-l2')).toBeTruthy();
+        expect(screen.getByTestId('pos-line-l1')).toBeTruthy();
+        // Not read as a length: the box is still open on the roll with its own text.
+        expect((await lengthBox()).value).toBe('0.5');
+    });
+
+    it('W6: another roll scanned while a new roll waits for its first length takes the box; the first leaves', async () => {
+        renderSell();
+        await screen.findByTestId('pos-scan');
+        await catalogueLoaded();
+        scanInto('V-HOSE');
+        burstInto(await lengthBox(), 'V-HOSE2');
+        expect(await screen.findByTestId('pos-line-l2')).toBeTruthy();
+        await waitFor(() => expect(screen.queryByTestId('pos-line-l1')).toBeNull());
+        expect(await lengthBox()).toBeTruthy();
+    });
+
+    it('W8: a paper bill takes 2.3 m of a roll sold in 0.5 m steps (recorded as written)', async () => {
+        mocked.quoteBill.mockResolvedValue({
+            ...quote(460, [{ ref: 'l1', net: 460 }]),
+            unavailable: [{ line_ref: 'l1', reason: 'QUANTITY_STEP' }],
+        });
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={client}>
+                <CommerceGate navId="commerce-pos">
+                    <PosBillBookPage sessionId="sess-1" />
+                </CommerceGate>
+            </QueryClientProvider>
+        );
+        await screen.findByTestId('pos-scan');
+        await catalogueLoaded();
+        scanInto('V-HOSE');
+        const input = await lengthBox();
+        fireEvent.change(input, { target: { value: '2.3' } });
+        fireEvent.keyDown(input, { key: 'Enter' });
+        await waitFor(() => expect(screen.queryByTestId('pos-length-total')).toBeNull());
+        await waitFor(() => expect(mocked.quoteBill.mock.calls.at(-1)?.[0].lines[0]?.quantity).toBe(23), { timeout: 2000 });
+        await new Promise((r) => setTimeout(r, 50));
+        expect(screen.queryByText('pos.errors.QUANTITY_STEP')).toBeNull();
     });
 });

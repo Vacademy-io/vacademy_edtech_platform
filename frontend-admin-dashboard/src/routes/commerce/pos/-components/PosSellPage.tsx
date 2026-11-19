@@ -207,12 +207,18 @@ export function PosBillingWorkspace({
     };
 
     const addItem = (item: CatalogueItem) => {
-        const result = apply({ type: 'ADD_VARIANT', item });
+        // W8: a paper bill records what was already sold by hand; the sale step does not apply to it.
+        const result = apply({ type: 'ADD_VARIANT', item: isBook ? { ...item, qty_step: 1 } : item });
         if (result.refusal) {
             say('danger', t(`pos.cart.${result.refusal}`));
             return;
         }
         if (result.openLengthFor) {
+            // A label scanned while another roll's box waited for its first length (W6): that
+            // line never got a length, so it leaves the bill as a closed box would take it off.
+            if (lengthRef && lengthRef !== result.openLengthFor && lengthIsNew.current) {
+                apply({ type: 'REMOVE_LINE', lineRef: lengthRef });
+            }
             setLengthRef(result.openLengthFor);
             lengthIsNew.current = !!result.openLengthIsNew;
         }
@@ -300,7 +306,12 @@ export function PosBillingWorkspace({
                 apply({ type: 'SET_PRICE', lineRef: change.line_ref, unitPrice: change.unit_price });
             }
         });
-        const refused = new Map(quote.data.unavailable.map((u) => [u.line_ref, u.reason]));
+        // W8: a paper bill is recorded as written; the sale step is not its refusal.
+        const refused = new Map(
+            quote.data.unavailable
+                .filter((u) => !(isBook && u.reason === 'QUANTITY_STEP'))
+                .map((u) => [u.line_ref, u.reason])
+        );
         cartRef.current.lines.forEach((line) => {
             const reason = refused.get(line.lineRef);
             if (reason !== undefined) {
@@ -309,7 +320,7 @@ export function PosBillingWorkspace({
                 apply({ type: 'MARK_LINE', lineRef: line.lineRef, mark: null });
             }
         });
-    }, [quote.data, quote.isPlaceholderData, apply, cartRef]);
+    }, [quote.data, quote.isPlaceholderData, apply, cartRef, isBook]);
 
     const settings = usePosSettings(!access.isManager);
     // The quote names the credit when this cashier may use it; without a number it needs a manager's
@@ -760,13 +771,20 @@ export function PosBillingWorkspace({
                     qtyStep={lengthLine.qtyStep}
                     quantity={lengthLine.quantity}
                     unitPrice={lengthLine.unitPrice}
+                    lineDiscount={lengthLine.lineDiscount}
                     onHand={lengthLine.onHand}
                     onSave={(stored) => {
+                        const result = apply({ type: 'SET_QUANTITY', lineRef: lengthLine.lineRef, quantity: stored });
+                        if (result.refusal) {
+                            // n8: the box stays open on its line; nothing is saved.
+                            say('danger', t(`pos.cart.${result.refusal}`));
+                            return false;
+                        }
                         // Saved: the line stays even when the box closes right after.
                         lengthIsNew.current = false;
-                        const result = apply({ type: 'SET_QUANTITY', lineRef: lengthLine.lineRef, quantity: stored });
-                        if (result.refusal) say('danger', t(`pos.cart.${result.refusal}`));
+                        return true;
                     }}
+                    onScan={(code) => void onScan(code)}
                 />
             )}
             {onHeldOpenChange && (

@@ -47,7 +47,7 @@ export function PosCartLines({
                 const quoted = quoteLines.get(line.lineRef);
                 const variant = pickText(line.variantLabel, lang);
                 const hint = stockHint(t, line.onHand, line.qtyScale, line.unit);
-                const markText = line.mark ? markTextOf(line.mark) : null;
+                const markText = line.mark ? markTextOf(line.mark, line) : null;
                 return (
                     <li
                         key={line.lineRef}

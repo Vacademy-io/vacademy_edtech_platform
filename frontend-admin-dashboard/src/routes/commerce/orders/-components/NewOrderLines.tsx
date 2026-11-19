@@ -9,7 +9,7 @@ import { fetchProduct } from '@/routes/commerce/-shared/catalogue-api';
 import type { ProductDetail } from '@/routes/commerce/-shared/catalogue-types';
 import { i18nName } from '@/routes/commerce/-shared/collection-tree';
 import { fetchProducts } from '@/routes/commerce/-shared/commerce-api';
-import { formatRate, unitWord } from '@/routes/commerce/-shared/units';
+import { formatRate, type LengthProblem, lengthProblemText, unitWord } from '@/routes/commerce/-shared/units';
 import {
     type LineSource,
     MAX_ORDER_LINES,
@@ -24,6 +24,9 @@ import { readOrderError } from '@/routes/commerce/orders/-shared/order-errors';
 import type { ScanResult } from '@/routes/commerce/orders/-shared/order-types';
 import { buzz, useScanInput } from '@/routes/commerce/orders/-shared/use-scan-input';
 import { Field, OrderNotice, inputClass, useOrderErrorText } from './order-ui';
+
+/** Quantity problems worded as every length box words them (`units.problems.*`). */
+const LENGTH_PROBLEM_PREFIX = 'units.problems.';
 
 const productName = (product: ProductDetail, language: string, fallback: string): string => {
     const names = Object.fromEntries(product.translations.map((tr) => [tr.locale, tr.name]));
@@ -102,11 +105,30 @@ export function NewOrderLines({
         };
     };
 
-    const onScan = async (code: string) => {
+    /**
+     * A scanned label or a typed SKU, looked up the same way (W7): the line
+     * knows its scale, unit, step and price, so a typed cloth SKU reads metres.
+     * A typed SKU the lookup does not know is kept for the server to price.
+     */
+    const onScan = async (code: string, typed = false) => {
         setNotice(null);
         try {
             const result = await scanCode(code);
             if (!result) {
+                if (typed) {
+                    apply(
+                        addItem(latest.current, {
+                            variantId: null,
+                            sku: code,
+                            name: code,
+                            variantName: null,
+                            qtyScale: 1,
+                            unit: null,
+                            listPrice: null,
+                        })
+                    );
+                    return;
+                }
                 setNotice(t('orders.new.scan.notFound'));
                 buzz();
                 return;
@@ -159,18 +181,8 @@ export function NewOrderLines({
     const addSku = () => {
         const typed = sku.trim().slice(0, 100);
         if (!typed) return;
-        apply(
-            addItem(latest.current, {
-                variantId: null,
-                sku: typed,
-                name: typed,
-                variantName: null,
-                qtyScale: 1,
-                unit: null,
-                listPrice: null,
-            })
-        );
         setSku('');
+        void onScan(typed, true);
     };
 
     const change = (key: string, patch: Partial<NewOrderLine>) =>
@@ -368,9 +380,15 @@ export function NewOrderLines({
                                         htmlFor={`qty-${line.key}`}
                                         hint={stepHint}
                                         error={
-                                            quantityProblem
-                                                ? t(quantityProblem, { step: stepText, count: measured ? Math.round(Math.log10(line.qtyScale)) : 0 })
-                                                : null
+                                            !quantityProblem
+                                                ? null
+                                                : quantityProblem.startsWith(LENGTH_PROBLEM_PREFIX)
+                                                  ? lengthProblemText(
+                                                        quantityProblem.slice(LENGTH_PROBLEM_PREFIX.length) as LengthProblem,
+                                                        line.qtyScale,
+                                                        t
+                                                    )
+                                                  : t(quantityProblem, { step: stepText })
                                         }
                                     >
                                         <input

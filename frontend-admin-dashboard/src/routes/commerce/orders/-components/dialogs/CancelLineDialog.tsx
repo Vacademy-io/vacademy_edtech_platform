@@ -70,6 +70,8 @@ export function CancelLineDialog({ open, onOpenChange, detail }: OrderDialogProp
         pieces: needsPieces && picked.length !== stored ? 'orders.dialogs.cancelLine.pickPieces' : null,
     };
     const invalid = Object.values(problems).some(Boolean) || !!typedProblem;
+    // W5: a blank, refused or out-of-range length stops the cancel at once (never "the last good keystroke").
+    const quantityBad = !!line && (!!typedProblem || !!problems.quantity);
 
     const submit = async () => {
         setTouched(true);
@@ -107,7 +109,14 @@ export function CancelLineDialog({ open, onOpenChange, detail }: OrderDialogProp
             dialogWidth="max-w-lg"
             footer={
                 <DialogButtons onCancel={() => onOpenChange(false)}>
-                    <MyButton type="button" buttonType="primary" scale="medium" onAsyncClick={submit}>
+                    <MyButton
+                        type="button"
+                        buttonType="primary"
+                        scale="medium"
+                        disable={quantityBad ? true : undefined}
+                        onAsyncClick={submit}
+                        data-testid="cancel-line-submit"
+                    >
                         {t('orders.actions.CANCEL_LINE')}
                     </MyButton>
                 </DialogButtons>
@@ -146,7 +155,7 @@ export function CancelLineDialog({ open, onOpenChange, detail }: OrderDialogProp
                         hint={t('orders.dialogs.cancelLine.openHint', {
                             quantity: formatQuantity(open$, line.qty_scale, line.unit, t),
                         })}
-                        error={(touched || quantity.trim() !== '') && typedProblem ? typedProblem : show(problems.quantity)}
+                        error={typedProblem ?? (quantityBad && problems.quantity ? t(problems.quantity) : null)}
                     >
                         <input
                             id="cancel-line-qty"

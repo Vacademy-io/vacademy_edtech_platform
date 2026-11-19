@@ -7,12 +7,14 @@ import { formatDate } from '@/lib/formatters';
 import { PlainSelect, SectionCard, useAdminLanguage } from '@/routes/commerce/-components/CatalogueBits';
 import { CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
 import { Field, TextAreaField } from '@/routes/commerce/orders/-components/order-ui';
-import { lengthInputText } from '@/routes/commerce/-shared/units';
+import { boxProblemText, lengthInputText, typedBoxProblem } from '@/routes/commerce/-shared/units';
+import { useScanBurst } from '@/routes/commerce/-shared/use-scan-burst';
 import { createReceipt } from '../-shared/inventory-api';
 import { useInvalidateInventory, useReceipts } from '../-shared/inventory-hooks';
 import { RECEIVE_SOURCES, type ReceiptView, type ReceiveSource, type VariantPick } from '../-shared/inventory-types';
 import {
     addReceiveItem,
+    badReceiptBox,
     type ReceiptLineDraft,
     type ReceiveItem,
     receiveProblem,
@@ -21,7 +23,7 @@ import {
 import { type StockScan, useStockScan } from '../-shared/use-stock-scan';
 import { pickName } from './ItemPicker';
 import type { TabProps } from './InventoryPage';
-import { ChoiceGroup, InventoryErrorNotice, ItemCell, parseDisplayQuantity, Qty, TOUCH, typedLengthProblem, useInventoryErrorText } from './inventory-ui';
+import { ChoiceGroup, InventoryErrorNotice, ItemCell, parseDisplayQuantity, Qty, TOUCH, useInventoryErrorText } from './inventory-ui';
 import { PrintLabelsDialog } from './PrintLabelsDialog';
 import { QuickAddDialog } from './QuickAddDialog';
 import { type ScanMessage, StockScanBox } from './StockScanBox';
@@ -124,10 +126,28 @@ export function ReceiveTab({ locationId, allPlaces }: TabProps) {
         }
     };
     const scan = useStockScan(onScan, { paused: quickAdd || printing || write.pinOpen || !!done });
+    // A label scanned into a quantity box is a scan, not a quantity (W6).
+    const burst = useScanBurst((code) => scan.submit(code));
+
+    const typeInto = (line: ReceiptLineDraft, text: string) => {
+        setTyped((previous) => ({ ...previous, [line.package_session_id]: text }));
+        const base = parseDisplayQuantity(text, line.qty_scale);
+        setLines((current) => {
+            const outcome = setReceiveQuantity(current, line.package_session_id, base);
+            return outcome.refusal ? current : outcome.lines;
+        });
+    };
+
+    // W5: Save waits while a box is blank or refused (the line holds the last good keystroke).
+    const badBox = badReceiptBox(lines, typed);
 
     const save = async () => {
         setProblem(null);
         setError(null);
+        if (badBox) {
+            document.getElementById(`qty-${badBox}`)?.focus();
+            return;
+        }
         const blocked = receiveProblem({ source, sourceLocationId, note, lines });
         if (blocked) return setProblem(t(`inventory.receive.problems.${blocked}`));
         const body = {
@@ -150,6 +170,14 @@ export function ReceiveTab({ locationId, allPlaces }: TabProps) {
         } catch (e) {
             setError(e);
         }
+    };
+
+    /** The sentence under a quantity box: a refused, blank (once typed) or out-of-range quantity. */
+    const boxError = (line: ReceiptLineDraft): string | null => {
+        const max = (line.stock_mode ?? '').toUpperCase() === 'PIECE' ? 200 : undefined;
+        const problem = typedBoxProblem(typed[line.package_session_id], line.qty_scale, { min: 1, max });
+        if (!problem) return null;
+        return boxProblemText(problem, line.qty_scale, t, t('inventory.receive.refusals.quantityRange'));
     };
 
     const restart = () => {
@@ -272,22 +300,20 @@ export function ReceiveTab({ locationId, allPlaces }: TabProps) {
                                                 label={t('inventory.receive.quantity')}
                                                 htmlFor={`qty-${line.package_session_id}`}
                                                 className="w-32"
-                                                error={
-                                                    typed[line.package_session_id] !== undefined && typed[line.package_session_id]?.trim()
-                                                        ? typedLengthProblem(typed[line.package_session_id] ?? '', line.qty_scale, t)
-                                                        : null
-                                                }
+                                                error={boxError(line)}
                                             >
                                                 <input
                                                     id={`qty-${line.package_session_id}`}
                                                     inputMode={piece || line.qty_scale === 1 ? 'numeric' : 'decimal'}
                                                     value={shown}
-                                                    onChange={(event) => {
-                                                        const text = event.target.value;
-                                                        setTyped((previous) => ({ ...previous, [line.package_session_id]: text }));
-                                                        const base = parseDisplayQuantity(text, line.qty_scale);
-                                                        const outcome = setReceiveQuantity(lines, line.package_session_id, base);
-                                                        if (!outcome.refusal) setLines(outcome.lines);
+                                                    onChange={(event) => typeInto(line, event.target.value)}
+                                                    onKeyDown={(event) => {
+                                                        const scanned = burst(event);
+                                                        if (scanned) return typeInto(line, scanned.restore);
+                                                        if (event.key === 'Enter' && badReceiptBox([line], typed) === null) {
+                                                            event.preventDefault();
+                                                            scan.inputRef.current?.focus();
+                                                        }
                                                     }}
                                                     className="h-12 w-full rounded-md border border-neutral-300 bg-background px-3 text-end text-body tabular-nums focus:border-primary-500 focus:outline-none"
                                                 />
@@ -327,6 +353,7 @@ export function ReceiveTab({ locationId, allPlaces }: TabProps) {
                     scale="large"
                     className="h-14 w-full sm:w-auto"
                     onAsyncClick={save}
+                    disable={badBox ? true : undefined}
                     loadingText={t('common.saving')}
                     data-testid="receive-save"
                 >

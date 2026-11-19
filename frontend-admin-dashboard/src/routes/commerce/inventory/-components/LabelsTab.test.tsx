@@ -296,6 +296,30 @@ describe('LabelsTab fix round', () => {
         expect(screen.getByTestId('replace-unpriced').textContent).toBe('inventory.labels.replaceUnpriced');
     });
 
+    it('m3: tags to replace show a roll\'s MRP per metre with its unit, as its label prints it', async () => {
+        mocked.fetchLabels.mockResolvedValue({ rows: [], page: 0, size: 100, total: 0 });
+        mocked.fetchLabelsToReplace.mockResolvedValue([
+            {
+                package_session_id: 'cloth',
+                sku: 'CLOTH',
+                item_name: null,
+                printed_mrp: 12.34,
+                current_mrp: 13,
+                on_hand: 200,
+                stock_mode: 'QUANTITY',
+                unit: 'MTR',
+                qty_scale: 10,
+                has_price: true,
+                labels: 1,
+                capped: false,
+            },
+        ]);
+        renderTab();
+        fireEvent.click(await screen.findByText('inventory.labels.toReplace'));
+        expect((await screen.findByTestId('replace-printed')).textContent).toBe('₹123.40 / orders.units.metre');
+        expect(screen.getByTestId('replace-current').textContent).toBe('₹130.00 / orders.units.metre');
+    });
+
     it('L7 (low): two reprint scans answered at once both land', async () => {
         mocked.fetchLabels.mockResolvedValue({ rows: [], page: 0, size: 100, total: 0 });
         vi.mocked(orderApi.scanCode)

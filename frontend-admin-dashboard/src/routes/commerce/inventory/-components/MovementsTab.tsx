@@ -156,7 +156,7 @@ export function MovementsTab({
                           id: 'cost',
                           header: t('inventory.movements.unitCost'),
                           cell: ({ row }: { row: { original: MovementRow } }) =>
-                                                            row.original.unit_cost === null ? (
+                              row.original.unit_cost === null ? (
                                   '—'
                               ) : (
                                   <span className="tabular-nums">

@@ -15,6 +15,7 @@ import {
     publishBlockers,
     soldAsOf,
     stepToBase,
+    taxUnitWarning,
     translationHasText,
     translationIsComplete,
     valuesToProductRequest,
@@ -431,7 +432,9 @@ describe('product schema', () => {
 
     it('the smallest cut is typed in metres and refused, not rounded, past the scale (WP-44 FA2)', () => {
         expect(stepToBase('0.5', '10')).toBe(5);
-        expect(stepToBase('0,5', '')).toBe(5);
+        // W4: a comma is refused ("use a dot"), never read as a decimal point.
+        expect(stepToBase('0,5', '')).toBeNull();
+        expect(stepToBase('0.50', '')).toBe(5);
         expect(stepToBase('0.05', '100')).toBe(5);
         expect(stepToBase('0.55', '10')).toBeNull();
         expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.55', qty_scale: '10' }))).toEqual(['qty_step']);
@@ -445,6 +448,47 @@ describe('product schema', () => {
         // 999 a unit does not split into 1000 paise parts: only the prices are refused, not the scale.
         expect(paths(valid({ sold_as: 'MEASURED', qty_step: '1', qty_scale: '1000' }))).not.toContain('qty_scale');
         expect(paths(valid({ sold_as: 'MEASURED', qty_step: '1', qty_scale: '' }))).toEqual([]);
+    });
+
+    it('W3: an old row with scale 4 stays editable; its cut reads with its real scale', () => {
+        const original = product({ stock_mode: 'QUANTITY', unit: 'MTR', qty_scale: 4, qty_step: 2 });
+        const values = productToValues(original);
+        expect(values.qty_step).toBe('0.5');
+        expect(stepToBase('0.5', '4')).toBe(2);
+        const stored = buildProductSchema(t, original);
+        const measureOf = (v: ProductFormValues) => ({ sold_as: v.sold_as, unit: v.unit, qty_scale: v.qty_scale, qty_step: v.qty_step });
+        const result = stored.safeParse(valid(measureOf(values)));
+        expect(result.success ? [] : result.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)).toEqual([]);
+        // Nothing about the measure is sent, so the server lock is never asked.
+        const request = valuesToProductRequest(values, original);
+        expect(request).not.toHaveProperty('qty_scale');
+        expect(request).not.toHaveProperty('qty_step');
+        // Changing the scale to another odd one is still refused.
+        const changed = stored.safeParse(valid({ ...measureOf(values), qty_scale: '20' }));
+        expect(changed.success ? [] : changed.error.issues.map((i) => i.path.join('.'))).toEqual(['qty_scale']);
+    });
+
+    it('W2: a measured item needs a measuring unit, not a piece code', () => {
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.5', qty_scale: '10', unit: 'PCS' }))).toEqual(['unit']);
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.5', qty_scale: '10', unit: 'pieces' }))).toEqual(['unit']);
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.5', qty_scale: '10', unit: 'KG' }))).toEqual([]);
+        // Blank is the default MTR.
+        expect(paths(valid({ sold_as: 'MEASURED', qty_step: '0.5', qty_scale: '10', unit: '' }))).toEqual([]);
+        // A stored old row with PCS (unit locked after publish) is not blocked from a name or price edit.
+        const legacy = product({ stock_mode: 'QUANTITY', unit: 'PCS', qty_scale: 10, qty_step: 5 });
+        const opened = productToValues(legacy);
+        const values = valid({ sold_as: opened.sold_as, unit: opened.unit, qty_scale: opened.qty_scale, qty_step: opened.qty_step });
+        const legacyResult = buildProductSchema(t, legacy).safeParse(values);
+        expect(legacyResult.success ? [] : legacyResult.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)).toEqual([]);
+    });
+
+    it('W1: a tax class quoted in another unit is a warning for a measured item', () => {
+        expect(taxUnitWarning({ sold_as: 'MEASURED', unit: 'MTR' }, 'MTR')).toBeNull();
+        expect(taxUnitWarning({ sold_as: 'MEASURED', unit: '' }, 'M')).toBeNull();
+        expect(taxUnitWarning({ sold_as: 'MEASURED', unit: 'MTR' }, 'KGS')).toBe('mismatch');
+        expect(taxUnitWarning({ sold_as: 'MEASURED', unit: 'MTR' }, 'PCS')).toBe('pieces');
+        expect(taxUnitWarning({ sold_as: 'MEASURED', unit: 'MTR' }, null)).toBe('pieces');
+        expect(taxUnitWarning({ sold_as: 'QUANTITY', unit: 'PCS' }, 'KGS')).toBeNull();
     });
 
     it('a saved step of 5 tenths opens as "0.5" and saves back unchanged', () => {

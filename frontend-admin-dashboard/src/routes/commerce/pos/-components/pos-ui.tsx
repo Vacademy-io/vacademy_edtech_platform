@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { ORDER_ERROR_CODES } from '@/routes/commerce/orders/-shared/order-errors';
-import type { LineMark } from '../-shared/pos-cart';
+import type { CartLine, LineMark } from '../-shared/pos-cart';
 import {
     POS_ERROR_CODES,
     type PosError,
@@ -168,10 +168,12 @@ export function stockHint(
 export function useMarkText() {
     const { t } = useTranslation('commerce');
     return useCallback(
-        (mark: LineMark): string => {
+        (mark: LineMark, line?: Pick<CartLine, 'qtyStep' | 'qtyScale' | 'unit'>): string => {
             if (mark.code === 'PRICE_CHANGED') return t('pos.lineMarks.PRICE_CHANGED');
             if ((POS_ERROR_CODES as readonly string[]).includes(mark.code)) {
-                return t(`pos.errors.${mark.code}`, { time: mark.time ?? '' });
+                // QUANTITY_STEP names the line's step ("Sold in steps of 0.5 m"), never a raw {{step}} (m1).
+                const step = line ? formatQuantity(line.qtyStep, line.qtyScale, line.unit, t) : '';
+                return t(`pos.errors.${mark.code}`, { time: mark.time ?? '', step });
             }
             if ((ORDER_ERROR_CODES as readonly string[]).includes(mark.code)) return t(`orders.errors.${mark.code}`);
             return t('pos.lineMarks.UNAVAILABLE');

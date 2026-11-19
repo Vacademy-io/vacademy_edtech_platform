@@ -7,9 +7,10 @@ import { MoneyCell } from '@/components/design-system/money-cell';
 import { formatDateTime } from '@/lib/formatters';
 import { PlainSelect, SectionCard } from '@/routes/commerce/-components/CatalogueBits';
 import { CommerceEmptyState, CommerceLoadingRows, CommerceStatusChip } from '@/routes/commerce/-components/CommerceStates';
+import { formatRate, isMeasuredScale } from '@/routes/commerce/-shared/units';
 import { cancelLabels, requestLabels } from '../-shared/inventory-api';
 import { useInvalidateInventory, useLabels, useLabelsToReplace } from '../-shared/inventory-hooks';
-import { LABEL_STATUSES, type LabelRow } from '../-shared/inventory-types';
+import { LABEL_STATUSES, type LabelRow, type ToReplaceRow } from '../-shared/inventory-types';
 import { labelCount, MAX_LABELS_PER_PRINT, planReplaceLabels } from '../-shared/label-print';
 import type { TabProps } from './InventoryPage';
 import { ConfirmDialog, InventoryErrorNotice, ItemCell, LabelQuantity, TOUCH } from './inventory-ui';
@@ -251,8 +252,8 @@ function ToReplaceCard({ locationId }: { locationId: string }) {
                     <li key={row.package_session_id} className="flex items-center justify-between gap-3 py-2">
                         <ItemCell name={row.item_name} sku={row.sku} />
                         <span className="flex flex-wrap items-center justify-end gap-2 text-caption">
-                            {row.printed_mrp !== null && <MoneyCell value={row.printed_mrp} />}→
-                            {row.current_mrp !== null && <MoneyCell value={row.current_mrp} />}
+                            {row.printed_mrp !== null && <ReplaceMrp row={row} value={row.printed_mrp} testId="replace-printed" />}→
+                            {row.current_mrp !== null && <ReplaceMrp row={row} value={row.current_mrp} testId="replace-current" />}
                             <span className="text-muted-foreground">{t('inventory.labels.replaceCount', { count: row.labels })}</span>
                             {!row.has_price && <span className="text-danger-600">{t('inventory.labels.noPrice')}</span>}
                         </span>
@@ -283,3 +284,26 @@ function ToReplaceCard({ locationId }: { locationId: string }) {
 /** "SKU-1, SKU-2" (an item without a SKU by its name). */
 const skuList = (rows: { sku: string | null; item_name: string | null }[]): string =>
     rows.map((r) => r.sku ?? r.item_name ?? '—').join(', ');
+
+/**
+ * An MRP on "Tags to replace": per metre with its unit for cloth by length
+ * ("₹123.40 / m", as its label prints it; the server sends it per base unit),
+ * as money for everything else.
+ */
+function ReplaceMrp({
+    row,
+    value,
+    testId,
+}: {
+    row: Pick<ToReplaceRow, 'qty_scale' | 'unit'>;
+    value: number;
+    testId: string;
+}) {
+    const { t } = useTranslation('commerce');
+    if (!isMeasuredScale(row.qty_scale)) return <MoneyCell value={value} />;
+    return (
+        <span className="tabular-nums" data-testid={testId}>
+            {formatRate(value, row.qty_scale, row.unit, 'INR', t)}
+        </span>
+    );
+}

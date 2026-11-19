@@ -921,7 +921,9 @@
             "neededToPublish": "The shop is GST-registered, so this product cannot be published without a tax class.",
             "notNeeded": "The shop does not charge GST, so a tax class is not needed.",
             "noClasses": "No tax class has been set up yet.",
-            "manage": "Manage tax classes"
+            "manage": "Manage tax classes",
+            "unitMismatch": "This tax class is quoted per {{taxUnit}}, but this item is sold per {{unit}}. Check that its rates and limits are meant for one {{unit}}.",
+            "unitPieces": "This tax class is quoted per piece, but this item is sold per {{unit}}. Check that its rates and limits are meant for one {{unit}}."
         },
         "organise": {
             "title": "Organise",
@@ -952,8 +954,10 @@
             "blockCode": "Use a short code in lower-case letters, digits and underscores, once per language.",
             "priceNotDivisible": "For goods sold by measure the price is for one unit and must split into {{scale}} equal parts to the paisa.",
             "measureScale": "Sold by length needs 10, 100 or 1000 parts in one unit.",
-            "stepDecimals": "Use at most {{count}} decimal place(s) for the smallest cut.",
-            "stepRequired": "Type the smallest cut in units, like 0.5."
+            "stepDecimals": "Use at most {{count}} decimal places for the smallest cut.",
+            "stepRequired": "Type the smallest cut in units, like 0.5.",
+            "stepDecimals_one": "Use at most 1 decimal place for the smallest cut.",
+            "measureUnit": "A measured item needs its unit (MTR, KG, …), not pieces."
         },
         "serverErrors": {
             "taxClassMissing": "Choose a tax class before publishing. A GST-registered shop needs one on every product.",
@@ -1944,7 +1948,7 @@
                 "email": "Enter a valid e-mail address.",
                 "noLines": "Add at least one item.",
                 "tooManyLines": "An order can have at most {{count}} items.",
-                "quantity": "Enter a quantity above zero (metres to one decimal).",
+                "quantity": "Enter a quantity above zero.",
                 "price": "Enter a price of zero or more.",
                 "pincode": "Enter a 6-digit PIN code.",
                 "gstin": "This GSTIN is not valid.",
@@ -1954,7 +1958,8 @@
                 "remainderMethod": "Choose how the rest of the credit is refunded.",
                 "fix": "Some fields need attention.",
                 "quantityStep": "This item is sold in steps of {{step}}; change the length.",
-                "priceNotDivisible": "A price per unit must split into {{scale}} equal parts to the paisa (for example 123.40)."
+                "priceNotDivisible": "A price per unit must split into {{scale}} equal parts to the paisa (for example 123.40).",
+                "priceZero": "Enter a price above zero, or leave it blank for the list price."
             }
         },
         "exchange": {
@@ -2299,11 +2304,13 @@
                 "format": "Enter a number, like 2.5.",
                 "quantityStep": "The length must be in steps of {{step}}.",
                 "quantityRange": "This length is too small or too large.",
-                "decimals": "Use at most {{count}} decimal place(s), like 2.5."
+                "decimals": "Use at most {{count}} decimal places, like 2.5.",
+                "decimals_one": "Use at most 1 decimal place, like 2.5."
             },
             "less": "{{step}} less",
             "more": "{{step}} more",
-            "lineTotal": "Line total"
+            "lineTotal": "Line total",
+            "afterDiscount": "(after {{amount}} off)"
         },
         "cart": {
             "scanPieceLabel": "Scan the piece label of this item.",
@@ -2569,7 +2576,7 @@
             "PIN_LOCKED": "Too many wrong PINs. Try again later.",
             "SESSION_MISMATCH": "This bill was made at another counter session. Take a return instead.",
             "PROBABLY_SAVED": "This was most likely saved already: its answer did not reach this screen. Check before you do it again.",
-            "QUANTITY_STEP": "Sold in steps of {{step}}. Change the length on the bill."
+            "QUANTITY_STEP": "Sold in steps of {{step}}. Change the quantity on the bill."
         },
         "registers": {
             "title": "Counters",
@@ -2866,8 +2873,9 @@
             "costProblem": "Type a cost like 120 or 120.50.",
             "costSaved": "Cost saved",
             "unknownItem": "Item",
-            "costDecimals": "Use at most {{count}} decimal place(s) in the cost per unit.",
-            "unitCostPer": "Cost per {{unit}} (₹)"
+            "costDecimals": "Use at most {{count}} decimal places in the cost per unit.",
+            "unitCostPer": "Cost per {{unit}} (₹)",
+            "costDecimals_one": "Use at most 1 decimal place in the cost per unit."
         },
         "transfers": {
             "title": "Transfer",
@@ -3239,8 +3247,14 @@
     "units": {
         "problems": {
             "format": "Enter a number, like 2.5.",
-            "decimals": "Use at most {{count}} decimal place(s), like 2.5. Nothing is rounded.",
-            "whole": "Enter a whole number."
+            "decimals": "Use at most {{count}} decimal places, like 2.5. Nothing is rounded.",
+            "whole": "Enter a whole number.",
+            "decimals_one": "Use at most 1 decimal place, like 2.5. Nothing is rounded.",
+            "comma": "Use a dot for decimals, like 2.5.",
+            "tooLarge": "That is too large. Enter at most {{max}}.",
+            "grid": "Enter a multiple of {{amount}}.",
+            "blank": "Enter a quantity.",
+            "aboveZero": "Enter a quantity above zero."
         }
     }
 }

@@ -9,7 +9,7 @@ import { PlainSelect } from '@/routes/commerce/-components/CatalogueBits';
 import { CommerceLoadingRows } from '@/routes/commerce/-components/CommerceStates';
 import { RETURN_WARNINGS } from '@/routes/commerce/orders/-components/dialogs/ReturnCreateDialog';
 import { OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
-import { isMeasuredScale, lengthProblemText, parseLength } from '@/routes/commerce/-shared/units';
+import { isMeasuredScale, type LengthProblem, lengthProblemText, parseLength } from '@/routes/commerce/-shared/units';
 import { conditionLabel } from '@/routes/commerce/orders/-shared/length-entry';
 import { formatQuantity } from '@/routes/commerce/orders/-shared/order-format';
 import { buzz, useScanInput } from '@/routes/commerce/orders/-shared/use-scan-input';
@@ -44,7 +44,7 @@ export function PosReturnPage({ sessionId, initialOrderId }: { sessionId: string
 }
 
 /** What is being returned of one line: resaleable and damaged counts, or picked pieces. */
-export interface Pick {
+export interface ReturnPick {
     good: number;
     damaged: number;
     /** Piece id → condition, for one-of-a-kind lines. */
@@ -53,25 +53,25 @@ export interface Pick {
     typed?: Partial<Record<'good' | 'damaged', string>>;
 }
 
-export const EMPTY_PICK: Pick = { good: 0, damaged: 0, pieces: {} };
+export const EMPTY_PICK: ReturnPick = { good: 0, damaged: 0, pieces: {} };
 
 /** A measured line's whole returnable length goes back by typing (1.2 m → 12), not by 12 taps (WP-44 FA5). */
 export const typesLength = (line: ReturnLineFacts): boolean =>
     isMeasuredScale(line.qty_scale) && line.piece_ids.length === 0;
-/** What the length rules read of a bill line (`Pick` here is the return pick, not the TS utility). */
+/** What the length rules read of a bill line. */
 type ReturnLineFacts = { qty_scale: number; piece_ids: string[]; returnable: number };
 
 /**
  * A typed length in one condition box: the text is kept as typed; the base
  * units follow it, 0 while it is blank or refused ("1.25" at scale 10).
  */
-export function typeLengthPick(pick: Pick, key: 'good' | 'damaged', text: string, line: ReturnLineFacts): Pick {
+export function typeLengthPick(pick: ReturnPick, key: 'good' | 'damaged', text: string, line: ReturnLineFacts): ReturnPick {
     const parsed = parseLength(text, line.qty_scale);
     return { ...pick, typed: { ...pick.typed, [key]: text }, [key]: 'stored' in parsed ? parsed.stored : 0 };
 }
 
 /** Why a line's pick cannot be sent: a refused box, or more than can come back; null when fine. */
-export function pickProblem(pick: Pick | undefined, line: ReturnLineFacts): 'format' | 'decimals' | 'tooMuch' | null {
+export function pickProblem(pick: ReturnPick | undefined, line: ReturnLineFacts): LengthProblem | 'tooMuch' | null {
     if (!pick) return null;
     for (const key of ['good', 'damaged'] as const) {
         const text = pick.typed?.[key];
@@ -81,11 +81,11 @@ export function pickProblem(pick: Pick | undefined, line: ReturnLineFacts): 'for
     }
     return pickCount(pick) > line.returnable ? 'tooMuch' : null;
 }
-const pickCount = (pick: Pick | undefined) =>
+const pickCount = (pick: ReturnPick | undefined) =>
     pick ? pick.good + pick.damaged + Object.keys(pick.pieces).length : 0;
 
 /** The return's lines as the server takes them: one entry per line and condition (§4.4). */
-export function toReturnLines(lines: SaleDetailLine[], picks: Record<string, Pick>): PosReturnLineRequest[] {
+export function toReturnLines(lines: SaleDetailLine[], picks: Record<string, ReturnPick>): PosReturnLineRequest[] {
     const out: PosReturnLineRequest[] = [];
     lines.forEach((line) => {
         const pick = picks[line.order_line_id];
@@ -310,7 +310,8 @@ function PosReturnBody({
     );
 }
 
-function ReturnForm({
+/** The return of one bill (exported for its render test). */
+export function ReturnForm({
     session,
     online,
     sale,
@@ -331,7 +332,7 @@ function ReturnForm({
     /** One unanswered return per bill: its id is reused until the server answers for sure. */
     const scope = returnAttemptScope(sale.order_id);
     const maybeSaved = attempts.isUncertain(scope);
-    const [picks, setPicks] = useState<Record<string, Pick>>({});
+    const [picks, setPicks] = useState<Record<string, ReturnPick>>({});
     const [reason, setReason] = useState<string>('');
     const [note, setNote] = useState('');
     const [override, setOverride] = useState('');
@@ -364,7 +365,7 @@ function ReturnForm({
         setError(null);
     }, [picks, settle]);
 
-    const setPick = (lineId: string, change: (pick: Pick) => Pick) =>
+    const setPick = (lineId: string, change: (pick: ReturnPick) => ReturnPick) =>
         setPicks((prev) => ({ ...prev, [lineId]: change(prev[lineId] ?? EMPTY_PICK) }));
 
     const needsRef = settle === 'UPI' || settle === 'BANK_TRANSFER';
@@ -542,8 +543,10 @@ function ReturnForm({
                     buttonType="primary"
                     scale="large"
                     className="h-14 w-full"
-                    disable={!online || lines.length === 0}
+                    // W5: a refused length box stops the return (it would send 0 or the last good keystroke).
+                    disable={!online || lines.length === 0 || !picksOk ? true : undefined}
                     onAsyncClick={submit}
+                    data-testid="pos-return-submit"
                 >
                     <ArrowUUpLeft size={20} className="me-2" />
                     {settle === 'EXCHANGE' ? t('pos.returns.exchangeSubmit') : t('pos.returns.submit')}
@@ -560,8 +563,8 @@ function ReturnLine({
     onChange,
 }: {
     line: SaleDetailLine;
-    pick: Pick;
-    onChange: (change: (pick: Pick) => Pick) => void;
+    pick: ReturnPick;
+    onChange: (change: (pick: ReturnPick) => ReturnPick) => void;
 }) {
     const { t } = useTranslation('commerce');
     const count = pickCount(pick);
@@ -656,7 +659,7 @@ function ReturnLine({
                                     value={pick.typed?.[key] ?? ''}
                                     placeholder="0"
                                     onChange={(event) =>
-                                        onChange((p) => typeLengthPick(p, key, event.target.value.replace(/[^\d.,]/g, ''), line))
+                                        onChange((p) => typeLengthPick(p, key, event.target.value, line))
                                     }
                                 />
                             </PosField>

@@ -5,11 +5,13 @@ import { MyButton } from '@/components/design-system/button';
 import { PlainSelect, SectionCard } from '@/routes/commerce/-components/CatalogueBits';
 import { TextAreaField } from '@/routes/commerce/orders/-components/order-ui';
 import { lengthInputText } from '@/routes/commerce/-shared/units';
+import { useScanBurst } from '@/routes/commerce/-shared/use-scan-burst';
 import { receiveTransfer } from '../-shared/inventory-api';
 import { useInvalidateInventory } from '../-shared/inventory-hooks';
 import { SHORTFALL_REASONS, type ShortfallReason, type TransferView } from '../-shared/inventory-types';
 import {
     applyReceive,
+    badReceiveBox,
     canReceive,
     type ReceiveEvent,
     type ReceiveState,
@@ -40,8 +42,21 @@ export function ReceiveTransferPanel({ view }: { view: TransferView }) {
     const [message, setMessage] = useState<ScanMessage | null>(null);
     const [error, setError] = useState<unknown>(null);
 
+    /** A roll's received length is typed: a scan of it opens its box and keeps every other typed box (K M5). */
+    const askLength = (lineId: string, name: string) => {
+        setTyped((previous) => ({ ...previous, [lineId]: previous[lineId] ?? '' }));
+        setMessage({ tone: 'info', text: t('inventory.transferLines.typeLength', { item: name }) });
+        setTimeout(() => document.getElementById(`receive-qty-${lineId}`)?.focus(), 0);
+    };
+
     const apply = (event: ReceiveEvent): boolean => {
         const outcome = applyReceive(state, event);
+        if (outcome.refusal === 'typeLength' && event.type === 'RECEIVE_SCAN_VARIANT') {
+            const line = state.lines.find((l) => !l.piece_code && l.package_session_id === event.packageSessionId);
+            const info = line ? view.lines.find((l) => l.id === line.line_id) : undefined;
+            if (line) askLength(line.line_id, info?.item_name ?? info?.sku ?? '');
+            return false;
+        }
         if (outcome.refusal) {
             scan.refuse();
             setMessage({ tone: 'danger', text: t(`inventory.transferLines.${outcome.refusal}`) });
@@ -59,7 +74,15 @@ export function ReceiveTransferPanel({ view }: { view: TransferView }) {
         } else if (result.kind === 'VARIANT') {
             const v = result.result.variant;
             if (apply({ type: 'RECEIVE_SCAN_VARIANT', packageSessionId: v.package_session_id })) {
-                setTyped({});
+                // Only the scanned line's box follows the scan; other typed boxes stay as typed.
+                const line = state.lines.find((l) => !l.piece_code && l.package_session_id === v.package_session_id);
+                if (line) {
+                    setTyped((previous) => {
+                        const next = { ...previous };
+                        delete next[line.line_id];
+                        return next;
+                    });
+                }
                 setMessage({ tone: 'success', text: t('inventory.receive.added', { item: v.product_name ?? v.sku ?? '' }) });
             }
         } else if (result.kind === 'NOT_FOUND') {
@@ -69,9 +92,23 @@ export function ReceiveTransferPanel({ view }: { view: TransferView }) {
         }
     };
     const scan = useStockScan(onScan, { paused: write.pinOpen });
+    const burst = useScanBurst((code) => scan.submit(code));
+
+    const typeInto = (lineId: string, scale: number, text: string) => {
+        setTyped((previous) => ({ ...previous, [lineId]: text }));
+        const base = parseDisplayQuantity(text, scale);
+        if (base !== null) apply({ type: 'SET_RECEIVED', lineId, quantity: base });
+    };
+
+    // W5: a blank, refused or too-large box stops Receive (a blank box is never the full sent length).
+    const badLine = badReceiveBox(state, typed);
 
     const receive = async () => {
         setError(null);
+        if (badLine) {
+            document.getElementById(`receive-qty-${badLine}`)?.focus();
+            return;
+        }
         const body = { ...toReceiveBody(state), ...(note.trim() ? { note: note.trim() } : {}) };
         try {
             await write.run({
@@ -126,17 +163,25 @@ export function ReceiveTransferPanel({ view }: { view: TransferView }) {
                                     <label className="flex flex-col gap-1 text-caption text-muted-foreground">
                                         {t('inventory.transfers.receivedQty')}
                                         <input
+                                            id={`receive-qty-${line.line_id}`}
                                             inputMode={scale > 1 ? 'decimal' : 'numeric'}
                                             value={typed[line.line_id] ?? lengthInputText(line.received, scale)}
-                                            onChange={(event) => {
-                                                const text = event.target.value;
-                                                setTyped({ ...typed, [line.line_id]: text });
-                                                const base = parseDisplayQuantity(text, scale);
-                                                if (base !== null) apply({ type: 'SET_RECEIVED', lineId: line.line_id, quantity: base });
+                                            onChange={(event) => typeInto(line.line_id, scale, event.target.value)}
+                                            onKeyDown={(event) => {
+                                                const scanned = burst(event);
+                                                if (scanned) return typeInto(line.line_id, scale, scanned.restore);
+                                                if (event.key === 'Enter' && badReceiveBox(state, typed) !== line.line_id) {
+                                                    event.preventDefault();
+                                                    scan.inputRef.current?.focus();
+                                                }
                                             }}
                                             className="h-12 w-28 rounded-md border border-neutral-300 bg-background px-3 text-end text-body tabular-nums text-foreground focus:border-primary-500 focus:outline-none"
                                         />
-                                        <LengthProblem text={typed[line.line_id]} scale={scale} />
+                                        <LengthProblem
+                                            text={typed[line.line_id]}
+                                            scale={scale}
+                                            range={{ min: 0, max: line.sent, text: t('inventory.transferLines.quantityRange') }}
+                                        />
                                     </label>
                                 )}
                                 {short && (
@@ -170,7 +215,7 @@ export function ReceiveTransferPanel({ view }: { view: TransferView }) {
                     buttonType="primary"
                     scale="large"
                     className="h-14 w-full sm:w-auto"
-                    disable={ready ? undefined : true}
+                    disable={ready && !badLine ? undefined : true}
                     onAsyncClick={receive}
                     data-testid="receive-transfer"
                 >

@@ -171,8 +171,10 @@ export function ReturnCreateDialog({ open, onOpenChange, detail }: OrderDialogPr
                         type="button"
                         buttonType="primary"
                         scale="medium"
-                        disable={lines.length === 0}
+                        // W5: a refused length box (or more than can come back) stops the return at once.
+                        disable={lines.length === 0 || lineProblems.length > 0 ? true : undefined}
                         onAsyncClick={submit}
+                        data-testid="return-create-submit"
                     >
                         {t('orders.actions.CREATE_RETURN')}
                     </MyButton>
