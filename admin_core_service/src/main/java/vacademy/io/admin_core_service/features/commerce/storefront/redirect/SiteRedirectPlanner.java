@@ -15,6 +15,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Pattern;
 
 /**
@@ -63,7 +64,74 @@ public final class SiteRedirectPlanner {
     /** The edge looks up addresses of at most this many segments. */
     static final int MAX_LOOKED_UP_SEGMENTS = 6;
 
+    /**
+     * Longest one plan may run. A file of the largest size plans in about a second; past this the
+     * plan stops with {@link PlanTooSlowException}, so a request never holds a connection (and, in
+     * a commit, the institute's redirect lock) for long.
+     */
+    static final long MAX_PLAN_MILLIS = 15_000;
+    /**
+     * Most steps the PREFIX circle check may take in one plan. Each PREFIX row's next step is
+     * worked out once and kept, so a file within the limits takes at most about 250,000 steps
+     * (500 PREFIX rows, each followed round at most 501 steps); this is only a guard.
+     */
+    static final int MAX_PREFIX_WALK_STEPS = 1_000_000;
+
     private static final Pattern FILE_SEGMENT = Pattern.compile("\\.[a-z0-9]{2,12}$", Pattern.CASE_INSENSITIVE);
+
+    /** A plan stopped because it ran past {@link #MAX_PLAN_MILLIS}. */
+    public static final class PlanTooSlowException extends RuntimeException {
+
+        PlanTooSlowException(long millis) {
+            super("the redirect plan was stopped after " + millis + " ms");
+        }
+    }
+
+    /** The time and the PREFIX steps one plan may still use. */
+    static final class Budget {
+
+        private final long millis;
+        private final long deadline;
+        private final int maxWalkSteps;
+        private int walkSteps;
+        private boolean walkLimitReached;
+
+        Budget(long millis, int maxWalkSteps) {
+            this.millis = millis;
+            this.deadline = System.nanoTime() + millis * 1_000_000L;
+            this.maxWalkSteps = maxWalkSteps;
+        }
+
+        static Budget standard() {
+            return new Budget(MAX_PLAN_MILLIS, MAX_PREFIX_WALK_STEPS);
+        }
+
+        /** Stops the plan once its time is up. */
+        void tick() {
+            if (System.nanoTime() - deadline > 0) {
+                throw new PlanTooSlowException(millis);
+            }
+        }
+
+        /** One more step of the PREFIX walk; false (and remembered) once the steps are used up. */
+        boolean walk() {
+            if (walkSteps >= maxWalkSteps) {
+                walkLimitReached = true;
+                return false;
+            }
+            walkSteps++;
+            tick();
+            return true;
+        }
+
+        boolean walkLimitReached() {
+            return walkLimitReached;
+        }
+
+        int maxWalkSteps() {
+            return maxWalkSteps;
+        }
+    }
 
     /** A stored row. */
     public record Existing(String id, String matchType, String fromPath, String toPath, int statusCode) {
@@ -118,12 +186,19 @@ public final class SiteRedirectPlanner {
      */
     public static Plan plan(List<SiteRedirectCsv.Row> rows, Collection<Existing> existing,
                             Set<String> activeProducts, Set<String> activeCollections) {
+        return plan(rows, existing, activeProducts, activeCollections, Budget.standard());
+    }
+
+    static Plan plan(List<SiteRedirectCsv.Row> rows, Collection<Existing> existing,
+                     Set<String> activeProducts, Set<String> activeCollections, Budget budget) {
         List<Issue> issues = new ArrayList<>();
         List<Valid> valid = new ArrayList<>();
         Map<String, Integer> firstRowOfKey = new HashMap<>();
         int ignored = 0;
+        budget.tick();
 
         for (SiteRedirectCsv.Row row : rows) {
+            budget.tick();
             Valid checked = check(row, issues);
             if (checked == null) {
                 continue;
@@ -168,14 +243,16 @@ public final class SiteRedirectPlanner {
                 prefixRows.put(v.fromPath(), new Existing(null, PREFIX, v.fromPath(), v.toPath(), v.statusCode()));
             }
         }
-        Set<String> prefixes = prefixRows.keySet();
+        PrefixIndex prefixes = new PrefixIndex(prefixRows.keySet());
         // Past the cap the file is refused anyway; the loop walk is skipped so it stays cheap.
-        boolean walkPrefixes = prefixRows.size() <= MAX_PREFIX_ROWS_PER_INSTITUTE;
+        PrefixWalker walker = prefixRows.size() <= MAX_PREFIX_ROWS_PER_INSTITUTE
+                ? new PrefixWalker(prefixRows, prefixes, exactSource.keySet(), budget) : null;
         Map<String, List<String>> productsByNfc = byNfc(activeProducts);
         Map<String, List<String>> collectionsByNfc = byNfc(activeCollections);
         // Stored 301 rows the file does not replace, by the address they lead to.
         Map<String, String> storedLeadingTo = new HashMap<>();
         for (Existing e : existing) {
+            budget.tick();
             if (e.statusCode() == 301 && e.toPath() != null && !firstRowOfKey.containsKey(e.matchType() + " " + e.fromPath())) {
                 for (String target : targetKeys(e.toPath())) {
                     storedLeadingTo.putIfAbsent(target, e.fromPath());
@@ -187,6 +264,7 @@ public final class SiteRedirectPlanner {
         List<Change> updates = new ArrayList<>();
         int unchanged = 0;
         for (Valid checked : valid) {
+            budget.tick();
             Valid v = checked;
             boolean blocked = false;
             if (v.statusCode() == 301) {
@@ -199,8 +277,8 @@ public final class SiteRedirectPlanner {
                         break;
                     }
                 }
-                if (!blocked && walkPrefixes) {
-                    String loop = prefixLoop(v.matchType(), v.fromPath(), v.toPath(), prefixRows, exactSource.keySet());
+                if (!blocked && walker != null) {
+                    String loop = walker.loop(v.matchType(), v.fromPath(), v.toPath());
                     if (loop != null) {
                         issues.add(error(v.row(), "PREFIX_LOOP", "the target " + v.toPath() + " is caught by PREFIX"
                                 + " rows that lead back round (through " + loop + "); visitors would be"
@@ -240,6 +318,11 @@ public final class SiteRedirectPlanner {
                         old.toPath(), old.statusCode()));
             }
         }
+        if (walker != null && budget.walkLimitReached()) {
+            issues.add(error(0, "PREFIX_CHECK_TOO_LONG", "the PREFIX rows lead into each other so often that the"
+                    + " check for circles took more than " + budget.maxWalkSteps() + " steps; use fewer PREFIX rows"
+                    + " whose targets other PREFIX rows catch"));
+        }
         if (existing.size() + creates.size() > MAX_ROWS_PER_INSTITUTE) {
             issues.add(error(0, "TOO_MANY_REDIRECTS", "the shop would hold " + (existing.size() + creates.size())
                     + " redirects; at most " + MAX_ROWS_PER_INSTITUTE + " are allowed"));
@@ -250,7 +333,7 @@ public final class SiteRedirectPlanner {
                     + " PREFIX redirects; at most " + MAX_PREFIX_ROWS_PER_INSTITUTE + " are allowed. PREFIX rows are"
                     + " for patterns; give single addresses EXACT rows"));
         } else {
-            newPrefixWarnings(creates, existing, firstRowOfKey, prefixes, issues);
+            newPrefixWarnings(creates, existing, firstRowOfKey, prefixes, issues, budget);
         }
 
         issues.sort(Comparator.comparing((Issue i) -> !i.error()).thenComparingInt(Issue::row));
@@ -264,7 +347,8 @@ public final class SiteRedirectPlanner {
      * those visitors would be redirected a second time.
      */
     private static void newPrefixWarnings(List<Change> creates, Collection<Existing> existing,
-                                          Map<String, Integer> fileKeys, Set<String> prefixes, List<Issue> issues) {
+                                          Map<String, Integer> fileKeys, PrefixIndex prefixes, List<Issue> issues,
+                                          Budget budget) {
         Map<String, Change> created = new HashMap<>();
         for (Change c : creates) {
             if (PREFIX.equals(c.matchType())) {
@@ -277,6 +361,7 @@ public final class SiteRedirectPlanner {
         Map<String, Integer> caught = new HashMap<>();
         Map<String, Existing> example = new HashMap<>();
         for (Existing e : existing) {
+            budget.tick();
             if (e.statusCode() != 301 || e.toPath() == null || fileKeys.containsKey(e.matchType() + " " + e.fromPath())) {
                 continue;
             }
@@ -285,7 +370,7 @@ public final class SiteRedirectPlanner {
                 continue;
             }
             String self = PREFIX.equals(e.matchType()) ? e.fromPath() : null;
-            String prefix = longestCatching(prefixes, keys.get(0), self);
+            String prefix = prefixes.longestCatching(keys.get(0), self);
             if (prefix != null && created.containsKey(prefix)) {
                 caught.merge(prefix, 1, Integer::sum);
                 example.putIfAbsent(prefix, e);
@@ -477,62 +562,193 @@ public final class SiteRedirectPlanner {
     }
 
     /** The longest PREFIX address (other than the row's own) the target starts with, as the resolver picks it. */
-    private static String catchingPrefix(Set<String> prefixes, Valid v) {
+    private static String catchingPrefix(PrefixIndex prefixes, Valid v) {
         List<String> keys = targetKeys(v.toPath());
         if (keys.isEmpty() || prefixes.isEmpty()) {
             return null;
         }
-        return longestCatching(prefixes, keys.get(0), PREFIX.equals(v.matchType()) ? v.fromPath() : null);
+        return prefixes.longestCatching(keys.get(0), PREFIX.equals(v.matchType()) ? v.fromPath() : null);
     }
 
     /**
-     * The longest of {@code prefixes} that catches the normalised address {@code full} the way the
-     * resolver does: {@code full} starts with it, or it ends in {@code /} and is the address's path
-     * plus that slash ({@code /product/} catches {@code /product}). {@code except} is never picked.
+     * The PREFIX addresses of one plan, ready to find the longest one an address starts with in
+     * time linear in the address: the address's leading parts are hashed once (a polynomial hash
+     * with a random base, modulo 2^61 - 1) and only the PREFIX addresses of the same length and
+     * hash are compared with {@code startsWith}. No leading part is copied out of the address.
      */
-    static String longestCatching(Set<String> prefixes, String full, String except) {
-        if (prefixes.isEmpty()) {
-            return null;
-        }
-        String pathOnly = SiteRedirectPaths.pathPart(full);
-        String bare = pathOnly.length() > 1 ? pathOnly + "/" : null;
-        for (int end = Math.max(full.length(), pathOnly.length() + 1); end > 0; end--) {
-            if (bare != null && end == bare.length() && !bare.equals(except) && prefixes.contains(bare)) {
-                return bare;
+    static final class PrefixIndex {
+
+        private static final long MOD = (1L << 61) - 1;
+
+        private final Set<String> prefixes;
+        private final long base;
+        /** Every length a PREFIX address has, longest first. */
+        private final int[] lengths;
+        private final int longest;
+        private final Map<Long, List<String>> byLengthAndHash = new HashMap<>();
+
+        PrefixIndex(Set<String> prefixes) {
+            this.prefixes = prefixes;
+            this.base = ThreadLocalRandom.current().nextLong(1L << 16, MOD - 1);
+            Set<Integer> seen = new HashSet<>();
+            int max = 0;
+            for (String prefix : prefixes) {
+                long hash = 0;
+                for (int i = 0; i < prefix.length(); i++) {
+                    hash = next(hash, prefix.charAt(i));
+                }
+                byLengthAndHash.computeIfAbsent(key(prefix.length(), hash), k -> new ArrayList<>(1)).add(prefix);
+                seen.add(prefix.length());
+                max = Math.max(max, prefix.length());
             }
-            if (end <= full.length()) {
-                String prefix = full.substring(0, end);
-                if (!prefix.equals(except) && prefixes.contains(prefix)) {
-                    return prefix;
+            this.lengths = seen.stream().mapToInt(Integer::intValue).sorted().toArray();
+            for (int i = 0, j = lengths.length - 1; i < j; i++, j--) {
+                int swap = lengths[i];
+                lengths[i] = lengths[j];
+                lengths[j] = swap;
+            }
+            this.longest = max;
+        }
+
+        boolean isEmpty() {
+            return prefixes.isEmpty();
+        }
+
+        /**
+         * The longest PREFIX address that catches the normalised address {@code full} the way the
+         * resolver does: {@code full} starts with it, or it ends in {@code /} and is the address's
+         * path plus that slash ({@code /product/} catches {@code /product}). {@code except} is
+         * never picked.
+         */
+        String longestCatching(String full, String except) {
+            if (prefixes.isEmpty()) {
+                return null;
+            }
+            String pathOnly = SiteRedirectPaths.pathPart(full);
+            String bare = pathOnly.length() > 1 ? pathOnly + "/" : null;
+            int hashed = Math.min(full.length(), longest);
+            long[] hash = new long[hashed + 1];
+            for (int i = 0; i < hashed; i++) {
+                hash[i + 1] = next(hash[i], full.charAt(i));
+            }
+            for (int length : lengths) {
+                if (bare != null && length == bare.length() && !bare.equals(except) && prefixes.contains(bare)) {
+                    return bare;
+                }
+                if (length <= hashed) {
+                    List<String> same = byLengthAndHash.get(key(length, hash[length]));
+                    if (same != null) {
+                        for (String prefix : same) {
+                            if (prefix.length() == length && !prefix.equals(except) && full.startsWith(prefix)) {
+                                return prefix;
+                            }
+                        }
+                    }
                 }
             }
+            return null;
         }
-        return null;
+
+        private long next(long hash, char c) {
+            return reduce(multiply(hash, base) + c + 1);
+        }
+
+        /** {@code a * b} modulo 2^61 - 1, for {@code a} and {@code b} below it. */
+        private static long multiply(long a, long b) {
+            long high = Math.multiplyHigh(a, b);
+            long low = a * b;
+            return reduce((low & MOD) + (low >>> 61) + (high << 3));
+        }
+
+        private static long reduce(long value) {
+            long r = (value & MOD) + (value >>> 61);
+            return r >= MOD ? r - MOD : r;
+        }
+
+        private static Long key(int length, long hash) {
+            return hash * 1031 + length;
+        }
     }
 
     /**
-     * Follows a visitor from {@code toPath} through the PREFIX rows, as the resolver answers each
-     * step (an EXACT row answers first, the longest PREFIX next, and a target equal to the address
-     * asked is never handed out). Returns the PREFIX address at which the visitor comes round again,
-     * or null when the walk ends.
+     * Follows a visitor through the PREFIX rows, as the resolver answers each step (an EXACT row
+     * answers first, the longest PREFIX next, and a target equal to the address asked is never
+     * handed out). The next step from each PREFIX row is the same for every row of the plan, so it
+     * is worked out once and kept, and so is where a visitor arriving at a PREFIX row comes round
+     * again; a row's check then costs one lookup of its own target, plus (for a PREFIX row) a walk
+     * along the kept steps. Every step counts against the plan's {@link Budget}.
      */
-    static String prefixLoop(String matchType, String fromPath, String toPath, Map<String, Existing> prefixRows,
-                             Set<String> exactAddresses) {
-        Set<String> seen = new HashSet<>();
-        if (PREFIX.equals(matchType)) {
-            seen.add(fromPath);
+    static final class PrefixWalker {
+
+        /** The kept answer "the walk ends here"; no PREFIX address is empty. */
+        private static final String END = "";
+
+        private final Map<String, Existing> prefixRows;
+        private final PrefixIndex index;
+        private final Set<String> exactAddresses;
+        private final Budget budget;
+        /** PREFIX address to the PREFIX address the visitor is sent on to, or {@link #END}. */
+        private final Map<String, String> nextOf = new HashMap<>();
+        /** PREFIX address to the PREFIX address a visitor arriving there meets twice first, or {@link #END}. */
+        private final Map<String, String> roundAt = new HashMap<>();
+
+        PrefixWalker(Map<String, Existing> prefixRows, PrefixIndex index, Set<String> exactAddresses, Budget budget) {
+            this.prefixRows = prefixRows;
+            this.index = index;
+            this.exactAddresses = exactAddresses;
+            this.budget = budget;
         }
-        String target = toPath;
-        for (int hop = 0; hop <= prefixRows.size(); hop++) {
+
+        /**
+         * The PREFIX address at which a visitor sent to {@code toPath} by the row
+         * ({@code matchType}, {@code fromPath}) comes round again, or null when the walk ends (or
+         * the plan's steps are used up: the plan then reports that).
+         */
+        String loop(String matchType, String fromPath, String toPath) {
+            if (!budget.walk()) {
+                return null;
+            }
+            String at = step(toPath, false);
+            if (at == null) {
+                return null;
+            }
+            if (!PREFIX.equals(matchType)) {
+                return roundFrom(at);
+            }
+            // The row's own address counts as met: the first address met twice, walking the kept steps.
+            Set<String> seen = new HashSet<>();
+            seen.add(fromPath);
+            while (at != null) {
+                if (!seen.add(at)) {
+                    return at;
+                }
+                if (!budget.walk()) {
+                    return null;
+                }
+                at = nextOf(at);
+            }
+            return null;
+        }
+
+        /**
+         * The PREFIX row a visitor asking for {@code target} is sent on by, or null when the walk
+         * ends there. {@code afterFirstHop}: an EXACT row for the address answers first (the row's
+         * own target being an EXACT address is a chain, reported on its own).
+         */
+        private String step(String target, boolean afterFirstHop) {
             List<String> keys = targetKeys(target);
             if (keys.isEmpty()) {
                 return null;
             }
-            if (hop > 0 && keys.stream().anyMatch(exactAddresses::contains)) {
-                return null;
+            if (afterFirstHop) {
+                for (String key : keys) {
+                    if (exactAddresses.contains(key)) {
+                        return null;
+                    }
+                }
             }
             String full = keys.get(0);
-            String prefix = longestCatching(prefixRows.keySet(), full, null);
+            String prefix = index.longestCatching(full, null);
             if (prefix == null) {
                 return null;
             }
@@ -544,12 +760,61 @@ public final class SiteRedirectPlanner {
             if (nextPath == null || nextPath.equals(SiteRedirectPaths.pathPart(full))) {
                 return null;
             }
-            if (!seen.add(prefix)) {
-                return prefix;
-            }
-            target = next.toPath();
+            return prefix;
         }
-        return null;
+
+        private String nextOf(String prefix) {
+            String known = nextOf.get(prefix);
+            if (known == null) {
+                String next = step(prefixRows.get(prefix).toPath(), true);
+                known = next == null ? END : next;
+                nextOf.put(prefix, known);
+            }
+            return END.equals(known) ? null : known;
+        }
+
+        /**
+         * The first PREFIX address a visitor arriving at {@code start} meets twice: the first
+         * address of the circle its walk runs into, or null when the walk ends.
+         */
+        private String roundFrom(String start) {
+            List<String> path = new ArrayList<>();
+            Map<String, Integer> onPath = new HashMap<>();
+            String at = start;
+            String result;
+            while (true) {
+                if (at == null) {
+                    result = END;
+                    break;
+                }
+                String known = roundAt.get(at);
+                if (known != null) {
+                    result = known;
+                    break;
+                }
+                Integer index = onPath.get(at);
+                if (index != null) {
+                    // A circle: each of its addresses is met twice first by a visitor arriving there.
+                    for (String member : path.subList(index, path.size())) {
+                        roundAt.put(member, member);
+                    }
+                    path = path.subList(0, index);
+                    result = at;
+                    break;
+                }
+                if (!budget.walk()) {
+                    return null;
+                }
+                onPath.put(at, path.size());
+                path.add(at);
+                at = nextOf(at);
+            }
+            for (String member : path) {
+                roundAt.put(member, result);
+            }
+            String answer = roundAt.get(start);
+            return answer == null || END.equals(answer) ? null : answer;
+        }
     }
 
     /**
@@ -601,6 +866,11 @@ public final class SiteRedirectPlanner {
      * when the undo leaves the table as consistent as a commit would.
      */
     static List<String> restoreProblems(Collection<Existing> after, Set<String> restoredIds) {
+        return restoreProblems(after, restoredIds, Budget.standard());
+    }
+
+    static List<String> restoreProblems(Collection<Existing> after, Set<String> restoredIds, Budget budget) {
+        budget.tick();
         Set<String> exact = new HashSet<>();
         Map<String, Existing> prefixRows = new HashMap<>();
         for (Existing e : after) {
@@ -611,7 +881,9 @@ public final class SiteRedirectPlanner {
             }
         }
         List<String> problems = new ArrayList<>();
+        PrefixWalker walker = new PrefixWalker(prefixRows, new PrefixIndex(prefixRows.keySet()), exact, budget);
         for (Existing e : after) {
+            budget.tick();
             if (!restoredIds.contains(e.id()) || e.statusCode() != 301 || e.toPath() == null) {
                 continue;
             }
@@ -621,10 +893,13 @@ public final class SiteRedirectPlanner {
                     break;
                 }
             }
-            String loop = prefixLoop(e.matchType(), e.fromPath(), e.toPath(), prefixRows, exact);
+            String loop = walker.loop(e.matchType(), e.fromPath(), e.toPath());
             if (loop != null) {
                 problems.add("send " + e.fromPath() + " round a circle of PREFIX rows (through " + loop + ")");
             }
+        }
+        if (budget.walkLimitReached()) {
+            problems.add("need more than " + budget.maxWalkSteps() + " steps to check its PREFIX rows for circles");
         }
         return problems;
     }

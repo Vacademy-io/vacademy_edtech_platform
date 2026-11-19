@@ -467,4 +467,126 @@ class SiteRedirectPlannerTest {
         // A self-redirect PREFIX with the slash: "/shop-old/" to "/shop-old" is skipped.
         assertEquals(List.of("SELF_REDIRECT"), codes(plan(row(2, "/shop-old/", "/shop-old", "301", "PREFIX")), 2));
     }
+
+    // ------------------------------------------------- planning cost
+
+    private static long millis(Runnable work) {
+        long start = System.nanoTime();
+        work.run();
+        return (System.nanoTime() - start) / 1_000_000;
+    }
+
+    /** {@code prefixes} PREFIX rows, each sent into the next with a long target, the last one back to the first or out. */
+    private static List<SiteRedirectCsv.Row> chain(int prefixes, boolean circle) {
+        List<SiteRedirectCsv.Row> rows = new ArrayList<>();
+        String padding = "a".repeat(900);
+        for (int i = 0; i < prefixes; i++) {
+            String to = i + 1 < prefixes ? "/z" + (i + 1) + "/" + padding : circle ? "/z0/" + padding : "/end";
+            rows.add(row(rows.size() + 2, "/z" + i + "/", to, "301", "PREFIX"));
+        }
+        return rows;
+    }
+
+    @Test
+    void aLongPrefixChainWithTwentyThousandRowsIntoItPlansInUnderTwoSeconds() {
+        List<SiteRedirectCsv.Row> rows = chain(SiteRedirectPlanner.MAX_PREFIX_ROWS_PER_INSTITUTE, false);
+        for (int n = 0; n < 19_500; n++) {
+            rows.add(row(rows.size() + 2, "/x" + n, "/z0/q"));
+        }
+        assertEquals(20_000, rows.size());
+        SiteRedirectPlanner.Plan[] plan = new SiteRedirectPlanner.Plan[1];
+        long ms = millis(() -> plan[0] = SiteRedirectPlanner.plan(rows, List.of(), PRODUCTS, COLLECTIONS));
+        assertTrue(ms < 2_000, "plan took " + ms + " ms");
+        assertFalse(plan[0].hasErrors(), plan[0].issues().stream().filter(SiteRedirectPlanner.Issue::error).toList().toString());
+        assertEquals(20_000, plan[0].creates().size());
+        // Every row's target is caught by a PREFIX row: a warning each, nothing else.
+        assertEquals(20_000 - 1, plan[0].warningCount());
+    }
+
+    @Test
+    void aLongPrefixCircleIsStillFoundForEveryRowAndQuickly() {
+        List<SiteRedirectCsv.Row> rows = chain(SiteRedirectPlanner.MAX_PREFIX_ROWS_PER_INSTITUTE, true);
+        for (int n = 0; n < 19_500; n++) {
+            rows.add(row(rows.size() + 2, "/x" + n, "/z" + (n % 500) + "/q"));
+        }
+        SiteRedirectPlanner.Plan[] plan = new SiteRedirectPlanner.Plan[1];
+        long ms = millis(() -> plan[0] = SiteRedirectPlanner.plan(rows, List.of(), PRODUCTS, COLLECTIONS));
+        assertTrue(ms < 2_000, "plan took " + ms + " ms");
+        assertEquals(20_000, plan[0].errorCount());
+        assertTrue(plan[0].issues().stream().filter(SiteRedirectPlanner.Issue::error)
+                .allMatch(i -> i.code().equals("PREFIX_LOOP")));
+        // A row sent into the circle is told where it comes round: the first circle row it meets.
+        String message = plan[0].issues().stream().filter(i -> i.row() == 502).findFirst().orElseThrow().message();
+        assertTrue(message.contains("through /z0/)"), message);
+        // A PREFIX row of the circle comes round at its own address.
+        message = plan[0].issues().stream().filter(i -> i.row() == 100).findFirst().orElseThrow().message();
+        assertTrue(message.contains("through /z98/)"), message);
+    }
+
+    @Test
+    void manyStoredLongTargetsAndAFullFilePlanInAFewSeconds() {
+        List<SiteRedirectPlanner.Existing> stored = new ArrayList<>();
+        String padding = "b".repeat(1_000);
+        for (int i = 0; i < 49_000; i++) {
+            stored.add(new SiteRedirectPlanner.Existing("id-" + i, "EXACT", "/s" + i, "/t/" + i + "/" + padding, 301));
+        }
+        List<SiteRedirectCsv.Row> rows = new ArrayList<>();
+        rows.add(row(2, "/t/", "/shop", "301", "PREFIX"));
+        for (int i = 0; i < 19_000; i++) {
+            rows.add(row(rows.size() + 2, "/s" + i, "/landing/" + i + "/" + padding));
+        }
+        for (int i = 0; i < 999; i++) {
+            rows.add(row(rows.size() + 2, "/n" + i, "/landing"));
+        }
+        assertEquals(20_000, rows.size());
+        SiteRedirectPlanner.Plan[] plan = new SiteRedirectPlanner.Plan[1];
+        long ms = millis(() -> plan[0] = SiteRedirectPlanner.plan(rows, stored, PRODUCTS, COLLECTIONS));
+        assertTrue(ms < 5_000, "plan took " + ms + " ms");
+        assertFalse(plan[0].hasErrors(), plan[0].issues().stream().filter(SiteRedirectPlanner.Issue::error).toList().toString());
+        assertEquals(1_000, plan[0].creates().size());
+        assertEquals(19_000, plan[0].updates().size());
+        String message = plan[0].issues().stream().filter(i -> i.code().equals("PREFIX_CATCHES_TARGETS")).findFirst()
+                .orElseThrow().message();
+        assertTrue(message.startsWith("30000 stored redirects"), message);
+    }
+
+    @Test
+    void thePrefixCircleCheckStopsWithAnErrorPastItsStepLimit() {
+        List<SiteRedirectCsv.Row> rows = chain(50, false);
+        rows.add(row(rows.size() + 2, "/x", "/z0/q"));
+        SiteRedirectPlanner.Plan plan = SiteRedirectPlanner.plan(rows, List.of(), PRODUCTS, COLLECTIONS,
+                new SiteRedirectPlanner.Budget(SiteRedirectPlanner.MAX_PLAN_MILLIS, 20));
+        assertTrue(plan.hasErrors());
+        assertEquals(List.of("PREFIX_CHECK_TOO_LONG"), codes(plan, 0));
+        assertTrue(plan.creates().size() > 0);
+        // Within the standard limit the same file is fine.
+        assertFalse(SiteRedirectPlanner.plan(rows, List.of(), PRODUCTS, COLLECTIONS).hasErrors());
+        // An undo check past the limit is refused too.
+        List<SiteRedirectPlanner.Existing> after = new ArrayList<>();
+        for (SiteRedirectCsv.Row r : rows) {
+            after.add(new SiteRedirectPlanner.Existing("id-" + r.row(), r.matchType().isEmpty() ? "EXACT" : r.matchType(),
+                    SiteRedirectResolver.normalise(r.fromPath()) + (r.fromPath().endsWith("/") ? "/" : ""), r.toPath(), 301));
+        }
+        List<String> problems = SiteRedirectPlanner.restoreProblems(after, Set.of("id-" + rows.get(rows.size() - 1).row()),
+                new SiteRedirectPlanner.Budget(SiteRedirectPlanner.MAX_PLAN_MILLIS, 5));
+        assertEquals(1, problems.size(), problems.toString());
+        assertTrue(problems.get(0).contains("steps"), problems.toString());
+    }
+
+    @Test
+    void thePrefixLookupFindsTheLongestAddressTheWayTheResolverDoes() {
+        SiteRedirectPlanner.PrefixIndex index = new SiteRedirectPlanner.PrefixIndex(
+                Set.of("/a", "/a/b/", "/a/b/c", "/q?x=1", "/product/"));
+        assertEquals("/a/b/c", index.longestCatching("/a/b/cd", null));
+        assertEquals("/a/b/", index.longestCatching("/a/b/x", null));
+        // "/product/" catches the bare "/product", also with a query.
+        assertEquals("/product/", index.longestCatching("/product", null));
+        assertEquals("/product/", index.longestCatching("/product?lang=en", null));
+        assertNull(index.longestCatching("/products", null));
+        assertEquals("/q?x=1", index.longestCatching("/q?x=12", null));
+        assertEquals("/a/b/", index.longestCatching("/a/b/c", "/a/b/c"));
+        assertEquals("/a", index.longestCatching("/ab", null));
+        assertNull(index.longestCatching("/b", null));
+        assertNull(new SiteRedirectPlanner.PrefixIndex(Set.of()).longestCatching("/a", null));
+    }
 }

@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.HexFormat;
@@ -35,6 +36,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Staff work on a shop's old-site redirects ({@code site_redirect}): the list, the CSV import
@@ -54,7 +57,9 @@ import java.util.function.Supplier;
  * <p>The commit token ({@link #token}) is a digest of the institute, the file and the plan, not a
  * secret: it proves the file was planned against the rows stored now, so a commit writes what
  * the validation showed. Anyone who may commit could compute it; that is fine, because the
- * commit plans again and refuses any error.
+ * commit plans again and refuses any error. It starts with the first characters of the file's
+ * SHA-256, so a commit checks the token's shape and that it was handed out for this file before
+ * it takes the lock and plans; the full comparison follows the plan, under the lock.
  *
  * <p>A database failure is answered with a plain message and code; the cause goes to the log
  * only, never into the answer.
@@ -66,7 +71,11 @@ public class SiteRedirectAdminService {
     static final int MAX_SEARCH_CHARS = 200;
     /** Most issues returned; the counts are always exact. */
     static final int MAX_ISSUES = 1000;
-    static final String TOKEN_PREFIX = "rv1.";
+    static final String TOKEN_PREFIX = "rv2.";
+    /** Characters of the file's SHA-256 the token starts with. */
+    static final int TOKEN_FILE_CHARS = 16;
+    private static final Pattern TOKEN_SHAPE =
+            Pattern.compile("rv2\\.([0-9a-f]{" + TOKEN_FILE_CHARS + "})\\.[0-9a-f]{64}");
 
     private static final ObjectMapper JSON = new ObjectMapper();
     private static final Logger log = LoggerFactory.getLogger(SiteRedirectAdminService.class);
@@ -75,6 +84,8 @@ public class SiteRedirectAdminService {
     private final SiteRedirectStore store;
     private final CommerceAuditService auditService;
     private final TransactionTemplate transaction;
+    /** The time and PREFIX steps each plan may use (a test may give less). */
+    Supplier<SiteRedirectPlanner.Budget> planBudget = SiteRedirectPlanner.Budget::standard;
 
     public SiteRedirectAdminService(SiteRedirectStore store, CommerceAuditService auditService,
                                     PlatformTransactionManager transactionManager) {
@@ -163,8 +174,19 @@ public class SiteRedirectAdminService {
             throw new InvalidRequestException("validate the file first: commit takes the commit_token that"
                     + " mode=validate returned for it");
         }
-        SiteRedirectCsv.Parsed parsed = SiteRedirectCsv.parse(content);
+        // Checked before the lock and the plan: a token of the wrong shape or for another file
+        // costs nothing to refuse.
+        Matcher shape = TOKEN_SHAPE.matcher(commitToken.trim());
+        if (!shape.matches()) {
+            throw new InvalidRequestException("the commit_token is not one mode=validate returns; validate the"
+                    + " file and commit with the commit_token it returns");
+        }
         String fileSha = sha256(content);
+        if (!fileSha.startsWith(shape.group(1))) {
+            throw new ConflictException("the commit_token was handed out for another file; validate this file"
+                    + " and commit with the commit_token it returns");
+        }
+        SiteRedirectCsv.Parsed parsed = SiteRedirectCsv.parse(content);
         return writing(() -> transaction.execute(status -> {
             store.lock(instituteId);
             SiteRedirectPlanner.Plan plan = plan(instituteId, parsed);
@@ -266,7 +288,8 @@ public class SiteRedirectAdminService {
                 back.add(new SiteRedirectPlanner.Change(0, e.id(), e.matchType(), e.fromPath(), old.toPath(),
                         old.statusCode(), e.toPath(), e.statusCode()));
             }
-            List<String> problems = SiteRedirectPlanner.restoreProblems(after, restore.keySet());
+            List<String> problems = timed(() -> SiteRedirectPlanner.restoreProblems(after, restore.keySet(),
+                    planBudget.get()));
             if (!problems.isEmpty()) {
                 throw new ConflictException("undoing this commit would " + problems.get(0)
                         + (problems.size() > 1 ? " (and " + (problems.size() - 1) + " more)" : "")
@@ -292,7 +315,9 @@ public class SiteRedirectAdminService {
 
     /**
      * What an undo needs, kept in the commit's audit row: the created ids, the changed rows' old
-     * values, and a digest of every row as the commit left it.
+     * values, and a digest of every row as the commit left it. Each changed row is written as
+     * {@code [id, old_to_path, old_status_code]}, without the field names on every row; the
+     * longer form {@code {"id", "old_to_path", "old_status_code"}} is read too.
      */
     record UndoRecord(List<String> createdIds, String createdDigest, List<UndoRow> updated, String updatedDigest) {
 
@@ -305,9 +330,12 @@ public class SiteRedirectAdminService {
                 List<String> created = new ArrayList<>();
                 root.get("created_ids").forEach(n -> created.add(n.asText()));
                 List<UndoRow> updated = new ArrayList<>();
-                root.get("updated").forEach(n -> updated.add(new UndoRow(n.get("id").asText(),
-                        n.get("old_to_path").isNull() ? null : n.get("old_to_path").asText(),
-                        n.get("old_status_code").asInt())));
+                for (JsonNode n : root.get("updated")) {
+                    JsonNode id = n.isArray() ? n.get(0) : n.get("id");
+                    JsonNode toPath = n.isArray() ? n.get(1) : n.get("old_to_path");
+                    JsonNode statusCode = n.isArray() ? n.get(2) : n.get("old_status_code");
+                    updated.add(new UndoRow(id.asText(), toPath.isNull() ? null : toPath.asText(), statusCode.asInt()));
+                }
                 return new UndoRecord(created, root.path("created_digest").asText(), updated,
                         root.path("updated_digest").asText());
             } catch (JsonProcessingException | RuntimeException e) {
@@ -323,14 +351,10 @@ public class SiteRedirectAdminService {
             createdLines.add(stateLine(createdIds.get(i), c.matchType(), c.fromPath(), c.toPath(), c.statusCode()));
         }
         List<String> updatedLines = new ArrayList<>(plan.updates().size());
-        List<Map<String, Object>> updated = new ArrayList<>(plan.updates().size());
+        List<List<Object>> updated = new ArrayList<>(plan.updates().size());
         for (SiteRedirectPlanner.Change u : plan.updates()) {
             updatedLines.add(stateLine(u.id(), u.matchType(), u.fromPath(), u.toPath(), u.statusCode()));
-            Map<String, Object> row = new LinkedHashMap<>();
-            row.put("id", u.id());
-            row.put("old_to_path", u.oldToPath());
-            row.put("old_status_code", u.oldStatusCode());
-            updated.add(row);
+            updated.add(Arrays.asList(u.id(), u.oldToPath(), u.oldStatusCode()));
         }
         Map<String, Object> record = new LinkedHashMap<>();
         record.put("created_ids", createdIds);
@@ -452,13 +476,31 @@ public class SiteRedirectAdminService {
     }
 
     private SiteRedirectPlanner.Plan plan(String instituteId, SiteRedirectCsv.Parsed parsed) {
-        return SiteRedirectPlanner.plan(parsed.rows(), store.all(instituteId), store.activeProductSlugs(instituteId),
-                store.activeCollectionSlugs(instituteId));
+        List<SiteRedirectPlanner.Existing> existing = store.all(instituteId);
+        Set<String> products = store.activeProductSlugs(instituteId);
+        Set<String> collections = store.activeCollectionSlugs(instituteId);
+        return timed(() -> SiteRedirectPlanner.plan(parsed.rows(), existing, products, collections, planBudget.get()));
     }
 
-    /** Names the institute, the file and the plan (old values included). */
+    /** A plan stopped at its time limit becomes a plain 400; in a commit the transaction rolls back. */
+    private static <T> T timed(Supplier<T> planning) {
+        try {
+            return planning.get();
+        } catch (SiteRedirectPlanner.PlanTooSlowException e) {
+            log.warn("Redirect plan stopped: {}", e.getMessage());
+            throw new InvalidRequestException("REDIRECT_PLAN_TOO_SLOW: checking these redirects took longer than "
+                    + SiteRedirectPlanner.MAX_PLAN_MILLIS / 1000 + " seconds and was stopped; split the file, or use"
+                    + " fewer PREFIX rows whose targets other PREFIX rows catch");
+        }
+    }
+
+    /**
+     * Names the institute, the file and the plan (old values included), after the first
+     * {@link #TOKEN_FILE_CHARS} characters of the file's SHA-256.
+     */
     static String token(String instituteId, String fileSha, SiteRedirectPlanner.Plan plan) {
-        return TOKEN_PREFIX + SiteRedirectPlanner.sha256(instituteId + "\n" + fileSha + "\n" + plan.fingerprint());
+        return TOKEN_PREFIX + fileSha.substring(0, TOKEN_FILE_CHARS) + "."
+                + SiteRedirectPlanner.sha256(instituteId + "\n" + fileSha + "\n" + plan.fingerprint());
     }
 
     private static SiteRedirectDtos.RedirectImportResult result(String mode, String fileName, String fileSha,
