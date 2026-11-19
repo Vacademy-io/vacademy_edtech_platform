@@ -2606,6 +2606,11 @@ public class InvoiceService {
                 + "<td style=\"text-align:right;white-space:nowrap;" + cell + "\">" + value + "</td></tr>";
     }
 
+    /** The built-in invoice PDF layout, unfilled, for Settings &gt; Invoice to show and copy. */
+    public String getBuiltInInvoiceTemplateHtml() {
+        return loadDefaultInvoiceTemplateFromResources();
+    }
+
     /**
      * Load default invoice PDF layout template from
      * resources/templates/invoice/default_invoice.html (same style as institute INVOICE templates).
