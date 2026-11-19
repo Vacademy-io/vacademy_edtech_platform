@@ -19,6 +19,12 @@ class VendorCallCoverageTest {
     }
 
     @Test
+    void aCharLiteralQuoteDoesNotHideALaterHost() {
+        String src = "class A { char q = '\"'; String u = \"https://api.docconverter.pro/token\"; }";
+        assertEquals("api.docconverter.pro", VendorCallCoverage.vendorUse(src));
+    }
+
+    @Test
     void sdkImportsCount() {
         assertEquals("com.razorpay", VendorCallCoverage.vendorUse("import com.razorpay.Order;\nclass A {}"));
         assertNotNull(VendorCallCoverage.vendorUse("import org.springframework.mail.javamail.JavaMailSender;"));

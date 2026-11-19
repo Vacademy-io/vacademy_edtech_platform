@@ -24,7 +24,6 @@ public final class VendorCallCoverage {
 
     public static final String MARKER = "vendor-call-log:";
 
-    private static final Pattern STRING = Pattern.compile("\"((?:[^\"\\\\\\n]|\\\\.)*)\"");
     private static final Pattern HOST = Pattern.compile("(?i)[a-z0-9-]+(?:\\.[a-z0-9-]+)+");
     private static final Pattern BLOCK_COMMENT = Pattern.compile("(?s)/\\*.*?\\*/");
     private static final Pattern LINE_COMMENT = Pattern.compile("(?m)(^|[^:\"])//.*$");
@@ -88,12 +87,10 @@ public final class VendorCallCoverage {
                 return "${" + k.group(1) + "}";
             }
         }
-        Matcher s = STRING.matcher(code);
-        while (s.find()) {
-            Matcher h = HOST.matcher(s.group(1));
-            while (h.find()) {
-                if (IntegratedVendors.isIntegrated(h.group())) return h.group();
-            }
+        // Anywhere in the code, not only inside "...": pairing quotes breaks on a '"' char literal.
+        Matcher h = HOST.matcher(code);
+        while (h.find()) {
+            if (IntegratedVendors.isIntegrated(h.group())) return h.group();
         }
         return null;
     }
