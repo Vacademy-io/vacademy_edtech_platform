@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.live_session.provider.service.zoom;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -193,7 +195,7 @@ public class ZoomRecordingS3Service {
         connection.setReadTimeout(300_000);
         connection.setInstanceFollowRedirects(true);
         long total = 0;
-        try (InputStream in = connection.getInputStream();
+        try (InputStream in = ExternalCallLog.openStream(connection);
              OutputStream out = new FileOutputStream(dest)) {
             byte[] buf = new byte[8192];
             int n;

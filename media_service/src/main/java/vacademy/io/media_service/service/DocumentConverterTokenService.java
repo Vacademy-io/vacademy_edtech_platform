@@ -1,5 +1,7 @@
 package vacademy.io.media_service.service;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -27,7 +29,7 @@ public class DocumentConverterTokenService {
         map.add("grant_type", "password");
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
-        RestTemplate restTemplate = new RestTemplate();
+        RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
 
         ResponseEntity<TokenResponse> response = restTemplate.postForEntity(
                 API_URL, request, TokenResponse.class);

@@ -1,5 +1,7 @@
 package vacademy.io.assessment_service.features.open_evaluation.result;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -168,7 +170,7 @@ public class CheckedCopyService {
             HttpRequest request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(120)).GET().build();
             HttpResponse<InputStream> response;
             try {
-                response = client.send(request, HttpResponse.BodyHandlers.ofInputStream());
+                response = ExternalCallLog.send(client, request, HttpResponse.BodyHandlers.ofInputStream());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new IOException("interrupted", e);

@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.payments.manager;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.razorpay.Customer;
 import com.razorpay.Order;
 import com.razorpay.Payment;
@@ -56,6 +58,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             return buildPaymentResponseFromOrder(razorpayOrder, request, paymentGatewaySpecificData);
 
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "orders.create", null, e, null);
             throw new VacademyException("Error initiating Razorpay payment: " + e.getMessage());
         }
     }
@@ -74,6 +77,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             return buildCustomerResponse(razorpayCustomer);
 
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "customers.create", null, e, null);
             throw new VacademyException("Error creating Razorpay customer: " + e.getMessage());
         }
     }
@@ -92,6 +96,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             return buildCustomerResponse(razorpayCustomer);
 
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "customers.create", null, e, null);
             throw new VacademyException("Error creating Razorpay customer for unknown user: " + e.getMessage());
         }
     }
@@ -114,6 +119,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             }
 
         } catch (RazorpayException | RuntimeException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "customers.fetchAll", null, e, null);
             // A gateway failure here falls back to creating a new customer; surface it so
             // duplicate-customer creation isn't silently masking Razorpay outages.
             SentryLogger.logWarning(e, "Razorpay customer lookup by email failed", Map.of(
@@ -253,6 +259,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             dto.getResponseData().put("mandateMethod", mandateMethod);
             return dto;
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "orders.create", null, e, null);
             throw new VacademyException("Error initiating Razorpay mandate payment: " + e.getMessage());
         }
     }
@@ -340,6 +347,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             dto.setMessage("Recurring payment submitted");
             return dto;
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "payments.createRecurringPayment", null, e, null);
             throw new VacademyException("Error charging Razorpay recurring payment: " + e.getMessage());
         }
     }
@@ -360,6 +368,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             refundRequest.put("speed", "normal");
             razorpayClient.payments.refund(razorpayPaymentId, refundRequest);
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "payments.refund", null, e, null);
             throw new VacademyException("Error refunding Razorpay payment " + razorpayPaymentId
                     + ": " + e.getMessage());
         }
@@ -385,6 +394,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
                     buildRefundRequest(amountMinor, receipt, notes));
             return jsonToMap(refund.toJson());
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "payments.refund", null, e, null);
             throw new VacademyException("Error refunding Razorpay payment " + razorpayPaymentId
                     + ": " + e.getMessage());
         }
@@ -423,6 +433,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             Payment payment = razorpayClient.payments.fetch(razorpayPaymentId);
             return jsonToMap(payment.toJson());
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "payments.fetch", null, e, null);
             throw new VacademyException("Error fetching Razorpay payment " + razorpayPaymentId
                     + ": " + e.getMessage());
         }
@@ -449,6 +460,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             }
             return out;
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "orders.fetchPayments", null, e, null);
             throw new VacademyException("Error fetching the payments of Razorpay order " + razorpayOrderId);
         }
     }
@@ -477,6 +489,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             }
             return out;
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "payments.fetchAllRefunds", null, e, null);
             throw new VacademyException("Error fetching the refunds of Razorpay payment " + razorpayPaymentId);
         }
     }
@@ -495,6 +508,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             com.razorpay.Refund refund = razorpayClient.payments.fetchRefund(razorpayPaymentId, razorpayRefundId);
             return jsonToMap(refund.toJson());
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "payments.fetchRefund", null, e, null);
             throw new VacademyException("Error fetching Razorpay refund " + razorpayRefundId);
         }
     }
@@ -694,6 +708,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             return out;
 
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "paymentLink.create", null, e, null);
             throw new VacademyException("Error creating Razorpay payment link: " + e.getMessage());
         }
     }
@@ -800,6 +815,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             PaymentLink link = razorpayClient.paymentLink.cancel(paymentLinkId);
             return summarizePaymentLink(link.toJson());
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "paymentLink.cancel", null, e, null);
             throw new VacademyException("Error cancelling Razorpay payment link " + paymentLinkId
                     + ": " + e.getMessage());
         }
@@ -820,6 +836,7 @@ public class RazorpayPaymentManager implements PaymentServiceStrategy {
             PaymentLink link = razorpayClient.paymentLink.fetch(paymentLinkId);
             return summarizePaymentLink(link.toJson());
         } catch (RazorpayException e) {
+            ExternalCallLog.sdkFailure("api.razorpay.com", "paymentLink.fetch", null, e, null);
             throw new VacademyException("Error fetching Razorpay payment link " + paymentLinkId
                     + ": " + e.getMessage());
         }

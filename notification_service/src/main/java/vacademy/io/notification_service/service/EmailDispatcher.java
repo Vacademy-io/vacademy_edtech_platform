@@ -1,5 +1,7 @@
 package vacademy.io.notification_service.service;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -119,6 +121,9 @@ public class EmailDispatcher {
 
                 // Check if this is a retryable error
                 boolean isRetryable = isRetryableException(e);
+                // Each failed attempt is a failed call to the mail server (SES SMTP), shown on the
+                // health dashboard with the server's answer; the recipient is never kept.
+                ExternalCallLog.sdkFailure("email-smtp", "smtp.send", null, e, null);
 
                 if (!isRetryable) {
                     log.error("Non-retryable error encountered, failing immediately: {}", e.getMessage());

@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.tutorial_guide.service;
 
+// external-call-log: not a vendor (fetches images from our media storage for a PDF)
+
 import com.itextpdf.styledxmlparser.jsoup.Jsoup;
 import com.itextpdf.styledxmlparser.jsoup.nodes.Document;
 import com.itextpdf.styledxmlparser.jsoup.nodes.Entities;

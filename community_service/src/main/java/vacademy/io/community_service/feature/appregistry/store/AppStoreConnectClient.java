@@ -1,5 +1,7 @@
 package vacademy.io.community_service.feature.appregistry.store;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
@@ -43,7 +45,7 @@ public class AppStoreConnectClient {
     private final String issuerId;
     private final String keyId;
     private final PrivateKey privateKey;
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private volatile String cachedToken;

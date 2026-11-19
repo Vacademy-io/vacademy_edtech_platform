@@ -1,5 +1,7 @@
 package vacademy.io.notification_service.service;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -33,7 +35,7 @@ public class WatiService {
 
     public WatiService(
             vacademy.io.notification_service.features.external_communication_log.service.ExternalCommunicationLogService externalCommunicationLogService) {
-        this.restTemplate = new RestTemplate();
+        this.restTemplate = ExternalCallLog.attach(new RestTemplate());
         this.objectMapper = new ObjectMapper();
         this.objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.externalCommunicationLogService = externalCommunicationLogService;

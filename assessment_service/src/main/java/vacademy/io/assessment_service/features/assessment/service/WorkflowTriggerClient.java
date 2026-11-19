@@ -1,5 +1,7 @@
 package vacademy.io.assessment_service.features.assessment.service;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,7 +60,7 @@ public class WorkflowTriggerClient {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(connectTimeoutMs);
         factory.setReadTimeout(readTimeoutMs);
-        this.restTemplate = new RestTemplate(factory);
+        this.restTemplate = ExternalCallLog.attach(new RestTemplate(factory));
     }
 
     /**

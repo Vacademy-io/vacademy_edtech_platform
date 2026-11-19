@@ -1,5 +1,7 @@
 package vacademy.io.community_service.feature.appregistry.build;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
@@ -17,6 +19,6 @@ final class BuildHttp {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(5_000);
         factory.setReadTimeout(20_000);
-        return new RestTemplate(factory);
+        return ExternalCallLog.attach(new RestTemplate(factory));
     }
 }

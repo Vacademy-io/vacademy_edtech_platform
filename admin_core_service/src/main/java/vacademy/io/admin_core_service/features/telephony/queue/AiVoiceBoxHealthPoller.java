@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.telephony.queue;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -70,7 +72,7 @@ public class AiVoiceBoxHealthPoller {
                 .timeout(Duration.ofSeconds(5))
                 .GET()
                 .build();
-        HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> res = ExternalCallLog.send(http, req, HttpResponse.BodyHandlers.ofString());
         if (res.statusCode() < 200 || res.statusCode() >= 300) {
             markDown(box, "HTTP " + res.statusCode());
             return;
