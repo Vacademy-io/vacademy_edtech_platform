@@ -281,7 +281,10 @@ public class CommerceLineCancelService {
             }
         }
         desk.voidPendingTenders(order);
-        BigDecimal due = total.subtract(paid);
+        // What is owed, as "Record receipt" and the order detail count it (net of the credit of
+        // goods returned before payment, never below 0).
+        BigDecimal due = CommerceReceiptService.amountDue(total, paid,
+                orderRepository.sumReturnCreditNotRaised(order.getId()));
         if (due.signum() > 0) {
             CommerceOrderTender pending = new CommerceOrderTender();
             pending.setInstituteId(order.getInstituteId());

@@ -108,6 +108,7 @@ class ReturnRefundRoleMatrixTest {
                 mock(ObjectProvider.class);
         CommerceReturnService returns = new CommerceReturnService(f.desk, f.service,
                 new CommerceReturnDueService(f.returnRepository, f.refundRepository, f.orderRepository, f.desk),
+                mock(vacademy.io.admin_core_service.features.commerce.order.desk.CommerceReceiptService.class),
                 f.returnRepository, mock(CommerceReturnLineRepository.class), f.refundRepository, f.orderRepository,
                 mock(CommerceOrderLineRepository.class), mock(StockLocationRepository.class),
                 mock(CommerceShipmentRepository.class), mock(CommerceShipmentLineRepository.class),

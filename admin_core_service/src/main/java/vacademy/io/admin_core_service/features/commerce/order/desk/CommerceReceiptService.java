@@ -105,18 +105,13 @@ public class CommerceReceiptService {
             throw new ConflictException("USE_COD_REMITTANCE: the cash of a COD order is recorded with the courier's "
                     + "remittance");
         }
-        CommerceOrderStatus status = CommerceOrderStatus.of(order.getStatus());
-        String paymentStatus = order.getPaymentStatus();
-        if (!CommerceOrderWriter.CHANNEL_ADMIN.equals(order.getChannel())
-                || status == CommerceOrderStatus.CANCELLED || status == CommerceOrderStatus.RTO
-                || !(CommerceOrderWriter.PAYMENT_UNPAID.equals(paymentStatus)
-                || CommerceOrderWriter.PAYMENT_PARTIALLY_PAID.equals(paymentStatus))) {
+        if (!onCredit(order)) {
             throw new ConflictException(CommerceOrderDeskService.ORDER_STATE_CHANGED
                     + ": this order has nothing due on a receipt");
         }
         BigDecimal paid = CommerceOrderDeskService.nz(order.getAmountPaid());
         // Goods returned before payment were credited without any money going back: that credit
-        // lowers what is still due.
+        // lowers what is still due. Read under the order lock, which a return's receive takes too.
         BigDecimal returned = CommerceOrderDeskService.nz(orderRepository.sumReturnCreditNotRaised(order.getId()));
         BigDecimal due = amountDue(order.getTotal(), paid, returned);
         if (amount.compareTo(due) > 0) {
@@ -175,6 +170,55 @@ public class CommerceReceiptService {
         String orderId = order.getId();
         String tenderId = receipt.getId();
         desk.afterCommitMoney(hook -> hook.tenderReceived(instituteId, orderId, tenderId, mode.name(), amount));
+    }
+
+    /**
+     * A staff order left on credit: channel ADMIN, not cash on delivery, UNPAID or PARTIALLY_PAID,
+     * not cancelled or returned to origin. "Record receipt" takes money on it, and (owner decision
+     * 11-19) a return on it first lowers what is still owed ({@link #lowerOwed}). Online orders
+     * paid by the shopper and counter bills are never on credit.
+     */
+    public static boolean onCredit(CommerceOrder order) {
+        CommerceOrderStatus status = CommerceOrderStatus.of(order.getStatus());
+        String paymentStatus = order.getPaymentStatus();
+        return CommerceOrderWriter.CHANNEL_ADMIN.equals(order.getChannel())
+                && !CartPriceRequest.COD.equals(order.getPaymentMethod())
+                && status != CommerceOrderStatus.CANCELLED && status != CommerceOrderStatus.RTO
+                && (CommerceOrderWriter.PAYMENT_UNPAID.equals(paymentStatus)
+                || CommerceOrderWriter.PAYMENT_PARTIALLY_PAID.equals(paymentStatus));
+    }
+
+    /**
+     * What the order owes now ({@link #amountDue} with the credit of its received returns that was
+     * not owed back). The caller holds the order lock.
+     */
+    public BigDecimal owed(CommerceOrder order) {
+        return amountDue(order.getTotal(), order.getAmountPaid(),
+                orderRepository.sumReturnCreditNotRaised(order.getId()));
+    }
+
+    /**
+     * A return credited goods of an order left on credit, under the order lock: it now owes
+     * {@code owedAfter}. The PENDING credit tender is replaced by one for that amount; at 0 nothing
+     * is left to collect and the order is settled the way a receipt that clears the due settles it
+     * (PAID, its logs paid and its plans active), with no refund. The order is saved here.
+     */
+    public void lowerOwed(CommerceOrder order, List<CommerceOrderLine> lines, BigDecimal owedAfter, String actor) {
+        desk.voidPendingTenders(order);
+        if (owedAfter.signum() > 0) {
+            CommerceOrderTender credit = new CommerceOrderTender();
+            credit.setInstituteId(order.getInstituteId());
+            credit.setOrderId(order.getId());
+            credit.setMode(CommerceOrderTender.MODE_CREDIT);
+            credit.setAmount(owedAfter);
+            credit.setStatus(CommerceOrderTender.STATUS_PENDING);
+            credit.setRecordedBy(actor);
+            tenderRepository.save(credit);
+        } else {
+            order.setPaymentStatus(CommerceOrderWriter.PAYMENT_PAID);
+            staffOrders.settlePaid(order, lines);
+        }
+        orderRepository.save(order);
     }
 
     /**

@@ -124,6 +124,13 @@ public final class ReturnDtos {
         private List<ReturnableLine> lines;
         /** What the units are worth by the placement tax; the credit note at receive decides. */
         private BigDecimal creditEstimate;
+        /**
+         * The part of the estimate that would come off what a staff order on credit still owes
+         * (0 for other orders). An estimate read without the order lock; receive decides.
+         */
+        private BigDecimal creditToDue;
+        /** The part of the estimate that would be due back as money (capped by what was paid). */
+        private BigDecimal refundAmount;
     }
 
     @Data

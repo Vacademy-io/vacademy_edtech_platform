@@ -26,6 +26,7 @@ import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceLineC
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderDeskService;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderRemainder;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceReceiptService;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrder;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderLine;
 import vacademy.io.admin_core_service.features.commerce.order.enums.CommerceOrderStatus;
@@ -100,6 +101,11 @@ import java.util.regex.Pattern;
  * credit is raised into the order's refund due (for a COD order not yet remitted, when the
  * remittance is recorded) and the lines count the returned units.
  *
+ * <p>A staff order left on credit (owner decision 11-19, {@link CommerceReceiptService#onCredit})
+ * is returned at this desk before it is paid: the credit first lowers what the order still owes
+ * and only the rest is due back; when nothing is left owing the order is settled. The billing
+ * counter keeps the old rule (a bill is returned once it is paid).
+ *
  * <p>Every change runs through {@link CommerceRequestGuard} and compares the status the client
  * saw ({@code from_status}) under the lock (409 RETURN_STATE_CHANGED).
  */
@@ -125,6 +131,7 @@ public class CommerceReturnService {
     private final CommerceOrderDeskService desk;
     private final CommerceRefundService refundService;
     private final CommerceReturnDueService dueService;
+    private final CommerceReceiptService receipts;
     private final CommerceReturnRepository returnRepository;
     private final CommerceReturnLineRepository returnLineRepository;
     private final CommerceRefundRepository refundRepository;
@@ -150,7 +157,8 @@ public class CommerceReturnService {
     private final TransactionTemplate ownTransaction;
 
     public CommerceReturnService(CommerceOrderDeskService desk, CommerceRefundService refundService,
-                                 CommerceReturnDueService dueService, CommerceReturnRepository returnRepository,
+                                 CommerceReturnDueService dueService, CommerceReceiptService receipts,
+                                 CommerceReturnRepository returnRepository,
                                  CommerceReturnLineRepository returnLineRepository,
                                  CommerceRefundRepository refundRepository, CommerceOrderRepository orderRepository,
                                  CommerceOrderLineRepository orderLineRepository,
@@ -168,6 +176,7 @@ public class CommerceReturnService {
         this.desk = desk;
         this.refundService = refundService;
         this.dueService = dueService;
+        this.receipts = receipts;
         this.returnRepository = returnRepository;
         this.returnLineRepository = returnLineRepository;
         this.refundRepository = refundRepository;
@@ -214,7 +223,7 @@ public class CommerceReturnService {
         CommerceOrder seen = desk.readOrder(instituteId, clean.orderId());
         desk.authorize(user, instituteId, clean.locationId() != null ? clean.locationId()
                 : seen.getFulfilmentLocationId(), MANAGER);
-        return previewOf(instituteId, clean);
+        return previewOf(instituteId, clean, true);
     }
 
     /**
@@ -223,14 +232,14 @@ public class CommerceReturnService {
      * counter's session guard); only the POS package calls this.
      */
     public ReturnDtos.ReturnPreview previewForCounter(String instituteId, ReturnDtos.CreateReturnRequest request) {
-        return previewOf(instituteId, validate(request, false));
+        return previewOf(instituteId, validate(request, false), false);
     }
 
-    private ReturnDtos.ReturnPreview previewOf(String instituteId, Clean clean) {
+    private ReturnDtos.ReturnPreview previewOf(String instituteId, Clean clean, boolean creditAllowed) {
         return ownTransaction.execute(status -> {
             CommerceOrder order = orderRepository.findByIdAndInstituteId(clean.orderId(), instituteId)
                     .orElseThrow(() -> new VacademyException(HttpStatus.NOT_FOUND, "ORDER_NOT_FOUND: no such order"));
-            requireReturnable(order);
+            requireReturnable(order, creditAllowed);
             List<CommerceOrderLine> lines = orderLineRepository.findByOrderIdOrderByLineNoAsc(order.getId());
             Assessment a = assess(order, lines, clean);
             List<ReturnDtos.ReturnableLine> returnable = new ArrayList<>();
@@ -253,6 +262,12 @@ public class CommerceReturnService {
                             placement, line.getLineRef()), line.getQuantity(), before, quantity, head).net());
                 }
             }
+            // The same split receive makes: on a staff order on credit the credit first lowers what
+            // is owed, the rest is due back (capped by what was paid; a COD order waits).
+            BigDecimal toDue = creditAllowed && CommerceReceiptService.onCredit(order)
+                    ? estimate.min(receipts.owed(order)) : BigDecimal.ZERO.setScale(2);
+            BigDecimal room = nzm(order.getAmountPaid()).subtract(nzm(order.getRefundDue())).max(BigDecimal.ZERO);
+            BigDecimal refundAmount = estimate.subtract(toDue).min(room);
             CommerceReturnPolicy.Settings s = a.settings();
             return ReturnDtos.ReturnPreview.builder()
                     .policy(ReturnDtos.Policy.builder()
@@ -265,6 +280,8 @@ public class CommerceReturnService {
                     .warnings(a.warnings())
                     .lines(returnable)
                     .creditEstimate(estimate)
+                    .creditToDue(toDue)
+                    .refundAmount(refundAmount)
                     .build();
         });
     }
@@ -285,7 +302,7 @@ public class CommerceReturnService {
                 : counterService.nextNumber(instituteId, COUNTER_SCOPE);
         CommerceRequestGuard.Outcome<String> outcome = requestGuard.run(new CommerceRequestGuard.Key(instituteId,
                         clean.clientRequestId(), "RETURN_CREATE", "ORDER", clean.orderId(), hash, actor),
-                () -> createInside(instituteId, clean, location, number, hash, actor, true, null),
+                () -> createInside(instituteId, clean, location, number, hash, actor, true, null, true),
                 () -> returnRepository.findByInstituteIdAndClientRequestId(instituteId, clean.clientRequestId())
                         .map(CommerceReturn::getId).orElse(null));
         return view(instituteId, outcome.value(), user, outcome.replayed());
@@ -294,12 +311,14 @@ public class CommerceReturnService {
     /**
      * {@code notifyApproved}: false for a return taken at the billing counter, whose buyer is
      * standing there (no "return approved" message); the refund and credit-note messages stay.
-     * {@code posSessionId}: the counter session of such a return, else null.
+     * {@code posSessionId}: the counter session of such a return, else null. {@code creditAllowed}:
+     * true at the return desk, where a staff order left on credit is returned before it is paid;
+     * false at the billing counter.
      */
     String createInside(String instituteId, Clean clean, String locationId, String number, String hash,
-                        String actor, boolean notifyApproved, String posSessionId) {
+                        String actor, boolean notifyApproved, String posSessionId, boolean creditAllowed) {
         CommerceOrder order = desk.lockOrder(instituteId, clean.orderId());
-        requireReturnable(order);
+        requireReturnable(order, creditAllowed);
         List<CommerceOrderLine> lines = desk.freshLines(order.getId());
         for (Map.Entry<String, Integer> asked : clean.lines().entrySet()) {
             CommerceOrderLine line = CommerceOrderDeskService.byId(lines, asked.getKey());
@@ -395,7 +414,8 @@ public class CommerceReturnService {
         request.setLocationId(locationId);
         Clean clean = validate(request, true);
         Map<String, Named> named = named(received);
-        String returnId = createInside(instituteId, clean, locationId, number, hash, actor, false, posSessionId);
+        String returnId = createInside(instituteId, clean, locationId, number, hash, actor, false, posSessionId,
+                false);
         receiveInside(instituteId, returnId, clean.orderId(), ReturnStatus.APPROVED, null, named, actor,
                 clean.note());
         CommerceReturn ret = returnRepository.findByIdAndInstituteId(returnId, instituteId).orElseThrow();
@@ -700,13 +720,25 @@ public class CommerceReturnService {
         BigDecimal creditTotal = noteDto == null || noteDto.getTotal() == null ? BigDecimal.ZERO.setScale(2)
                 : noteDto.getTotal();
 
-        // 3. Money: the credit is due back (capped by what was paid; a COD order waits for its remittance).
+        // 3. Money: the credit is due back (capped by what was paid; a COD order waits for its
+        // remittance). On a staff order left on credit it first lowers what is still owed, read
+        // under the order lock "Record receipt" takes too; only the rest is due back.
+        boolean onCredit = CommerceReceiptService.onCredit(order);
+        BigDecimal owedBefore = onCredit ? receipts.owed(order) : BigDecimal.ZERO.setScale(2);
+        BigDecimal onDue = creditTotal.min(owedBefore);
         BigDecimal before = nzm(order.getRefundDue());
         BigDecimal room = nzm(order.getAmountPaid()).subtract(before);
-        BigDecimal target = creditTotal.min(room.max(BigDecimal.ZERO));
-        desk.raiseRefundDue(order, target, "RET:" + ret.getId(), "Goods of the paid order were returned.");
+        BigDecimal target = creditTotal.subtract(onDue).min(room.max(BigDecimal.ZERO));
+        desk.raiseRefundDue(order, target, "RET:" + ret.getId(), onCredit
+                ? "Goods of an order on credit were returned for more than it still owed."
+                : "Goods of the paid order were returned.");
         BigDecimal raised = nzm(order.getRefundDue()).subtract(before);
         orderRepository.save(order);
+        BigDecimal owedAfter = owedBefore.subtract(onDue);
+        if (onCredit && (onDue.signum() > 0 || owedAfter.signum() == 0)) {
+            // The pending credit shrinks to what is owed; at 0 the order is settled.
+            receipts.lowerOwed(order, lines, owedAfter, actor);
+        }
 
         ret.setCreditNoteId(noteDto == null ? null : noteDto.getId());
         ret.setCreditTotal(creditTotal);
@@ -720,6 +752,10 @@ public class CommerceReturnService {
         detail.put("credit_note_id", ret.getCreditNoteId());
         detail.put("credit_total", creditTotal.toPlainString());
         detail.put("due_raised", raised.toPlainString());
+        if (onCredit) {
+            detail.put("credit_on_due", onDue.toPlainString());
+            detail.put("amount_due", owedAfter.toPlainString());
+        }
         detail.put("location_id", ret.getLocationId());
         auditService.record(instituteId, actor, ret.getLocationId(), "RETURN_RECEIVED", "RETURN", ret.getId(), null,
                 CommerceInputRules.json(detail), note);
@@ -892,15 +928,20 @@ public class CommerceReturnService {
 
     /**
      * 409 unless the order is a delivered, paid (or COD awaiting remittance) order. A counter
-     * bill (channel POS) is returned the same way, at the counter or at this desk.
+     * bill (channel POS) is returned the same way, at the counter or at this desk. With
+     * {@code creditAllowed} (the return desk) a staff order left on credit is returned too, paid
+     * or not (owner decision 11-19).
      */
-    static void requireReturnable(CommerceOrder order) {
+    static void requireReturnable(CommerceOrder order, boolean creditAllowed) {
         if (CommerceOrderStatus.of(order.getStatus()) != CommerceOrderStatus.DELIVERED) {
             throw new ConflictException("ORDER_NOT_RETURNABLE: only a delivered order is returned here");
         }
         boolean paid = "PAID".equals(order.getPaymentStatus());
-        if (!paid && !CommerceReturnDueService.dueDeferred(order)) {
-            throw new ConflictException("ORDER_NOT_PAID: an order is returned once it is paid");
+        if (!paid && !CommerceReturnDueService.dueDeferred(order)
+                && !(creditAllowed && CommerceReceiptService.onCredit(order))) {
+            throw new ConflictException("ORDER_NOT_PAID: " + (CommerceReceiptService.onCredit(order)
+                    ? "an order on credit is returned at the return desk, not at the counter"
+                    : "an order is returned once it is paid"));
         }
     }
 

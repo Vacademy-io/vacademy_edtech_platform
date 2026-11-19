@@ -42,6 +42,7 @@ import vacademy.io.admin_core_service.features.commerce.order.cod.CommerceCodRem
 import vacademy.io.admin_core_service.features.commerce.order.cod.dto.CodRemittanceDtos;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderDeskService;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceStaffOrderService;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceReceiptService;
 import vacademy.io.admin_core_service.features.commerce.order.desk.dto.OrderDeskDtos;
 import vacademy.io.admin_core_service.features.commerce.order.desk.dto.StaffOrderRequest;
 import vacademy.io.admin_core_service.features.commerce.order.dto.CartPriceRequest;
@@ -181,6 +182,7 @@ class CommerceReturnsRefundsDatabaseProofIT {
     @Autowired private CommerceStaffOrderService staffOrders;
     @Autowired private CommerceCodRemittanceService remittances;
     @Autowired private CommerceReturnService returns;
+    @Autowired private CommerceReceiptService receipts;
     @Autowired private CommerceRefundService refunds;
     @Autowired private CommerceRefundExecutor executor;
     @Autowired private CommerceRefundPollJob pollJob;
@@ -1852,5 +1854,278 @@ class CommerceReturnsRefundsDatabaseProofIT {
                 .count(), String.valueOf(lines));
         assertTrue(lines.stream().noneMatch(l -> l.contains("exception_page") && l.contains(offShop)));
         db.update("DELETE FROM commerce_payment_exception WHERE institute_id = ?", offShop);
+    }
+
+    // ------------------------------------------------------------------ returns before payment (owner 11-19)
+
+    /**
+     * A staff order of 1,000.00 left on credit (one unit at 300.00 and one at 700.00, typed
+     * prices, no delivery charge), packed, shipped and delivered.
+     */
+    private String creditOrder() {
+        String orderId = staffOrders.create(admin, inst, staffOrder(credit, 1).chargeShipping(false)
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId(credit).quantity(1)
+                                .unitPriceOverride(new BigDecimal("300.00")).build(),
+                        StaffOrderRequest.Line.builder().variantId(qtyA).quantity(1)
+                                .unitPriceOverride(new BigDecimal("700.00")).build()))
+                .restOnCredit(true).build()).detail().getOrder().getId();
+        deliver(orderId);
+        assertEquals(0, new BigDecimal("1000.00").compareTo(money("SELECT total FROM commerce_order WHERE id = ?",
+                orderId)));
+        assertEquals("UNPAID", paymentStatus(orderId));
+        assertEquals("ADMIN", text("SELECT channel FROM commerce_order WHERE id = ?", orderId));
+        return orderId;
+    }
+
+    /** More stock for the credit cases (its own receipt key: the seed's would replay). */
+    private void restock(String packageSessionId, int quantity) {
+        ReceiptRequest request = new ReceiptRequest();
+        request.setLocationId(wh);
+        request.setSourceKind("OTHER");
+        request.setNote("proof stock for the credit cases");
+        request.setClientRequestId("rc-credit-" + packageSessionId);
+        ReceiptRequest.Line line = new ReceiptRequest.Line();
+        line.setPackageSessionId(packageSessionId);
+        line.setQuantity(quantity);
+        line.setUnitCost(new BigDecimal("100.00"));
+        request.setLines(List.of(line));
+        receiptService.create(inst, actor, true, request);
+    }
+
+    private String paymentStatus(String orderId) {
+        return text("SELECT payment_status FROM commerce_order WHERE id = ?", orderId);
+    }
+
+    private BigDecimal pendingCredit(String orderId) {
+        return money("SELECT COALESCE(SUM(amount), 0) FROM commerce_order_tender WHERE order_id = ? AND status = "
+                + "'PENDING'", orderId);
+    }
+
+    private StaffOrderDtos.StaffOrderDetail receipt(String orderId, String amount, String mode) {
+        return receipts.record(admin, inst, orderId, OrderDeskDtos.ReceiptRequest.builder().clientRequestId(key())
+                .mode(mode).amount(new BigDecimal(amount)).reference(mode + "-" + keys.get()).build());
+    }
+
+    private BigDecimal amountDue(String orderId) {
+        return desk.detail(inst, orderId, admin, false).getAmountDue();
+    }
+
+    /**
+     * What a credit order owes, from the rows: total less paid less the credit of its received
+     * returns not owed back; the PENDING tender carries exactly that, received tenders = paid.
+     */
+    private BigDecimal owedInvariants(String orderId) {
+        BigDecimal total = money("SELECT total FROM commerce_order WHERE id = ?", orderId);
+        BigDecimal notRaised = money("SELECT COALESCE(SUM(credit_total - due_raised), 0) FROM commerce_return WHERE "
+                + "order_id = ? AND status IN ('RECEIVED', 'CLOSED')", orderId);
+        BigDecimal owed = total.subtract(paid(orderId)).subtract(notRaised).max(BigDecimal.ZERO);
+        // Nothing over-collected or over-credited: what is owed plus the money kept (paid less due
+        // back) is exactly what the goods the buyer kept are worth.
+        BigDecimal credited = money("SELECT COALESCE(SUM(credit_total), 0) FROM commerce_return WHERE order_id = ? "
+                + "AND status IN ('RECEIVED', 'CLOSED')", orderId);
+        BigDecimal kept = paid(orderId).subtract(money("SELECT refund_due FROM commerce_order WHERE id = ?", orderId));
+        assertEquals(0, owed.add(kept).compareTo(total.subtract(credited)), "owed + kept = goods kept: owed " + owed
+                + ", kept " + kept + ", credited " + credited);
+        assertEquals(0, owed.compareTo(pendingCredit(orderId)), "pending credit = what is owed");
+        assertEquals(0, paid(orderId).compareTo(money("SELECT COALESCE(SUM(amount), 0) FROM commerce_order_tender "
+                + "WHERE order_id = ? AND status = 'RECEIVED'", orderId)), "received tenders = amount paid");
+        assertEquals(0, owed.compareTo(amountDue(orderId)), "the detail's amount_due");
+        assertEquals(owed.signum() > 0, inQueue("DUES", orderId), "in the dues queue only while something is owed");
+        if (owed.signum() > 0) {
+            StaffOrderDtos.StaffOrderRow row = queryService.staffList(inst, new CommerceOrderQueryService
+                    .StaffListFilter(null, null, null, null, "DUES", null, null, null), 0, 50).getOrders().stream()
+                    .filter(o -> o.getId().equals(orderId)).findFirst().orElseThrow();
+            assertEquals(0, owed.compareTo(row.getAmountDue()), "the list row's amount_due (DUES column)");
+        }
+        assertEquals(owed.signum() == 0 ? "PAID" : paid(orderId).signum() == 0 ? "UNPAID" : "PARTIALLY_PAID",
+                paymentStatus(orderId));
+        ledger(orderId);
+        return owed;
+    }
+
+    @Test
+    @Order(20)
+    void credit_aReturnBeforePaymentLowersWhatIsOwedThenAReceiptOfTheRestSettles() {
+        restock(credit, 20);
+        restock(qtyA, 20);
+        String orderId = creditOrder();
+        assertTrue(desk.detail(inst, orderId, admin, false).getNextActions().contains("CREATE_RETURN"),
+                "a manager may return an order on credit");
+        assertEquals(0, new BigDecimal("1000.00").compareTo(owedInvariants(orderId)));
+        String line300 = lineOf(orderId, credit);
+        int shelf = slots(credit);
+        ReturnDtos.ReturnPreview preview = returns.preview(admin, inst, ReturnDtos.CreateReturnRequest.builder()
+                .orderId(orderId).reason("DEFECTIVE").lines(List.of(ReturnDtos.LineRequest.builder()
+                        .orderLineId(line300).quantity(1).build())).build());
+        assertEquals(0, new BigDecimal("300.00").compareTo(preview.getCreditToDue()), "all of it off what is owed");
+        assertEquals(0, BigDecimal.ZERO.compareTo(preview.getRefundAmount()));
+
+        ReturnDtos.ReturnView ret = returnReceived(orderId, null, "DEFECTIVE", List.of(named(line300, "RESALEABLE",
+                1)));
+        assertEquals(0, new BigDecimal("300.00").compareTo(ret.getCreditTotal()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(ret.getDueRaised()), "nothing was paid, nothing goes back");
+        assertEquals("CLOSED", ret.getStatus(), "nothing to pay back: closed at once");
+        assertNotNull(ret.getCreditNote(), "a credit note as for any return");
+        assertEquals(0, new BigDecimal("300.00").compareTo(ret.getCreditNote().getTotal()));
+        assertEquals(1, count("SELECT count(*) FROM stock_movement WHERE reference_type = 'RETURN_LINE' AND "
+                + "type = 'RETURN' AND reference_id IN (SELECT id FROM commerce_return_line WHERE return_id = ?)",
+                ret.getId()), "the unit is back on the shelf");
+        assertEquals(shelf + 1, slots(credit));
+        assertEquals(0, BigDecimal.ZERO.compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?",
+                orderId)));
+        assertEquals(0, new BigDecimal("700.00").compareTo(owedInvariants(orderId)));
+        assertEquals("300.00|700.00", text("SELECT (new_value_json::jsonb ->> 'credit_on_due') || '|' || "
+                + "(new_value_json::jsonb ->> 'amount_due') FROM commerce_audit WHERE reference_id = ? AND kind = "
+                + "'RETURN_RECEIVED'", ret.getId()), "the audit row says what came off the due and what is owed");
+
+        ConflictException above = assertThrows(ConflictException.class, () -> receipt(orderId, "1000.00", "CASH"));
+        assertTrue(above.getMessage().startsWith("RECEIPT_ABOVE_DUE: 700.00"), above.getMessage());
+        assertEquals(0, BigDecimal.ZERO.compareTo(paid(orderId)), "the refused receipt wrote nothing");
+        receipt(orderId, "700.00", "CASH");
+        assertEquals("PAID", paymentStatus(orderId));
+        assertEquals(0, new BigDecimal("700.00").compareTo(paid(orderId)));
+        assertEquals(0, BigDecimal.ZERO.compareTo(owedInvariants(orderId)));
+        assertEquals(0, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId), "no refund");
+        noDrift("return before payment, then the rest received");
+    }
+
+    @Test
+    @Order(21)
+    void credit_partPaidThenAReturnAboveWhatIsOwedSettlesAndOnlyTheRestIsRefunded() {
+        String orderId = creditOrder();
+        receipt(orderId, "400.00", "UPI");
+        assertEquals("PARTIALLY_PAID", paymentStatus(orderId));
+        assertEquals(0, new BigDecimal("600.00").compareTo(owedInvariants(orderId)));
+        ReturnDtos.ReturnPreview preview = returns.preview(admin, inst, ReturnDtos.CreateReturnRequest.builder()
+                .orderId(orderId).reason("DEFECTIVE").lines(List.of(ReturnDtos.LineRequest.builder()
+                        .orderLineId(lineOf(orderId, qtyA)).quantity(1).build())).build());
+        assertEquals(0, new BigDecimal("600.00").compareTo(preview.getCreditToDue()));
+        assertEquals(0, new BigDecimal("100.00").compareTo(preview.getRefundAmount()));
+
+        ReturnDtos.ReturnView ret = returnReceived(orderId, null, "DEFECTIVE", List.of(named(lineOf(orderId, qtyA),
+                "RESALEABLE", 1)));
+        assertEquals(0, new BigDecimal("700.00").compareTo(ret.getCreditTotal()));
+        assertEquals(0, new BigDecimal("100.00").compareTo(ret.getDueRaised()), "700 credit - 600 owed");
+        assertEquals("RECEIVED", ret.getStatus(), "it waits for its refund");
+        assertEquals(0, new BigDecimal("100.00").compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?",
+                orderId)));
+        assertEquals(0, BigDecimal.ZERO.compareTo(owedInvariants(orderId)), "due 600 -> 0, settled");
+        assertTrue(assertThrows(ConflictException.class, () -> receipt(orderId, "1.00", "CASH")).getMessage()
+                .startsWith("ORDER_STATE_CHANGED"), "nothing to collect");
+
+        // Only the 100.00 above the due goes back, by the normal refund rules.
+        assertTrue(assertThrows(ConflictException.class, () -> refund(orderId, ret.getId(), new BigDecimal("100.01"),
+                "CASH", null, key())).getMessage().startsWith("REFUND_ABOVE_RETURN"));
+        RefundDtos.RefundView cash = refund(orderId, ret.getId(), new BigDecimal("100.00"), "CASH", null, key());
+        assertEquals("PROCESSED", cash.getStatus());
+        assertEquals("CLOSED", text("SELECT status FROM commerce_return WHERE id = ?", ret.getId()));
+        assertEquals(0, new BigDecimal("100.00").compareTo(money("SELECT amount_refunded FROM commerce_order WHERE "
+                + "id = ?", orderId)));
+        owedInvariants(orderId);
+        noDrift("part paid, then a return above the due");
+    }
+
+    @Test
+    @Order(22)
+    void credit_aFullReturnOfAnUnpaidOrderSettlesItWithACreditNoteAndNoRefund() {
+        String orderId = creditOrder();
+        int a = slots(credit);
+        int b = slots(qtyA);
+        ReturnDtos.ReturnView ret = returnReceived(orderId, null, "DEFECTIVE", List.of(
+                named(lineOf(orderId, credit), "RESALEABLE", 1), named(lineOf(orderId, qtyA), "RESALEABLE", 1)));
+        assertEquals(0, new BigDecimal("1000.00").compareTo(ret.getCreditTotal()));
+        assertEquals(0, new BigDecimal("1000.00").compareTo(ret.getCreditNote().getTotal()), "credit note issued");
+        assertEquals(0, BigDecimal.ZERO.compareTo(ret.getDueRaised()));
+        assertEquals("CLOSED", ret.getStatus());
+        assertEquals(a + 1, slots(credit));
+        assertEquals(b + 1, slots(qtyA));
+        assertEquals(0, BigDecimal.ZERO.compareTo(owedInvariants(orderId)), "settled, nothing to collect");
+        assertEquals(0, BigDecimal.ZERO.compareTo(money("SELECT refund_due FROM commerce_order WHERE id = ?",
+                orderId)), "no refund");
+        assertEquals(0, count("SELECT count(*) FROM commerce_refund WHERE order_id = ?", orderId));
+        assertEquals("DELIVERED", status(orderId), "a return never moves the order");
+        assertTrue(assertThrows(ConflictException.class, () -> receipt(orderId, "1.00", "CASH")).getMessage()
+                .startsWith("ORDER_STATE_CHANGED"));
+        assertFalse(desk.detail(inst, orderId, admin, false).getNextActions().contains("REFUND"));
+        noDrift("full return of an unpaid order");
+    }
+
+    @Test
+    @Order(23)
+    void credit_aReceiptAndAReturnRacingOnOneOrderNeverOverCollectOrOverCredit() {
+        int returnFirst = 0;
+        for (int round = 0; round < 4; round++) {
+            String orderId = creditOrder();
+            ReturnDtos.ReturnView approved = returns.create(admin, inst, ReturnDtos.CreateReturnRequest.builder()
+                    .clientRequestId(key()).orderId(orderId).reason("DEFECTIVE").approveNow(true)
+                    .lines(List.of(ReturnDtos.LineRequest.builder().orderLineId(lineOf(orderId, credit)).quantity(1)
+                            .build())).build());
+            String receiveKey = key();
+            String receiptKey = key();
+            String line = lineOf(orderId, credit);
+            Callable<Object> receipt = () -> receipts.record(admin, inst, orderId, OrderDeskDtos.ReceiptRequest
+                    .builder().clientRequestId(receiptKey).mode("CASH").amount(new BigDecimal("1000.00")).build());
+            Callable<Object> receive = () -> returns.receive(admin, inst, approved.getId(), ReturnDtos.ReceiveRequest
+                    .builder().clientRequestId(receiveKey).fromStatus("APPROVED")
+                    .lines(List.of(named(line, "RESALEABLE", 1))).build());
+            // The queue at the row lock follows who asked first: odd rounds start the return first.
+            boolean swap = round % 2 == 1;
+            List<Object> raw = behindRowLock("commerce_order", orderId, swap ? List.of(receive, receipt)
+                    : List.of(receipt, receive));
+            List<Object> results = swap ? List.of(raw.get(1), raw.get(0)) : raw;
+            assertTrue(results.get(1) instanceof ReturnDtos.ReturnView, "the return is always received: " + results);
+            BigDecimal raised = money("SELECT due_raised FROM commerce_return WHERE id = ?", approved.getId());
+            if (results.get(0) instanceof Exception e) {
+                // The return went first: 700.00 was owed, the receipt of 1,000.00 is refused.
+                assertTrue(e.getMessage().startsWith("RECEIPT_ABOVE_DUE: 700.00"), e.getMessage());
+                returnFirst++;
+                assertEquals(0, BigDecimal.ZERO.compareTo(paid(orderId)));
+                assertEquals(0, BigDecimal.ZERO.compareTo(raised));
+                assertEquals(0, new BigDecimal("700.00").compareTo(owedInvariants(orderId)));
+            } else {
+                // The receipt went first: the order was paid, the whole credit is due back.
+                assertEquals(0, new BigDecimal("1000.00").compareTo(paid(orderId)));
+                assertEquals(0, new BigDecimal("300.00").compareTo(raised));
+                assertEquals(0, BigDecimal.ZERO.compareTo(owedInvariants(orderId)));
+            }
+            assertTrue(paid(orderId).subtract(money("SELECT refund_due FROM commerce_order WHERE id = ?", orderId))
+                    .compareTo(new BigDecimal("700.00")) <= 0, "kept money <= the goods kept: " + results);
+        }
+        System.out.println("CREDIT_RACE rounds=4 return_first=" + returnFirst + " receipt_first=" + (4 - returnFirst));
+        noDrift("receipt and return races");
+    }
+
+    @Test
+    @Order(24)
+    void credit_onlineOrdersAndTheCounterKeepTheirRules() {
+        // A paid online order: the whole credit is due back (as before).
+        clientIp = "127.0.0.24";
+        String online = paidOrder(Map.of(qtyA, 1));
+        deliver(online);
+        // A shopper's online order that is not paid is never returned (the state is set by hand: a
+        // delivered online order is always paid through the services).
+        db.update("UPDATE commerce_order SET payment_status = 'PARTIALLY_PAID' WHERE id = ?", online);
+        assertTrue(assertThrows(ConflictException.class, () -> returns.create(admin, inst,
+                ReturnDtos.CreateReturnRequest.builder().clientRequestId(key()).orderId(online).reason("DEFECTIVE")
+                        .lines(List.of(ReturnDtos.LineRequest.builder().orderLineId(lineOf(online, qtyA)).quantity(1)
+                                .build())).build())).getMessage().startsWith("ORDER_NOT_PAID"));
+        db.update("UPDATE commerce_order SET payment_status = 'PAID' WHERE id = ?", online);
+        ReturnDtos.ReturnView paidBack = returnReceived(online, null, "DEFECTIVE", List.of(named(lineOf(online, qtyA),
+                "RESALEABLE", 1)));
+        assertEquals(0, paidBack.getCreditTotal().compareTo(paidBack.getDueRaised()), "all of it due back");
+        assertEquals("PAID", paymentStatus(online));
+        ledger(online);
+
+        // The billing counter takes back a bill once it is paid: a staff order on credit is refused there.
+        String orderId = creditOrder();
+        ReturnDtos.CreateReturnRequest body = ReturnDtos.CreateReturnRequest.builder().clientRequestId(key())
+                .orderId(orderId).reason("DEFECTIVE").lines(List.of(ReturnDtos.LineRequest.builder()
+                        .orderLineId(lineOf(orderId, credit)).quantity(1).build())).build();
+        ConflictException counter = assertThrows(ConflictException.class, () -> new TransactionTemplate(
+                transactionManager).execute(tx -> returns.counterReturnInside(inst, body, store, "RET-X-" + run,
+                "hash-" + run, actor, List.of(named(lineOf(orderId, credit), "RESALEABLE", 1)))));
+        assertTrue(counter.getMessage().startsWith("ORDER_NOT_PAID"), counter.getMessage());
+        assertEquals(0, count("SELECT count(*) FROM commerce_return WHERE order_id = ?", orderId), "nothing written");
+        assertEquals(0, new BigDecimal("1000.00").compareTo(owedInvariants(orderId)));
     }
 }

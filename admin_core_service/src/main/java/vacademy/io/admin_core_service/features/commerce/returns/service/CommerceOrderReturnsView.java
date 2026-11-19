@@ -161,6 +161,8 @@ public class CommerceOrderReturnsView {
         row.setRefundOpen(nz(order.getRefundDue()).subtract(nz(order.getRefundCommitted())));
         row.setRefundState(refundState(order.getAmountPaid(), order.getRefundCommitted(), order.getAmountRefunded()));
         row.setReturnState(returnState(lines, returns));
+        row.setAmountDue(CommerceReceiptService.amountDue(order.getTotal(), order.getAmountPaid(),
+                returnCreditNotRaised(returns)));
     }
 
     private static boolean returnable(CommerceOrder order, List<CommerceOrderLine> lines,
@@ -168,7 +170,9 @@ public class CommerceOrderReturnsView {
         if (!"DELIVERED".equals(order.getStatus()) || "POS".equals(order.getChannel())) {
             return false;
         }
-        if (!"PAID".equals(order.getPaymentStatus()) && !CommerceReturnDueService.dueDeferred(order)) {
+        // A staff order left on credit is returned before it is paid (owner decision 11-19).
+        if (!"PAID".equals(order.getPaymentStatus()) && !CommerceReturnDueService.dueDeferred(order)
+                && !CommerceReceiptService.onCredit(order)) {
             return false;
         }
         int shipped = 0;

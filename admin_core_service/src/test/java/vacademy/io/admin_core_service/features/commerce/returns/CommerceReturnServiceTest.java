@@ -12,6 +12,10 @@ import vacademy.io.admin_core_service.features.commerce.document.dto.CreditNoteR
 import vacademy.io.admin_core_service.features.commerce.document.repository.CommerceCreditNoteRepository;
 import vacademy.io.admin_core_service.features.commerce.document.service.CommerceCreditNoteService;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceOrderEvents;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceReceiptService;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceStaffOrderService;
+import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderTender;
+import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderTenderRepository;
 import vacademy.io.admin_core_service.features.commerce.order.entity.CommerceOrderLine;
 import vacademy.io.admin_core_service.features.commerce.order.repository.CommerceOrderLineRepository;
 import vacademy.io.admin_core_service.features.commerce.returns.dto.ReturnDtos;
@@ -96,6 +100,9 @@ class CommerceReturnServiceTest {
     private final CommerceReturnSettings settings = mock(CommerceReturnSettings.class);
     private final CommerceShipmentService shipmentService = mock(CommerceShipmentService.class);
     private CommerceReturnDueService dueService;
+    private final CommerceOrderTenderRepository tenders = mock(CommerceOrderTenderRepository.class);
+    private final CommerceStaffOrderService staffOrders = mock(CommerceStaffOrderService.class);
+    private final List<CommerceOrderTender> savedTenders = new ArrayList<>();
     private CommerceReturnService service;
 
     private final List<CommerceOrderLine> lines = new ArrayList<>();
@@ -112,7 +119,18 @@ class CommerceReturnServiceTest {
         dueService = new CommerceReturnDueService(f.returnRepository, f.refundRepository, f.orderRepository, f.desk);
         ObjectProvider<CommerceShipmentService> shipmentProvider = mock(ObjectProvider.class);
         when(shipmentProvider.getObject()).thenReturn(shipmentService);
-        service = new CommerceReturnService(f.desk, f.service, dueService, f.returnRepository, lineRepository,
+        CommerceReceiptService receipts = new CommerceReceiptService(f.desk, f.orderRepository, tenders, staffOrders,
+                f.auditService, f.requestGuard, f.clock);
+        lenient().when(tenders.save(any(CommerceOrderTender.class))).thenAnswer(call -> {
+            savedTenders.add(call.getArgument(0));
+            return call.getArgument(0);
+        });
+        // Credit of received (or closed) returns not owed back, as the repository's SUM reads it.
+        lenient().when(f.orderRepository.sumReturnCreditNotRaised(ORDER)).thenAnswer(call -> f.returns.stream()
+                .filter(r -> List.of("RECEIVED", "CLOSED").contains(r.getStatus()))
+                .map(r -> r.getCreditTotal().subtract(r.getDueRaised()))
+                .reduce(BigDecimal.ZERO.setScale(2), BigDecimal::add));
+        service = new CommerceReturnService(f.desk, f.service, dueService, receipts, f.returnRepository, lineRepository,
                 f.refundRepository, f.orderRepository, orderLineRepository, locations, shipments, shipmentLines,
                 pieces, variants, ledger, creditNotes, creditNoteRepository, counter, settings, f.requestGuard,
                 f.accessGuard, f.auditService, f.events, shipmentProvider, f.clock, new ObjectMapper(),
@@ -288,11 +306,17 @@ class CommerceReturnServiceTest {
         // WP-42: a bill of the billing counter is returned like any delivered order.
         f.order.setChannel("POS");
         assertEquals("REQUESTED", created(create("l1", 1)).getStatus());
+        // A shopper's online order not paid yet is never returned.
+        f.order.setChannel("ONLINE");
+        f.order.setPaymentStatus("UNPAID");
+        f.order.setPaymentMethod("PREPAID");
+        assertTrue(assertThrows(ConflictException.class, () -> created(create("l1", 1))).getMessage()
+                .startsWith("ORDER_NOT_PAID"));
+        // A staff order left on credit is returned before it is paid (owner decision 11-19).
         f.order.setChannel("ADMIN");
         f.order.setPaymentStatus("PARTIALLY_PAID");
         f.order.setPaymentMethod("OFFLINE");
-        assertTrue(assertThrows(ConflictException.class, () -> created(create("l1", 1))).getMessage()
-                .startsWith("ORDER_NOT_PAID"));
+        assertEquals("REQUESTED", created(create("l1", 1)).getStatus());
         // A COD order waiting for its remittance may be returned.
         f.order.setPaymentMethod("COD");
         f.order.setPaymentStatus("UNPAID");
@@ -559,6 +583,140 @@ class CommerceReturnServiceTest {
         assertEquals("loc-2", posted.get(0).getLocationId());
         assertEquals("loc-2", f.returns.get(0).getLocationId());
         verify(f.desk).authorize(any(), eq(INST), eq("loc-2"), any());
+    }
+
+    // ------------------------------------------------------------------ returns before payment (owner 11-19)
+
+    /** A staff order of 1,000.00 left on credit (300.00 + 700.00), {@code paid} received so far. */
+    private void creditOrder(String paid) {
+        line("a", 1, "300.00");
+        line("b", 1, "700.00");
+        f.order.setChannel("ADMIN");
+        f.order.setPaymentMethod("OFFLINE");
+        f.order.setTotal(new BigDecimal("1000.00"));
+        f.order.setAmountPaid(new BigDecimal(paid));
+        f.order.setPaymentStatus(new BigDecimal(paid).signum() == 0 ? "UNPAID" : "PARTIALLY_PAID");
+    }
+
+    private ReturnDtos.ReturnView returned(String... lineIds) {
+        List<ReturnDtos.LineRequest> asked = new ArrayList<>();
+        List<ReturnDtos.ReceiveLine> named = new ArrayList<>();
+        for (String id : lineIds) {
+            asked.add(ReturnDtos.LineRequest.builder().orderLineId(id).quantity(1).build());
+            named.add(named(id, "RESALEABLE", 1));
+        }
+        String id = created(ReturnDtos.CreateReturnRequest.builder().clientRequestId("return-key-" + (f.returns.size()
+                + 1)).orderId(ORDER).reason("DEFECTIVE").lines(asked).approveNow(true)).getId();
+        return service.receive(RefundFixture.manager(), INST, id, ReturnDtos.ReceiveRequest.builder()
+                .clientRequestId("receive-key-" + id).fromStatus("APPROVED").lines(named).build());
+    }
+
+    private BigDecimal pendingSaved() {
+        return savedTenders.stream().filter(t -> "PENDING".equals(t.getStatus()) && "CREDIT".equals(t.getMode()))
+                .map(CommerceOrderTender::getAmount).reduce(BigDecimal.ZERO.setScale(2), BigDecimal::add);
+    }
+
+    @Test
+    void credit_aReturnBeforePaymentLowersWhatIsOwedAndNothingIsDueBack() {
+        creditOrder("0.00");
+        ReturnDtos.ReturnView view = returned("a");
+
+        assertEquals(0, new BigDecimal("300.00").compareTo(view.getCreditTotal()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(view.getDueRaised()), "no money was paid, none goes back");
+        assertEquals(0, BigDecimal.ZERO.compareTo(f.order.getRefundDue()));
+        assertEquals("CLOSED", view.getStatus(), "nothing to pay back: closed at once");
+        verify(f.desk).voidPendingTenders(f.order);
+        assertEquals(1, savedTenders.size());
+        assertEquals(0, new BigDecimal("700.00").compareTo(pendingSaved()), "the credit left = what is owed");
+        assertEquals("UNPAID", f.order.getPaymentStatus());
+        verify(staffOrders, never()).settlePaid(any(), any());
+        assertEquals(0, new BigDecimal("700.00").compareTo(CommerceReceiptService.amountDue(f.order.getTotal(), f.order.getAmountPaid(),
+                f.orderRepository.sumReturnCreditNotRaised(ORDER))), "Record receipt asks 700.00");
+        // The stock and the credit note are as for any return.
+        assertEquals(1, posted.size());
+        verify(creditNotes).issue(eq(INST), any(), any());
+        ArgumentCaptor<String> detail = ArgumentCaptor.forClass(String.class);
+        verify(f.auditService).record(eq(INST), any(), any(), eq("RETURN_RECEIVED"), eq("RETURN"), any(), any(),
+                detail.capture(), any());
+        assertTrue(detail.getValue().contains("\"credit_on_due\":\"300.00\""), detail.getValue());
+        assertTrue(detail.getValue().contains("\"amount_due\":\"700.00\""), detail.getValue());
+    }
+
+    @Test
+    void credit_aReturnAboveWhatIsOwedSettlesTheOrderAndOnlyTheRestIsDueBack() {
+        creditOrder("400.00");
+        ReturnDtos.ReturnView view = returned("b");
+
+        assertEquals(0, new BigDecimal("700.00").compareTo(view.getCreditTotal()));
+        assertEquals(0, new BigDecimal("100.00").compareTo(view.getDueRaised()), "700 - the 600 owed");
+        assertEquals(0, new BigDecimal("100.00").compareTo(f.order.getRefundDue()));
+        assertEquals("RECEIVED", view.getStatus(), "it waits for its refund of 100.00");
+        assertEquals("PAID", f.order.getPaymentStatus(), "nothing is left to collect");
+        verify(staffOrders).settlePaid(eq(f.order), anyList());
+        assertTrue(savedTenders.isEmpty(), "no credit left");
+        verify(f.desk).voidPendingTenders(f.order);
+    }
+
+    @Test
+    void credit_thePreviewSplitsTheEstimateIntoWhatComesOffTheDueAndWhatGoesBack() {
+        creditOrder("400.00");
+        ReturnDtos.ReturnPreview part = service.preview(RefundFixture.manager(), INST, create("b", 1).build());
+        assertEquals(0, new BigDecimal("700.00").compareTo(part.getCreditEstimate()));
+        assertEquals(0, new BigDecimal("600.00").compareTo(part.getCreditToDue()), "600 still owed");
+        assertEquals(0, new BigDecimal("100.00").compareTo(part.getRefundAmount()));
+        ReturnDtos.ReturnPreview small = service.preview(RefundFixture.manager(), INST, create("a", 1).build());
+        assertEquals(0, new BigDecimal("300.00").compareTo(small.getCreditToDue()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(small.getRefundAmount()));
+        // A paid order: all of it goes back.
+        f.order.setAmountPaid(new BigDecimal("1000.00"));
+        f.order.setPaymentStatus("PAID");
+        ReturnDtos.ReturnPreview paid = service.preview(RefundFixture.manager(), INST, create("b", 1).build());
+        assertEquals(0, BigDecimal.ZERO.compareTo(paid.getCreditToDue()));
+        assertEquals(0, new BigDecimal("700.00").compareTo(paid.getRefundAmount()));
+    }
+
+    @Test
+    void credit_aFullReturnOfAnUnpaidOrderSettlesItWithNothingDueBack() {
+        creditOrder("0.00");
+        ReturnDtos.ReturnView view = returned("a", "b");
+
+        assertEquals(0, new BigDecimal("1000.00").compareTo(view.getCreditTotal()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(view.getDueRaised()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(f.order.getRefundDue()), "no refund");
+        assertEquals("CLOSED", view.getStatus());
+        assertEquals("PAID", f.order.getPaymentStatus(), "settled: out of the dues queue");
+        assertTrue(savedTenders.isEmpty());
+        verify(staffOrders).settlePaid(eq(f.order), anyList());
+        verify(creditNotes).issue(eq(INST), any(), any());
+    }
+
+    @Test
+    void credit_aSecondReturnCountsTheCreditTheFirstAlreadyTookOffTheDue() {
+        creditOrder("0.00");
+        returned("a");
+        assertEquals("UNPAID", f.order.getPaymentStatus());
+        returned("b");
+        assertEquals("PAID", f.order.getPaymentStatus(), "300 + 700 returned: nothing owed");
+        assertEquals(0, BigDecimal.ZERO.compareTo(f.order.getRefundDue()));
+        assertEquals(0, BigDecimal.ZERO.compareTo(f.returns.get(1).getDueRaised()));
+    }
+
+    @Test
+    void credit_theCounterAndOnlineOrdersKeepTheirRules() {
+        creditOrder("0.00");
+        // The billing counter takes back a bill once it is paid, whatever the order.
+        ConflictException counter = assertThrows(ConflictException.class, () -> service.counterReturnInside(INST,
+                counterBody("a", 1), LOC, "RET-000011", "hash-4", "cashier-1", List.of(named("a", "RESALEABLE", 1))));
+        assertTrue(counter.getMessage().startsWith("ORDER_NOT_PAID"), counter.getMessage());
+        assertTrue(assertThrows(ConflictException.class, () -> service.previewForCounter(INST, counterBody("a", 1)))
+                .getMessage().startsWith("ORDER_NOT_PAID"));
+        // A paid staff order: the whole credit is due back, nothing about the due changes.
+        f.order.setAmountPaid(new BigDecimal("1000.00"));
+        f.order.setPaymentStatus("PAID");
+        ReturnDtos.ReturnView paid = returned("a");
+        assertEquals(0, new BigDecimal("300.00").compareTo(paid.getDueRaised()));
+        verify(f.desk, never()).voidPendingTenders(any());
+        verify(staffOrders, never()).settlePaid(any(), any());
     }
 
     // ------------------------------------------------------------------ money and R5

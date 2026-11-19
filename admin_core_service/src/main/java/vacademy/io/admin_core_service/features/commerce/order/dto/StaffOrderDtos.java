@@ -60,6 +60,11 @@ public final class StaffOrderDtos {
         // Order desk screens (WP-34)
         /** What the courier collects on a cash-on-delivery order; null for other orders. */
         private BigDecimal codAmount;
+        /**
+         * What the order still owes, as the detail's {@code amount_due} counts it: total less paid
+         * less the credit of goods returned that was not owed back as money; never below 0.
+         */
+        private BigDecimal amountDue;
     }
 
     @Data
