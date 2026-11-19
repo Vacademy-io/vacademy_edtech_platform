@@ -93,7 +93,13 @@ public final class SiteRedirectDtos {
         private String fileSha256;
         /** Data rows read (blank rows not counted). */
         private int rowsTotal;
+        /** Blank rows. */
         private int rowsSkipped;
+        /**
+         * Rows read but not written, each with a warning that says why: a target that leads back
+         * to its own address, the home page with a query.
+         */
+        private int rowsIgnored;
         private int toCreate;
         private int toUpdate;
         private int unchanged;
@@ -108,9 +114,28 @@ public final class SiteRedirectDtos {
          * once either changes, the commit is refused and the file has to be validated again.
          */
         private String commitToken;
+        /**
+         * commit: this commit's id. POST /redirects/commits/{commit_id}/undo takes every row of
+         * it back in one go (the rows it created removed, the rows it changed restored).
+         */
+        private String commitId;
         /** commit: the rows created (ids, so each can be removed again). */
         private List<WrittenRow> created;
         /** commit: the rows changed, with their old target and status. */
         private List<WrittenRow> updated;
+    }
+
+    /** The answer of an undo: what it removed and put back. */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class RedirectUndoResult {
+        private String commitId;
+        /** Rows the commit had created, now removed. */
+        private int removed;
+        /** Rows the commit had changed, now back to their old target and status. */
+        private int restored;
     }
 }

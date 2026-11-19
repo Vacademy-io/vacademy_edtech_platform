@@ -3,6 +3,7 @@ package vacademy.io.admin_core_service.features.commerce.storefront.redirect;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.stereotype.Repository;
+import vacademy.io.common.exceptions.ConflictException;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
@@ -78,16 +79,71 @@ public class SiteRedirectStore {
         return ids;
     }
 
-    /** Sets target and status of the updates; each by id and institute. */
+    /**
+     * Sets target and status of the updates; each by id and institute. Every row must be there:
+     * a row removed in between makes this throw {@link ConflictException}, which rolls the
+     * transaction back, so a commit never reports a row as changed that it did not change.
+     */
     public void update(String instituteId, List<SiteRedirectPlanner.Change> updates) {
         List<Object[]> args = new ArrayList<>(updates.size());
         for (SiteRedirectPlanner.Change u : updates) {
             args.add(new Object[]{u.toPath(), u.statusCode(), u.id(), instituteId});
         }
+        long written = 0;
         for (int from = 0; from < args.size(); from += BATCH) {
-            jdbc.batchUpdate("UPDATE site_redirect SET to_path = ?, status_code = ?, updated_at = now() "
+            written += sum(jdbc.batchUpdate("UPDATE site_redirect SET to_path = ?, status_code = ?, updated_at = now() "
                             + "WHERE id = ? AND institute_id = ?",
-                    args.subList(from, Math.min(args.size(), from + BATCH)));
+                    args.subList(from, Math.min(args.size(), from + BATCH))));
+        }
+        requireAll(written, args.size(), "changed");
+    }
+
+    /** Removes the rows by id and institute; every one must be there ({@link ConflictException} otherwise). */
+    public void deleteAll(String instituteId, List<String> ids) {
+        List<Object[]> args = new ArrayList<>(ids.size());
+        for (String id : ids) {
+            args.add(new Object[]{id, instituteId});
+        }
+        long removed = 0;
+        for (int from = 0; from < args.size(); from += BATCH) {
+            removed += sum(jdbc.batchUpdate("DELETE FROM site_redirect WHERE id = ? AND institute_id = ?",
+                    args.subList(from, Math.min(args.size(), from + BATCH))));
+        }
+        requireAll(removed, args.size(), "removed");
+    }
+
+    /**
+     * The undo record of one import commit ({@code commerce_audit} kind {@code REDIRECTS_IMPORTED},
+     * referenced by its commit id), as JSON text; empty when the institute has no such commit.
+     */
+    public Optional<String> commitRecord(String instituteId, String commitId) {
+        List<String> rows = jdbc.queryForList("SELECT old_value_json::text FROM commerce_audit WHERE institute_id = ? "
+                        + "AND kind = 'REDIRECTS_IMPORTED' AND reference_type = 'SITE_REDIRECT' AND reference_id = ?",
+                String.class, instituteId, commitId);
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0) == null ? "" : rows.get(0));
+    }
+
+    /** True when the commit has already been undone. */
+    public boolean commitUndone(String instituteId, String commitId) {
+        Long n = jdbc.queryForObject("SELECT count(*) FROM commerce_audit WHERE institute_id = ? "
+                        + "AND kind = 'REDIRECTS_UNDONE' AND reference_type = 'SITE_REDIRECT' AND reference_id = ?",
+                Long.class, instituteId, commitId);
+        return n != null && n > 0;
+    }
+
+    /** A count the driver did not report ({@code SUCCESS_NO_INFO}, negative) is taken as one row. */
+    private static long sum(int[] counts) {
+        long total = 0;
+        for (int n : counts) {
+            total += n < 0 ? 1 : n;
+        }
+        return total;
+    }
+
+    private static void requireAll(long done, int expected, String verb) {
+        if (done != expected) {
+            throw new ConflictException("the stored redirects changed while this was written (" + done + " of "
+                    + expected + " rows " + verb + "); nothing was saved. Look at the list and try again");
         }
     }
 

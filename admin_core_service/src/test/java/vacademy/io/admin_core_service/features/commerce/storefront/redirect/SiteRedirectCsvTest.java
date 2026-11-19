@@ -89,4 +89,11 @@ class SiteRedirectCsvTest {
         assertEquals(new SiteRedirectCsv.Row(3, "/gone", "", "410", "EXACT"), back.get(1));
         assertEquals(new SiteRedirectCsv.Row(4, "=HYPERLINK(\"x\")", "/a,b", "301", "PREFIX"), back.get(2));
     }
+
+    @Test
+    void aFileThatStartsWithABlankLineGetsAMessageThatSaysSo() {
+        String message = refusal("\nfrom_path,to_path,status_code\n/a,/b,301\n");
+        assertTrue(message.contains("first line of the file is empty"), message);
+        assertTrue(refusal(" , ,\r\nfrom_path,to_path,status_code\n/a,/b,301\n").contains("first line of the file is empty"));
+    }
 }

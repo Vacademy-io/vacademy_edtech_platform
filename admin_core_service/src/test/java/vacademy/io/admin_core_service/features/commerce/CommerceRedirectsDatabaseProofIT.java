@@ -221,6 +221,98 @@ class CommerceRedirectsDatabaseProofIT {
                 resolve(shop, "/product-category/kurtas/"));
         assertEquals(Optional.of(new SiteRedirectResolver.Redirect(301, "/shop")),
                 resolve(shop, "/product-category/sarees/old/page/2"));
+        // A PREFIX address written with its slash stops at the segment, and catches the bare address.
+        assertEquals("/product-category/", db.queryForObject("SELECT from_path FROM site_redirect WHERE institute_id = ?"
+                + " AND match_type = 'PREFIX' AND to_path = '/c/sarees'", String.class, shop));
+        assertEquals(Optional.of(new SiteRedirectResolver.Redirect(301, "/c/sarees")), resolve(shop, "/product-category"));
+        assertEquals(Optional.of(new SiteRedirectResolver.Redirect(301, "/c/sarees")), resolve(shop, "/product-category/"));
+        assertTrue(resolve(shop, "/product-categoryx/kurtas").isEmpty());
+        assertTrue(resolve(shop, "/product-categories").isEmpty());
+    }
+
+    @Test
+    void reviewFollowUpsHoldOnTheRealTables() {
+        String shop = shop(true);
+        activeProduct(shop, "x");
+        // Off the site once decoded, a climbing segment, a control character in the query: refused with
+        // their codes and row numbers, never a database error.
+        SiteRedirectDtos.RedirectImportResult refused = validate(shop, csv(
+                "/a,/%2F%2Fevil.example,301,\n"
+                        + "/b,/..//evil.example,301,\n"
+                        + "/c1?x=\u0000y,/p/x,301,\n"
+                        + "/d,/p/x%00,301,\n"
+                        + "/e/,/f/x,301,PREFIX\n/f/,/e/y,301,PREFIX\n"));
+        assertEquals(List.of("OFF_SITE_TARGET", "OFF_SITE_TARGET", "INVALID_FROM_PATH", "INVALID_TO_PATH",
+                        "PREFIX_LOOP", "PREFIX_LOOP"),
+                refused.getIssues().stream().map(SiteRedirectDtos.RedirectIssue::getCode).toList());
+        assertEquals(List.of(2, 3, 4, 5, 6, 7), refused.getIssues().stream().map(SiteRedirectDtos.RedirectIssue::getRow).toList());
+        assertNull(refused.getCommitToken());
+
+        // The old shop's own routes, which the new shop serves under the same name, and an old
+        // WordPress query link on the home page: skipped with a warning; the rest goes in.
+        SiteRedirectDtos.RedirectImportResult loaded = commit(shop, csv(
+                "/cart/,/cart,301,\n/checkout/,/checkout,301,\n/?p=123,/p/x,301,\n"
+                        + "/a?q=ख,/p/x,301,\n/product/,/shop,301,PREFIX\n/shop/page/2/,/shop,301,\n"));
+        assertEquals(3, loaded.getRowsIgnored());
+        assertEquals(3, loaded.getCreated().size());
+        assertEquals(List.of("SELF_REDIRECT", "SELF_REDIRECT", "NEVER_LOOKED_UP", "NEVER_LOOKED_UP"),
+                loaded.getIssues().stream().map(SiteRedirectDtos.RedirectIssue::getCode).toList());
+        // A non-ASCII query is stored as a browser sends it and found that way.
+        assertEquals(Optional.of(new SiteRedirectResolver.Redirect(301, "/p/x")), resolve(shop, "/a?q=%E0%A4%96"));
+        assertEquals(1L, db.queryForObject("SELECT count(*) FROM site_redirect WHERE institute_id = ? AND from_path = ?",
+                Long.class, shop, "/a?q=%E0%A4%96"));
+        // "/product/" catches the pages under it and itself, not "/products".
+        assertEquals(Optional.of(new SiteRedirectResolver.Redirect(301, "/shop")), resolve(shop, "/product/old-item/"));
+        assertEquals(Optional.of(new SiteRedirectResolver.Redirect(301, "/shop")), resolve(shop, "/product"));
+        assertTrue(resolve(shop, "/products").isEmpty());
+        assertTrue(resolve(shop, "/productivity").isEmpty());
+    }
+
+    @Test
+    void oneCallTakesACommitBackAndOnlyTheShopsStaffMayDoIt() {
+        String shop = shop(true);
+        String other = shop(true);
+        commit(shop, csv("/kept,/p/one,301,\n/changed,/p/one,301,\n/gone-later,,410,\n"));
+        List<Map<String, Object>> before = db.queryForList("SELECT id, from_path, to_path, status_code, match_type FROM"
+                + " site_redirect WHERE institute_id = ? ORDER BY id", shop);
+
+        SiteRedirectDtos.RedirectImportResult bad = commit(shop, csv(
+                "/changed,/p/two,301,\n/gone-later,/p/two,301,\n/new-1,/p/two,301,\n/new-2/,/shop,301,PREFIX\n"));
+        assertEquals(2, bad.getCreated().size());
+        assertEquals(2, bad.getUpdated().size());
+        assertNotNull(bad.getCommitId());
+        assertEquals(Optional.of(new SiteRedirectResolver.Redirect(301, "/p/two")), resolve(shop, "/changed"));
+
+        // Not for a learner, not for another institute's admin; another institute does not know the id.
+        as(shop);
+        assertThrows(CommerceAccessDeniedException.class, () -> controller.undo(bad.getCommitId(), shop, user("STUDENT")));
+        as(other);
+        assertThrows(CommerceAccessDeniedException.class, () -> controller.undo(bad.getCommitId(), shop, user("ADMIN")));
+        assertThrows(ResourceNotFoundException.class, () -> controller.undo(bad.getCommitId(), other, user("ADMIN")));
+
+        as(shop);
+        SiteRedirectDtos.RedirectUndoResult undone = controller.undo(bad.getCommitId(), shop,
+                user("COMMERCE_STORE_MANAGER")).getBody();
+        assertEquals(2, undone.getRemoved());
+        assertEquals(2, undone.getRestored());
+        assertEquals(before, db.queryForList("SELECT id, from_path, to_path, status_code, match_type FROM"
+                + " site_redirect WHERE institute_id = ? ORDER BY id", shop));
+        assertEquals(Optional.of(new SiteRedirectResolver.Redirect(301, "/p/one")), resolve(shop, "/changed"));
+        assertEquals(Optional.of(new SiteRedirectResolver.Redirect(410, null)), resolve(shop, "/gone-later"));
+        assertTrue(resolve(shop, "/new-1").isEmpty());
+        assertEquals(1L, db.queryForObject("SELECT count(*) FROM commerce_audit WHERE institute_id = ? "
+                + "AND kind = 'REDIRECTS_UNDONE' AND reference_id = ?", Long.class, shop, bad.getCommitId()));
+        // Once only.
+        assertThrows(ConflictException.class, () -> controller.undo(bad.getCommitId(), shop, user("ADMIN")));
+
+        // A commit whose rows were changed since cannot be taken back, and nothing is written.
+        SiteRedirectDtos.RedirectImportResult second = commit(shop, csv("/new-3,/p/two,301,\n"));
+        commit(shop, csv("/new-3,/p/three,301,\n"));
+        long rowsNow = rows(shop);
+        as(shop);
+        assertThrows(ConflictException.class, () -> controller.undo(second.getCommitId(), shop, user("ADMIN")));
+        assertEquals(rowsNow, rows(shop));
+        assertEquals(Optional.of(new SiteRedirectResolver.Redirect(301, "/p/three")), resolve(shop, "/new-3"));
     }
 
     @Test
@@ -229,7 +321,7 @@ class CommerceRedirectsDatabaseProofIT {
         activeProduct(shop, "red-saree");
         long auditsBefore = audits(shop);
         SiteRedirectDtos.RedirectImportResult result = validate(shop,
-                csv("/a,/p/red-saree,301,\n/b,/p/missing,301,\n/c,/c/missing,301,\n"));
+                csv("/a,/p/red-saree,301,\n/b,/p/missing,301,\n/cc,/c/missing,301,\n"));
         assertEquals(3, result.getToCreate());
         assertEquals(0, result.getErrorCount());
         assertEquals(2, result.getWarningCount());
@@ -287,11 +379,13 @@ class CommerceRedirectsDatabaseProofIT {
                         + "/f,/g,301,\n/g,/p/x,301,\n"   // a chain in the file
                         + "/h,/stored-gone,301,\n"       // a chain to a stored row
                         + "/ok,/p/x,301,\n"));
+        // Errors first; the row back to itself is skipped with a warning, it blocks nothing.
         assertEquals(List.of("GONE_WITH_TARGET", "TO_PATH_REQUIRED", "OFF_SITE_TARGET", "OFF_SITE_TARGET",
-                        "SELF_REDIRECT", "REDIRECT_CHAIN", "REDIRECT_CHAIN"),
+                        "REDIRECT_CHAIN", "REDIRECT_CHAIN", "SELF_REDIRECT"),
                 result.getIssues().stream().map(SiteRedirectDtos.RedirectIssue::getCode).toList());
-        assertEquals(List.of(2, 3, 4, 5, 6, 7, 9),
+        assertEquals(List.of(2, 3, 4, 5, 7, 9, 6),
                 result.getIssues().stream().map(SiteRedirectDtos.RedirectIssue::getRow).toList());
+        assertEquals(1, result.getRowsIgnored());
         assertNull(result.getCommitToken());
 
         long before = rows(shop);

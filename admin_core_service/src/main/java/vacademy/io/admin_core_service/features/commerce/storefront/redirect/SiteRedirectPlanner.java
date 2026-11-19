@@ -1,6 +1,5 @@
 package vacademy.io.admin_core_service.features.commerce.storefront.redirect;
 
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -23,15 +22,25 @@ import java.util.regex.Pattern;
  * their old values), rows already as the file says, and every problem, per row. Validate and
  * commit both run this, so a commit writes exactly what the validation showed.
  *
- * <p>Errors (the file cannot be committed while it has one): a path the resolver cannot store, a
- * target off the site, a 410 with a target or a 301 without one, a target equal to its own
- * address, a target that is the address of another EXACT row (in the file or already stored: a
- * second hop), a stored row that would lead to a new address, two rows for one address, the home
- * page, and more rows than an institute may hold.
+ * <p>Errors (the file cannot be committed while it has one): a path the resolver cannot store
+ * (a control character anywhere in it, the query included), a target off the site (also once
+ * percent-decoded: {@code /%2F%2Fhost}, a backslash, a {@code .} or {@code ..} segment), a 410
+ * with a target or a 301 without one, a target that is the address of another EXACT row (in the
+ * file or already stored: a second hop), a stored row that would lead to a new address, PREFIX
+ * rows that send visitors round in a circle, two rows for one address, the home page, and more
+ * rows (or more PREFIX rows) than an institute may hold.
+ *
+ * <p>Skipped with a warning (the rest of the file still goes in): a row whose target leads back
+ * to its own address ({@code /cart/} to {@code /cart}: the new shop already answers there), and
+ * the home page with a query ({@code /?p=123}, an old WordPress link), which the shop never looks
+ * up.
  *
  * <p>Warnings (shown, not blocking): a {@code /p/<slug>} or {@code /c/<slug>} target that names no
- * ACTIVE product or collection, a target a PREFIX row would catch again, a dropped
- * {@code #fragment}, and an address the shop edge never asks about (a file such as {@code .jpg}).
+ * ACTIVE product or collection, or spells its address in another Unicode form (the target is then
+ * written as the shop stores it), a target a PREFIX row would catch again, a new PREFIX row that
+ * catches stored targets, a PREFIX address that does not end at a segment ({@code /hi} also
+ * catches {@code /history}), a dropped {@code #fragment}, and an address the shop edge never asks
+ * about (a file such as {@code .jpg}, one of the shop's own routes, more than six segments).
  */
 public final class SiteRedirectPlanner {
 
@@ -39,6 +48,20 @@ public final class SiteRedirectPlanner {
     public static final String PREFIX = "PREFIX";
     /** Most rows one institute may hold. */
     public static final int MAX_ROWS_PER_INSTITUTE = 50_000;
+    /**
+     * Most PREFIX rows one institute may hold. The public resolver reads every PREFIX row of the
+     * institute on a miss, so they are pattern rows, not one per address. A shop leaving an old
+     * site needs a few catch-alls plus one paging row per old category, so 500 leaves room.
+     */
+    public static final int MAX_PREFIX_ROWS_PER_INSTITUTE = 500;
+    /**
+     * First segments the shop edge never looks up for an old address: the shop's own routes
+     * (the storefront's reserved segments, {@code routes.ts}).
+     */
+    static final Set<String> SHOP_ROUTE_SEGMENTS = Set.of("p", "c", "q", "shop", "search", "cart", "checkout",
+            "order", "track-order", "account");
+    /** The edge looks up addresses of at most this many segments. */
+    static final int MAX_LOOKED_UP_SEGMENTS = 6;
 
     private static final Pattern FILE_SEGMENT = Pattern.compile("\\.[a-z0-9]{2,12}$", Pattern.CASE_INSENSITIVE);
 
@@ -58,7 +81,8 @@ public final class SiteRedirectPlanner {
                          String oldToPath, Integer oldStatusCode) {
     }
 
-    public record Plan(List<Change> creates, List<Change> updates, int unchanged, List<Issue> issues,
+    /** {@code ignored}: rows read but skipped with a warning (a self-redirect, the home page with a query). */
+    public record Plan(List<Change> creates, List<Change> updates, int unchanged, int ignored, List<Issue> issues,
                        int errorCount, int warningCount, String fingerprint) {
 
         public boolean hasErrors() {
@@ -66,11 +90,20 @@ public final class SiteRedirectPlanner {
         }
     }
 
-    /** A row that passed its own checks, before the checks across rows. */
-    private record Valid(int row, String matchType, String fromPath, String pathOnly, String toPath, int statusCode) {
+    /**
+     * A row that passed its own checks, before the checks across rows. {@code pathOnly} is the
+     * address's path without the query and without the trailing slash a PREFIX address may keep.
+     * {@code skip}: read, warned about, not written.
+     */
+    private record Valid(int row, String matchType, String fromPath, String pathOnly, String toPath, int statusCode,
+                         boolean skip) {
 
         String key() {
             return matchType + " " + fromPath;
+        }
+
+        Valid withTarget(String target) {
+            return new Valid(row, matchType, fromPath, pathOnly, target, statusCode, skip);
         }
     }
 
@@ -88,10 +121,15 @@ public final class SiteRedirectPlanner {
         List<Issue> issues = new ArrayList<>();
         List<Valid> valid = new ArrayList<>();
         Map<String, Integer> firstRowOfKey = new HashMap<>();
+        int ignored = 0;
 
         for (SiteRedirectCsv.Row row : rows) {
             Valid checked = check(row, issues);
             if (checked == null) {
+                continue;
+            }
+            if (checked.skip()) {
+                ignored++;
                 continue;
             }
             Integer first = firstRowOfKey.putIfAbsent(checked.key(), row.row());
@@ -114,19 +152,27 @@ public final class SiteRedirectPlanner {
                 exactSource.put(e.fromPath(), "a stored redirect");
             }
         }
-        Set<String> prefixes = new HashSet<>();
+        // Every PREFIX row once the file is in, by address: the file's replace the stored ones.
+        Map<String, Existing> prefixRows = new HashMap<>();
+        int storedPrefixes = 0;
         for (Existing e : existing) {
             if (PREFIX.equals(e.matchType())) {
-                prefixes.add(e.fromPath());
+                prefixRows.put(e.fromPath(), e);
+                storedPrefixes++;
             }
         }
         for (Valid v : valid) {
             if (EXACT.equals(v.matchType())) {
                 exactSource.put(v.fromPath(), "row " + v.row());
             } else {
-                prefixes.add(v.fromPath());
+                prefixRows.put(v.fromPath(), new Existing(null, PREFIX, v.fromPath(), v.toPath(), v.statusCode()));
             }
         }
+        Set<String> prefixes = prefixRows.keySet();
+        // Past the cap the file is refused anyway; the loop walk is skipped so it stays cheap.
+        boolean walkPrefixes = prefixRows.size() <= MAX_PREFIX_ROWS_PER_INSTITUTE;
+        Map<String, List<String>> productsByNfc = byNfc(activeProducts);
+        Map<String, List<String>> collectionsByNfc = byNfc(activeCollections);
         // Stored 301 rows the file does not replace, by the address they lead to.
         Map<String, String> storedLeadingTo = new HashMap<>();
         for (Existing e : existing) {
@@ -140,7 +186,8 @@ public final class SiteRedirectPlanner {
         List<Change> creates = new ArrayList<>();
         List<Change> updates = new ArrayList<>();
         int unchanged = 0;
-        for (Valid v : valid) {
+        for (Valid checked : valid) {
+            Valid v = checked;
             boolean blocked = false;
             if (v.statusCode() == 301) {
                 for (String target : targetKeys(v.toPath())) {
@@ -152,6 +199,15 @@ public final class SiteRedirectPlanner {
                         break;
                     }
                 }
+                if (!blocked && walkPrefixes) {
+                    String loop = prefixLoop(v.matchType(), v.fromPath(), v.toPath(), prefixRows, exactSource.keySet());
+                    if (loop != null) {
+                        issues.add(error(v.row(), "PREFIX_LOOP", "the target " + v.toPath() + " is caught by PREFIX"
+                                + " rows that lead back round (through " + loop + "); visitors would be"
+                                + " redirected in a circle"));
+                        blocked = true;
+                    }
+                }
                 if (!blocked) {
                     String prefix = catchingPrefix(prefixes, v);
                     if (prefix != null) {
@@ -159,7 +215,7 @@ public final class SiteRedirectPlanner {
                                 + " starts with the PREFIX address " + prefix + ", which redirects it again"
                                 + " unless it is a page of the site"));
                     }
-                    targetWarning(v, activeProducts, activeCollections, issues);
+                    v = targetCheck(v, activeProducts, productsByNfc, activeCollections, collectionsByNfc, issues);
                 }
             }
             if (EXACT.equals(v.matchType())) {
@@ -188,17 +244,72 @@ public final class SiteRedirectPlanner {
             issues.add(error(0, "TOO_MANY_REDIRECTS", "the shop would hold " + (existing.size() + creates.size())
                     + " redirects; at most " + MAX_ROWS_PER_INSTITUTE + " are allowed"));
         }
+        int prefixTotal = storedPrefixes + (int) creates.stream().filter(c -> PREFIX.equals(c.matchType())).count();
+        if (prefixTotal > MAX_PREFIX_ROWS_PER_INSTITUTE) {
+            issues.add(error(0, "TOO_MANY_PREFIX_REDIRECTS", "the shop would hold " + prefixTotal
+                    + " PREFIX redirects; at most " + MAX_PREFIX_ROWS_PER_INSTITUTE + " are allowed. PREFIX rows are"
+                    + " for patterns; give single addresses EXACT rows"));
+        } else {
+            newPrefixWarnings(creates, existing, firstRowOfKey, prefixes, issues);
+        }
 
         issues.sort(Comparator.comparing((Issue i) -> !i.error()).thenComparingInt(Issue::row));
         int errors = (int) issues.stream().filter(Issue::error).count();
-        return new Plan(List.copyOf(creates), List.copyOf(updates), unchanged, List.copyOf(issues), errors,
+        return new Plan(List.copyOf(creates), List.copyOf(updates), unchanged, ignored, List.copyOf(issues), errors,
                 issues.size() - errors, fingerprint(creates, updates, unchanged));
     }
 
-    /** The checks of one row on its own; null when it has an error (added to {@code issues}). */
+    /**
+     * A new PREFIX row that catches the targets of stored rows (which the file does not replace):
+     * those visitors would be redirected a second time.
+     */
+    private static void newPrefixWarnings(List<Change> creates, Collection<Existing> existing,
+                                          Map<String, Integer> fileKeys, Set<String> prefixes, List<Issue> issues) {
+        Map<String, Change> created = new HashMap<>();
+        for (Change c : creates) {
+            if (PREFIX.equals(c.matchType())) {
+                created.put(c.fromPath(), c);
+            }
+        }
+        if (created.isEmpty()) {
+            return;
+        }
+        Map<String, Integer> caught = new HashMap<>();
+        Map<String, Existing> example = new HashMap<>();
+        for (Existing e : existing) {
+            if (e.statusCode() != 301 || e.toPath() == null || fileKeys.containsKey(e.matchType() + " " + e.fromPath())) {
+                continue;
+            }
+            List<String> keys = targetKeys(e.toPath());
+            if (keys.isEmpty()) {
+                continue;
+            }
+            String self = PREFIX.equals(e.matchType()) ? e.fromPath() : null;
+            String prefix = longestCatching(prefixes, keys.get(0), self);
+            if (prefix != null && created.containsKey(prefix)) {
+                caught.merge(prefix, 1, Integer::sum);
+                example.putIfAbsent(prefix, e);
+            }
+        }
+        for (Map.Entry<String, Integer> entry : caught.entrySet()) {
+            Existing e = example.get(entry.getKey());
+            int n = entry.getValue();
+            issues.add(warning(created.get(entry.getKey()).row(), "PREFIX_CATCHES_TARGETS", n + " stored redirect"
+                    + (n == 1 ? " leads" : "s lead") + " to addresses this PREFIX row catches (for example "
+                    + e.fromPath() + " to " + e.toPath() + "); those visitors would be redirected again unless the"
+                    + " address is a page of the site"));
+        }
+    }
+
+    /**
+     * The checks of one row on its own; null when it has an error (added to {@code issues}). A row
+     * that is read but not written comes back with {@code skip} and one warning that says why.
+     */
     private static Valid check(SiteRedirectCsv.Row row, List<Issue> issues) {
         int at = row.row();
         int before = issues.size();
+        List<Issue> notes = new ArrayList<>();
+        Issue skip = null;
 
         String match = row.matchType() == null || row.matchType().isBlank() ? EXACT
                 : row.matchType().trim().toUpperCase(Locale.ROOT);
@@ -211,6 +322,9 @@ public final class SiteRedirectPlanner {
         String pathOnly = null;
         if (fromRaw.isEmpty()) {
             issues.add(error(at, "FROM_PATH_REQUIRED", "from_path is empty"));
+        } else if (hasControl(fromRaw)) {
+            issues.add(error(at, "INVALID_FROM_PATH", "from_path holds a control character (a tab, a line break or"
+                    + " similar), in the path or the query; remove it"));
         } else {
             String reduced = SiteRedirectPaths.pathOfOldAddress(fromRaw);
             from = SiteRedirectResolver.normalise(reduced);
@@ -220,17 +334,37 @@ public final class SiteRedirectPlanner {
                         + " characters"));
             } else {
                 pathOnly = SiteRedirectPaths.pathPart(from);
-                if ("/".equals(pathOnly)) {
+                if ("/".equals(pathOnly) && from.length() > 1) {
+                    skip = warning(at, "NEVER_LOOKED_UP", "the shop never looks up its home page with a query (such"
+                            + " as /?p=123, an old WordPress link), so this row is skipped");
+                } else if ("/".equals(pathOnly)) {
                     issues.add(error(at, "HOME_PAGE", "the home page (/) cannot be redirected"));
                 } else {
+                    boolean hasQuery = from.indexOf('?') >= 0;
+                    if (PREFIX.equals(match) && !hasQuery && reduced.indexOf('?') < 0 && reduced.endsWith("/")) {
+                        // "/product/" stops at the segment: it catches /product/x and /product, not /products.
+                        from = from + "/";
+                        if (from.length() > SiteRedirectResolver.MAX_PATH_LENGTH) {
+                            issues.add(error(at, "INVALID_FROM_PATH", "from_path is longer than "
+                                    + SiteRedirectResolver.MAX_PATH_LENGTH + " characters"));
+                        }
+                    } else if (PREFIX.equals(match) && !hasQuery) {
+                        notes.add(warning(at, "PREFIX_NOT_AT_SEGMENT", "the PREFIX address " + from + " also catches"
+                                + " every address that only starts with it (such as " + from + "-old or " + from
+                                + "s); end it with / to catch " + from + " and the addresses under it only"));
+                    }
                     if (SiteRedirectPaths.hasFragment(fromRaw)) {
-                        issues.add(warning(at, "FRAGMENT_DROPPED", "the #part of from_path was dropped: a browser"
+                        notes.add(warning(at, "FRAGMENT_DROPPED", "the #part of from_path was dropped: a browser"
                                 + " never sends it"));
                     }
                     String last = pathOnly.substring(pathOnly.lastIndexOf('/') + 1);
+                    String unused = neverLookedUp(pathOnly);
                     if (EXACT.equals(match) && FILE_SEGMENT.matcher(last).find()) {
-                        issues.add(warning(at, "FILE_ADDRESS", "the shop never looks up an address that ends in a"
+                        notes.add(warning(at, "FILE_ADDRESS", "the shop never looks up an address that ends in a"
                                 + " file name (" + last + "), so this row is never used"));
+                    } else if (unused != null) {
+                        notes.add(warning(at, "NEVER_LOOKED_UP", "the shop never looks up this address (" + unused
+                                + "), so this row is never used"));
                     }
                 }
             }
@@ -260,14 +394,26 @@ public final class SiteRedirectPlanner {
                 issues.add(error(at, "INVALID_TO_PATH", "to_path must start with / and hold no line breaks"));
             } else {
                 to = SiteRedirectPaths.ascii(toRaw);
-                if (to.length() > SiteRedirectResolver.MAX_PATH_LENGTH) {
+                String problem = SiteRedirectPaths.targetProblem(to);
+                if ("OFF_SITE_TARGET".equals(problem)) {
+                    issues.add(error(at, "OFF_SITE_TARGET", "to_path must stay on this site: read with its %"
+                            + " escapes decoded it must not start with // or /\\, hold a backslash, or have a . or .."
+                            + " segment"));
+                    to = null;
+                } else if (problem != null) {
+                    issues.add(error(at, "INVALID_TO_PATH", "to_path holds an encoded control character (such as"
+                            + " %00, %09 or %0A)"));
+                    to = null;
+                } else if (to.length() > SiteRedirectResolver.MAX_PATH_LENGTH) {
                     issues.add(error(at, "TO_PATH_TOO_LONG", "to_path is longer than "
                             + SiteRedirectResolver.MAX_PATH_LENGTH + " characters once encoded"));
                     to = null;
                 } else if (pathOnly != null
                         && pathOnly.equals(SiteRedirectResolver.normalise(SiteRedirectPaths.pathPart(to)))) {
-                    issues.add(error(at, "SELF_REDIRECT", "to_path leads back to from_path"));
-                    to = null;
+                    if (skip == null) {
+                        skip = warning(at, "SELF_REDIRECT", "to_path leads back to from_path, so the row could never"
+                                + " be used (the shop already answers at this address); it is skipped");
+                    }
                 } else if (pathOnly != null
                         && !SiteRedirectResolver.safe(new SiteRedirectResolver.Redirect(301, to), pathOnly)) {
                     issues.add(error(at, "INVALID_TO_PATH", "to_path is not a path the shop would follow"));
@@ -276,7 +422,39 @@ public final class SiteRedirectPlanner {
             }
         }
         boolean failed = issues.subList(before, issues.size()).stream().anyMatch(Issue::error);
-        return failed ? null : new Valid(at, match, from, pathOnly, to, status);
+        if (failed) {
+            return null;
+        }
+        if (skip != null) {
+            issues.add(skip);
+            return new Valid(at, match, from, pathOnly, to, status, true);
+        }
+        issues.addAll(notes);
+        return new Valid(at, match, from, pathOnly, to, status, false);
+    }
+
+    /** Why the edge never asks about this address (lower-case path, no query), or null. */
+    private static String neverLookedUp(String pathOnly) {
+        List<String> segments = new ArrayList<>();
+        for (String segment : pathOnly.split("/")) {
+            if (!segment.isEmpty()) {
+                segments.add(segment);
+            }
+        }
+        if (segments.isEmpty()) {
+            return null;
+        }
+        if (segments.size() > MAX_LOOKED_UP_SEGMENTS) {
+            return "it has more than " + MAX_LOOKED_UP_SEGMENTS + " segments";
+        }
+        String first = segments.get(0);
+        if (SHOP_ROUTE_SEGMENTS.contains(first)) {
+            return "/" + first + " is one of the shop's own routes";
+        }
+        if (first.startsWith(".")) {
+            return "a folder that starts with a dot is never a page";
+        }
+        return null;
     }
 
     /**
@@ -304,41 +482,161 @@ public final class SiteRedirectPlanner {
         if (keys.isEmpty() || prefixes.isEmpty()) {
             return null;
         }
-        String target = keys.get(0);
-        for (int end = target.length(); end > 0; end--) {
-            String prefix = target.substring(0, end);
-            boolean self = PREFIX.equals(v.matchType()) && prefix.equals(v.fromPath());
-            if (!self && prefixes.contains(prefix)) {
-                return prefix;
+        return longestCatching(prefixes, keys.get(0), PREFIX.equals(v.matchType()) ? v.fromPath() : null);
+    }
+
+    /**
+     * The longest of {@code prefixes} that catches the normalised address {@code full} the way the
+     * resolver does: {@code full} starts with it, or it ends in {@code /} and is the address's path
+     * plus that slash ({@code /product/} catches {@code /product}). {@code except} is never picked.
+     */
+    static String longestCatching(Set<String> prefixes, String full, String except) {
+        if (prefixes.isEmpty()) {
+            return null;
+        }
+        String pathOnly = SiteRedirectPaths.pathPart(full);
+        String bare = pathOnly.length() > 1 ? pathOnly + "/" : null;
+        for (int end = Math.max(full.length(), pathOnly.length() + 1); end > 0; end--) {
+            if (bare != null && end == bare.length() && !bare.equals(except) && prefixes.contains(bare)) {
+                return bare;
+            }
+            if (end <= full.length()) {
+                String prefix = full.substring(0, end);
+                if (!prefix.equals(except) && prefixes.contains(prefix)) {
+                    return prefix;
+                }
             }
         }
         return null;
     }
 
-    private static void targetWarning(Valid v, Set<String> products, Set<String> collections, List<Issue> issues) {
+    /**
+     * Follows a visitor from {@code toPath} through the PREFIX rows, as the resolver answers each
+     * step (an EXACT row answers first, the longest PREFIX next, and a target equal to the address
+     * asked is never handed out). Returns the PREFIX address at which the visitor comes round again,
+     * or null when the walk ends.
+     */
+    static String prefixLoop(String matchType, String fromPath, String toPath, Map<String, Existing> prefixRows,
+                             Set<String> exactAddresses) {
+        Set<String> seen = new HashSet<>();
+        if (PREFIX.equals(matchType)) {
+            seen.add(fromPath);
+        }
+        String target = toPath;
+        for (int hop = 0; hop <= prefixRows.size(); hop++) {
+            List<String> keys = targetKeys(target);
+            if (keys.isEmpty()) {
+                return null;
+            }
+            if (hop > 0 && keys.stream().anyMatch(exactAddresses::contains)) {
+                return null;
+            }
+            String full = keys.get(0);
+            String prefix = longestCatching(prefixRows.keySet(), full, null);
+            if (prefix == null) {
+                return null;
+            }
+            Existing next = prefixRows.get(prefix);
+            if (next.statusCode() != 301 || next.toPath() == null) {
+                return null;
+            }
+            String nextPath = SiteRedirectResolver.normalise(SiteRedirectPaths.pathPart(next.toPath()));
+            if (nextPath == null || nextPath.equals(SiteRedirectPaths.pathPart(full))) {
+                return null;
+            }
+            if (!seen.add(prefix)) {
+                return prefix;
+            }
+            target = next.toPath();
+        }
+        return null;
+    }
+
+    /**
+     * A {@code /p/<slug>} or {@code /c/<slug>} target against the shop's ACTIVE slugs, compared as
+     * stored (no Unicode normal form: the product route matches the slug exactly). When the target
+     * spells a stored slug in another Unicode form (a Devanagari nukta letter typed as one code
+     * point or as two), it is written the way the shop stores the slug, so the redirect lands; a
+     * warning says so. Otherwise a missing slug is a warning.
+     */
+    private static Valid targetCheck(Valid v, Set<String> products, Map<String, List<String>> productsByNfc,
+                                     Set<String> collections, Map<String, List<String>> collectionsByNfc,
+                                     List<Issue> issues) {
         String path = SiteRedirectPaths.pathPart(v.toPath());
         String[] segments = path.split("/");
         // "/p/<slug>" splits into "", "p", "<slug>".
         if (segments.length != 3) {
-            return;
+            return v;
         }
-        String slug = decode(segments[2]);
-        if ("p".equals(segments[1]) && !products.contains(slug)) {
-            issues.add(warning(v.row(), "TARGET_PRODUCT_NOT_ACTIVE", "no ACTIVE product has the address "
-                    + "/p/" + slug + " yet"));
-        } else if ("c".equals(segments[1]) && !collections.contains(slug)) {
-            issues.add(warning(v.row(), "TARGET_COLLECTION_NOT_ACTIVE", "no ACTIVE collection has the address "
-                    + "/c/" + slug + " yet"));
+        boolean product = "p".equals(segments[1]);
+        if (!product && !"c".equals(segments[1])) {
+            return v;
         }
+        String slug = SiteRedirectPaths.decodePath(segments[2]);
+        if ((product ? products : collections).contains(slug)) {
+            return v;
+        }
+        String what = product ? "product" : "collection";
+        List<String> same = (product ? productsByNfc : collectionsByNfc)
+                .getOrDefault(Normalizer.normalize(slug, Normalizer.Form.NFC), List.of());
+        if (same.size() == 1) {
+            String stored = same.get(0);
+            String target = "/" + segments[1] + "/" + SiteRedirectPaths.ascii(stored) + v.toPath().substring(path.length());
+            if (target.length() <= SiteRedirectResolver.MAX_PATH_LENGTH) {
+                issues.add(warning(v.row(), "TARGET_SPELLING_FIXED", "the target spells the " + what + "'s address in"
+                        + " another Unicode form; it is written as /" + segments[1] + "/" + stored
+                        + ", the way the shop stores it, so the redirect lands"));
+                return v.withTarget(target);
+            }
+        }
+        issues.add(warning(v.row(), product ? "TARGET_PRODUCT_NOT_ACTIVE" : "TARGET_COLLECTION_NOT_ACTIVE",
+                "no ACTIVE " + what + " has the address /" + segments[1] + "/" + slug + " yet"));
+        return v;
     }
 
-    private static String decode(String segment) {
-        try {
-            return Normalizer.normalize(URLDecoder.decode(segment.replace("+", "%2B"), StandardCharsets.UTF_8),
-                    Normalizer.Form.NFC);
-        } catch (IllegalArgumentException e) {
-            return segment;
+    /**
+     * What would be wrong with the table {@code after} (every row once an undo is applied) for the
+     * rows the undo puts back ({@code restoredIds}): a target that has become another row's EXACT
+     * address since (a second hop), or a target that now leads into a circle of PREFIX rows. Empty
+     * when the undo leaves the table as consistent as a commit would.
+     */
+    static List<String> restoreProblems(Collection<Existing> after, Set<String> restoredIds) {
+        Set<String> exact = new HashSet<>();
+        Map<String, Existing> prefixRows = new HashMap<>();
+        for (Existing e : after) {
+            if (EXACT.equals(e.matchType())) {
+                exact.add(e.fromPath());
+            } else {
+                prefixRows.put(e.fromPath(), e);
+            }
         }
+        List<String> problems = new ArrayList<>();
+        for (Existing e : after) {
+            if (!restoredIds.contains(e.id()) || e.statusCode() != 301 || e.toPath() == null) {
+                continue;
+            }
+            for (String target : targetKeys(e.toPath())) {
+                if (exact.contains(target) && !target.equals(e.fromPath())) {
+                    problems.add("send " + e.fromPath() + " to " + e.toPath() + ", which another row now redirects");
+                    break;
+                }
+            }
+            String loop = prefixLoop(e.matchType(), e.fromPath(), e.toPath(), prefixRows, exact);
+            if (loop != null) {
+                problems.add("send " + e.fromPath() + " round a circle of PREFIX rows (through " + loop + ")");
+            }
+        }
+        return problems;
+    }
+
+    private static Map<String, List<String>> byNfc(Set<String> slugs) {
+        Map<String, List<String>> out = new HashMap<>();
+        for (String slug : slugs) {
+            if (slug != null) {
+                out.computeIfAbsent(Normalizer.normalize(slug, Normalizer.Form.NFC), k -> new ArrayList<>()).add(slug);
+            }
+        }
+        return out;
     }
 
     private static boolean hasControl(String value) {

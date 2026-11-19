@@ -22,6 +22,7 @@ import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
@@ -31,6 +32,7 @@ import java.util.Set;
  * GET    /commerce/v1/redirects?instituteId=&amp;q=&amp;matchType=&amp;statusCode=&amp;page=0&amp;size=50   a page (size at most 200)
  * POST   /commerce/v1/redirects/import?instituteId=&amp;mode=validate             multipart "file": checks, writes nothing
  * POST   /commerce/v1/redirects/import?instituteId=&amp;mode=commit&amp;commitToken=  writes the validated file in one go
+ * POST   /commerce/v1/redirects/commits/{commitId}/undo?instituteId=           takes one commit back in one go
  * DELETE /commerce/v1/redirects/{id}?instituteId=                              removes one row
  * GET    /commerce/v1/redirects/export?instituteId=                            every row as the import's CSV
  * </pre>
@@ -44,6 +46,7 @@ import java.util.Set;
 public class SiteRedirectAdminController {
 
     static final Set<CommerceRole> ROLES = Set.of(CommerceRole.STORE_MANAGER);
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(SiteRedirectAdminController.class);
     private static final String CSV = "text/csv; charset=UTF-8";
 
     private final SiteRedirectAdminService service;
@@ -84,6 +87,19 @@ public class SiteRedirectAdminController {
         throw new InvalidRequestException("mode must be validate or commit");
     }
 
+    /**
+     * Takes back the commit whose {@code commit_id} the commit answered: the rows it created are
+     * removed and the rows it changed get their old target and status, every row or none.
+     */
+    @PostMapping("/commits/{commitId}/undo")
+    public ResponseEntity<SiteRedirectDtos.RedirectUndoResult> undo(
+            @PathVariable("commitId") String commitId,
+            @RequestParam("instituteId") String instituteId,
+            @RequestAttribute("user") CustomUserDetails user) {
+        commerceAccessGuard.require(user, instituteId, CommerceFeature.CATALOGUE, ROLES);
+        return ResponseEntity.ok(service.undo(instituteId, user.getUserId(), commitId));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<SiteRedirectDtos.RedirectRow> delete(
             @PathVariable("id") String id,
@@ -93,22 +109,32 @@ public class SiteRedirectAdminController {
         return ResponseEntity.ok(service.delete(instituteId, user.getUserId(), id));
     }
 
-    /** Every row in the import's columns: the undo baseline before a commit. */
+    /**
+     * Every row in the import's columns: the undo baseline before a commit. The export is audited
+     * once the file has been sent, with the number of rows it held; a download that fails on the
+     * way is not recorded as an export.
+     */
     @GetMapping("/export")
     public void export(
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails user,
             HttpServletResponse response) throws IOException {
         commerceAccessGuard.require(user, instituteId, CommerceFeature.CATALOGUE, ROLES);
-        service.auditExport(instituteId, user.getUserId());
+        List<SiteRedirectCsv.ExportRow> rows = service.exportRows(instituteId);
         response.setStatus(HttpServletResponse.SC_OK);
         response.setContentType(CSV);
         response.setHeader(HttpHeaders.CONTENT_DISPOSITION,
                 "attachment; filename=\"redirects-" + LocalDate.now() + ".csv\"");
         response.setHeader(HttpHeaders.CACHE_CONTROL, "no-store");
         response.setHeader("X-Content-Type-Options", "nosniff");
-        service.export(instituteId, response.getOutputStream());
+        SiteRedirectCsv.write(response.getOutputStream(), rows);
         response.flushBuffer();
+        try {
+            service.auditExport(instituteId, user.getUserId(), rows.size());
+        } catch (RuntimeException e) {
+            // The file has been sent and the answer is committed; the failure is logged, not shown.
+            log.error("Redirect export sent but its audit row failed", e);
+        }
     }
 
     private static byte[] bytes(MultipartFile file) {

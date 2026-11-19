@@ -1,23 +1,31 @@
 package vacademy.io.admin_core_service.features.commerce.storefront.redirect;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.TransactionTemplate;
 import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditService;
 import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.ResourceNotFoundException;
+import vacademy.io.common.exceptions.VacademyException;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UncheckedIOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -25,6 +33,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.Supplier;
 
 /**
  * Staff work on a shop's old-site redirects ({@code site_redirect}): the list, the CSV import
@@ -35,6 +45,19 @@ import java.util.Set;
  * from the primary database. Commit plans again inside its transaction, under the institute's
  * redirect lock, and writes only when the plan is the one the token stands for, so what was
  * shown is what is written. A commit writes every row or none.
+ *
+ * <p>Every commit has an id and keeps an undo record in its audit row (the ids it created and,
+ * for each row it changed, the old target and status: what the rows held before, as a delete's
+ * audit row keeps the removed row). {@link #undo} takes the whole commit back in one go, under
+ * the same lock, and only while every row is still as the commit left it.
+ *
+ * <p>The commit token ({@link #token}) is a digest of the institute, the file and the plan, not a
+ * secret: it proves the file was planned against the rows stored now, so a commit writes what
+ * the validation showed. Anyone who may commit could compute it; that is fine, because the
+ * commit plans again and refuses any error.
+ *
+ * <p>A database failure is answered with a plain message and code; the cause goes to the log
+ * only, never into the answer.
  */
 @Service
 public class SiteRedirectAdminService {
@@ -46,6 +69,8 @@ public class SiteRedirectAdminService {
     static final String TOKEN_PREFIX = "rv1.";
 
     private static final ObjectMapper JSON = new ObjectMapper();
+    private static final Logger log = LoggerFactory.getLogger(SiteRedirectAdminService.class);
+    static final int MAX_COMMIT_ID_CHARS = 64;
 
     private final SiteRedirectStore store;
     private final CommerceAuditService auditService;
@@ -79,10 +104,12 @@ public class SiteRedirectAdminService {
             throw new InvalidRequestException("status_code must be 301 or 410");
         }
         Set<String> needles = needles(q);
-        long total = store.count(instituteId, needles, match, statusCode);
+        String matchFilter = match;
+        long total = reading(() -> store.count(instituteId, needles, matchFilter, statusCode));
         long offset = (long) page * size;
         List<SiteRedirectDtos.RedirectRow> rows = offset >= total ? List.of()
-                : store.page(instituteId, needles, match, statusCode, (int) Math.min(offset, Integer.MAX_VALUE), size)
+                : reading(() -> store.page(instituteId, needles, matchFilter, statusCode,
+                        (int) Math.min(offset, Integer.MAX_VALUE), size))
                         .stream().map(SiteRedirectAdminService::view).toList();
         return SiteRedirectDtos.RedirectPage.builder().redirects(rows).page(page).pageSize(size).total(total).build();
     }
@@ -116,7 +143,7 @@ public class SiteRedirectAdminService {
     public SiteRedirectDtos.RedirectImportResult validate(String instituteId, String fileName, byte[] content) {
         SiteRedirectCsv.Parsed parsed = SiteRedirectCsv.parse(content);
         String fileSha = sha256(content);
-        SiteRedirectPlanner.Plan plan = plan(instituteId, parsed);
+        SiteRedirectPlanner.Plan plan = reading(() -> plan(instituteId, parsed));
         SiteRedirectDtos.RedirectImportResult result = result("validate", fileName, fileSha, parsed, plan);
         if (!plan.hasErrors()) {
             result.setCommitToken(token(instituteId, fileSha, plan));
@@ -138,7 +165,7 @@ public class SiteRedirectAdminService {
         }
         SiteRedirectCsv.Parsed parsed = SiteRedirectCsv.parse(content);
         String fileSha = sha256(content);
-        return transaction.execute(status -> {
+        return writing(() -> transaction.execute(status -> {
             store.lock(instituteId);
             SiteRedirectPlanner.Plan plan = plan(instituteId, parsed);
             if (plan.hasErrors()) {
@@ -152,17 +179,22 @@ public class SiteRedirectAdminService {
             List<String> ids = store.insert(instituteId, plan.creates());
             store.update(instituteId, plan.updates());
 
+            String commitId = UUID.randomUUID().toString();
             Map<String, Object> detail = new LinkedHashMap<>();
+            detail.put("commit_id", commitId);
             detail.put("file_sha256", fileSha);
             detail.put("rows", parsed.rows().size());
             detail.put("created", plan.creates().size());
             detail.put("updated", plan.updates().size());
             detail.put("unchanged", plan.unchanged());
+            detail.put("ignored", plan.ignored());
             detail.put("warnings", plan.warningCount());
-            auditService.record(instituteId, actorUserId, "REDIRECTS_IMPORTED", "SITE_REDIRECT", null, json(detail));
+            auditService.record(instituteId, actorUserId, null, "REDIRECTS_IMPORTED", "SITE_REDIRECT", commitId,
+                    json(undoRecord(plan, ids)), json(detail), null);
 
             SiteRedirectDtos.RedirectImportResult result = result("commit", fileName, fileSha, parsed, plan);
             result.setCommitted(true);
+            result.setCommitId(commitId);
             List<SiteRedirectDtos.WrittenRow> created = new ArrayList<>(ids.size());
             for (int i = 0; i < ids.size(); i++) {
                 created.add(written(plan.creates().get(i), ids.get(i)));
@@ -170,20 +202,183 @@ public class SiteRedirectAdminService {
             result.setCreated(created);
             result.setUpdated(plan.updates().stream().map(u -> written(u, u.id())).toList());
             return result;
-        });
+        }));
+    }
+
+    // -------------------------------------------------------------------- undo
+
+    /**
+     * Takes one commit back: removes the rows it created and puts the rows it changed back to
+     * their old target and status, all or nothing, under the institute's redirect lock. Refused
+     * (409) when it was undone already, when any of its rows has been changed or removed since
+     * (a later change would be lost), or when putting a row back would make a second hop or a
+     * PREFIX circle with rows added since. 404 for a commit id the institute does not have.
+     */
+    public SiteRedirectDtos.RedirectUndoResult undo(String instituteId, String actorUserId, String commitId) {
+        if (commitId == null || commitId.isBlank() || commitId.length() > MAX_COMMIT_ID_CHARS) {
+            throw new ResourceNotFoundException("no redirect commit with this id");
+        }
+        String id = commitId.trim();
+        return writing(() -> transaction.execute(status -> {
+            store.lock(instituteId);
+            String record = store.commitRecord(instituteId, id)
+                    .orElseThrow(() -> new ResourceNotFoundException("no redirect commit with this id"));
+            if (store.commitUndone(instituteId, id)) {
+                throw new ConflictException("this commit has already been undone");
+            }
+            UndoRecord undo = UndoRecord.read(record);
+            if (undo == null) {
+                throw new ConflictException("this commit has no undo record; take it back with the created and"
+                        + " updated lists its commit answer returned");
+            }
+            Map<String, SiteRedirectPlanner.Existing> byId = new HashMap<>();
+            List<SiteRedirectPlanner.Existing> all = store.all(instituteId);
+            for (SiteRedirectPlanner.Existing e : all) {
+                byId.put(e.id(), e);
+            }
+            List<String> updatedIds = undo.updated().stream().map(UndoRow::id).toList();
+            if (!digest(undo.createdIds(), byId).equals(undo.createdDigest())
+                    || !digest(updatedIds, byId).equals(undo.updatedDigest())) {
+                long gone = undo.createdIds().stream().filter(x -> !byId.containsKey(x)).count()
+                        + updatedIds.stream().filter(x -> !byId.containsKey(x)).count();
+                throw new ConflictException("rows this commit wrote have been changed or removed since (" + gone
+                        + " removed); the undo is refused so no later change is lost. Export the redirects and"
+                        + " correct them with a file");
+            }
+            Set<String> created = new HashSet<>(undo.createdIds());
+            Map<String, UndoRow> restore = new HashMap<>();
+            for (UndoRow row : undo.updated()) {
+                restore.put(row.id(), row);
+            }
+            List<SiteRedirectPlanner.Existing> after = new ArrayList<>(all.size());
+            List<SiteRedirectPlanner.Change> back = new ArrayList<>(restore.size());
+            for (SiteRedirectPlanner.Existing e : all) {
+                if (created.contains(e.id())) {
+                    continue;
+                }
+                UndoRow old = restore.get(e.id());
+                if (old == null) {
+                    after.add(e);
+                    continue;
+                }
+                after.add(new SiteRedirectPlanner.Existing(e.id(), e.matchType(), e.fromPath(), old.toPath(),
+                        old.statusCode()));
+                back.add(new SiteRedirectPlanner.Change(0, e.id(), e.matchType(), e.fromPath(), old.toPath(),
+                        old.statusCode(), e.toPath(), e.statusCode()));
+            }
+            List<String> problems = SiteRedirectPlanner.restoreProblems(after, restore.keySet());
+            if (!problems.isEmpty()) {
+                throw new ConflictException("undoing this commit would " + problems.get(0)
+                        + (problems.size() > 1 ? " (and " + (problems.size() - 1) + " more)" : "")
+                        + "; change those rows first, or correct the redirects with a file");
+            }
+            store.deleteAll(instituteId, undo.createdIds());
+            store.update(instituteId, back);
+
+            Map<String, Object> detail = new LinkedHashMap<>();
+            detail.put("commit_id", id);
+            detail.put("removed", undo.createdIds().size());
+            detail.put("restored", back.size());
+            auditService.record(instituteId, actorUserId, null, "REDIRECTS_UNDONE", "SITE_REDIRECT", id, null,
+                    json(detail), null);
+            return SiteRedirectDtos.RedirectUndoResult.builder().commitId(id).removed(undo.createdIds().size())
+                    .restored(back.size()).build();
+        }));
+    }
+
+    /** One changed row of a commit: its id and what it held before. */
+    record UndoRow(String id, String toPath, int statusCode) {
+    }
+
+    /**
+     * What an undo needs, kept in the commit's audit row: the created ids, the changed rows' old
+     * values, and a digest of every row as the commit left it.
+     */
+    record UndoRecord(List<String> createdIds, String createdDigest, List<UndoRow> updated, String updatedDigest) {
+
+        static UndoRecord read(String json) {
+            try {
+                JsonNode root = json == null || json.isBlank() ? null : JSON.readTree(json);
+                if (root == null || !root.has("created_ids") || !root.has("updated")) {
+                    return null;
+                }
+                List<String> created = new ArrayList<>();
+                root.get("created_ids").forEach(n -> created.add(n.asText()));
+                List<UndoRow> updated = new ArrayList<>();
+                root.get("updated").forEach(n -> updated.add(new UndoRow(n.get("id").asText(),
+                        n.get("old_to_path").isNull() ? null : n.get("old_to_path").asText(),
+                        n.get("old_status_code").asInt())));
+                return new UndoRecord(created, root.path("created_digest").asText(), updated,
+                        root.path("updated_digest").asText());
+            } catch (JsonProcessingException | RuntimeException e) {
+                return null;
+            }
+        }
+    }
+
+    private static Map<String, Object> undoRecord(SiteRedirectPlanner.Plan plan, List<String> createdIds) {
+        List<String> createdLines = new ArrayList<>(createdIds.size());
+        for (int i = 0; i < createdIds.size(); i++) {
+            SiteRedirectPlanner.Change c = plan.creates().get(i);
+            createdLines.add(stateLine(createdIds.get(i), c.matchType(), c.fromPath(), c.toPath(), c.statusCode()));
+        }
+        List<String> updatedLines = new ArrayList<>(plan.updates().size());
+        List<Map<String, Object>> updated = new ArrayList<>(plan.updates().size());
+        for (SiteRedirectPlanner.Change u : plan.updates()) {
+            updatedLines.add(stateLine(u.id(), u.matchType(), u.fromPath(), u.toPath(), u.statusCode()));
+            Map<String, Object> row = new LinkedHashMap<>();
+            row.put("id", u.id());
+            row.put("old_to_path", u.oldToPath());
+            row.put("old_status_code", u.oldStatusCode());
+            updated.add(row);
+        }
+        Map<String, Object> record = new LinkedHashMap<>();
+        record.put("created_ids", createdIds);
+        record.put("created_digest", digestOf(createdLines));
+        record.put("updated", updated);
+        record.put("updated_digest", digestOf(updatedLines));
+        return record;
+    }
+
+    /** The digest of the rows with these ids as they are stored now (a missing row counts as such). */
+    private static String digest(List<String> ids, Map<String, SiteRedirectPlanner.Existing> byId) {
+        List<String> lines = new ArrayList<>(ids.size());
+        for (String id : ids) {
+            SiteRedirectPlanner.Existing e = byId.get(id);
+            lines.add(e == null ? id + "\u0000missing"
+                    : stateLine(id, e.matchType(), e.fromPath(), e.toPath(), e.statusCode()));
+        }
+        return digestOf(lines);
+    }
+
+    private static String stateLine(String id, String matchType, String fromPath, String toPath, int statusCode) {
+        return id + "\u0000" + matchType + "\u0000" + fromPath + "\u0000" + toPath + "\u0000" + statusCode;
+    }
+
+    private static String digestOf(List<String> lines) {
+        List<String> sorted = new ArrayList<>(lines);
+        sorted.sort(null);
+        return SiteRedirectPlanner.sha256(String.join("\n", sorted));
     }
 
     // ------------------------------------------------------------------ delete
 
-    /** Removes one row of the institute; answers the row as it was (404 when it is not there). */
+    /**
+     * Removes one row of the institute; answers the row as it was (404 when it is not there).
+     * Takes the redirect lock, so it never runs between a commit's plan and its writes.
+     */
     public SiteRedirectDtos.RedirectRow delete(String instituteId, String actorUserId, String id) {
         if (id == null || id.isBlank() || id.length() > 36) {
             throw new ResourceNotFoundException("no redirect with this id");
         }
-        return transaction.execute(status -> {
+        return writing(() -> transaction.execute(status -> {
+            store.lock(instituteId);
             SiteRedirectStore.Row row = store.find(instituteId, id)
                     .orElseThrow(() -> new ResourceNotFoundException("no redirect with this id"));
-            store.delete(instituteId, id);
+            if (store.delete(instituteId, id) != 1) {
+                throw new ConflictException("the redirect changed while it was being removed; look at the list"
+                        + " and try again");
+            }
             Map<String, Object> old = new LinkedHashMap<>();
             old.put("match_type", row.matchType());
             old.put("from_path", row.fromPath());
@@ -192,28 +387,69 @@ public class SiteRedirectAdminService {
             auditService.record(instituteId, actorUserId, null, "REDIRECT_DELETED", "SITE_REDIRECT", id,
                     json(old), null, null);
             return view(row);
-        });
+        }));
     }
 
     // ------------------------------------------------------------------ export
 
-    /** Records the export (counts only). */
-    public void auditExport(String instituteId, String actorUserId) {
+    /**
+     * Records an export that was sent (counts only): called after the file has been written, with
+     * the number of rows it held.
+     */
+    public void auditExport(String instituteId, String actorUserId, int rows) {
         Map<String, Object> detail = new LinkedHashMap<>();
-        detail.put("rows", store.count(instituteId, Set.of(), null, null));
-        transaction.executeWithoutResult(status -> auditService.record(instituteId, actorUserId,
-                "REDIRECTS_EXPORTED", "SITE_REDIRECT", null, json(detail)));
+        detail.put("rows", rows);
+        writing(() -> {
+            transaction.executeWithoutResult(status -> auditService.record(instituteId, actorUserId,
+                    "REDIRECTS_EXPORTED", "SITE_REDIRECT", null, json(detail)));
+            return null;
+        });
     }
 
-    /** Every row of the institute in the import's columns. */
-    public void export(String instituteId, OutputStream out) throws IOException {
+    /**
+     * Every row of the institute in the import's columns, as a file the import takes back to the
+     * same rows (a percent sign in a stored address is written as {@code %25}).
+     */
+    public List<SiteRedirectCsv.ExportRow> exportRows(String instituteId) {
         List<SiteRedirectCsv.ExportRow> rows = new ArrayList<>();
-        store.each(instituteId, row -> rows.add(new SiteRedirectCsv.ExportRow(row.fromPath(), row.toPath(),
-                row.statusCode(), row.matchType())));
-        SiteRedirectCsv.write(out, rows);
+        reading(() -> {
+            store.each(instituteId, row -> rows.add(new SiteRedirectCsv.ExportRow(
+                    SiteRedirectPaths.fromPathForFile(row.fromPath()), row.toPath(), row.statusCode(), row.matchType())));
+            return null;
+        });
+        return rows;
     }
 
     // ----------------------------------------------------------------- helpers
+
+    /** A read; a database failure becomes a plain 500 with no SQL in it. */
+    private static <T> T reading(Supplier<T> work) {
+        try {
+            return work.get();
+        } catch (DataAccessException e) {
+            log.error("Redirect read failed", e);
+            throw new VacademyException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "REDIRECT_READ_FAILED: the redirects could not be read; try again");
+        }
+    }
+
+    /**
+     * A write; a clash with a row written at the same moment becomes a 409 and any other database
+     * failure a plain 500, both with no SQL in them. The transaction has rolled back either way.
+     */
+    private static <T> T writing(Supplier<T> work) {
+        try {
+            return work.get();
+        } catch (DataIntegrityViolationException e) {
+            log.warn("Redirect write refused by the database: {}", e.getMostSpecificCause().getClass().getSimpleName());
+            throw new ConflictException("REDIRECT_CONFLICT: the stored redirects changed while this was written;"
+                    + " nothing was saved. Validate the file again");
+        } catch (DataAccessException | TransactionException e) {
+            log.error("Redirect write failed", e);
+            throw new VacademyException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "REDIRECT_WRITE_FAILED: the redirects could not be saved and nothing was changed; try again");
+        }
+    }
 
     private SiteRedirectPlanner.Plan plan(String instituteId, SiteRedirectCsv.Parsed parsed) {
         return SiteRedirectPlanner.plan(parsed.rows(), store.all(instituteId), store.activeProductSlugs(instituteId),
@@ -239,6 +475,7 @@ public class SiteRedirectAdminService {
                 .fileSha256(fileSha)
                 .rowsTotal(parsed.rows().size())
                 .rowsSkipped(parsed.blankRows())
+                .rowsIgnored(plan.ignored())
                 .toCreate(plan.creates().size())
                 .toUpdate(plan.updates().size())
                 .unchanged(plan.unchanged())

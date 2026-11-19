@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.commerce.storefront.redirect;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,14 +14,18 @@ import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.InvalidRequestException;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -56,9 +61,11 @@ class SiteRedirectAdminControllerTest {
         controller.importRedirects(INSTITUTE, "commit", "rv1.t", file, user);
         controller.delete("id-1", INSTITUTE, user);
         controller.export(INSTITUTE, user, new MockHttpServletResponse());
-        verify(guard, times(5)).require(user, INSTITUTE, CommerceFeature.CATALOGUE, Set.of(CommerceRole.STORE_MANAGER));
+        controller.undo("commit-1", INSTITUTE, user);
+        verify(guard, times(6)).require(user, INSTITUTE, CommerceFeature.CATALOGUE, Set.of(CommerceRole.STORE_MANAGER));
         verify(service).commit(eq(INSTITUTE), eq("user-1"), eq("redirects.csv"), any(), eq("rv1.t"));
         verify(service).delete(INSTITUTE, "user-1", "id-1");
+        verify(service).undo(INSTITUTE, "user-1", "commit-1");
     }
 
     @Test
@@ -71,6 +78,7 @@ class SiteRedirectAdminControllerTest {
         assertThrows(CommerceAccessDeniedException.class,
                 () -> controller.importRedirects(INSTITUTE, "commit", "rv1.t", file, user));
         assertThrows(CommerceAccessDeniedException.class, () -> controller.delete("id-1", INSTITUTE, user));
+        assertThrows(CommerceAccessDeniedException.class, () -> controller.undo("commit-1", INSTITUTE, user));
         MockHttpServletResponse response = new MockHttpServletResponse();
         assertThrows(CommerceAccessDeniedException.class, () -> controller.export(INSTITUTE, user, response));
         assertEquals(0, response.getContentAsByteArray().length);
@@ -85,8 +93,27 @@ class SiteRedirectAdminControllerTest {
         assertTrue(response.getHeader("Content-Disposition").startsWith("attachment; filename=\"redirects-"));
         assertEquals("no-store", response.getHeader("Cache-Control"));
         assertEquals("nosniff", response.getHeader("X-Content-Type-Options"));
-        verify(service).auditExport(INSTITUTE, "user-1");
-        verify(service).export(eq(INSTITUTE), any());
+        verify(service).exportRows(INSTITUTE);
+        verify(service).auditExport(INSTITUTE, "user-1", 0);
+    }
+
+    @Test
+    void theExportIsAuditedAfterTheFileIsSentWithTheRowsItHeld() throws Exception {
+        when(service.exportRows(INSTITUTE)).thenReturn(List.of(new SiteRedirectCsv.ExportRow("/old", "/p/x", 301, "EXACT"),
+                new SiteRedirectCsv.ExportRow("/gone", null, 410, "EXACT")));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        controller.export(INSTITUTE, user, response);
+        assertTrue(response.getContentAsString(StandardCharsets.UTF_8).contains("/old,/p/x,301,EXACT"));
+        assertTrue(response.isCommitted());
+        var order = inOrder(service);
+        order.verify(service).exportRows(INSTITUTE);
+        order.verify(service).auditExport(INSTITUTE, "user-1", 2);
+
+        // A download that breaks on the way is not recorded as an export.
+        HttpServletResponse broken = mock(HttpServletResponse.class);
+        when(broken.getOutputStream()).thenThrow(new IOException("connection reset"));
+        assertThrows(IOException.class, () -> controller.export(INSTITUTE, user, broken));
+        verify(service, times(1)).auditExport(any(), any(), anyInt());
     }
 
     @Test

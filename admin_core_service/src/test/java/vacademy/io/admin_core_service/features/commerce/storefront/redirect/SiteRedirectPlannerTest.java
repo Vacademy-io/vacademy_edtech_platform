@@ -94,7 +94,6 @@ class SiteRedirectPlannerTest {
         assertError("INVALID_FROM_PATH", row(2, "/" + "x".repeat(1100), "/p/x"));
         assertError("HOME_PAGE", row(2, "/", "/p/x"));
         assertError("HOME_PAGE", row(2, "https://old.example/", "/p/x"));
-        assertError("HOME_PAGE", row(2, "/?p=1", "/p/x"));
     }
 
     @Test
@@ -162,13 +161,18 @@ class SiteRedirectPlannerTest {
     }
 
     @Test
-    void aTargetThatLeadsBackToItsOwnAddressIsRefused() {
-        assertError("SELF_REDIRECT", row(2, "/old", "/old"));
-        assertError("SELF_REDIRECT", row(2, "/Old/", "/old?lang=en"));
-        assertError("SELF_REDIRECT", row(2, "/hi/" + DEVANAGARI, "/hi/" + enc(DEVANAGARI) + "/"));
-        assertError("SELF_REDIRECT", row(2, "/old?x=1", "/old"));
-        assertError("SELF_REDIRECT", row(2, "/old", "/old#top"));
-        assertError("SELF_REDIRECT", row(2, "/shop-old", "/shop-old", "301", "PREFIX"));
+    void aTargetThatLeadsBackToItsOwnAddressIsSkippedWithAWarning() {
+        for (SiteRedirectCsv.Row self : List.of(row(2, "/old", "/old"), row(2, "/Old/", "/old?lang=en"),
+                row(2, "/hi/" + DEVANAGARI, "/hi/" + enc(DEVANAGARI) + "/"), row(2, "/old?x=1", "/old"),
+                row(2, "/old", "/old#top"), row(2, "/shop-old", "/shop-old", "301", "PREFIX"),
+                // An old shop's own route that the new shop serves under the same name.
+                row(2, "/cart/", "/cart"), row(2, "/checkout/", "/checkout"), row(2, "/shop/", "/shop"))) {
+            SiteRedirectPlanner.Plan plan = plan(self, row(3, "/other", "/p/red-saree"));
+            assertFalse(plan.hasErrors(), self + " " + plan.issues());
+            assertEquals(List.of("SELF_REDIRECT"), codes(plan, 2), self.toString());
+            assertEquals(1, plan.ignored(), self.toString());
+            assertEquals(List.of("/other"), plan.creates().stream().map(SiteRedirectPlanner.Change::fromPath).toList());
+        }
     }
 
     // -------------------------------------------------------------- chains
@@ -211,7 +215,7 @@ class SiteRedirectPlannerTest {
 
     @Test
     void aPrefixRowIsNoChainButATargetItCatchesIsWarnedAbout() {
-        SiteRedirectPlanner.Plan plan = plan(row(2, "/hi", "/", "301", "PREFIX"), row(3, "/old", "/hi/news"));
+        SiteRedirectPlanner.Plan plan = plan(row(2, "/hi/", "/", "301", "PREFIX"), row(3, "/old", "/hi/news"));
         assertFalse(plan.hasErrors(), plan.issues().toString());
         assertEquals(List.of("TARGET_CAUGHT_BY_PREFIX"), codes(plan, 3));
         assertEquals(List.of(), codes(plan, 2));
@@ -231,7 +235,7 @@ class SiteRedirectPlannerTest {
     @Test
     void aTargetProductOrCollectionThatIsNotActiveIsAWarning() {
         SiteRedirectPlanner.Plan plan = plan(row(2, "/a", "/p/missing?lang=en"), row(3, "/b", "/c/missing"),
-                row(4, "/c", "/c/sarees/"), row(5, "/d", "/p/red-saree"), row(6, "/e", "/news#about"));
+                row(4, "/cc", "/c/sarees/"), row(5, "/d", "/p/red-saree"), row(6, "/e", "/news#about"));
         assertEquals(List.of("TARGET_PRODUCT_NOT_ACTIVE"), codes(plan, 2));
         assertEquals(List.of("TARGET_COLLECTION_NOT_ACTIVE"), codes(plan, 3));
         assertEquals(List.of(), codes(plan, 4));
@@ -306,9 +310,161 @@ class SiteRedirectPlannerTest {
     @Test
     void errorsComeFirstThenWarningsEachByRow() {
         SiteRedirectPlanner.Plan plan = plan(row(2, "/a", "/p/missing"), row(3, "/b", "https://evil.example"),
-                row(4, "/c", "/c/missing"), row(5, "/d", "/d"));
+                row(4, "/cc", "/c/missing"), row(5, "/d", "/p/x", "302", ""));
         assertEquals(List.of(3, 5, 2, 4), plan.issues().stream().map(SiteRedirectPlanner.Issue::row).toList());
         assertEquals(2, plan.errorCount());
         assertEquals(2, plan.warningCount());
+    }
+
+    // ------------------------------------------------- review follow-ups
+
+    @Test
+    void aTargetThatOnlyLeavesTheSiteOnceDecodedIsRefused() {
+        for (String to : List.of("/%2F%2Fevil.example", "/%2f/evil.example", "/%5Cevil.example", "/%5cevil.example",
+                "/..//evil.example", "/a/../b", "/%2E%2E/x", "/%2e/x", "/./x", "/p/x/..", "/p/x/%2e%2E?lang=en")) {
+            assertError("OFF_SITE_TARGET", row(2, "/old", to));
+        }
+        for (String to : List.of("/p/x%00y", "/p/%0D%0ALocation:x", "/p/a%09b", "/p/a%7F")) {
+            assertError("INVALID_TO_PATH", row(2, "/old", to));
+        }
+        // An encoded slash inside one segment stays a single segment, and is a path like any other.
+        assertFalse(plan(row(2, "/old", "/p/a%2Fb")).hasErrors());
+        assertFalse(plan(row(2, "/old", "/p/a.b..c")).hasErrors());
+    }
+
+    @Test
+    void aControlCharacterAnywhereInTheAddressIsRefusedQueryIncluded() {
+        for (String from : List.of("/a?x=\u0000y", "/a?x=1\r\ny=2", "/a?x=\ty", "/a?x=\u007F")) {
+            assertError("INVALID_FROM_PATH", row(2, from, "/p/red-saree"));
+        }
+    }
+
+    @Test
+    void aNonAsciiQueryIsStoredAsABrowserSendsIt() {
+        SiteRedirectPlanner.Plan plan = plan(row(2, "/a?q=ख", "/p/red-saree"));
+        String stored = plan.creates().get(0).fromPath();
+        assertEquals("/a?q=%E0%A4%96", stored);
+        // What a browser sends for the same address finds the row.
+        assertEquals(stored, SiteRedirectResolver.normalise("/a?q=%E0%A4%96"));
+        assertEquals(stored, SiteRedirectResolver.normalise("/a?q=ख"));
+    }
+
+    @Test
+    void aProductSlugWithANuktaLetterIsComparedAsStoredAndTheTargetFollowsTheStoredSpelling() {
+        // U+095C (a nukta letter) is a composition exclusion: NFC turns it into two code points.
+        String precomposed = "सा\u095Cी";
+        String nfc = Normalizer.normalize(precomposed, Normalizer.Form.NFC);
+        assertNotEquals(precomposed, nfc);
+
+        // Stored and typed the same way: no warning, and the target is the stored spelling.
+        SiteRedirectPlanner.Plan same = SiteRedirectPlanner.plan(List.of(row(2, "/a", "/p/" + precomposed)), List.of(),
+                Set.of(precomposed), Set.of());
+        assertEquals(List.of(), same.issues());
+        assertEquals("/p/" + enc(precomposed), same.creates().get(0).toPath());
+
+        // Typed in the other form: the target is written as the product stores its address.
+        SiteRedirectPlanner.Plan other = SiteRedirectPlanner.plan(List.of(row(2, "/a", "/p/" + precomposed + "?lang=en")),
+                List.of(), Set.of(nfc), Set.of());
+        assertEquals(List.of("TARGET_SPELLING_FIXED"), codes(other, 2));
+        assertEquals("/p/" + enc(nfc) + "?lang=en", other.creates().get(0).toPath());
+        SiteRedirectPlanner.Plan back = SiteRedirectPlanner.plan(List.of(row(2, "/a", "/c/" + enc(nfc))),
+                List.of(), Set.of(), Set.of(precomposed));
+        assertEquals(List.of("TARGET_SPELLING_FIXED"), codes(back, 2));
+        assertEquals("/c/" + enc(precomposed), back.creates().get(0).toPath());
+    }
+
+    @Test
+    void anAddressTheShopNeverLooksUpIsWarnedAbout() {
+        for (String from : List.of("/shop/page/2/", "/cart/x", "/P/old-slug", "/a/b/c/d/e/f/g", "/.well-known/x")) {
+            SiteRedirectPlanner.Plan plan = plan(row(2, from, "/p/red-saree"));
+            assertFalse(plan.hasErrors(), from);
+            assertEquals(List.of("NEVER_LOOKED_UP"), codes(plan, 2), from);
+            assertEquals(1, plan.creates().size(), from);
+        }
+        assertEquals(List.of(), codes(plan(row(2, "/a/b/c/d/e/f", "/p/red-saree")), 2));
+        assertEquals(List.of(), codes(plan(row(2, "/shopping/x", "/p/red-saree")), 2));
+    }
+
+    @Test
+    void anOldWordPressQueryAddressOnTheHomePageIsSkippedWithAWarning() {
+        for (String from : List.of("/?p=123", "/?page_id=45", "https://old.example/?product=x")) {
+            SiteRedirectPlanner.Plan plan = plan(row(2, from, "/p/red-saree"), row(3, "/b", "/p/red-saree"));
+            assertFalse(plan.hasErrors(), from + " " + plan.issues());
+            assertEquals(List.of("NEVER_LOOKED_UP"), codes(plan, 2), from);
+            assertEquals(1, plan.ignored(), from);
+            assertEquals(1, plan.creates().size(), from);
+        }
+    }
+
+    @Test
+    void twoPrefixRowsThatSendVisitorsToEachOtherAreALoop() {
+        SiteRedirectPlanner.Plan plan = plan(row(2, "/a/", "/b/x", "301", "PREFIX"), row(3, "/b/", "/a/y", "301", "PREFIX"));
+        assertTrue(plan.hasErrors());
+        assertEquals(List.of("PREFIX_LOOP"), codes(plan, 2));
+        assertEquals(List.of("PREFIX_LOOP"), codes(plan, 3));
+        // Without the slashes too (each also gets the segment warning).
+        assertTrue(codes(plan(row(2, "/a", "/b/x", "301", "PREFIX"), row(3, "/b", "/a/y", "301", "PREFIX")), 2)
+                .contains("PREFIX_LOOP"));
+        // Against a stored PREFIX row too.
+        List<SiteRedirectPlanner.Existing> stored = List.of(new SiteRedirectPlanner.Existing("id-1", "PREFIX", "/b/", "/a/y", 301));
+        assertEquals(List.of("PREFIX_LOOP"), codes(plan(stored, row(2, "/a/", "/b/x", "301", "PREFIX")), 2));
+        // An EXACT row that leads into such a loop.
+        List<SiteRedirectPlanner.Existing> loop = List.of(new SiteRedirectPlanner.Existing("id-1", "PREFIX", "/b/", "/c/y", 301),
+                new SiteRedirectPlanner.Existing("id-2", "PREFIX", "/c/", "/b/z", 301));
+        assertEquals(List.of("PREFIX_LOOP"), codes(plan(loop, row(2, "/old", "/b/1")), 2));
+        // A PREFIX row whose target it catches itself is no loop: the resolver never sends a visitor
+        // to the address that was asked.
+        assertFalse(plan(row(2, "/a/", "/a/home", "301", "PREFIX")).hasErrors());
+        // Two rows in a line, not a circle.
+        assertFalse(plan(row(2, "/a/", "/b/x", "301", "PREFIX"), row(3, "/b/", "/shop", "301", "PREFIX")).hasErrors());
+    }
+
+    @Test
+    void aNewPrefixRowThatCatchesStoredTargetsIsWarnedAbout() {
+        List<SiteRedirectPlanner.Existing> stored = List.of(
+                new SiteRedirectPlanner.Existing("id-1", "EXACT", "/x", "/old/thing", 301),
+                new SiteRedirectPlanner.Existing("id-2", "EXACT", "/y", "/old/other?lang=en", 301),
+                new SiteRedirectPlanner.Existing("id-3", "EXACT", "/z", "/p/red-saree", 301));
+        SiteRedirectPlanner.Plan plan = plan(stored, row(2, "/old", "/shop", "301", "PREFIX"));
+        assertFalse(plan.hasErrors());
+        assertTrue(codes(plan, 2).contains("PREFIX_CATCHES_TARGETS"), plan.issues().toString());
+        String message = plan.issues().stream().filter(i -> i.code().equals("PREFIX_CATCHES_TARGETS")).findFirst()
+                .orElseThrow().message();
+        assertTrue(message.startsWith("2 stored redirects"), message);
+    }
+
+    @Test
+    void anInstituteHoldsAtMostFiveHundredPrefixRows() {
+        List<SiteRedirectPlanner.Existing> stored = new ArrayList<>();
+        for (int i = 0; i < SiteRedirectPlanner.MAX_PREFIX_ROWS_PER_INSTITUTE; i++) {
+            stored.add(new SiteRedirectPlanner.Existing("id-" + i, "PREFIX", "/s" + i + "/", "/shop", 301));
+        }
+        SiteRedirectPlanner.Plan plan = plan(stored, row(2, "/one-more/", "/shop", "301", "PREFIX"));
+        assertEquals(List.of("TOO_MANY_PREFIX_REDIRECTS"), codes(plan, 0));
+        assertTrue(plan.hasErrors());
+        assertEquals(500, SiteRedirectPlanner.MAX_PREFIX_ROWS_PER_INSTITUTE);
+        // EXACT rows do not count, and a stored PREFIX row the file changes adds none.
+        assertFalse(plan(stored, row(2, "/one-more", "/shop")).hasErrors());
+        assertFalse(plan(stored, row(2, "/s1/", "/c/sarees", "301", "PREFIX")).hasErrors());
+    }
+
+    @Test
+    void aPrefixAddressKeepsItsTrailingSlashSoItStopsAtTheSegment() {
+        SiteRedirectPlanner.Plan plan = plan(row(2, "/Product/", "/shop", "301", "PREFIX"),
+                row(3, "/old-a", "/products"), row(4, "/old-b", "/product/x"), row(5, "/old-c", "/product"));
+        assertEquals("/product/", plan.creates().get(0).fromPath());
+        assertEquals(List.of(), codes(plan, 2));
+        // "/products" is not under "/product/"; "/product/x" and "/product" itself are.
+        assertEquals(List.of(), codes(plan, 3));
+        assertEquals(List.of("TARGET_CAUGHT_BY_PREFIX"), codes(plan, 4));
+        assertEquals(List.of("TARGET_CAUGHT_BY_PREFIX"), codes(plan, 5));
+        // Without the slash the address also catches what only starts with it: a warning says so.
+        SiteRedirectPlanner.Plan bare = plan(row(2, "/hi", "/", "301", "PREFIX"));
+        assertEquals("/hi", bare.creates().get(0).fromPath());
+        assertEquals(List.of("PREFIX_NOT_AT_SEGMENT"), codes(bare, 2));
+        // "/product/" and "/product" are two rows.
+        assertFalse(plan(row(2, "/product/", "/shop", "301", "PREFIX"), row(3, "/product", "/shop", "301", "PREFIX")).hasErrors());
+        // A self-redirect PREFIX with the slash: "/shop-old/" to "/shop-old" is skipped.
+        assertEquals(List.of("SELF_REDIRECT"), codes(plan(row(2, "/shop-old/", "/shop-old", "301", "PREFIX")), 2));
     }
 }

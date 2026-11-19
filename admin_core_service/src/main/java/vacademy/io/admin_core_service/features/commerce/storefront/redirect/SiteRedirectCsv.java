@@ -96,6 +96,11 @@ public final class SiteRedirectCsv {
                     cells.add(cell == null ? "" : cell);
                 }
                 if (header == null) {
+                    if (cells.stream().allMatch(String::isBlank)) {
+                        throw new InvalidRequestException("the first line of the file is empty; the first row must"
+                                + " name the columns " + String.join(", ", COLUMNS) + " (" + MATCH_TYPE
+                                + " may be left out), so remove the empty line above it");
+                    }
                     header = header(cells);
                     continue;
                 }
