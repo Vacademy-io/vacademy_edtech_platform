@@ -35,6 +35,17 @@ import { PACK_REFUSALS } from '../orders/-shared/pack-session';
 import { CART_REFUSALS } from '../pos/-shared/pos-cart';
 import { POS_ERROR_CODES } from '../pos/-shared/pos-errors';
 import { RECEIPT_DOCUMENT_TYPES } from '../pos/-shared/pos-receipt';
+import * as catalogue from '../reports/-shared/report-catalogue';
+import { REPORT_ERROR_CODES, REPORT_ERROR_FALLBACKS } from '../reports/-shared/report-errors';
+import {
+    APPROVAL_ACTION_LABELS,
+    AUDIT_KIND_LABELS,
+    AUDIT_TABS,
+    GSTR1_CHECK_KEYS,
+    GSTR1_TABS,
+    KNOWN_EXTRA_TOTALS,
+    REPORT_WARNING_CODES,
+} from '../reports/-shared/report-keys';
 import { TENDER_PROBLEMS } from '../pos/-shared/pos-tenders';
 import {
     POS_APPROVAL_ACTIONS,
@@ -108,7 +119,7 @@ const sidebar = { en: flatten(load('en', 'sidebar')), hi: flatten(load('hi', 'si
 const placeholders = (text: string) => (text.match(/{{\s*[\w.]+\s*}}/g) ?? []).sort();
 const DEVANAGARI = /[ऀ-ॿ]/;
 /** Values that are the same in both languages on purpose: names of things. */
-const SAME_IN_BOTH = new Set(['GSTIN', 'PIN', 'HSN']);
+const SAME_IN_BOTH = new Set(['GSTIN', 'PIN', 'HSN', 'GSTR-1']);
 
 const sourceFiles = (dir: string): string[] =>
     fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -429,5 +440,31 @@ describe('commerce strings: every key the code asks for exists', () => {
             'labels',
             'storefront',
         ]);
+    });
+    it('report and audit log keys built at run time exist for every value (WP-51)', () => {
+        const need: string[] = [];
+        const each = (prefix: string, values: readonly string[]) =>
+            values.forEach((value) => need.push(`${prefix}.${value}`));
+        catalogue.REPORT_IDS.forEach((id) =>
+            need.push(catalogue.reportTitleKey(id), catalogue.reportHelpKey(id))
+        );
+        each('reports.groups', catalogue.REPORT_GROUPS);
+        each('reports.sections', catalogue.REPORT_SECTION_KEYS);
+        each('reports.groupBy', [...catalogue.SALES_GROUP_BY, ...catalogue.PRODUCT_GROUP_BY]);
+        each('reports.errors', [...REPORT_ERROR_CODES, ...REPORT_ERROR_FALLBACKS]);
+        each('reports.warnings', REPORT_WARNING_CODES);
+        each('reports.gstr1.tabs', GSTR1_TABS);
+        each('reports.gstr1.check.keys', GSTR1_CHECK_KEYS);
+        each('reports.totals', KNOWN_EXTRA_TOTALS);
+        each('reports.filters.problems', ['order', 'tooLong', 'future', 'futureMonth']);
+        each('reports.audit.kinds', AUDIT_KIND_LABELS);
+        each('reports.audit.actions', APPROVAL_ACTION_LABELS);
+        each('reports.audit.tabs', AUDIT_TABS);
+        each('orders.channel', catalogue.REPORT_CHANNELS);
+        expect(need.length).toBeGreaterThan(150);
+        expect(need.filter((key) => !en[key] || !hi[key])).toEqual([]);
+        // Report names as the contract words them (§7.2), Hindi first.
+        expect(hi['reports.catalogue.dayBook.title']).toBe('रोज़नामचा');
+        expect(en['reports.errors.REPORT_BUSY']).toBe('Another download is running. Try again in a minute.');
     });
 });

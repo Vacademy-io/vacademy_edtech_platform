@@ -196,3 +196,10 @@ export const COMMERCE_LABELS_PRINT_DATA = `${COMMERCE_LABELS}/print-data`;
 export const COMMERCE_LABELS_MARK_PRINTED = `${COMMERCE_LABELS}/mark-printed`;
 export const COMMERCE_LABELS_TO_REPLACE = `${COMMERCE_LABELS}/to-replace`;
 export const COMMERCE_QUICK_ADD = `${COMMERCE_PRODUCTS}/quick-add`;
+
+// Reports and audit log (CommerceReportController, CommerceAuditController; WP-50/51)
+export const COMMERCE_REPORTS = `${COMMERCE_BASE}/reports`;
+export const COMMERCE_REPORT = (name: string) => `${COMMERCE_REPORTS}/${id$(name)}`;
+export const COMMERCE_AUDIT = `${COMMERCE_BASE}/audit`;
+export const COMMERCE_AUDIT_APPROVALS = `${COMMERCE_AUDIT}/approvals`;
+export const COMMERCE_AUDIT_KINDS = `${COMMERCE_AUDIT}/kinds`;

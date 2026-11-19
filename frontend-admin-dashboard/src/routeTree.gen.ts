@@ -251,6 +251,7 @@ import { Route as CommerceSettingsRegistersIndexRouteImport } from "./routes/com
 import { Route as CommerceSettingsNotificationsIndexRouteImport } from "./routes/commerce/settings/notifications/index"
 import { Route as CommerceSettingsLocationsIndexRouteImport } from "./routes/commerce/settings/locations/index"
 import { Route as CommerceSettingsBusinessIndexRouteImport } from "./routes/commerce/settings/business/index"
+import { Route as CommerceReportsAuditIndexRouteImport } from "./routes/commerce/reports/audit/index"
 import { Route as CommerceProductsImportIndexRouteImport } from "./routes/commerce/products/import/index"
 import { Route as CommerceProductsProductIdIndexRouteImport } from "./routes/commerce/products/$productId/index"
 import { Route as CommercePosSessionsIndexRouteImport } from "./routes/commerce/pos/sessions/index"
@@ -2144,6 +2145,14 @@ const CommerceSettingsBusinessIndexRoute =
       (d) => d.Route,
     ),
   )
+const CommerceReportsAuditIndexRoute =
+  CommerceReportsAuditIndexRouteImport.update({
+    id: "/commerce/reports/audit/",
+    path: "/commerce/reports/audit/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/reports/audit/index.lazy").then((d) => d.Route),
+  )
 const CommerceProductsImportIndexRoute =
   CommerceProductsImportIndexRouteImport.update({
     id: "/commerce/products/import/",
@@ -2921,6 +2930,7 @@ export interface FileRoutesByFullPath {
   "/commerce/pos/sessions/": typeof CommercePosSessionsIndexRoute
   "/commerce/products/$productId/": typeof CommerceProductsProductIdIndexRoute
   "/commerce/products/import/": typeof CommerceProductsImportIndexRoute
+  "/commerce/reports/audit/": typeof CommerceReportsAuditIndexRoute
   "/commerce/settings/business/": typeof CommerceSettingsBusinessIndexRoute
   "/commerce/settings/locations/": typeof CommerceSettingsLocationsIndexRoute
   "/commerce/settings/notifications/": typeof CommerceSettingsNotificationsIndexRoute
@@ -3226,6 +3236,7 @@ export interface FileRoutesByTo {
   "/commerce/pos/sessions": typeof CommercePosSessionsIndexRoute
   "/commerce/products/$productId": typeof CommerceProductsProductIdIndexRoute
   "/commerce/products/import": typeof CommerceProductsImportIndexRoute
+  "/commerce/reports/audit": typeof CommerceReportsAuditIndexRoute
   "/commerce/settings/business": typeof CommerceSettingsBusinessIndexRoute
   "/commerce/settings/locations": typeof CommerceSettingsLocationsIndexRoute
   "/commerce/settings/notifications": typeof CommerceSettingsNotificationsIndexRoute
@@ -3534,6 +3545,7 @@ export interface FileRoutesById {
   "/commerce/pos/sessions/": typeof CommercePosSessionsIndexRoute
   "/commerce/products/$productId/": typeof CommerceProductsProductIdIndexRoute
   "/commerce/products/import/": typeof CommerceProductsImportIndexRoute
+  "/commerce/reports/audit/": typeof CommerceReportsAuditIndexRoute
   "/commerce/settings/business/": typeof CommerceSettingsBusinessIndexRoute
   "/commerce/settings/locations/": typeof CommerceSettingsLocationsIndexRoute
   "/commerce/settings/notifications/": typeof CommerceSettingsNotificationsIndexRoute
@@ -3843,6 +3855,7 @@ export interface FileRouteTypes {
     | "/commerce/pos/sessions/"
     | "/commerce/products/$productId/"
     | "/commerce/products/import/"
+    | "/commerce/reports/audit/"
     | "/commerce/settings/business/"
     | "/commerce/settings/locations/"
     | "/commerce/settings/notifications/"
@@ -4148,6 +4161,7 @@ export interface FileRouteTypes {
     | "/commerce/pos/sessions"
     | "/commerce/products/$productId"
     | "/commerce/products/import"
+    | "/commerce/reports/audit"
     | "/commerce/settings/business"
     | "/commerce/settings/locations"
     | "/commerce/settings/notifications"
@@ -4455,6 +4469,7 @@ export interface FileRouteTypes {
     | "/commerce/pos/sessions/"
     | "/commerce/products/$productId/"
     | "/commerce/products/import/"
+    | "/commerce/reports/audit/"
     | "/commerce/settings/business/"
     | "/commerce/settings/locations/"
     | "/commerce/settings/notifications/"
@@ -4754,6 +4769,7 @@ export interface RootRouteChildren {
   CommercePosSessionsIndexRoute: typeof CommercePosSessionsIndexRoute
   CommerceProductsProductIdIndexRoute: typeof CommerceProductsProductIdIndexRoute
   CommerceProductsImportIndexRoute: typeof CommerceProductsImportIndexRoute
+  CommerceReportsAuditIndexRoute: typeof CommerceReportsAuditIndexRoute
   CommerceSettingsBusinessIndexRoute: typeof CommerceSettingsBusinessIndexRoute
   CommerceSettingsLocationsIndexRoute: typeof CommerceSettingsLocationsIndexRoute
   CommerceSettingsNotificationsIndexRoute: typeof CommerceSettingsNotificationsIndexRoute
@@ -6536,6 +6552,13 @@ declare module "@tanstack/react-router" {
       preLoaderRoute: typeof CommerceSettingsBusinessIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    "/commerce/reports/audit/": {
+      id: "/commerce/reports/audit/"
+      path: "/commerce/reports/audit"
+      fullPath: "/commerce/reports/audit/"
+      preLoaderRoute: typeof CommerceReportsAuditIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     "/commerce/products/import/": {
       id: "/commerce/products/import/"
       path: "/commerce/products/import"
@@ -7259,6 +7282,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommercePosSessionsIndexRoute: CommercePosSessionsIndexRoute,
   CommerceProductsProductIdIndexRoute: CommerceProductsProductIdIndexRoute,
   CommerceProductsImportIndexRoute: CommerceProductsImportIndexRoute,
+  CommerceReportsAuditIndexRoute: CommerceReportsAuditIndexRoute,
   CommerceSettingsBusinessIndexRoute: CommerceSettingsBusinessIndexRoute,
   CommerceSettingsLocationsIndexRoute: CommerceSettingsLocationsIndexRoute,
   CommerceSettingsNotificationsIndexRoute:

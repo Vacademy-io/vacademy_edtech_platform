@@ -3258,5 +3258,301 @@
             "blank": "Enter a quantity.",
             "aboveZero": "Enter a quantity above zero."
         }
+    },
+    "reports": {
+        "home": {
+            "description": "Sales, GST, money and counter reports for your accountant. Download any of them as CSV or Excel.",
+            "none": "No reports are open to you here.",
+            "back": "All reports"
+        },
+        "groups": {
+            "gst": "GST pack",
+            "sales": "Sales",
+            "money": "Money",
+            "counter": "Counter and day",
+            "audit": "Audit log"
+        },
+        "catalogue": {
+            "salesRegister": {
+                "title": "Sales register",
+                "help": "Every bill by HSN and rate, with taxes, round-off and total."
+            },
+            "gstr1": {
+                "title": "GSTR-1",
+                "help": "The GSTR-1 sheets for one month and one GSTIN, with a check that they add up."
+            },
+            "hsnSummary": {
+                "title": "HSN summary",
+                "help": "Quantity and value by HSN, unit and rate, net of credit notes."
+            },
+            "creditNotes": {
+                "title": "Credit note register",
+                "help": "Every credit note with its bill, quantity, taxes and reason."
+            },
+            "documentsIssued": {
+                "title": "Documents issued",
+                "help": "Bill, credit note and challan numbers used, cancelled and missing; paper bill books apart."
+            },
+            "taxByRate": {
+                "title": "Tax by rate",
+                "help": "Taxable value and tax by rate, place and channel: bills, credit notes and net."
+            },
+            "gstPack": {
+                "title": "GST pack for a month",
+                "help": "One Excel file for your CA with every GST sheet of the month."
+            },
+            "sales": {
+                "title": "Sales",
+                "help": "Bills and returns by day, month, channel, place, staff or payment."
+            },
+            "products": {
+                "title": "Products",
+                "help": "What sold and what came back, by item, product or collection; and what never sold."
+            },
+            "paymentModes": {
+                "title": "Payment modes",
+                "help": "Money in by cash, UPI, card, bank and COD, and refunds out, by day and place."
+            },
+            "codOutstanding": {
+                "title": "COD outstanding",
+                "help": "Delivered COD orders whose money has not come from the courier yet."
+            },
+            "customerDues": {
+                "title": "Customer dues",
+                "help": "Staff orders on credit that are not fully paid, as of now."
+            },
+            "dayBook": {
+                "title": "Day book",
+                "help": "Every bill, credit note and payment of a day, and the cash at the tills."
+            },
+            "posSessions": {
+                "title": "POS sessions",
+                "help": "Each counter session from its closing report: bills, modes, cash and difference."
+            },
+            "audit": {
+                "title": "Audit log",
+                "help": "Who changed what, when and why; and approvals given with a manager PIN."
+            }
+        },
+        "page": {
+            "asOf": "Figures as of {{time}}",
+            "empty": "No documents in these dates",
+            "emptyHelp": "Change the dates or the place to see more."
+        },
+        "filters": {
+            "from": "From",
+            "to": "To",
+            "asOf": "As of",
+            "month": "Month",
+            "location": "Place",
+            "allPlaces": "All my places",
+            "channel": "Channel",
+            "allChannels": "All channels",
+            "gstin": "Seller GSTIN",
+            "pickGstin": "Pick a GSTIN",
+            "groupBy": "Group by",
+            "problems": {
+                "order": "\"From\" must be on or before \"To\".",
+                "tooLong": "Pick at most {{days}} days.",
+                "future": "Pick a date up to today.",
+                "futureMonth": "Pick this month or an earlier one."
+            }
+        },
+        "groupBy": {
+            "day": "Day",
+            "month": "Month",
+            "channel": "Channel",
+            "location": "Place",
+            "staff": "Staff",
+            "payment_method": "Payment",
+            "variant": "Item",
+            "product": "Product",
+            "collection": "Collection",
+            "category": "Category"
+        },
+        "table": {
+            "total": "Total",
+            "previous": "Previous page",
+            "next": "Next page",
+            "page": "Page {{page}}",
+            "nothing": "Nothing here for these dates."
+        },
+        "export": {
+            "csv": "Download CSV",
+            "xlsx": "Download Excel",
+            "done": "Downloaded {{name}}"
+        },
+        "errors": {
+            "VALIDATION": "These filters cannot be used.",
+            "GSTIN_REQUIRED": "This shop has more than one GSTIN. Pick the seller GSTIN.",
+            "EXPORT_TOO_LARGE": "Too many rows for one file. Narrow the dates or pick a place.",
+            "FEATURE_DISABLED": "Reports are not switched on for this shop.",
+            "ROLE_NOT_ALLOWED": "You do not have access to this at this location",
+            "LOCATION_NOT_ALLOWED": "You do not have access to this at this location",
+            "REPORT_NOT_FOUND": "This report does not exist.",
+            "REPORT_BUSY": "Another download is running. Try again in a minute.",
+            "REPORT_TIMEOUT": "This range takes too long. Narrow the dates.",
+            "noAccess": "You do not have access to this at this location",
+            "network": "Could not reach the server. Check the internet and try again.",
+            "generic": "The report could not be loaded. Try again."
+        },
+        "warnings": {
+            "count": "Rows: {{count}}",
+            "more": "and {{count}} more",
+            "QTY_ROUNDED": "Some quantities are rounded to 2 decimals.",
+            "UQC_UNKNOWN": "Some units are not in the GST unit list; your CA maps them.",
+            "HSN_MISSING": "Some lines have no HSN code.",
+            "HSN_SHORT": "Some HSN codes have fewer than 4 digits.",
+            "SCALE_UNKNOWN": "The unit size of some lines could not be read; they count as whole units.",
+            "ZERO_RATE_SPLIT_UNKNOWN": "0% items are shown together as \"nil or exempt\"; your CA splits them.",
+            "NOT_A_TAX_INVOICE": "Bills of supply are left out of the GST sheets (counted in documents).",
+            "GSTR1_DOES_NOT_ADD_UP": "The GSTR-1 sheets do not add up to the bills. Do not file; tell support.",
+            "SERIES_GAP": "Some numbers are missing in a series. Tell support before filing.",
+            "CANCELLED_AFTER_MONTH": "A bill was cancelled after its month ended; ask your CA.",
+            "DUE_REDUCED_BY_RETURN": "The due is lower because goods came back before payment."
+        },
+        "sections": {
+            "b2b": "B2B (buyer has a GSTIN)",
+            "b2cl": "B2C large (other state, above the limit)",
+            "b2cs": "B2C small",
+            "b2cs_credit_notes": "Credit notes netted here",
+            "cdnr": "Credit notes (registered)",
+            "cdnur": "Credit notes (unregistered)",
+            "exemp": "0% supplies (nil or exempt)",
+            "hsn_b2b": "HSN summary: buyers with a GSTIN",
+            "hsn_b2c": "HSN summary: buyers without a GSTIN",
+            "docs": "Documents issued",
+            "b2c": "B2C (buyer has no GSTIN)",
+            "round_off": "Round-off (not part of HSN values)",
+            "invoices": "Bills",
+            "credit_notes": "Credit notes",
+            "net": "Net (bills − credit notes)",
+            "system": "System numbers",
+            "bill_books": "Paper bill books",
+            "other_period": "Dated in another period",
+            "documents": "Documents",
+            "money": "Money in and out",
+            "by_mode": "Money by payment mode",
+            "sessions": "Counter sessions",
+            "paid_not_invoiced": "Paid, not yet invoiced",
+            "outstanding": "Delivered, money not received",
+            "in_transit": "In transit",
+            "remittances": "Money received from couriers",
+            "rto": "Returned to origin (RTO) rate",
+            "open_sessions": "Still open",
+            "never_sold": "Never sold in these dates"
+        },
+        "totals": {
+            "count": "Documents",
+            "cancelled_count": "Cancelled bills",
+            "cancelled_total": "Value of cancelled bills (not in totals)",
+            "customers": "Customers",
+            "orders": "Orders",
+            "invoices": "Bills",
+            "paid_not_invoiced": "Paid, not yet invoiced",
+            "round_off_line": "Round-off (not part of HSN values)"
+        },
+        "gstr1": {
+            "tabs": {
+                "b2b": "B2B",
+                "b2cl": "B2C large",
+                "b2cs": "B2C small",
+                "cdnr": "Credit notes (registered)",
+                "cdnur": "Credit notes (unregistered)",
+                "exemp": "0% supplies",
+                "hsn_b2b": "HSN B2B",
+                "hsn_b2c": "HSN B2C",
+                "docs": "Documents"
+            },
+            "check": {
+                "addsUp": "Adds up",
+                "doesNotAddUp": "Does not add up",
+                "help": "The sheets together must equal the bills minus the credit notes of this GSTIN and month.",
+                "what": "Figure",
+                "sections": "Sheets",
+                "documents": "Bills − credit notes",
+                "difference": "Difference",
+                "keys": {
+                    "taxable": "Taxable value",
+                    "cgst": "CGST",
+                    "sgst": "SGST",
+                    "igst": "IGST",
+                    "cess": "Cess"
+                }
+            }
+        },
+        "documents": {
+            "notEntered": "{{book}}: not entered: {{pages}}",
+            "notEnteredHelp": "Pages between the first page and the highest page entered that have no bill. Check the book for spoilt or missing pages."
+        },
+        "dayBook": {
+            "cashAtTills": "Cash at the tills",
+            "cashAtTillsHelp": "Counted cash of sessions closed that day, plus expected cash of sessions still open."
+        },
+        "gstPack": {
+            "holds": "One Excel workbook for the month and GSTIN you pick.",
+            "sheets": "Sheets: B2B, B2C large, B2C small, credit notes, 0% supplies, HSN B2B, HSN B2C, documents issued, sales register, credit note register and tax by rate."
+        },
+        "audit": {
+            "tabs": {
+                "changes": "Changes",
+                "approvals": "Approvals by PIN"
+            },
+            "when": "When",
+            "who": "Who",
+            "everyone": "Everyone",
+            "kind": "What happened",
+            "allKinds": "Everything",
+            "document": "Document",
+            "reference": "Document number",
+            "referencePlaceholder": "Bill, credit note, order, return or transfer number",
+            "changes": "Old → new",
+            "becomes": "becomes",
+            "noChanges": "No values changed",
+            "reason": "Reason",
+            "action": "Approved for",
+            "requestedBy": "Asked by",
+            "approvedBy": "Approved by",
+            "amount": "Amount",
+            "empty": "No changes in these dates",
+            "emptyApprovals": "No PIN approvals in these dates",
+            "kinds": {
+                "VARIANT_PRICE_CHANGED": "Price changed",
+                "LINE_PRICE_OVERRIDE": "Price changed on an order",
+                "PRODUCT_CREATED": "Product added",
+                "PRODUCT_STATUS_CHANGED": "Product status changed",
+                "POS_VOID": "Counter bill voided",
+                "INVOICE_CANCELLED": "Bill cancelled",
+                "ORDER_CANCELLED": "Order cancelled",
+                "LINE_CANCELLED": "Order line cancelled",
+                "CREDIT_NOTE_ISSUED": "Credit note issued",
+                "POS_TENDER_CHANGED": "Payment mode of a bill changed",
+                "POS_BILL_BOOK_ENTRY": "Paper bill entered",
+                "POS_SESSION_OPENED": "Counter opened",
+                "POS_SESSION_CLOSED": "Counter closed",
+                "POS_CASH_MOVED": "Cash in or out",
+                "RECEIPT_RECORDED": "Payment received on an order",
+                "COD_REMITTANCE": "COD money recorded",
+                "REFUND_CREATED": "Refund started",
+                "REFUND_PAYOUT_RECORDED": "Refund paid",
+                "RETURN_CREATED": "Return started",
+                "STOCK_COUNT_POSTED": "Stock count posted",
+                "TAX_SETTING_CHANGED": "Tax setting changed",
+                "TAX_CLASS_SAVED": "Tax class saved",
+                "REPORT_EXPORTED": "Report downloaded",
+                "PIN_LOCKED": "PIN locked after wrong tries"
+            },
+            "actions": {
+                "POS_DISCOUNT": "Discount above the limit",
+                "POS_VOID": "Void a bill",
+                "POS_TENDER_CHANGE": "Change how a bill was paid",
+                "POS_BILL_BOOK": "Enter a paper bill",
+                "POS_CASH_REFUND": "Cash refund above the limit",
+                "POS_RETURN_OVERRIDE": "Return against the policy",
+                "POS_VARIANCE": "Cash difference above the limit",
+                "POS_EXCHANGE": "Use a return credit elsewhere",
+                "STOCK_ADJUSTMENT": "Stock adjustment above the limit"
+            }
+        }
     }
 }
