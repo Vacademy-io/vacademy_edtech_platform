@@ -219,6 +219,54 @@ class PlatformProductServiceTest {
         }
     }
 
+    private static List<vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO> twoLinks() {
+        return List.of(
+                vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO.builder()
+                        .title(" Create a test ").url("https://example.com/tutorials/#create").subtitle("0:49").build(),
+                vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO.builder()
+                        .title("Upload copies").url("https://example.com/tutorials/#upload").subtitle(" ").build());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void welcomeLinksSaveAndAnOlderDashboardKeepsThem() {
+        when(jdbcTemplate.update(anyString(), anyString(), anyString(), anyString())).thenReturn(1);
+        ProductSettingsDTO stored = valid();
+        stored.setWelcomeLinks(List.of(vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO.builder()
+                .title("Create a test").url("https://example.com/tutorials/#create").subtitle("0:49").build()));
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("product.evalezy"))).thenReturn(List.of(stored));
+        ProductSettingsDTO withLinks = valid();
+        withLinks.setWelcomeLinks(twoLinks());
+        service.update("evalezy", withLinks, "admin1");
+        service.update("evalezy", valid(), "admin1");
+        ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate, times(2)).update(contains("ai_platform_settings"), json.capture(), eq("admin1"), eq("product.evalezy"));
+        String sent = json.getAllValues().get(0);
+        assertTrue(sent.contains("{\"title\":\"Create a test\",\"url\":\"https://example.com/tutorials/#create\",\"subtitle\":\"0:49\"}"), sent);
+        assertTrue(sent.contains("{\"title\":\"Upload copies\",\"url\":\"https://example.com/tutorials/#upload\",\"subtitle\":null}"), sent);
+        // The dashboard does not send the links: the stored ones stay.
+        assertTrue(json.getAllValues().get(1).contains("\"welcome_links\":[{\"title\":\"Create a test\""), json.getAllValues().get(1));
+    }
+
+    @Test
+    void badWelcomeLinksAreRefused() {
+        var b = vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO.builder();
+        ProductSettingsDTO http = valid();
+        http.setWelcomeLinks(List.of(b.title("A").url("http://example.com").build()));
+        assertThrows(VacademyException.class, () -> PlatformProductService.validate(http));
+        ProductSettingsDTO noTitle = valid();
+        noTitle.setWelcomeLinks(List.of(b.title(" ").url("https://example.com").build()));
+        assertThrows(VacademyException.class, () -> PlatformProductService.validate(noTitle));
+        ProductSettingsDTO tooMany = valid();
+        List<vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO> many = new java.util.ArrayList<>();
+        for (int i = 0; i <= PlatformProductService.MAX_WELCOME_LINKS; i++) many.add(b.title("T" + i).url("https://example.com").build());
+        tooMany.setWelcomeLinks(many);
+        assertThrows(VacademyException.class, () -> PlatformProductService.validate(tooMany));
+        ProductSettingsDTO ok = valid();
+        ok.setWelcomeLinks(twoLinks());
+        assertDoesNotThrow(() -> PlatformProductService.validate(ok));
+    }
+
     @Test
     void badPlansAreRefused() {
         ProductSettingsDTO dup = valid();

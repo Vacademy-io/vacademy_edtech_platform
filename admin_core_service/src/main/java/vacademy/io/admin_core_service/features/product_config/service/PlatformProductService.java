@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vacademy.io.common.exceptions.VacademyException;
+import vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductPlanDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.PublicProductOfferDTO;
@@ -54,6 +55,7 @@ public class PlatformProductService {
     private static final Pattern PLAN_KEY = Pattern.compile("^[a-z0-9-]{1,30}$");
     private static final int MAX_PLANS = 6;
     private static final int MAX_PLAN_NUMBER = 10_000_000;
+    static final int MAX_WELCOME_LINKS = 12;
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -114,6 +116,8 @@ public class PlatformProductService {
         row.put("extra_credit_price_inr", body.getExtraCreditPriceInr() != null
                 ? body.getExtraCreditPriceInr() : existing.getExtraCreditPriceInr());
         row.put("signup_rules", body.getSignupRules() != null ? body.getSignupRules() : existing.getSignupRules());
+        row.put("welcome_links", body.getWelcomeLinks() != null
+                ? cleanLinks(body.getWelcomeLinks()) : existing.getWelcomeLinks());
         if (jdbcTemplate.update(UPDATE, toJson(row), actor, key) == 0) {
             throw new VacademyException(HttpStatus.NOT_FOUND, "No such product");
         }
@@ -144,6 +148,23 @@ public class PlatformProductService {
         validateAlerts(b);
         validatePlans(b);
         validateSignupRules(b.getSignupRules());
+        validateWelcomeLinks(b.getWelcomeLinks());
+    }
+
+    static void validateWelcomeLinks(List<ProductLinkDTO> links) {
+        if (links == null) {
+            return;
+        }
+        require(links.size() <= MAX_WELCOME_LINKS, "At most " + MAX_WELCOME_LINKS + " welcome mail links");
+        for (ProductLinkDTO link : links) {
+            require(link != null && StringUtils.hasText(link.getTitle()) && link.getTitle().trim().length() <= 80,
+                    "Every welcome mail link needs a title of up to 80 characters");
+            require(link.getUrl() != null && link.getUrl().trim().startsWith("https://")
+                            && link.getUrl().trim().length() <= 500 && !link.getUrl().trim().contains(" "),
+                    "Welcome mail link must be an https:// address: " + link.getTitle().trim());
+            require(link.getSubtitle() == null || link.getSubtitle().trim().length() <= 40,
+                    "A welcome mail link note can be at most 40 characters");
+        }
     }
 
     static void validateSignupRules(SignupRulesDTO rules) {
@@ -217,6 +238,11 @@ public class PlatformProductService {
         require(b.getExtraCreditPriceInr() == null || (b.getExtraCreditPriceInr().signum() >= 0
                         && b.getExtraCreditPriceInr().compareTo(java.math.BigDecimal.valueOf(1000)) <= 0),
                 "Extra credit price must be between 0 and 1000");
+    }
+
+    private static List<ProductLinkDTO> cleanLinks(List<ProductLinkDTO> links) {
+        return links.stream().map(l -> ProductLinkDTO.builder().title(l.getTitle().trim()).url(l.getUrl().trim())
+                .subtitle(emptyToNull(l.getSubtitle())).build()).toList();
     }
 
     private static List<ProductPlanDTO> cleanPlans(List<ProductPlanDTO> plans) {

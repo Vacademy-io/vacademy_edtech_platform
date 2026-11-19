@@ -29,6 +29,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Query, status
 from pydantic import BaseModel, Field
+from sqlalchemy import text as sql_text
 from sqlalchemy.orm import Session
 
 from ..db import db_dependency, db_session
@@ -139,6 +140,124 @@ def _notice_email_html(name: Optional[str], title: str, text: str, return_url: O
     return (
         f"<p>{greeting}</p><p><strong>{escape(title)}</strong></p><p>{escape(text)}</p>{link}"
         "<p>Learners see nothing until you review and release.</p>"
+    )
+
+
+def _is_product_institute(db: Session, institute_id: str) -> bool:
+    """Whether the institute is a workspace of one of our own products (institutes.product set
+    and not "vacademy"). Only those get the designed paper-read email; every other institute
+    keeps the plain note. Read-only and never fatal: any doubt keeps the plain note."""
+    try:
+        with db.begin_nested():
+            if not db.execute(sql_text("SELECT to_regclass('institutes') IS NOT NULL")).scalar():
+                return False
+            product = db.execute(sql_text("SELECT to_jsonb(i) ->> 'product' FROM institutes i WHERE i.id = :i"),
+                                 {"i": institute_id}).scalar()
+    except Exception:  # noqa: BLE001
+        logger.warning("product lookup failed for %s", institute_id, exc_info=True)
+        return False
+    product = str(product or "").strip().lower()
+    return bool(product) and product != "vacademy"
+
+
+def _paper_stats(result_json: Optional[str]) -> Dict[str, Any]:
+    """What the email shows about a finished read: question count, total marks,
+    sections, pages and the reader's warnings. Missing parts are left out."""
+    try:
+        digitised = ((json.loads(result_json or "{}") or {}).get("digitised") or {})
+    except ValueError:
+        digitised = {}
+    total = digitised.get("paper_total") or digitised.get("total_marks")
+    return {
+        "questions": len(digitised.get("questions") or []),
+        "total_marks": total if isinstance(total, (int, float)) and total > 0 else None,
+        "sections": len(digitised.get("sections") or []),
+        "pages": digitised.get("pages") if isinstance(digitised.get("pages"), int) else None,
+        "warnings": [w for w in (digitised.get("warnings") or []) if isinstance(w, str) and w.strip()],
+    }
+
+
+def _paper_read_email_html(
+    name: Optional[str],
+    test_name: str,
+    *,
+    ok: bool,
+    stats: Optional[Dict[str, Any]] = None,
+    message: Optional[str] = None,
+    return_url: Optional[str] = None,
+) -> str:
+    """The "question paper read" email, in the same layout as the "AI check
+    finished" one (StaffNoticeEmails in assessment_service): what happened, the
+    numbers, what to do next, one button. Inline styles only; brand-neutral copy
+    (no platform names — the institute's sender is what the teacher sees); the
+    button goes back to the test on their own portal, https only."""
+    from html import escape
+
+    def fmt(n: Any) -> str:
+        return f"{n:g}" if isinstance(n, float) else str(n)
+
+    who = f"Hi {escape(name)}," if name else "Hi,"
+    test = escape(test_name or "your test")
+    button = ""
+    if return_url and return_url.startswith("https://"):
+        label = "Review the questions" if ok else "Open the test"
+        button = (
+            f'<p style="margin:0 0 24px"><a href="{escape(return_url)}" style="display:inline-block;'
+            'background:#f97316;color:#ffffff;padding:11px 20px;border-radius:6px;text-decoration:none;'
+            f'font-weight:600">{label}</a></p>'
+        )
+    head = ('<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;max-width:560px;'
+            'margin:0 auto;color:#1f2937;font-size:15px;line-height:1.5">')
+    foot = ('<p style="margin:0;color:#6b7280;font-size:12px">You are receiving this because you uploaded '
+            'this question paper.</p></div>')
+
+    if not ok:
+        reason = escape(message or "The paper could not be read.")
+        return (
+            head
+            + '<h2 style="font-size:20px;margin:0 0 16px;color:#111827">Could not read the question paper</h2>'
+            + f'<p style="margin:0 0 12px">{who}</p>'
+            + f'<p style="margin:0 0 16px">The AI could not read the question paper for <b>{test}</b>.</p>'
+            + '<div style="background:#fef2f2;border-left:4px solid #dc2626;padding:12px 14px;border-radius:6px;'
+            + f'margin:0 0 16px">{reason}</div>'
+            + '<p style="margin:0 0 20px"><b>Nothing was charged.</b> You can try again from the test, or check '
+            + 'the answer sheets by hand.</p>'
+            + button + foot
+        )
+
+    s = stats or {}
+    rows = [("Questions read", s.get("questions") or 0)]
+    if s.get("total_marks"):
+        rows.append(("Total marks", s["total_marks"]))
+    if (s.get("sections") or 0) > 1:
+        rows.append(("Sections", s["sections"]))
+    if s.get("pages"):
+        rows.append(("Pages", s["pages"]))
+    table = "".join(
+        '<tr><td style="padding:8px 12px;border-bottom:1px solid #eee;color:#4b5563">' + escape(label) + "</td>"
+        '<td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:600;color:#111827">'
+        + escape(fmt(value)) + "</td></tr>"
+        for label, value in rows
+    )
+    warnings = s.get("warnings") or []
+    check = ""
+    if warnings:
+        items = "".join(f'<li style="margin:0 0 4px">{escape(w)}</li>' for w in warnings[:3])
+        check = ('<div style="background:#fefce8;border-left:4px solid #eab308;padding:12px 14px;border-radius:6px;'
+                 'margin:0 0 16px"><b>Check before you go on</b>'
+                 f'<ul style="margin:6px 0 0;padding-left:18px">{items}</ul></div>')
+    return (
+        head
+        + '<h2 style="font-size:20px;margin:0 0 16px;color:#111827">Question paper read</h2>'
+        + f'<p style="margin:0 0 12px">{who}</p>'
+        + f'<p style="margin:0 0 16px">The AI has read the question paper for <b>{test}</b>.</p>'
+        + '<table style="border-collapse:collapse;width:100%;margin:0 0 16px;border:1px solid #eee;'
+        + f'border-radius:8px">{table}</table>'
+        + check
+        + '<div style="background:#fff7ed;border-left:4px solid #f97316;padding:12px 14px;border-radius:6px;'
+        + 'margin:0 0 20px"><b>Next step:</b> review the questions and their marks on the test, then turn on '
+        + 'AI checking of the answer sheets. Learners see nothing until you review and release.</div>'
+        + button + foot
     )
 
 
@@ -293,6 +412,8 @@ async def start(
     user_id = caller.user_id
     expected_total = body.expected_total_marks
     test_name = (body.title or pdf.file_name)[:120]
+    # Decided now, while the request's session is open; the notice goes out from a background task.
+    designed_email = _is_product_institute(db, resolved)
 
     async def _work() -> str:
         try:
@@ -344,14 +465,11 @@ async def start(
         if not user_id:
             return
         link = {"assessmentId": body.assessment_id or "", "taskId": task_id, "path": body.return_path or ""}
-        if str(getattr(final_status, "value", final_status)) == "COMPLETED":
-            count = 0
-            try:
-                count = len(((json.loads(result_json or "{}") or {}).get("digitised") or {}).get("questions") or [])
-            except ValueError:
-                pass
+        ok = str(getattr(final_status, "value", final_status)) == "COMPLETED"
+        stats = _paper_stats(result_json) if ok else None
+        if ok:
             title = f"Question paper read for {test_name}"
-            text = (f"{count} questions with their marks are ready. Review them on the test to turn on "
+            text = (f"{stats['questions']} questions with their marks are ready. Review them on the test to turn on "
                     "AI checking of the answer sheets.")
         else:
             title = f"Could not read the question paper for {test_name}"
@@ -362,7 +480,9 @@ async def start(
             resolved,
             [{"email": contact["email"], "name": contact["name"], "userId": user_id}],
             title,
-            _notice_email_html(contact["name"], title, text, return_url),
+            (_paper_read_email_html(contact["name"], test_name, ok=ok, stats=stats, message=message,
+                                    return_url=return_url)
+             if designed_email else _notice_email_html(contact["name"], title, text, return_url)),
             source_id=task_id,
         )
 

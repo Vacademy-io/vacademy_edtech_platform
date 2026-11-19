@@ -22,6 +22,7 @@ import vacademy.io.auth_service.feature.institute.InstituteInternalService;
 import vacademy.io.auth_service.feature.institute.service.InstituteSettingsService;
 import vacademy.io.auth_service.feature.notification.constants.NotificationConstant;
 import vacademy.io.auth_service.feature.notification.service.NotificationEmailBody;
+import vacademy.io.auth_service.feature.notification.service.ProductWelcomeEmailBody;
 import vacademy.io.auth_service.feature.notification.service.NotificationService;
 import vacademy.io.auth_service.feature.user.repository.PermissionRepository;
 import vacademy.io.auth_service.feature.util.UsernameGenerator;
@@ -68,6 +69,8 @@ public class AuthService {
     private String adminCoreServiceBaseUrl;
     @Autowired
     private NotificationService notificationService;
+    @Autowired(required = false)
+    private vacademy.io.auth_service.feature.selfsignup.service.ProductWelcomeLinksClient welcomeLinksClient;
     @Autowired
     private UserPermissionRepository userPermissionRepository;
     @Autowired
@@ -578,9 +581,16 @@ public class AuthService {
         }
         GenericEmailRequest genericEmailRequest = new GenericEmailRequest();
         genericEmailRequest.setTo(user.getEmail());
-        genericEmailRequest.setBody(NotificationEmailBody.createWelcomeEmailBody(instituteName, user.getFullName(),
-                user.getUsername(), user.getPassword(), normalizePortalUrl(loginUrl), theme));
-        genericEmailRequest.setSubject("Welcome to " + instituteName);
+        String productWelcome = ownProduct != null && StringUtils.hasText(ownProduct.getDisplayName())
+                ? productWelcomeBody(ownProduct, user, instituteName, loginUrl) : null;
+        if (productWelcome != null) {
+            genericEmailRequest.setBody(productWelcome);
+            genericEmailRequest.setSubject("Welcome to " + ownProduct.getDisplayName().trim());
+        } else {
+            genericEmailRequest.setBody(NotificationEmailBody.createWelcomeEmailBody(instituteName, user.getFullName(),
+                    user.getUsername(), user.getPassword(), normalizePortalUrl(loginUrl), theme));
+            genericEmailRequest.setSubject("Welcome to " + instituteName);
+        }
         if (ownProduct != null) {
             // A self sign-up has already created the institute: a mail outage must not undo the account.
             try {
@@ -592,6 +602,28 @@ public class AuthService {
             return;
         }
         notificationService.sendGenericHtmlMailViaUnified(genericEmailRequest, instituteId);
+    }
+
+    /**
+     * A product sign-up is welcomed to the product, in the product's own look; the workspace it created
+     * is named in the text (the institute welcome is for people an institute adds). Null when it cannot
+     * be built, so the caller sends the institute welcome instead: a sign-up never fails over its mail.
+     */
+    private String productWelcomeBody(ProductConfigDTO ownProduct, User user, String instituteName, String loginUrl) {
+        try {
+            // A mail needs an absolute image URL; the site logo may be a path on the product's site.
+            String logo = StringUtils.hasText(ownProduct.getEmailLogoUrl()) ? ownProduct.getEmailLogoUrl()
+                    : ownProduct.getLogoUrl() != null && ownProduct.getLogoUrl().trim().startsWith("https://")
+                            ? ownProduct.getLogoUrl() : null;
+            return ProductWelcomeEmailBody.build(ownProduct.getDisplayName().trim(), ownProduct.getThemeColor(), logo,
+                    user.getFullName(), instituteName, user.getUsername(), user.getPassword(),
+                    normalizePortalUrl(loginUrl), ownProduct.getContactEmail(), ownProduct.getWebsiteUrl(),
+                    welcomeLinksClient == null ? java.util.List.of() : welcomeLinksClient.get(ownProduct.getProductKey()));
+        } catch (Exception e) {
+            log.warn("Product welcome for {} could not be built, sending the institute welcome: {}",
+                    ownProduct.getProductKey(), e.getMessage());
+            return null;
+        }
     }
 
     public void sendKeepingCredentialsWelcomeMailToUser(User user, String instituteId, Set<UserRole> roles) {
