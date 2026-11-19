@@ -174,7 +174,7 @@ class ReportRunnerTest {
     }
 
     @Test
-    void atMostFourScreenRequestsAtOnceThenReportsBusyWithRetryAfter() throws Exception {
+    void atMostTheScreenSlotsAtOnceThenReportsBusyWithRetryAfter() throws Exception {
         CountDownLatch inside = new CountDownLatch(ReportRunner.SCREEN_SLOTS);
         CountDownLatch release = new CountDownLatch(1);
         ExecutorService pool = Executors.newFixedThreadPool(ReportRunner.SCREEN_SLOTS);
@@ -254,7 +254,17 @@ class ReportRunnerTest {
     }
 
     @Test
-    void exportsAreTwoPerPodAndOnePerInstitute() throws Exception {
+    void productionLimitsLeaveMostOfTheReadPoolToTheApp() {
+        assertEquals(2, ReportRunner.SCREEN_SLOTS);
+        assertEquals(1, ReportRunner.EXPORT_SLOTS);
+        assertTrue(ReportRunner.SCREEN_SLOTS + ReportRunner.EXPORT_SLOTS <= 3,
+                "reports hold at most 3 read connections per pod");
+    }
+
+    @Test
+    void exportsAreLimitedPerPodAndOnePerInstitute() throws Exception {
+        // Two export slots here to show the per-institute rule apart from the pod limit.
+        ReportRunner runner = new ReportRunner(named(), txManager, audit, 50_000, 2, 2, 25_000, 50_000);
         CountDownLatch started = new CountDownLatch(2);
         CountDownLatch release = new CountDownLatch(1);
         ExecutorService pool = Executors.newFixedThreadPool(2);

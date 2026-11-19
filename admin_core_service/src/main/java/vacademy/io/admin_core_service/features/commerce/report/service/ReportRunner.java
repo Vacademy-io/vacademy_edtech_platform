@@ -45,8 +45,9 @@ import java.util.function.Supplier;
  *       {@code REPORT_TIMEOUT}.</li>
  *   <li>Load: at most {@value #SCREEN_SLOTS} screen requests at once per pod (else 429
  *       {@code REPORTS_BUSY} with {@code Retry-After}); at most {@value #EXPORT_SLOTS} exports at
- *       once per pod and one per institute (else 429 {@code REPORT_BUSY}). With the read pool of
- *       a pod that is at most 6 report connections, the rest stays free for the app.</li>
+ *       once per pod and one per institute (else 429 {@code REPORT_BUSY}). That is at most 3 report
+ *       connections per pod, so reports never take most of the read pool, which is shared with the
+ *       rest of the app (and, behind PgBouncer, with the other pods).</li>
  *   <li>Any other database error answers 500 {@code REPORT_FAILED} (logged here); the SQL text
  *       never reaches the client.</li>
  *   <li>An export writes one {@code commerce_audit} row (kind {@code REPORT_EXPORTED}) in its own
@@ -64,9 +65,9 @@ public class ReportRunner {
     public static final String AUDIT_KIND = "REPORT_EXPORTED";
     public static final String AUDIT_REFERENCE_TYPE = "REPORT";
     /** Screen requests at once per pod. */
-    public static final int SCREEN_SLOTS = 4;
+    public static final int SCREEN_SLOTS = 2;
     /** Exports at once per pod (and one per institute). */
-    public static final int EXPORT_SLOTS = 2;
+    public static final int EXPORT_SLOTS = 1;
     /** How long a screen request waits for a slot before it is told to come back. */
     static final long SCREEN_WAIT_MILLIS = 2_000;
     /** Seconds a refused request is told to wait ({@code Retry-After}). */
