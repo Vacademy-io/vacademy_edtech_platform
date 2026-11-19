@@ -32,6 +32,10 @@ import java.util.Map;
  * Auth model mirrors {@link vacademy.io.admin_core_service.features.white_label.controller.WhiteLabelController}:
  * not under /admin/* (so institute admins can call it) but every endpoint asserts
  * the caller belongs to the target instituteId via {@link InstituteAccessValidator}.
+ * Reading the (masked) list is open to any member; every write needs the institute
+ * ADMIN role ({@code requireAdminAccess}, root/support users pass). Deactivating a
+ * gateway stops checkout on every invite link that uses it, so a teacher or
+ * counsellor must not be able to do it.
  *
  * Secrets are masked on read and merge-on-write so the full value never has to
  * round-trip through the browser after the first save.
@@ -67,7 +71,7 @@ public class InstitutePaymentGatewayAdminController {
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId,
             @RequestBody PaymentGatewayMappingUpsertRequest request) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireAdminAccess(user, instituteId);
         return ResponseEntity.ok(paymentGatewayMappingService.createMapping(instituteId, request));
     }
 
@@ -88,7 +92,7 @@ public class InstitutePaymentGatewayAdminController {
             @RequestParam("instituteId") String instituteId,
             @PathVariable("mappingId") String mappingId,
             @RequestBody PaymentGatewayMappingUpsertRequest request) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireAdminAccess(user, instituteId);
         return ResponseEntity.ok(paymentGatewayMappingService.updateMapping(instituteId, mappingId, request));
     }
 
@@ -105,7 +109,7 @@ public class InstitutePaymentGatewayAdminController {
             @RequestAttribute("user") CustomUserDetails user,
             @RequestParam("instituteId") String instituteId,
             @PathVariable("mappingId") String mappingId) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.requireAdminAccess(user, instituteId);
         paymentGatewayMappingService.deactivateMapping(instituteId, mappingId);
         return ResponseEntity.ok(Map.of("status", "INACTIVE", "id", mappingId));
     }
