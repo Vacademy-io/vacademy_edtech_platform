@@ -66,6 +66,10 @@ import static vacademy.io.common.auth.enums.CompanyStatus.ACTIVE;
 @Slf4j
 @Component
 public class AssessmentParticipantsManager {
+
+    // Soft-delete marker for a registration field, as the rest of this service writes it.
+    private static final String DELETED_STATUS = "DELETED";
+
     /** The one report per attempt (AI report when it exists, plus report-profile pages). Lazy: avoids a bean cycle. */
     @Autowired
     @org.springframework.context.annotation.Lazy
@@ -322,70 +326,88 @@ public class AssessmentParticipantsManager {
         }
 
         if (!ObjectUtils.isEmpty(openTestDetails.getRegistrationFormDetails())) {
-            addCustomRegistrationFieldsToAssessment(openTestDetails, assessment);
-            updateCustomRegistrationFieldsToAssessment(openTestDetails, assessment);
-            removeAddedFieldsIfAny(openTestDetails, assessment);
+            syncRegistrationFields(openTestDetails.getRegistrationFormDetails(), assessment);
         }
 
     }
 
-    private void removeAddedFieldsIfAny(AssessmentRegistrationsDto.OpenTestDetails openTestDetails,
+    /**
+     * Applies one save of the registration form: removals, then edits, then additions.
+     *
+     * field_key is UNIQUE per assessment and a soft-deleted row keeps holding its key, so an added
+     * field whose key already has a row reuses that row instead of inserting a second one. That
+     * covers the create wizard saving the form again (it sends every field as added each time) and
+     * a field removed earlier being added back. Reusing the row also keeps the answers already given
+     * to that field attached to it.
+     *
+     * The order matters. Removing last would delete a field that the same save removed and added
+     * back. Adding before editing would hand the row being renamed away from "City" to a new "City".
+     */
+    private void syncRegistrationFields(AssessmentRegistrationsDto.OpenTestDetails.RegistrationFormDetails form,
             Assessment assessment) {
-        List<RegistrationFieldDto> removed = openTestDetails.getRegistrationFormDetails().getRemovedCustomAddedFields();
-        if (removed == null || removed.isEmpty()) return;
-        List<String> deletedFieldKeys = removed.stream().map(RegistrationFieldDto::getKey).toList();
-        if (!deletedFieldKeys.isEmpty()) {
-            assessmentCustomFieldRepository.softDeleteByAssessmentIdAndFieldKeys(assessment.getId(), deletedFieldKeys);
-        }
-    }
+        // Loaded once, DELETED rows included. Every step works on these same instances, so a step
+        // sees what the steps before it changed without asking the database again.
+        List<AssessmentCustomField> rows = new ArrayList<>(
+                assessmentCustomFieldRepository.findAllByAssessment(assessment));
 
-    private void addCustomRegistrationFieldsToAssessment(AssessmentRegistrationsDto.OpenTestDetails openTestDetails,
-            Assessment assessment) {
-        List<AssessmentCustomField> customFields = new ArrayList<>();
-        for (RegistrationFieldDto registrationFieldDto : openTestDetails.getRegistrationFormDetails()
-                .getAddedCustomAddedFields()) {
-            customFields.add(createRegistrationField(registrationFieldDto, assessment));
+        for (RegistrationFieldDto dto : orEmpty(form.getRemovedCustomAddedFields())) {
+            findRegistrationField(rows, dto.getId(), dto.getKey())
+                    .ifPresent(field -> field.setStatus(DELETED_STATUS));
         }
-        assessmentCustomFieldRepository.saveAll(customFields);
-    }
+        for (RegistrationFieldDto dto : orEmpty(form.getUpdatedCustomAddedFields())) {
+            findRegistrationField(rows, dto.getId(), dto.getKey())
+                    .ifPresent(field -> updateRegistrationField(field, dto, assessment));
+        }
+        // Hibernate flushes inserts before updates. A rename has to reach the database before an
+        // added field can take the key it gave up, or the insert hits the unique key.
+        assessmentCustomFieldRepository.saveAllAndFlush(rows);
 
-    private void updateCustomRegistrationFieldsToAssessment(AssessmentRegistrationsDto.OpenTestDetails openTestDetails,
-            Assessment assessment) {
-        List<AssessmentCustomField> customFields = new ArrayList<>();
-        for (RegistrationFieldDto registrationFieldDto : openTestDetails.getRegistrationFormDetails()
-                .getUpdatedCustomAddedFields()) {
-            Optional<AssessmentCustomField> assessmentCustomField = resolveFieldToUpdate(registrationFieldDto,
-                    assessment);
-            if (assessmentCustomField.isEmpty())
-                continue;
-            customFields.add(updateRegistrationField(assessmentCustomField.get(), registrationFieldDto, assessment));
+        for (RegistrationFieldDto dto : orEmpty(form.getAddedCustomAddedFields())) {
+            Optional<AssessmentCustomField> existing = findRegistrationField(rows, null,
+                    toFieldKey(dto.getName()));
+            if (existing.isPresent()) {
+                updateRegistrationField(existing.get(), dto, assessment);
+            } else {
+                rows.add(createRegistrationField(dto, assessment));
+            }
         }
-        assessmentCustomFieldRepository.saveAll(customFields);
+        assessmentCustomFieldRepository.saveAll(rows);
     }
 
     /**
      * Id first, field key second. A rename rewrites field_key from the new name, so the key the
      * client is still holding no longer matches anything — matching on the row id keeps editing a
      * field twice from silently doing nothing. The key lookup remains for clients that send no id
-     * and for rows the client only knows by key.
+     * and for rows the client only knows by key. Only this assessment's rows are searched, so an
+     * id from another assessment never matches.
      */
-    private Optional<AssessmentCustomField> resolveFieldToUpdate(RegistrationFieldDto dto, Assessment assessment) {
-        if (StringUtils.hasText(dto.getId())) {
-            Optional<AssessmentCustomField> byId = assessmentCustomFieldRepository.findById(dto.getId())
-                    // An id from another assessment must never be editable through this request.
-                    .filter(field -> field.getAssessment() != null
-                            && assessment.getId().equals(field.getAssessment().getId()));
+    private static Optional<AssessmentCustomField> findRegistrationField(List<AssessmentCustomField> rows,
+            String id, String key) {
+        if (StringUtils.hasText(id)) {
+            Optional<AssessmentCustomField> byId = rows.stream().filter(field -> id.equals(field.getId()))
+                    .findFirst();
             if (byId.isPresent())
                 return byId;
         }
-        return assessmentCustomFieldRepository.findByFieldKeyAndAssessment(dto.getKey(), assessment);
+        if (!StringUtils.hasText(key))
+            return Optional.empty();
+        return rows.stream().filter(field -> key.equals(field.getFieldKey())).findFirst();
+    }
+
+    /** The key a field is stored under. Lookups must derive it the same way the writes do. */
+    private static String toFieldKey(String name) {
+        return name.toLowerCase().trim().replace(" ", "_");
+    }
+
+    private static <T> List<T> orEmpty(List<T> list) {
+        return list == null ? List.of() : list;
     }
 
     private AssessmentCustomField createRegistrationField(RegistrationFieldDto registrationFieldDto,
             Assessment assessment) {
         AssessmentCustomField assessmentCustomField = new AssessmentCustomField();
         assessmentCustomField.setAssessment(assessment);
-        assessmentCustomField.setFieldKey(registrationFieldDto.getName().toLowerCase().trim().replace(" ", "_"));
+        assessmentCustomField.setFieldKey(toFieldKey(registrationFieldDto.getName()));
         assessmentCustomField.setFieldName(registrationFieldDto.getName().trim());
         assessmentCustomField.setFieldOrder(
                 (registrationFieldDto.getOrderField() == null) ? 0 : registrationFieldDto.getOrderField());
@@ -400,7 +422,7 @@ public class AssessmentParticipantsManager {
     private AssessmentCustomField updateRegistrationField(AssessmentCustomField assessmentCustomField,
             RegistrationFieldDto registrationFieldDto, Assessment assessment) {
         assessmentCustomField.setAssessment(assessment);
-        assessmentCustomField.setFieldKey(registrationFieldDto.getName().toLowerCase().trim().replace(" ", "_"));
+        assessmentCustomField.setFieldKey(toFieldKey(registrationFieldDto.getName()));
         assessmentCustomField.setFieldName(registrationFieldDto.getName().trim());
         assessmentCustomField.setFieldType(registrationFieldDto.getType().trim());
         assessmentCustomField.setIsMandatory(registrationFieldDto.getIsMandatory());
