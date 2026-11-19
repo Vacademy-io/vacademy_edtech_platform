@@ -59,5 +59,23 @@
         "cancel": "Annuler",
         "deleting": "Suppression…",
         "delete": "Supprimer"
+    },
+    "htmlEditor": {
+        "back": "Retour",
+        "namePlaceholder": "Nom du modèle",
+        "save": "Enregistrer",
+        "saving": "Enregistrement…",
+        "tabs": {
+            "colours": "Couleurs",
+            "code": "HTML"
+        },
+        "coloursHint": "Toutes les couleurs de ce modèle. Cliquez sur une couleur pour la changer partout.",
+        "noColours": "Aucune couleur trouvée dans ce modèle.",
+        "themeColour": "Couleur du thème de l'établissement",
+        "usedIn": "Utilisée dans : {{places}}",
+        "applyHint": "Appliquée à la fermeture du sélecteur.",
+        "codeHint": "Les variables comme {{example}} sont remplies lors de la génération de la facture.",
+        "previewHint": "Aperçu. Les variables sont affichées telles quelles.",
+        "previewTitle": "Aperçu du modèle de facture"
     }
 }
