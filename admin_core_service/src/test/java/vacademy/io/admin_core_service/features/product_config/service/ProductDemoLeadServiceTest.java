@@ -7,9 +7,16 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import vacademy.io.admin_core_service.features.audience.entity.Audience;
 import vacademy.io.admin_core_service.features.audience.service.AudienceService;
 import vacademy.io.admin_core_service.features.audience.service.AutoLeadListProvisioner;
+import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.SignupEventDTO;
+import vacademy.io.common.auth.dto.UserDTO;
+import vacademy.io.common.exceptions.VacademyException;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -25,8 +32,9 @@ class ProductDemoLeadServiceTest {
     private final AutoLeadListProvisioner provisioner = mock(AutoLeadListProvisioner.class);
     private final AudienceService audienceService = mock(AudienceService.class);
     private final JdbcTemplate jdbc = mock(JdbcTemplate.class);
+    private final AuthService authService = mock(AuthService.class);
     private final ProductDemoLeadService service =
-            new ProductDemoLeadService(products, provisioner, audienceService, jdbc);
+            new ProductDemoLeadService(products, provisioner, audienceService, jdbc, authService);
     private final Audience list = Audience.builder().id("list-1").instituteId(CRM).status("ACTIVE").build();
 
     private static ProductSettingsDTO evalezy(String crm) {
@@ -127,5 +135,89 @@ class ProductDemoLeadServiceTest {
                 eq("Product Evalezy ( Instant - Demo )"), anyString());
         verify(audienceService, times(3)).submitLeadToAutoList(same(list), any(), any(), any(), any(),
                 eq("PRODUCT_DEMO"), any());
+    }
+
+    private Map<String, Object> institute(String email, String leadTag) {
+        Map<String, Object> row = new HashMap<>();
+        row.put("name", "Sunrise Academy");
+        row.put("email", email);
+        row.put("mobile_number", "910000000000");
+        row.put("lead_tag", leadTag);
+        row.put("demo_expires_at", Timestamp.valueOf(LocalDateTime.of(2026, 11, 22, 10, 6)));
+        return row;
+    }
+
+    @Test
+    void backfillAddsEarlierSignUpsFromTheInstituteAndItsOwner() {
+        when(jdbc.queryForList(anyString(), eq("ws-9"), eq("evalezy")))
+                .thenReturn(List.of(institute("owner@academy.in", "FREE_TRIAL")));
+        UserDTO other = UserDTO.builder().fullName("Second Admin").email("x@academy.in").build();
+        UserDTO owner = UserDTO.builder().fullName("Meera Rao").email("OWNER@academy.in")
+                .mobileNumber("919999999999").build();
+        when(authService.getUsersByInstituteAndRoles("ws-9", List.of("ADMIN"))).thenReturn(List.of(other, owner));
+
+        List<Map<String, String>> out = service.backfill("evalezy", List.of("ws-9", " ws-9 "));
+
+        assertEquals(1, out.size());
+        assertEquals("lead-1", out.get(0).get("result"));
+        assertEquals("owner@academy.in", out.get(0).get("email"));
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> values = ArgumentCaptor.forClass(Map.class);
+        verify(audienceService).submitLeadToAutoList(eq(list), eq("Meera Rao"), eq("owner@academy.in"),
+                eq("919999999999"), values.capture(), eq("PRODUCT_SIGNUP"), eq("ws-9"));
+        assertEquals("ws-9", values.getValue().get("f-Workspace Id"));
+        assertEquals("22 Nov 2026", values.getValue().get("f-Trial Ends"));
+        assertEquals("Trial sign-up (added later)", values.getValue().get("f-Sign-up Method"));
+        assertNull(values.getValue().get("f-Source"));
+    }
+
+    @Test
+    void backfillFallsBackToTheInstituteWhenAuthHasNoOwner() {
+        when(jdbc.queryForList(anyString(), eq("ws-9"), eq("evalezy")))
+                .thenReturn(List.of(institute("owner@academy.in", "LEAD")));
+        when(authService.getUsersByInstituteAndRoles(anyString(), any())).thenReturn(List.of());
+
+        service.backfill("evalezy", List.of("ws-9"));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> values = ArgumentCaptor.forClass(Map.class);
+        verify(audienceService).submitLeadToAutoList(eq(list), eq("Sunrise Academy"), eq("owner@academy.in"),
+                eq("910000000000"), values.capture(), eq("PRODUCT_SIGNUP"), eq("ws-9"));
+        assertEquals("Buy (added later)", values.getValue().get("f-Sign-up Method"));
+    }
+
+    @Test
+    void backfillLabelsAPaidOrManagedAccountAsASignUp() {
+        when(jdbc.queryForList(anyString(), eq("ws-9"), eq("evalezy")))
+                .thenReturn(List.of(institute("owner@academy.in", "PROD")));
+        when(authService.getUsersByInstituteAndRoles(anyString(), any())).thenReturn(List.of());
+
+        service.backfill("evalezy", List.of("ws-9"));
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Map<String, String>> values = ArgumentCaptor.forClass(Map.class);
+        verify(audienceService).submitLeadToAutoList(eq(list), any(), any(), any(), values.capture(),
+                eq("PRODUCT_SIGNUP"), eq("ws-9"));
+        assertEquals("Sign-up (added later)", values.getValue().get("f-Sign-up Method"));
+    }
+
+    @Test
+    void backfillSkipsInstitutesOfOtherProducts() {
+        when(jdbc.queryForList(anyString(), eq("other-ws"), eq("evalezy"))).thenReturn(List.of());
+
+        List<Map<String, String>> out = service.backfill("evalezy", List.of("other-ws"));
+
+        assertEquals("not a evalezy sign-up", out.get(0).get("result"));
+        verifyNoInteractions(audienceService);
+    }
+
+    @Test
+    void backfillNeedsIdsAndCapsTheBatch() {
+        assertThrows(VacademyException.class, () -> service.backfill("evalezy", List.of()));
+        assertThrows(VacademyException.class, () -> service.backfill("evalezy", null));
+        List<String> tooMany = new java.util.ArrayList<>();
+        for (int i = 0; i <= ProductDemoLeadService.MAX_BACKFILL; i++) tooMany.add("ws-" + i);
+        assertThrows(VacademyException.class, () -> service.backfill("evalezy", tooMany));
+        verifyNoInteractions(audienceService);
     }
 }
