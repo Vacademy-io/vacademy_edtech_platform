@@ -1,6 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.airtel;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
+import vacademy.io.common.external.ExternalCallLog;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;

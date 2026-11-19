@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.course_settings.service;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -1105,7 +1107,7 @@ public class LmsSettingService {
                 .header("Accept", "application/json")
                 .GET();
         if (authHeader != null) builder.header("Authorization", authHeader);
-        return client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        return ExternalCallLog.send(client, builder.build(), HttpResponse.BodyHandlers.ofString());
     }
 
     private String textField(String json, String field) {

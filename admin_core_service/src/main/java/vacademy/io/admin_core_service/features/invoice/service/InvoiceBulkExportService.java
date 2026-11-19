@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.invoice.service;
 
+// external-call-log: not a vendor (downloads our own invoice PDFs from S3)
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;

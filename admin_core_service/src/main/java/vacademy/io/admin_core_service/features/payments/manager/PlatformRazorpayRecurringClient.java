@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.payments.manager;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -151,7 +153,8 @@ public class PlatformRazorpayRecurringClient {
             }
             b.method(method, body);
             try {
-                HttpResponse<String> r = client.send(b.build(), HttpResponse.BodyHandlers.ofString());
+                HttpResponse<String> r = ExternalCallLog.send(client, b.build(), HttpResponse.BodyHandlers.ofString(),
+                        jsonBody == null ? null : jsonBody.getBytes(StandardCharsets.UTF_8));
                 return new Response(r.statusCode(), r.body());
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();

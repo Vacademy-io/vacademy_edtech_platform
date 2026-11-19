@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.learner.service;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -153,7 +155,7 @@ public class LearnerLmsUserSyncService {
                     .header("Authorization", "Basic " + basic)
                     .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
                     .build();
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = ExternalCallLog.send(client, request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
                 log.info("LMS profile sync ok for user {} at {}", userId, editUserUrl);
             } else {

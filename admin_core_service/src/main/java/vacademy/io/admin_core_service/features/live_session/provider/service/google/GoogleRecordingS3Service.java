@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.live_session.provider.service.google;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -171,6 +173,13 @@ public class GoogleRecordingS3Service {
         connection.setInstanceFollowRedirects(true);
         int code = connection.getResponseCode();
         if (code < 200 || code >= 300) {
+            byte[] answered = null;
+            try (InputStream err = connection.getErrorStream()) {
+                if (err != null) answered = err.readNBytes(8000);
+            } catch (Exception ignored) {
+                // The status alone still tells the story.
+            }
+            ExternalCallLog.connectionFailed(connection.getURL(), "GET", code, null, null, answered);
             throw new IllegalStateException("Google Drive returned HTTP " + code
                     + (code == 403 ? " (no access — reconnect Google with Drive access)" : "")
                     + (code == 404 ? " (file no longer in Drive)" : ""));

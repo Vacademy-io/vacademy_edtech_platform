@@ -1,5 +1,7 @@
 package vacademy.io.assessment_service.features.assessment.service;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -144,7 +146,7 @@ public class ClassAiNarrativeService {
                 "messages", messages,
                 "response_format", Map.of("type", "json_object"));
 
-        WebClient client = WebClient.builder()
+        WebClient client = ExternalCallLog.attach(WebClient.builder())
                 .baseUrl("https://openrouter.ai")
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + openRouterApiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)

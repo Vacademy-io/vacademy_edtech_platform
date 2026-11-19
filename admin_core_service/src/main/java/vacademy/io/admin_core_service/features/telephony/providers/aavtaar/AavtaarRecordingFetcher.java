@@ -1,6 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.aavtaar;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
+import vacademy.io.common.external.ExternalCallLog;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 import vacademy.io.admin_core_service.features.telephony.enums.ProviderType;

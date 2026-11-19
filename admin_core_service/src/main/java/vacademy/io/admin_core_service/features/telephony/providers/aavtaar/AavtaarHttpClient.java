@@ -1,6 +1,6 @@
 package vacademy.io.admin_core_service.features.telephony.providers.aavtaar;
 
-import vacademy.io.admin_core_service.core.external.ExternalCallLog;
+import vacademy.io.common.external.ExternalCallLog;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

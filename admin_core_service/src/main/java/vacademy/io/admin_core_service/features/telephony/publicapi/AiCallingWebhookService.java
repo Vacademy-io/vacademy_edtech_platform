@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.telephony.publicapi;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -336,7 +338,7 @@ public class AiCallingWebhookService {
                     .header("Telleo-Signature", "t=" + t + ",v1=" + sign(w.getSecret(), t, body))
                     .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .build();
-            HttpResponse<InputStream> resp = http.send(req, HttpResponse.BodyHandlers.ofInputStream());
+            HttpResponse<InputStream> resp = ExternalCallLog.send(http, req, HttpResponse.BodyHandlers.ofInputStream());
             int code = resp.statusCode();
             try {
                 resp.body().close();

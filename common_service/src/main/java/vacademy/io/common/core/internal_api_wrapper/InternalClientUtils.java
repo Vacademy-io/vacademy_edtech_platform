@@ -1,5 +1,7 @@
 package vacademy.io.common.core.internal_api_wrapper;
 
+import vacademy.io.common.external.ExternalCallLog;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
@@ -28,7 +30,7 @@ public class InternalClientUtils {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(10000);
         factory.setReadTimeout(30000);
-        return new RestTemplate(factory);
+        return ExternalCallLog.attach(new RestTemplate(factory));
     }
 
     /**
@@ -52,7 +54,7 @@ public class InternalClientUtils {
         factory.setBufferRequestBody(false);
         // Default is 4KB, i.e. ~77k chunks for a 300MB package. 256KB keeps the syscall count sane.
         factory.setChunkSize(256 * 1024);
-        return new RestTemplate(factory);
+        return ExternalCallLog.attach(new RestTemplate(factory));
     }
 
     public ResponseEntity<String> makeHmacRequest(String clientName, String method, String baseUrl, String route,

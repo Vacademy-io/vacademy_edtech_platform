@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.institute.service.setting;
 
+// external-call-log: not a vendor (fetches an institute's logo image to embed in a PDF)
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
