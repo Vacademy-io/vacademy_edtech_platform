@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.ai_models.service;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -230,7 +228,7 @@ public class LlmGatewayRouter {
         this.modelDefaults = modelDefaults;
         this.isoquantApiKey = isoquantApiKey == null ? "" : isoquantApiKey.trim();
         this.openRouterApiKey = openRouterApiKey == null ? "" : openRouterApiKey.trim();
-        this.openRouterClient = ExternalCallLog.attach(WebClient.builder())
+        this.openRouterClient = WebClient.builder()
                 .baseUrl(openRouterBaseUrl.replaceAll("/+$", ""))
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + this.openRouterApiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -238,7 +236,7 @@ public class LlmGatewayRouter {
                 .defaultHeader("X-Title", "Vacademy")
                 .codecs(c -> c.defaultCodecs().maxInMemorySize(4 * 1024 * 1024))
                 .build();
-        this.isoquantClient = ExternalCallLog.attach(WebClient.builder())
+        this.isoquantClient = WebClient.builder()
                 .baseUrl(isoquantBaseUrl.replaceAll("/+$", ""))
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + this.isoquantApiKey)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
@@ -248,7 +246,7 @@ public class LlmGatewayRouter {
                 .build();
         String bridgeBase = aiServiceUrl == null ? "" : aiServiceUrl.trim().replaceAll("/+$", "");
         String token = internalToken == null ? "" : internalToken.trim();
-        this.anthropicBridgeClient = bridgeBase.isEmpty() || token.isEmpty() ? null : ExternalCallLog.attach(WebClient.builder())
+        this.anthropicBridgeClient = bridgeBase.isEmpty() || token.isEmpty() ? null : WebClient.builder()
                 .baseUrl(bridgeBase)
                 .defaultHeader("X-Internal-Service-Token", token)
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)

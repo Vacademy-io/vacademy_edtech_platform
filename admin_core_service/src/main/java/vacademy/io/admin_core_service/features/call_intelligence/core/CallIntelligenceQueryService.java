@@ -1,6 +1,6 @@
 package vacademy.io.admin_core_service.features.call_intelligence.core;
 
-import vacademy.io.common.external.ExternalCallLog;
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;

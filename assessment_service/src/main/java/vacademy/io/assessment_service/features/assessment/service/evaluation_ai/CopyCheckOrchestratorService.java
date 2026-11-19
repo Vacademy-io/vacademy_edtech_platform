@@ -1,7 +1,5 @@
 package vacademy.io.assessment_service.features.assessment.service.evaluation_ai;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -866,7 +864,7 @@ public class CopyCheckOrchestratorService {
     /** Media's anonymous public-url route; null on any failure. Package-private for tests. */
     String getFileUrl(String fileId) {
         try {
-            return ExternalCallLog.attach(WebClient.builder())
+            return WebClient.builder()
                     .baseUrl(mediaServiceUrl)
                     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .build()

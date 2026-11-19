@@ -1,7 +1,5 @@
 package vacademy.io.community_service.config;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
@@ -34,6 +32,6 @@ public class CorsConfig implements WebMvcConfigurer {
     // In one of your @Configuration classes
     @Bean
     public RestTemplate restTemplate() {
-        return ExternalCallLog.attach(new RestTemplate());
+        return new RestTemplate();
     }
 }

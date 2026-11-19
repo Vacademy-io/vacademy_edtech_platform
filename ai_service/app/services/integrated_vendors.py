@@ -56,11 +56,6 @@ INTEGRATED_VENDORS: Tuple[Tuple[str, Tuple[str, ...]], ...] = (
     ("Zoho", ("zohoapis.in", "zohoapis.com", "zoho.in")),
     ("Cloudflare", ("api.cloudflare.com",)),
     ("FX rates", ("open.er-api.com",)),
-    ("Firebase", ("fcm.googleapis.com", "firebase.googleapis.com")),
-    ("Google Play", ("androidpublisher.googleapis.com",)),
-    ("App Store Connect", ("api.appstoreconnect.apple.com",)),
-    ("GitHub", ("api.github.com",)),
-    ("Microsoft Partner Center", ("manage.devcenter.microsoft.com", "login.microsoftonline.com")),
 )
 
 

@@ -1,6 +1,6 @@
 package vacademy.io.admin_core_service.features.ai_plans_billing.gateway;
 
-import vacademy.io.common.external.ExternalCallLog;
+import vacademy.io.admin_core_service.core.external.ExternalCallLog;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;

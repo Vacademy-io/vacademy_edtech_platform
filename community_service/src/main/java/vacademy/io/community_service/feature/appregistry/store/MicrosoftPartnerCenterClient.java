@@ -1,7 +1,5 @@
 package vacademy.io.community_service.feature.appregistry.store;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +30,7 @@ public class MicrosoftPartnerCenterClient {
     private final String tenantId;
     private final String clientId;
     private final String clientSecret;
-    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private volatile String cachedAccessToken;

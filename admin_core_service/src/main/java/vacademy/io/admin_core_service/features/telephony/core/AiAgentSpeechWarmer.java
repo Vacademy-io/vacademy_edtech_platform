@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.telephony.core;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -128,7 +126,7 @@ public class AiAgentSpeechWarmer {
                     .header("X-Voice-Bot-Token", secret)
                     .POST(HttpRequest.BodyPublishers.ofString(mapper.writeValueAsString(body)))
                     .build();
-            HttpResponse<String> res = ExternalCallLog.send(http, req, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
             log.info("ai agent speech warm ({}) agent={} lines={} -> {}",
                     res.statusCode(), agent.getId(), texts.size(),
                     res.body() == null ? "" : res.body().substring(0, Math.min(120, res.body().length())));

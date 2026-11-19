@@ -1,7 +1,5 @@
 package vacademy.io.community_service.feature.diagnostics.service;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import io.kubernetes.client.openapi.ApiClient;
 import io.kubernetes.client.openapi.ApiException;
 import io.kubernetes.client.openapi.Configuration;
@@ -85,7 +83,7 @@ public class DiagnosticsService {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(3000);
         factory.setReadTimeout(3000);
-        this.restTemplate = ExternalCallLog.attach(new RestTemplate(factory));
+        this.restTemplate = new RestTemplate(factory);
     }
 
     /**

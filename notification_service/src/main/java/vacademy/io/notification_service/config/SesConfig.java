@@ -41,17 +41,6 @@ public class SesConfig {
         return AmazonSimpleEmailServiceClientBuilder.standard()
                 .withCredentials(new AWSStaticCredentialsProvider(credentials))
                 .withRegion(region)
-                // A failed SES call (identity verification) is recorded for the health dashboard.
-                .withRequestHandlers(new com.amazonaws.handlers.RequestHandler2() {
-                    @Override
-                    public void afterError(com.amazonaws.Request<?> request, com.amazonaws.Response<?> response,
-                            Exception e) {
-                        Integer status = e instanceof com.amazonaws.AmazonServiceException ase
-                                ? ase.getStatusCode() : null;
-                        vacademy.io.common.external.ExternalCallLog.sdkFailure("aws-ses",
-                                request.getOriginalRequest().getClass().getSimpleName(), status, e, null);
-                    }
-                })
                 .build();
     }
 }

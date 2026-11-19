@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.catalog_api.website;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +61,7 @@ public class DohTxtLookup implements TxtLookup {
                     .header("accept", "application/dns-json")
                     .GET()
                     .build();
-            HttpResponse<String> response = ExternalCallLog.send(http, request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() != 200) {
                 return Result.failure(resolverName(resolver) + " answered HTTP " + response.statusCode());
             }

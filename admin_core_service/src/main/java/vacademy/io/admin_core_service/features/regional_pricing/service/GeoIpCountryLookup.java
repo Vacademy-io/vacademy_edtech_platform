@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.regional_pricing.service;
 
-// external-call-log: not a vendor (downloads the free db-ip country file once a month)
-
 import com.maxmind.db.Reader;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;

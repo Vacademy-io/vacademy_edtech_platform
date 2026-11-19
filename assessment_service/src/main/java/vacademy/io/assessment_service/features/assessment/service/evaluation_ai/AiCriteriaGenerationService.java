@@ -1,7 +1,5 @@
 package vacademy.io.assessment_service.features.assessment.service.evaluation_ai;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -59,12 +57,12 @@ public class AiCriteriaGenerationService {
                 this.objectMapper = objectMapper;
                 this.evaluationCriteriaService = evaluationCriteriaService;
                 this.aiServiceLlmClient = aiServiceLlmClient;
-                this.webClient = ExternalCallLog.attach(WebClient.builder())
+                this.webClient = WebClient.builder()
                                 .baseUrl(API_URL)
                                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                                 .build();
-                this.aiServiceWebClient = ExternalCallLog.attach(WebClient.builder())
+                this.aiServiceWebClient = WebClient.builder()
                                 .baseUrl(aiServiceBaseUrl)
                                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                                 .build();

@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.platform_billing.service;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -225,7 +223,7 @@ public class PlatformInvoicePdfService {
         try {
             HttpClient client = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3))
                     .followRedirects(HttpClient.Redirect.NORMAL).build();
-            HttpResponse<byte[]> resp = ExternalCallLog.send(client, HttpRequest.newBuilder(URI.create(key))
+            HttpResponse<byte[]> resp = client.send(HttpRequest.newBuilder(URI.create(key))
                     .timeout(Duration.ofSeconds(3)).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
             String type = resp.headers().firstValue("content-type").orElse("").toLowerCase(Locale.ROOT);
             byte[] body = resp.body();

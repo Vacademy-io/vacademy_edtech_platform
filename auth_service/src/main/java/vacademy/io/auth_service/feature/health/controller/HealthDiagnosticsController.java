@@ -1,7 +1,5 @@
 package vacademy.io.auth_service.feature.health.controller;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,7 +25,7 @@ public class HealthDiagnosticsController extends BaseHealthController {
     @Value("${admin.core.service.base_url:http://admin-core-service:8072}")
     private String adminCoreServiceUrl;
 
-    private final RestTemplate restTemplate = ExternalCallLog.attach(new RestTemplate());
+    private final RestTemplate restTemplate = new RestTemplate();
 
     /** Inter-service connectivity check to admin-core-service */
     @GetMapping("/connectivity/admin")

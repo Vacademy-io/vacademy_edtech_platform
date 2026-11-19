@@ -1,7 +1,5 @@
 package vacademy.io.admin_core_service.features.telephony.ivr;
 
-import vacademy.io.common.external.ExternalCallLog;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Async;
@@ -43,7 +41,7 @@ public class IvrPromptWarmer {
             try {
                 HttpRequest req = HttpRequest.newBuilder(URI.create(answerUrls.ttsWarmUrl(p, "hi-IN")))
                         .timeout(Duration.ofSeconds(40)).GET().build();
-                int code = ExternalCallLog.send(http, req, HttpResponse.BodyHandlers.discarding()).statusCode();
+                int code = http.send(req, HttpResponse.BodyHandlers.discarding()).statusCode();
                 log.info("ivr prompt warmed ({}): {}…", code, p.substring(0, Math.min(40, p.length())));
             } catch (Exception e) {
                 log.warn("ivr prompt warm failed for {}…: {}",
