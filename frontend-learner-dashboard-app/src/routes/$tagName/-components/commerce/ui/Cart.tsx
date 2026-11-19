@@ -23,21 +23,41 @@ import { useCartPrice, useProductRail } from './queries';
 import { ShopLink, useCommerceSite, whatsappLink } from './site';
 
 /**
- * The quantity a fix offers, on the line's step grid: what is in stock, or the most one order may
- * hold, rounded DOWN to the step (25 at a step of 10 offers 20, never 30). Null when not even
- * one step fits.
+ * The quantity a fix offers, on the line's step grid (the step the server names now, else the
+ * line's), never above the most one order line may hold (`lineMax`, base units; floored to the
+ * step). Null when not even one step fits.
+ * - Stock or the per-order maximum: that number rounded DOWN to the step (25 at a step of 10
+ *   offers 20, never 30).
+ * - Off the step (the step changed after the line was added, or two lengths were added up): the
+ *   nearest valid length at or below the line's, at least one step (3.8 m in steps of 0.5 m
+ *   offers 3.5 m; 0.3 m offers 0.5 m). The server checks the step before stock, so its refusal
+ *   names no stock figure; if less is left, the next answer says so and offers that instead.
  */
-const fixQuantity = (problem: CartUnavailableLine | undefined, line: Pick<CartLine, 'qtyStep'>): number | null => {
+const fixQuantity = (
+    problem: CartUnavailableLine | undefined,
+    line: Pick<CartLine, 'qtyStep' | 'quantity'>,
+    lineMax: number | null = null
+): number | null => {
     if (!problem) return null;
-    const step = Math.max(1, Math.floor(line.qtyStep || 1));
+    const step = Math.max(1, Math.floor(problem.qty_step || line.qtyStep || 1));
+    const caps: number[] = [];
+    if (typeof problem.available_quantity === 'number') caps.push(problem.available_quantity);
+    if (typeof problem.max_quantity === 'number') caps.push(problem.max_quantity);
+    if (lineMax !== null && Number.isFinite(lineMax)) caps.push(lineMax);
+    const ceiling = caps.length ? Math.floor(Math.min(...caps) / step) * step : null;
+    if (ceiling !== null && ceiling < step) return null;
+    if (problem.reason === 'QUANTITY_STEP') {
+        const below = Math.max(step, Math.floor(line.quantity / step) * step);
+        return ceiling !== null ? Math.min(below, ceiling) : below;
+    }
     const limit =
         typeof problem.available_quantity === 'number'
             ? problem.available_quantity
             : typeof problem.max_quantity === 'number'
               ? problem.max_quantity
               : null;
-    if (limit === null || limit < step) return null;
-    return Math.floor(limit / step) * step;
+    if (limit === null || ceiling === null) return null;
+    return ceiling;
 };
 
 /**
@@ -91,16 +111,18 @@ const CartLineRow: React.FC<{
     currency: string | null | undefined;
     onNavigate?: () => void;
 }> = ({ line, priced, problem, currency, onNavigate }) => {
-    const { t } = useCommerceSite();
+    const { t, config } = useCommerceSite();
     const setQuantity = useCommerceCart((s) => s.setQuantity);
     const remove = useCommerceCart((s) => s.remove);
     const unavailableText = useUnavailableText();
     const measured = isMeasured(line.qtyScale);
+    // The server's per-line maximum: the shop's per-order maximum × the product's scale (25 m = 250).
+    const lineMax = config.maxOrderQuantity * Math.max(1, Math.floor(line.qtyScale || 1));
     // The server's line total when it has priced the line; else only the remembered unit price.
     const amount = priced ? formatMoney(priced.net ?? priced.gross, currency) : null;
     // One metre of cloth (the API prices one base unit), worked out in whole paise.
     const unitPrice = formatMoney(perUnitAmount(priced?.unit_price ?? line.unitPrice, measured ? line.qtyScale : 1), currency);
-    const fixTo = fixQuantity(problem, line);
+    const fixTo = fixQuantity(problem, line, lineMax);
     // Nothing of it can be bought now: the way forward is to take it out of the cart.
     const soldOut = !!problem && shownReason(problem, line) === 'OUT_OF_STOCK';
     const removeLine = () => {

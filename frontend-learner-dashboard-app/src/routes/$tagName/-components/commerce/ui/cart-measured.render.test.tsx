@@ -94,6 +94,12 @@ const answerFor = (quantity: number) => ({
         unavailable('brown', 'INSUFFICIENT_STOCK', { available_quantity: 0, qty_step: 5 }),
         // The same case as the server answers it now.
         unavailable('black', 'OUT_OF_STOCK', { qty_step: 5 }),
+        // Off the step: two lengths added up (3.8 m), the step raised to 1 m after 2.5 m was
+        // added, 30.3 m above the 25 m per-order maximum, and 0.3 m below one step.
+        unavailable('olive', 'QUANTITY_STEP', { qty_step: 5 }),
+        unavailable('navy', 'QUANTITY_STEP', { qty_step: 10 }),
+        unavailable('tan', 'QUANTITY_STEP', { qty_step: 5 }),
+        unavailable('rust', 'QUANTITY_STEP', { qty_step: 5 }),
     ],
     // ₹12.34 → ₹13.01 per 10 cm: the notice names the price of a metre.
     changes: [{ line_ref: 'cotton', variant_id: 'cotton', type: 'PRICE_CHANGED', reason: null, old_unit_price: 12.34, new_unit_price: 13.01 }],
@@ -166,6 +172,10 @@ beforeEach(() => {
                 line('white', 'White cloth', 23, 5),
                 line('brown', 'Brown cloth', 5, 5),
                 line('black', 'Black cloth', 10, 5),
+                line('olive', 'Olive cloth', 38, 5),
+                line('navy', 'Navy cloth', 25, 5),
+                line('tan', 'Tan cloth', 303, 5),
+                line('rust', 'Rust cloth', 3, 5),
             ],
         },
     });
@@ -212,6 +222,33 @@ describe('a cloth line in the cart', () => {
 
         const white = rowOf('White cloth')!;
         expect(white.querySelector('[role="status"]')?.textContent).toContain('मात्रा 0.5 मी के गुणज में होनी चाहिए');
+    });
+
+    it('offers the valid length for a line off its step', async () => {
+        await render(<CartPage />);
+        await settle(() => !!rowOf('Rust cloth')?.querySelector('[role="status"]'));
+        const fixOf = (name: string) =>
+            Array.from(rowOf(name)!.querySelectorAll<HTMLButtonElement>('button.cmx-link')).find((b) => b.textContent?.endsWith('कर दें'));
+        // The nearest valid length at or below the line's, at least one step, at most the
+        // per-order maximum (25 m), on the step the server names now.
+        expect(rowOf('White cloth')!.querySelector('[role="status"]')?.textContent).toContain('मात्रा 0.5 मी के गुणज में होनी चाहिए');
+        expect(fixOf('White cloth')?.textContent).toBe('2 मी कर दें');
+        expect(fixOf('Olive cloth')?.textContent).toBe('3.5 मी कर दें');
+        expect(fixOf('Navy cloth')?.textContent).toBe('2 मी कर दें');
+        expect(fixOf('Tan cloth')?.textContent).toBe('25 मी कर दें');
+        expect(fixOf('Rust cloth')?.textContent).toBe('0.5 मी कर दें');
+        // The cart now works on the new 1 m step of the navy cloth; the length is not changed by it.
+        const navy = () => useCommerceCart.getState().cart.lines.find((l) => l.variantId === 'navy')!;
+        expect(navy()).toMatchObject({ quantity: 25, qtyStep: 10 });
+        const lineOf = (id: string) => useCommerceCart.getState().cart.lines.find((l) => l.variantId === id)!;
+        await act(async () => fixOf('Olive cloth')!.click());
+        expect(lineOf('olive').quantity).toBe(35);
+        await act(async () => fixOf('Navy cloth')!.click());
+        expect(navy().quantity).toBe(20);
+        await act(async () => fixOf('Tan cloth')!.click());
+        expect(lineOf('tan').quantity).toBe(250);
+        await act(async () => fixOf('Rust cloth')!.click());
+        expect(lineOf('rust').quantity).toBe(5);
     });
 
     it('shows a line with less than one step left as sold out, with remove as the fix', async () => {

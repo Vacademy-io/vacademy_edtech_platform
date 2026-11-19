@@ -48,15 +48,26 @@ const onGrid = (quantity: number, line: Pick<CartLine, 'qtyStep' | 'piece'>): nu
     return Math.max(s, Math.round(q / s) * s);
 };
 
+/** A whole positive number of base units as given, or null: never moved onto a step. */
+const wholeUnits = (quantity: number): number | null =>
+    Number.isFinite(quantity) && quantity >= 1 ? Math.min(Math.round(quantity), 1e7 - 1) : null;
+
 /**
  * Adds a variant. A variant already in the cart grows by the added quantity (a piece stays at
  * one); a new one goes to the front. Past the line limit nothing is added.
+ *
+ * Lengths add up exactly (1 m + 2.5 m = 3.5 m) and the line takes the step the product has now.
+ * The sum is never rounded, neither to the old step nor to the new one: a sum off the step stays
+ * as it is, the server refuses it with QUANTITY_STEP, and the cart offers the valid length
+ * ("Set to 3.5 m" for 3.8 m in steps of 0.5 m). Rounding it here would change what the shopper
+ * asked for without telling them.
  */
 export const addLine = (cart: CartState, line: Omit<CartLine, 'addedAt'>, now: number = Date.now()): AddResult => {
     const index = cart.lines.findIndex((l) => l.variantId === line.variantId);
     if (index >= 0) {
         const existing = cart.lines[index]!;
-        const quantity = onGrid(existing.piece ? existing.quantity : existing.quantity + line.quantity, existing);
+        const added = wholeUnits(line.quantity) ?? step(line);
+        const quantity = existing.piece ? step(existing) : existing.quantity + added;
         if (quantity === existing.quantity) return { cart, outcome: 'unchanged' };
         const lines = cart.lines.slice();
         lines[index] = { ...existing, ...line, quantity, addedAt: existing.addedAt };
@@ -110,16 +121,30 @@ export const priceRequestKey = (cart: CartState, locale: string): string =>
     JSON.stringify([locale, cart.pincode, cart.lines.map((l) => [l.variantId, l.quantity])]);
 
 /**
- * The server's answer folded back into the remembered lines: names, labels, steps and the new
- * unit price of every priced line, so the next request reports no stale price. Lines the
- * server could not price are left as they are; the drawer shows why.
+ * The server's answer folded back into the remembered lines: names, labels, scale, step, unit
+ * and the new unit price of every priced line, so the next request reports no stale price. A
+ * line the server could not price takes only the step its refusal names; the drawer shows why.
+ * No quantity is ever changed here.
  */
 export const applyPrice = (cart: CartState, price: CartPrice): CartState => {
     const priced = new Map((price.lines || []).map((l) => [l.line_ref, l]));
+    const refused = new Map(
+        (price.unavailable || [])
+            .filter((u) => typeof u.qty_step === 'number' && Number.isInteger(u.qty_step) && u.qty_step > 0)
+            .map((u) => [u.line_ref, u.qty_step as number])
+    );
     let changed = false;
     const lines = cart.lines.map((line) => {
         const p = priced.get(line.variantId);
-        if (!p) return line;
+        if (!p) {
+            // A refused line still names today's step: take it, so the stepper and the "Set to"
+            // fix never work on a step the product no longer has. Its quantity is left as it is.
+            // (Scale and unit are not in a refusal; the server locks both once a product is live.)
+            const stepNow = refused.get(line.variantId);
+            if (stepNow === undefined || stepNow === line.qtyStep) return line;
+            changed = true;
+            return { ...line, qtyStep: stepNow };
+        }
         const next: CartLine = {
             ...line,
             name: p.name || line.name,
@@ -162,7 +187,9 @@ export const reviveCart = (raw: unknown): CartState => {
             name: str(l.name, 300),
             variantLabel: str(l.variantLabel, 200) || null,
             imageUrl: /^https?:\/\//i.test(str(l.imageUrl, 2000)) ? str(l.imageUrl, 2000) : null,
-            quantity: onGrid(posInt(l.quantity, qtyStep), { qtyStep, piece }),
+            // As saved, not moved onto the step: a length off a step that changed since is kept
+            // and the cart offers the fix (a piece is always one step).
+            quantity: piece ? qtyStep : posInt(l.quantity, qtyStep),
             qtyScale: posInt(l.qtyScale, 1),
             qtyStep,
             unit: str(l.unit, 16) || null,

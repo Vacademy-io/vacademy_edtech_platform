@@ -68,6 +68,20 @@ describe('adding to the cart', () => {
         expect(addLine(EMPTY_CART, fabric({ quantity: 0 }), 1).cart.lines[0]!.quantity).toBe(5);
     });
 
+    it('adds lengths up exactly, never rounding the sum to a step (D12)', () => {
+        // 2.5 m in the cart, 1.3 m more (a length from before the step was 0.5 m): 3.8 m is kept
+        // as asked, off the step; the cart then offers "Set to 3.5 m".
+        const once = addLine(EMPTY_CART, fabric({ quantity: 25 }), 1).cart;
+        const twice = addLine(once, fabric({ quantity: 13 }), 2);
+        expect(twice.outcome).toBe('increased');
+        expect(twice.cart.lines[0]).toMatchObject({ quantity: 38, qtyStep: 5, addedAt: 1 });
+        // The line takes the step the product has now, and the sum is still not moved onto it.
+        const oldStep = addLine(EMPTY_CART, fabric({ quantity: 23, qtyStep: 1 }), 1).cart;
+        expect(addLine(oldStep, fabric({ quantity: 10, qtyStep: 5 }), 2).cart.lines[0]).toMatchObject({ quantity: 33, qtyStep: 5 });
+        // 1 m + 2.5 m = 3.5 m on the step is unchanged behaviour.
+        expect(addLine(addLine(EMPTY_CART, fabric({ quantity: 10 }), 1).cart, fabric({ quantity: 25 }), 2).cart.lines[0]!.quantity).toBe(35);
+    });
+
     it('stops at the line limit', () => {
         let cart: CartState = EMPTY_CART;
         for (let i = 0; i < CART_MAX_LINES; i += 1) cart = addLine(cart, line({ variantId: `v-${i}` }), i).cart;
@@ -163,6 +177,22 @@ describe('pricing', () => {
         // The same answer again changes nothing (same object: no re-render, no re-save).
         expect(applyPrice(next, price)).toBe(next);
     });
+
+    it('takes the step a refusal names, and never changes the quantity', () => {
+        // The product's step went from 0.5 m to 1 m after the 2.5 m line was added.
+        const refused = {
+            lines: [],
+            unavailable: [{ line_ref: 'v-fabric', variant_id: 'v-fabric', reason: 'QUANTITY_STEP', available_quantity: null, qty_step: 10, max_quantity: null }],
+        } as unknown as CartPrice;
+        const next = applyPrice(cart, refused);
+        expect(next.lines.find((l) => l.variantId === 'v-fabric')).toMatchObject({ quantity: 25, qtyStep: 10, qtyScale: 10, unit: 'MTR' });
+        // The saree is not in the answer: untouched.
+        expect(next.lines.find((l) => l.variantId === 'v-1')).toBe(cart.lines.find((l) => l.variantId === 'v-1'));
+        expect(applyPrice(next, refused)).toBe(next);
+        // A refusal without a step (NOT_FOUND) or with a nonsense one changes nothing.
+        const noStep = { lines: [], unavailable: [{ line_ref: 'v-fabric', reason: 'NOT_FOUND', qty_step: null }, { line_ref: 'v-1', reason: 'NO_PRICE', qty_step: 0 }] } as unknown as CartPrice;
+        expect(applyPrice(cart, noStep)).toBe(cart);
+    });
 });
 
 describe('reading a cart back from storage', () => {
@@ -189,6 +219,14 @@ describe('reading a cart back from storage', () => {
         expect(revived.pincode).toBeNull();
         expect(revived.lines.map((l) => l.variantId)).toEqual(['v-1', 'v-9']);
         expect(revived.lines[1]).toMatchObject({ quantity: 5, imageUrl: null, unitPrice: null });
+    });
+
+    it('keeps a saved length off the step as it is', () => {
+        // 3.8 m saved, step now 0.5 m: not moved to 4 m behind the shopper's back.
+        const saved = { version: 1, pincode: null, lines: [{ ...fabric({ quantity: 38 }), addedAt: 1 }] };
+        expect(reviveCart(saved).lines[0]!.quantity).toBe(38);
+        // A piece is always one step.
+        expect(reviveCart({ version: 1, lines: [{ ...line({ piece: true, quantity: 4 }), addedAt: 1 }] }).lines[0]!.quantity).toBe(1);
     });
 
     it('keeps one cart per site', () => {
