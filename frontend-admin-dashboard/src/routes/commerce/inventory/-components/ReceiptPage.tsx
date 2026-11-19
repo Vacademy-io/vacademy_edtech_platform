@@ -173,7 +173,13 @@ function ReceiptLabelsCard({ receipt }: { receipt: ReceiptView }) {
             </ul>
             {/* The whole receipt's waiting rows (every page), drawn and marked by the server's list. */}
             {printing && (
-                <PrintLabelsDialog open onOpenChange={setPrinting} receiptId={receipt.id} locationId={receipt.location_id} />
+                <PrintLabelsDialog
+                    open
+                    onOpenChange={setPrinting}
+                    receiptId={receipt.id}
+                    receiptLines={receipt.lines}
+                    locationId={receipt.location_id}
+                />
             )}
             {reprint && receipt.location_id && (
                 <ReprintDialog open onOpenChange={setReprint} locationId={receipt.location_id} />

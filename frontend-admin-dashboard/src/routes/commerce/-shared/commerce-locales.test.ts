@@ -381,7 +381,7 @@ describe('commerce strings: every key the code asks for exists', () => {
         each('inventory.labels.languages', LABEL_LANGUAGES);
         each('inventory.labels.reasons', LABEL_REASONS);
         each('inventory.labels.sources', LABEL_SOURCES);
-        each('inventory.labels.problems', ['nothing', 'tooMany', 'startPosition']);
+        each('inventory.labels.problems', ['nothing', 'startPosition']);
         UNCOUNTED_CHOICES.forEach((value) => need.push(`inventory.counts.uncounted${value}`));
         each('inventory.reasons', [...ADJUSTMENT_REASONS, ...DAMAGE_REASONS, ...MOVEMENT_REASONS]);
         each('status.movementType', MOVEMENT_TYPES);

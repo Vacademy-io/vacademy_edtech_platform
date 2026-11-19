@@ -14,17 +14,19 @@ import {
     type LabelPrintData,
     type LabelRow,
     type LabelTemplate,
+    type ReceiptLine,
 } from '../-shared/inventory-types';
 import {
     A4_POSITIONS,
-    chunks,
-    drawnRequestIds,
     endLabelPrint,
     labelCount,
+    labelsNotQueued,
+    markPrintedBatches,
     MAX_LABELS_PER_PRINT,
-    MAX_MARK_IDS,
+    MAX_RECEIPT_LINE_LABELS,
     printLabels,
     printProblem,
+    printRounds,
     readLabelChoice,
     rememberLabelChoice,
     splitByPrice,
@@ -49,18 +51,27 @@ const nextFrame = () => new Promise<void>((resolve) => setTimeout(resolve, 50));
  * all its waiting rows, drawn by the server). Rows of an item without a price
  * are not drawn: they are listed and stay waiting. "Yes" marks exactly the
  * rows that were drawn, in batches the server takes.
+ *
+ * One print takes at most 500 labels. More (a receipt line of 1,200 units,
+ * or many lines) print in rounds: the server draws 500 and says what was
+ * left out; "Yes" marks what was drawn (a row drawn in part keeps waiting
+ * with the rest) and the dialog stays open, saying how many labels still
+ * wait, so Print draws the next round.
  */
 export function PrintLabelsDialog({
     open,
     onOpenChange,
     rows,
     receiptId,
+    receiptLines,
     onPrinted,
 }: {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     rows?: LabelRow[];
     receiptId?: string;
+    /** The receipt's lines: a counted line of more than 10,000 units says how many units got no label. */
+    receiptLines?: ReceiptLine[];
     /** The place the labels are for (rows carry their own). */
     locationId?: string | null;
     onPrinted?: () => void;
@@ -74,6 +85,8 @@ export function PrintLabelsDialog({
     const [data, setData] = useState<LabelPrintData | null>(null);
     const [problem, setProblem] = useState<string | null>(null);
     const [error, setError] = useState<unknown>(null);
+    /** After a round that left labels out: those rows (the next print of chosen rows) and how many labels wait. */
+    const [rest, setRest] = useState<{ ids: string[]; copies: number } | null>(null);
 
     const receiptRows = useLabels({
         sourceType: receiptId ? 'STOCK_RECEIPT' : undefined,
@@ -84,9 +97,10 @@ export function PrintLabelsDialog({
     });
     const loaded: LabelRow[] = receiptId ? (receiptRows.data?.rows ?? []) : (rows ?? []);
     const { priced: chosen, unpriced } = splitByPrice(loaded);
-    const count = labelCount(chosen);
-    // A receipt with more waiting rows than one page: the server counts them (and refuses above the cap).
-    const allLoaded = !receiptId || (receiptRows.data ? receiptRows.data.total <= loaded.length : false);
+    const count = rest ? rest.copies : labelCount(chosen);
+    // A receipt with more waiting rows than one page: the server counts them as it draws them.
+    const allLoaded = !!rest || !receiptId || (receiptRows.data ? receiptRows.data.total <= loaded.length : false);
+    const notQueued = labelsNotQueued(receiptLines ?? []);
     const a4 = choice.template === 'A4_65';
 
     // The print screen closed before the browser said the print was over: end it now.
@@ -104,7 +118,7 @@ export function PrintLabelsDialog({
         rememberLabelChoice(current);
         try {
             const answer = await fetchLabelPrintData({
-                ...(receiptId ? { receipt_id: receiptId } : { request_ids: chosen.map((r) => r.id) }),
+                ...(receiptId ? { receipt_id: receiptId } : { request_ids: rest ? rest.ids : chosen.map((r) => r.id) }),
                 size: current.template,
             });
             if (answer.labels.length === 0) {
@@ -125,18 +139,26 @@ export function PrintLabelsDialog({
         if (!data) return;
         // Exactly what was drawn (a receipt can hold more than one page of rows), in batches of ≤ 200;
         // each batch has its own request id, so pressing Yes again after a failure resends the same ones.
-        const batches = chunks(drawnRequestIds(data), MAX_MARK_IDS);
+        // A row drawn in part says how many of its labels were drawn: the rest keeps waiting.
+        const batches = markPrintedBatches(data);
         try {
-            for (const ids of batches) {
+            for (const batch of batches) {
                 await write.run({
-                    scope: `mark-printed:${ids[0]}:${ids.length}`,
-                    body: { request_ids: ids },
-                    send: (id) => markLabelsPrinted({ client_request_id: id, request_ids: ids }),
+                    scope: `mark-printed:${batch.request_ids[0]}:${batch.request_ids.length}`,
+                    body: batch,
+                    send: (id) => markLabelsPrinted({ client_request_id: id, ...batch }),
                     onDone: () => undefined,
                 });
             }
             toast.success(t('inventory.labels.markedPrinted'));
             onPrinted?.();
+            if (data.left_out.length > 0) {
+                // The next round: the labels left out of this print, still waiting.
+                setRest({ ids: data.left_out.map((l) => l.request_id), copies: data.left_out_copies });
+                setData(null);
+                setPhase('choose');
+                return;
+            }
             onOpenChange(false);
         } catch (e) {
             setError(e);
@@ -198,6 +220,11 @@ export function PrintLabelsDialog({
                                 {t('inventory.labels.drawn', { count: data.total_copies })}
                             </p>
                         )}
+                        {data && data.left_out_copies > 0 && (
+                            <p className="text-caption text-warning-600" data-testid="labels-left-out">
+                                {t('inventory.labels.leftOut', { count: data.left_out_copies, max: MAX_LABELS_PER_PRINT })}
+                            </p>
+                        )}
                         <SkippedNote skus={(data?.skipped ?? []).map((x) => x.sku ?? x.request_id)} />
                         <p className="text-subtitle text-foreground">{t('inventory.labels.cameOutWell')}</p>
                         <p className="text-body text-muted-foreground">{t('inventory.labels.cameOutWellHelp')}</p>
@@ -212,6 +239,23 @@ export function PrintLabelsDialog({
                                 {allLoaded ? t('inventory.labels.count', { count }) : t('inventory.labels.countReceipt')}
                             </p>
                         )}
+                        {rest ? (
+                            <p className="text-caption text-warning-600" data-testid="labels-rest">
+                                {t('inventory.labels.restWaiting', { count: rest.copies, max: MAX_LABELS_PER_PRINT })}
+                            </p>
+                        ) : (
+                            allLoaded &&
+                            count > MAX_LABELS_PER_PRINT && (
+                                <p className="text-caption text-muted-foreground" data-testid="labels-rounds">
+                                    {t('inventory.labels.inRounds', { count, max: MAX_LABELS_PER_PRINT, rounds: printRounds(count) })}
+                                </p>
+                            )
+                        )}
+                        {notQueued.map((line) => (
+                            <p key={line.item} className="text-caption text-warning-600" data-testid="labels-not-queued">
+                                {t('inventory.labels.notQueued', { count: line.units, item: line.item, max: MAX_RECEIPT_LINE_LABELS })}
+                            </p>
+                        ))}
                         <SkippedNote skus={unpriced.map((r) => r.sku ?? r.item_name ?? r.id)} />
                         <ChoiceGroup<LabelTemplate>
                             name="label-template"

@@ -9,11 +9,14 @@ import {
     expandCopies,
     LABEL_PRINTING_CLASS,
     labelCount,
+    labelsNotQueued,
     labelText,
+    markPrintedBatches,
     openPdf,
     pageRule,
     printLabels,
     printProblem,
+    printRounds,
 } from './label-print';
 
 const label = (code: string, copies = 1): PrintLabel => ({
@@ -30,12 +33,37 @@ const label = (code: string, copies = 1): PrintLabel => ({
 });
 
 describe('what gets printed', () => {
-    it('counts labels by quantity and caps a print at 500', () => {
+    it('counts labels by quantity; more than 500 is not a stop (they print in rounds of 500)', () => {
         expect(labelCount([{ quantity: 3 }, { quantity: 1 }])).toBe(4);
         const sticker = { template: 'STICKER_50X25' as const, language: 'both' as const, startPosition: 99 };
         expect(printProblem(0, sticker)).toBe('nothing');
-        expect(printProblem(501, sticker)).toBe('tooMany');
+        expect(printProblem(1200, sticker)).toBeNull();
         expect(printProblem(500, sticker)).toBeNull();
+        expect([printRounds(1), printRounds(500), printRounds(501), printRounds(1200)]).toEqual([1, 1, 2, 3]);
+    });
+
+    it('mark printed: a row drawn in part says how many labels were drawn; batches of 200 ids', () => {
+        const labels = [
+            { ...label('VBIG000001', 500), request_id: 'big' },
+            { ...label('VSMALL0001', 2), request_id: 'small' },
+        ];
+        expect(markPrintedBatches({ labels, left_out: [{ request_id: 'big', sku: null, copies: 700 }] })).toEqual([
+            { request_ids: ['big', 'small'], printed_copies: { big: 500 } },
+        ]);
+        expect(markPrintedBatches({ labels, left_out: [] })).toEqual([{ request_ids: ['big', 'small'] }]);
+        const many = Array.from({ length: 201 }, (_, i) => ({ ...label(`V${i}`), request_id: `r${i}` }));
+        const batches = markPrintedBatches({ labels: many, left_out: [{ request_id: 'r200', sku: null, copies: 5 }] });
+        expect(batches.map((b) => b.request_ids.length)).toEqual([200, 1]);
+        expect(batches[0]?.printed_copies).toBeUndefined();
+        expect(batches[1]?.printed_copies).toEqual({ r200: 1 });
+    });
+
+    it('receipt lines of more than 10,000 counted units say how many got no label', () => {
+        const line = { sku: 'B-1', product_name: 'Button', stock_mode: 'QUANTITY', qty_scale: 1, qty_received: 12_500 };
+        expect(labelsNotQueued([line])).toEqual([{ item: 'B-1', units: 2500 }]);
+        expect(labelsNotQueued([{ ...line, qty_received: 10_000 }])).toEqual([]);
+        expect(labelsNotQueued([{ ...line, qty_scale: 10 }])).toEqual([]);
+        expect(labelsNotQueued([{ ...line, stock_mode: 'PIECE' }])).toEqual([]);
     });
 
     it('the start position counts on an A4 sheet only, 1..65', () => {

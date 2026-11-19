@@ -190,7 +190,7 @@ export function ReceiveTab({ locationId, allPlaces }: TabProps) {
                     </div>
                 </div>
                 {printing && (
-                    <PrintLabelsDialog open onOpenChange={setPrinting} receiptId={done.id} locationId={place} />
+                    <PrintLabelsDialog open onOpenChange={setPrinting} receiptId={done.id} receiptLines={done.lines} locationId={place} />
                 )}
                 <RecentReceipts locationId={place} />
             </div>

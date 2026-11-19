@@ -385,6 +385,8 @@ export interface ChallanSeries {
 
 export interface CountRow {
     id: string;
+    /** What the caller may do (e.g. RECOUNT), from the server; null only when an older server leaves it out. */
+    next_actions: string[] | null;
     count_number: string | null;
     kind: string;
     status: string;
@@ -421,8 +423,6 @@ export interface CountView extends CountRow {
     uncounted_choice: string | null;
     summary: Record<string, unknown> | null;
     lines: CountLine[];
-    /** What the caller may do, from the server; null only when an older server leaves it out. */
-    next_actions: string[] | null;
 }
 
 /** Review line flags: changed while counted (L4), accepted by a manager, a large measured difference (L7). */
@@ -590,12 +590,22 @@ export interface SkippedLabel {
     reason: string;
 }
 
+/** Labels of a row that did not fit one print (at most 500 at once): `copies` of them still wait. */
+export interface LeftOutLabel {
+    request_id: string;
+    sku: string | null;
+    copies: number;
+}
+
 export interface LabelPrintData {
     shop_name: string | null;
     labels: PrintLabel[];
     /** Rows not drawn (an item without a price): they stay waiting. */
     skipped: SkippedLabel[];
     total_copies: number;
+    /** Rows drawn in part or not at all because one print takes at most 500 labels: they wait for the next print. */
+    left_out: LeftOutLabel[];
+    left_out_copies: number;
 }
 
 export type LabelRequestLine = { package_session_id: string; quantity: number } | { piece_id: string } | { piece_code: string };

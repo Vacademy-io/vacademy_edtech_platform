@@ -581,6 +581,7 @@ function normalizeCountRow(r: Rec): CountRow | null {
         posted_at: utcTime(r.posted_at),
         line_count: int(r.line_count),
         recount_of_count_id: str(r.recount_of_count_id),
+        next_actions: Array.isArray(r.next_actions) ? strings(r.next_actions) : null,
     };
 }
 
@@ -634,7 +635,6 @@ export function normalizeCount(data: unknown): CountView {
         uncounted_choice: str(r.uncounted_choice),
         summary: asRecord(r.summary) ?? asRecord(r.summary_json),
         lines,
-        next_actions: Array.isArray(r.next_actions) ? strings(r.next_actions) : null,
     };
 }
 
@@ -838,12 +838,14 @@ export async function cancelLabels(body: { client_request_id: string; request_id
     return int(rec(await post(COMMERCE_LABELS_CANCEL, body)).cancelled);
 }
 
+/** `printed_copies`: for a row drawn in part, how many of its labels were drawn (the rest keeps waiting). */
 export async function markLabelsPrinted(body: {
     client_request_id: string;
     request_ids: string[];
-}): Promise<{ printed: number; skipped: string[] }> {
+    printed_copies?: Record<string, number>;
+}): Promise<{ printed: number; skipped: string[]; partly: string[] }> {
     const r = rec(await post(COMMERCE_LABELS_MARK_PRINTED, body));
-    return { printed: int(r.printed), skipped: strings(r.skipped) };
+    return { printed: int(r.printed), skipped: strings(r.skipped), partly: strings(r.partly) };
 }
 
 const textPair = (value: unknown): TextPair => {
@@ -886,6 +888,12 @@ export async function fetchLabelPrintData(body: LabelPrintDataBody): Promise<Lab
             return requestId ? [{ request_id: requestId, sku: str(x.sku), reason: str(x.reason) ?? 'NO_PRICE' }] : [];
         }),
         total_copies: num(r.total_copies) ?? labels.reduce((sum, l) => sum + l.copies, 0),
+        left_out: records(r.left_out).flatMap((x) => {
+            const requestId = str(x.request_id);
+            const copies = int(x.copies);
+            return requestId && copies > 0 ? [{ request_id: requestId, sku: str(x.sku), copies }] : [];
+        }),
+        left_out_copies: int(r.left_out_copies),
     };
 }
 

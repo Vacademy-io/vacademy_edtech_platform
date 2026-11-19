@@ -18,9 +18,16 @@ import { useInventoryWrite } from './use-inventory-write';
 
 const PAGE_SIZE = 50;
 
-/** A blind recount is offered on an open count started by someone else. */
-export const canRecount = (row: Pick<CountRow, 'kind' | 'status' | 'started_by'>, me: string | null): boolean =>
-    row.kind === 'COUNT' && row.status === 'OPEN' && !!me && row.started_by !== me;
+/**
+ * A blind recount is offered only when the server offers it (`RECOUNT` in the
+ * row's `next_actions`): never to anyone who started the count or saved a line
+ * of it. An older server without `next_actions`: an open count started by
+ * someone else.
+ */
+export const canRecount = (row: Pick<CountRow, 'kind' | 'status' | 'started_by' | 'next_actions'>, me: string | null): boolean =>
+    row.next_actions
+        ? row.next_actions.includes('RECOUNT')
+        : row.kind === 'COUNT' && row.status === 'OPEN' && !!me && row.started_by !== me;
 
 /** Counts tab (contract §7.3): counts and recounts, Start a count, Blind recount. */
 export function CountsTab(props: TabProps) {

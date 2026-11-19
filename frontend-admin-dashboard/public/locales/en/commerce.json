@@ -2993,7 +2993,7 @@
             "found": "Pieces found again",
             "misplaced": "Pieces from another place",
             "confirmMeasured": "I checked the large differences of measured items; post them.",
-            "changedSinceReview": "Lines of this count changed since you reviewed it. The review was read again: check the differences, then post."
+            "changedSinceReview": "Lines of this count, or the stock of items not counted, changed since you reviewed it. The review was read again: check the differences, then post."
         },
         "countSheet": {
             "title": "Count here",
@@ -3114,7 +3114,6 @@
             "cancelled": "{{count}} labels cancelled",
             "problems": {
                 "nothing": "Choose the labels to print.",
-                "tooMany": "At most {{max}} labels at a time.",
                 "startPosition": "Start at a number from 1 to {{positions}}."
             },
             "mrp": "MRP {{price}}",
@@ -3126,7 +3125,11 @@
             "replacePartly": "{{done}} of {{total}} batches were queued. Press Queue labels again to send the rest.",
             "drawn": "{{count}} labels were sent to the printer.",
             "countReceipt": "All labels waiting for this receipt",
-            "skippedNoPrice": "{{count}} labels wait for a price and are not printed: {{items}}"
+            "skippedNoPrice": "{{count}} labels wait for a price and are not printed: {{items}}",
+            "inRounds": "At most {{max}} labels print at a time, so these print in {{rounds}} rounds. After each round press Yes, then Print again for the next one.",
+            "leftOut": "{{count}} more labels did not fit this print (at most {{max}} at a time). They stay waiting: after Yes, press Print again for them.",
+            "restWaiting": "{{count}} labels are still waiting (at most {{max}} print at a time). Press Print for the next ones.",
+            "notQueued": "{{count}} units of {{item}} have no label: one receipt line queues at most {{max}} labels. Use Reprint to queue more."
         },
         "reprint": {
             "queue": "Queue for printing",
@@ -3208,7 +3211,7 @@
             "STOCK_EXISTS": "Stock has moved for this item: its unit and how it is counted cannot change.",
             "TRANSFER_CHANGED": "The transfer changed while it was being sent. Check it and send again.",
             "LOCATION_NOT_FOUND": "This place was not found.",
-            "COUNT_CHANGED": "Lines of this count changed since it was reviewed. Check the review again before posting."
+            "COUNT_CHANGED": "Lines of this count, or the stock of items not counted, changed since it was reviewed. Check the review again before posting."
         }
     }
 }

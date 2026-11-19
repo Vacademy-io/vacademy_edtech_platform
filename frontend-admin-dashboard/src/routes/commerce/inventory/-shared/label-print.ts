@@ -6,6 +6,7 @@ import type {
     LabelRow,
     LabelTemplate,
     PrintLabel,
+    ReceiptLine,
     TextPair,
     ToReplaceRow,
 } from './inventory-types';
@@ -15,8 +16,8 @@ import { LABEL_LANGUAGES, LABEL_TEMPLATES } from './inventory-types';
  * Printing labels from the browser (owner decision 2026-11-18: labels carry
  * Hindi names, which the browser shapes) and opening the server's challan
  * PDF. The pure parts are unit-tested: the label sheet layout, the start
- * position on a used A4 sheet, the 500-label cap, which name goes where, and
- * the scoped `@page` rule of one print.
+ * position on a used A4 sheet, printing more than 500 labels in rounds of
+ * 500, which name goes where, and the scoped `@page` rule of one print.
  */
 
 export const MAX_LABELS_PER_PRINT = 500;
@@ -33,7 +34,7 @@ export interface LabelChoice {
 
 export const DEFAULT_LABEL_CHOICE: LabelChoice = { template: 'STICKER_50X25', language: 'both', startPosition: 1 };
 
-export type LabelPrintProblem = 'nothing' | 'tooMany' | 'startPosition';
+export type LabelPrintProblem = 'nothing' | 'startPosition';
 
 /** Most lines and rows the server takes in one `POST /labels/requests`. */
 export const MAX_REQUEST_LINES = 100;
@@ -51,6 +52,55 @@ export function chunks<T>(list: readonly T[], size: number): T[][] {
 /** Every request id that was drawn, once each, in the server's order (what "Yes, mark printed" marks). */
 export const drawnRequestIds = (data: Pick<LabelPrintData, 'labels'>): string[] =>
     Array.from(new Set(data.labels.map((l) => l.request_id).filter((id): id is string => !!id)));
+
+/** One `POST /labels/mark-printed`: ids, and the drawn labels of each row drawn in part. */
+export interface MarkPrintedBatch {
+    request_ids: string[];
+    printed_copies?: Record<string, number>;
+}
+
+/**
+ * What "Yes, mark printed" sends, in batches of at most `size` ids: every
+ * drawn row; a row the print drew in part (it is in `left_out`) says how many
+ * labels were drawn, so the server keeps the rest waiting for the next round.
+ */
+export function markPrintedBatches(data: Pick<LabelPrintData, 'labels' | 'left_out'>, size = MAX_MARK_IDS): MarkPrintedBatch[] {
+    const partly = new Set(data.left_out.map((l) => l.request_id));
+    const drawnCopies = new Map<string, number>();
+    data.labels.forEach((l) => {
+        if (l.request_id && partly.has(l.request_id)) {
+            drawnCopies.set(l.request_id, (drawnCopies.get(l.request_id) ?? 0) + Math.max(1, l.copies));
+        }
+    });
+    return chunks(drawnRequestIds(data), size).map((ids) => {
+        const copies = ids.filter((id) => drawnCopies.has(id));
+        return copies.length
+            ? { request_ids: ids, printed_copies: Object.fromEntries(copies.map((id) => [id, drawnCopies.get(id) as number])) }
+            : { request_ids: ids };
+    });
+}
+
+/** Most labels the server queues for one receipt line; a counted line of more units gets this many. */
+export const MAX_RECEIPT_LINE_LABELS = 10_000;
+
+/**
+ * Receipt lines whose labels were not all queued: a counted (not measured,
+ * not one-of-a-kind) line of more than 10,000 units, with how many units got
+ * no label. The screen says so; Reprint queues more.
+ */
+export function labelsNotQueued(
+    lines: readonly Pick<ReceiptLine, 'sku' | 'product_name' | 'stock_mode' | 'qty_scale' | 'qty_received'>[]
+): { item: string; units: number }[] {
+    return lines
+        .filter(
+            (l) =>
+                (l.stock_mode ?? '').toUpperCase() !== 'PIECE' && (l.qty_scale ?? 1) <= 1 && l.qty_received > MAX_RECEIPT_LINE_LABELS
+        )
+        .map((l) => ({ item: l.sku ?? l.product_name ?? '—', units: l.qty_received - MAX_RECEIPT_LINE_LABELS }));
+}
+
+/** How many prints of at most 500 labels a number of labels takes. */
+export const printRounds = (count: number): number => Math.max(1, Math.ceil(count / MAX_LABELS_PER_PRINT));
 
 /** Waiting rows that can print now (the item has a price) and the ones that wait for one. */
 export function splitByPrice<T extends Pick<LabelRow, 'has_price'>>(rows: readonly T[]): { priced: T[]; unpriced: T[] } {
@@ -111,10 +161,13 @@ export const labelCount = (rows: Pick<LabelRow, 'quantity'>[]): number =>
 export const validStartPosition = (value: number): boolean =>
     Number.isInteger(value) && value >= 1 && value <= A4_POSITIONS;
 
-/** What stops a print before anything is asked of the server (null = ready). */
+/**
+ * What stops a print before anything is asked of the server (null = ready).
+ * More than 500 labels is not a stop: the server draws 500 and the rest
+ * print in the next rounds.
+ */
 export function printProblem(count: number, choice: LabelChoice): LabelPrintProblem | null {
     if (count <= 0) return 'nothing';
-    if (count > MAX_LABELS_PER_PRINT) return 'tooMany';
     if (choice.template === 'A4_65' && !validStartPosition(choice.startPosition)) return 'startPosition';
     return null;
 }
