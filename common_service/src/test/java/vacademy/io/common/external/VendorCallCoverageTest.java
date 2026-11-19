@@ -31,6 +31,8 @@ class VendorCallCoverageTest {
         assertNotNull(VendorCallCoverage.vendorUse("@Value(\"${meta.whatsapp.api.base.url:x}\") String u;"));
         assertNull(VendorCallCoverage.vendorUse("@Value(\"${razorpay.webhook.secret}\") String s;"));
         assertNull(VendorCallCoverage.vendorUse("@Value(\"${bbb.server.url}\") String s;"));
+        assertNull(VendorCallCoverage.vendorUse("@Value(\"${zoom.oauth.redirect.uri}\") String s;"));
+        assertNull(VendorCallCoverage.vendorUse("@Value(\"${google.oauth.frontend.callback.url}\") String s;"));
     }
 
     @Test

@@ -47,6 +47,9 @@ public final class VendorCallCoverage {
             "pexels", "pixabay");
     private static final java.util.Set<String> ADDRESS_WORDS = java.util.Set.of(
             "url", "uri", "base", "baseurl", "endpoint", "host", "api");
+    /** Our own addresses a vendor sends people or events back to, not the vendor's. */
+    private static final java.util.Set<String> OWN_ADDRESS_WORDS = java.util.Set.of(
+            "redirect", "callback", "return", "webhook", "frontend");
     private static final Pattern VALUE_KEY = Pattern.compile("@Value\\(\"\\$\\{([A-Za-z0-9._-]+)");
 
     private VendorCallCoverage() {
@@ -80,7 +83,8 @@ public final class VendorCallCoverage {
         Matcher k = VALUE_KEY.matcher(code);
         while (k.find()) {
             List<String> parts = List.of(k.group(1).toLowerCase(java.util.Locale.ROOT).split("[._-]"));
-            if (parts.stream().anyMatch(VENDOR_WORDS::contains) && parts.stream().anyMatch(ADDRESS_WORDS::contains)) {
+            if (parts.stream().anyMatch(VENDOR_WORDS::contains) && parts.stream().anyMatch(ADDRESS_WORDS::contains)
+                    && parts.stream().noneMatch(OWN_ADDRESS_WORDS::contains)) {
                 return "${" + k.group(1) + "}";
             }
         }
