@@ -520,7 +520,7 @@ export const EnrollmentPaymentDialog: React.FC<
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60" />
-        <DialogPrimitive.Content className="fixed start-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-catalogue-md bg-white p-6 shadow-xl focus:outline-none">
+        <DialogPrimitive.Content className="fixed start-1/2 top-1/2 z-50 max-h-screen-90 w-full max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-catalogue-md bg-white p-6 shadow-xl focus:outline-none">
           <button
             className="absolute end-2 top-2 text-gray-400 hover:text-gray-700 focus:outline-none"
             onClick={handleClose}
