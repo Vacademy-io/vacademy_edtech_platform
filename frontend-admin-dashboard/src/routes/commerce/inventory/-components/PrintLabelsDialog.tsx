@@ -6,6 +6,7 @@ import { MyDialog } from '@/components/design-system/dialog';
 import { CommerceLoadingRows } from '@/routes/commerce/-components/CommerceStates';
 import { Field, inputClass } from '@/routes/commerce/orders/-components/order-ui';
 import { fetchLabelPrintData, markLabelsPrinted } from '../-shared/inventory-api';
+import { readInventoryError } from '../-shared/inventory-errors';
 import { useInvalidateInventory, useLabels } from '../-shared/inventory-hooks';
 import {
     LABEL_LANGUAGES,
@@ -126,6 +127,10 @@ export function PrintLabelsDialog({
                 size: current.template,
             });
             if (answer.labels.length === 0) {
+                if (rest) {
+                    allDone();
+                    return;
+                }
                 setProblem(t('inventory.labels.problems.nothing'));
                 return;
             }
@@ -136,8 +141,21 @@ export function PrintLabelsDialog({
             await printLabels(current.template);
             setPhase('ask');
         } catch (e) {
+            // The next round's rows were all printed or cancelled elsewhere meanwhile: nothing is left.
+            if (rest && readInventoryError(e).code === 'LABEL_NOT_PENDING') {
+                allDone();
+                return;
+            }
             setError(e);
         }
+    };
+
+    const allDone = () => {
+        setRest(null);
+        toast.success(t('inventory.labels.nothingLeft'));
+        void invalidate();
+        onPrinted?.();
+        onOpenChange(false);
     };
 
     const markPrinted = async () => {

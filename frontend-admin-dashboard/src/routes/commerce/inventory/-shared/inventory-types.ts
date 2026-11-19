@@ -508,10 +508,15 @@ export interface CountReview {
     zero_write_off: ZeroWriteOff | null;
 }
 
-/** Uncounted stock "set to zero" writes off: package_session_id → units, and piece ids. */
+/**
+ * Uncounted stock "set to zero" writes off: package_session_id → units, piece ids, and the
+ * units of each item that had come in since the count started (stock that comes in later is
+ * never written off under this review).
+ */
 export interface ZeroWriteOff {
     items: Record<string, number>;
     pieces: string[];
+    incoming: Record<string, number>;
 }
 
 /** A line change the count sheet sends (`PUT …/lines`). */

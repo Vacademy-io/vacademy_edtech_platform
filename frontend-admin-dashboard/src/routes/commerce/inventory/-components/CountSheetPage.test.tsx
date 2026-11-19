@@ -94,7 +94,7 @@ const review: CountReview = {
     needs_recount: 0,
     measured_confirm: false,
     fingerprint: 'fp-1',
-    zero_write_off: { items: { 'ps-tray': 5 }, pieces: [] },
+    zero_write_off: { items: { 'ps-tray': 5 }, pieces: [], incoming: { 'ps-tray': 2 } },
 };
 
 const renderSheet = (view: CountView) => {
@@ -375,7 +375,9 @@ describe('CountSheet review fingerprint', () => {
         expect(mocked.postCount.mock.calls[0]?.[1]).toMatchObject({
             uncounted: 'ZERO',
             review_fingerprint: 'fp-1',
-            reviewed_zero: { items: { 'ps-tray': 5 }, pieces: [] },
+            reviewed_zero: { items: { 'ps-tray': 5 }, pieces: [], incoming: { 'ps-tray': 2 } },
         });
+        // The review a post binds to is the one read for posting (on the primary).
+        expect(mocked.fetchCountReview).toHaveBeenCalledWith('c-1', true);
     });
 });

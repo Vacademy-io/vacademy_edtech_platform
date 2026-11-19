@@ -761,15 +761,20 @@ export function normalizeReview(data: unknown): CountReview {
 function zeroWriteOff(value: unknown): ZeroWriteOff | null {
     const r = asRecord(value);
     if (!r) return null;
-    const items: Record<string, number> = {};
-    Object.entries(asRecord(r.items) ?? {}).forEach(([id, units]) => {
-        const n = num(units);
-        if (n !== null) items[id] = n;
-    });
-    return { items, pieces: strings(r.pieces) };
+    const units = (value: unknown): Record<string, number> => {
+        const out: Record<string, number> = {};
+        Object.entries(asRecord(value) ?? {}).forEach(([id, n]) => {
+            const v = num(n);
+            if (v !== null) out[id] = v;
+        });
+        return out;
+    };
+    return { items: units(r.items), pieces: strings(r.pieces), incoming: units(r.incoming) };
 }
 
-export const fetchCountReview = async (id: string) => normalizeReview(await get(COMMERCE_STOCK_COUNT_REVIEW(id)));
+/** `forPost`: the review the Post dialog binds a post to (the server reads it on the primary). */
+export const fetchCountReview = async (id: string, forPost = false) =>
+    normalizeReview(await get(COMMERCE_STOCK_COUNT_REVIEW(id), forPost ? { forPost: true } : {}));
 export const postCount = async (
     id: string,
     body: {

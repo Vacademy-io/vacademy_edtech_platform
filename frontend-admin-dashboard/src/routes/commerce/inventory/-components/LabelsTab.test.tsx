@@ -69,7 +69,7 @@ vi.mock('../-shared/inventory-api', () => ({
 
 import * as orderApi from '@/routes/commerce/orders/-shared/order-api';
 import * as api from '../-shared/inventory-api';
-import { accessFor, labelRow, networkError, place, variantScan, WAREHOUSE } from '../-shared/inventory-test-fixtures';
+import { accessFor, labelRow, networkError, place, serverError, variantScan, WAREHOUSE } from '../-shared/inventory-test-fixtures';
 import { LabelsTab } from './LabelsTab';
 import type { ReceiptLine } from '../-shared/inventory-types';
 import { PrintLabelsDialog } from './PrintLabelsDialog';
@@ -486,6 +486,25 @@ describe('labels of more than 500 (item 1)', () => {
         await waitFor(() => expect(mocked.markLabelsPrinted).toHaveBeenCalledTimes(2), slow);
         const ids = mocked.markLabelsPrinted.mock.calls.map((call) => call[0].client_request_id);
         expect(ids[1]).not.toBe(ids[0]);
+    }, 60_000);
+
+    it('a next round whose rows were all printed elsewhere says nothing is left and closes', async () => {
+        mocked.fetchLabelPrintData
+            .mockResolvedValueOnce(round(500, 100, 'lr-1'))
+            .mockRejectedValueOnce(serverError(409, 'LABEL_NOT_PENDING: use Reprint for a label that was printed'));
+        const closed = vi.fn();
+        const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={client}>
+                <PrintLabelsDialog open onOpenChange={closed} rows={[labelRow('lr-1', { quantity: 600 })]} />
+            </QueryClientProvider>
+        );
+        fireEvent.click(screen.getByTestId('labels-print'));
+        fireEvent.click(await screen.findByTestId('labels-mark-printed', {}, slow));
+        await screen.findByTestId('labels-rest', {}, slow);
+        fireEvent.click(screen.getByTestId('labels-print'));
+        await waitFor(() => expect(closed).toHaveBeenCalledWith(false), slow);
+        expect(screen.queryByRole('alert')).toBeNull();
     }, 60_000);
 });
 

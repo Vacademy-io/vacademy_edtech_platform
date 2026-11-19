@@ -42,7 +42,7 @@ export function PostCountDialog({
     const invalidate = useInvalidateInventory();
     const write = useInventoryWrite('cnt');
     const access = useInventoryAccess();
-    const review = useCountReview(view.id, open);
+    const review = useCountReview(view.id, open, true);
     const [choice, setChoice] = useState<UncountedChoice | null>(null);
     const [measuredOk, setMeasuredOk] = useState(false);
     const [changed, setChanged] = useState(false);

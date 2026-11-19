@@ -256,11 +256,12 @@ export function useCount(id: string) {
 }
 
 /** The differences, read only when asked for (never while counting blind). */
-export function useCountReview(id: string, open: boolean) {
+/** `forPost`: the review a post binds to (read on the primary); the panel's review stays on the replica. */
+export function useCountReview(id: string, open: boolean, forPost = false) {
     const { enabled } = useInventoryAccess();
     return useQuery({
-        queryKey: inventoryKeys.review(id),
-        queryFn: () => fetchCountReview(id),
+        queryKey: forPost ? ([...inventoryKeys.review(id), 'post'] as const) : inventoryKeys.review(id),
+        queryFn: () => fetchCountReview(id, forPost),
         enabled: enabled && open && !!id,
         staleTime: 0,
     });

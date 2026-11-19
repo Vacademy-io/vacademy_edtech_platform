@@ -3131,6 +3131,7 @@
             "restWaiting": "{{count}} labels are still waiting (at most {{max}} print at a time). Press Print for the next ones.",
             "notQueued": "{{count}} units of {{item}} have no label: one receipt line queues at most {{max}} labels. Use Reprint to queue more.",
             "printedSoFar": "{{count}} printed",
+            "nothingLeft": "Nothing left to print: the other labels were printed or cancelled elsewhere.",
             "skippedElsewhere": "{{count}} labels were left out: they were printed or cancelled elsewhere meanwhile: {{items}}"
         },
         "reprint": {
