@@ -235,8 +235,11 @@ public class NotificationEmailBody {
     }
 
     /**
-     * One body for the whole batch: {{username}}, {{password}} and {{login_url}} are filled
-     * per recipient, because each learner may sign in to a different LMS site.
+     * One body for the whole batch: {{greeting}}, {{username}}, {{password}} and {{login_url}}
+     * are filled per recipient, because each learner has their own name and may sign in to a
+     * different LMS site.
+     *
+     * @param themeColor institute_theme_code (preset or hex); blank/unknown paints neutral
      */
     public static String sendUserPasswords(String service, String themeColor) {
         String theme = ThemeColorResolver.resolveOrNeutral(themeColor);
@@ -308,7 +311,7 @@ public class NotificationEmailBody {
                             <h2>Access Your Account</h2>
                         </div>
                         <div class="content">
-                            <p>Dear User,</p>
+                            <p>{{greeting}}</p>
                             <p>These are your credentials to access the app:</p>
                             <div class="credentials">
                                 <p><strong>Username:</strong> {{username}}</p>
