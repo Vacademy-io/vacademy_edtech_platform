@@ -59,6 +59,7 @@ import {
     isEmptyLearningCard,
     isEmptyTestimonial,
 } from '../-utils/course-page-template';
+import { extractYouTubeVideoId } from '@/utils/youtube';
 
 const coursePageTemplateSchema = z.object({
     tagline: z.string(),
@@ -200,13 +201,6 @@ export const step1Schema = z.object({
         .optional(),
 });
 export type Step1Data = z.infer<typeof step1Schema>;
-
-// Utility to extract YouTube video ID
-const extractYouTubeVideoId = (url: string): string | null => {
-    const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[1] && match[1].length === 11 ? match[1] : null;
-};
 
 export const AddCourseStep1 = ({
     onNext,

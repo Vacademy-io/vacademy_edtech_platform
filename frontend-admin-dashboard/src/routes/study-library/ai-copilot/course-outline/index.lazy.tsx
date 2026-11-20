@@ -94,6 +94,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useInstituteDetailsStore } from '@/stores/students/students-list/useInstituteDetailsStore';
 import { getTerminology, getTerminologyPlural } from '@/components/common/layout-container/sidebar/utils';
 import { ContentTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { extractYouTubeVideoId } from '@/utils/youtube';
 
 export const Route = createLazyFileRoute('/study-library/ai-copilot/course-outline/')({
     component: RouteComponent,
@@ -366,13 +367,6 @@ const mockCourseData: CourseData = {
             hasHomework: true,
         }),
     ],
-};
-
-// Helper function to extract YouTube video ID
-const extractYouTubeVideoId = (url: string): string | null => {
-    const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[1] && match[1].length === 11 ? match[1] : null;
 };
 
 // Helper function to convert YouTube URL to embed URL

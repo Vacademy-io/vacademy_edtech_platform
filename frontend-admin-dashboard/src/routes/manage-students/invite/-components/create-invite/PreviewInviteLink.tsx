@@ -32,19 +32,13 @@ import { getCurrencySymbol, getPaymentPlanIcon } from './PaymentPlansDialog';
 import { getAllUniqueFeatures } from './-components/PaymentPlanCard';
 import { formatPlanPrice } from '@/utils/finance-utils';
 import { useTranslation } from 'react-i18next';
+import { extractYouTubeVideoId } from '@/utils/youtube';
 
 export interface PreviewInviteLinkProps {
     form: UseFormReturn<InviteLinkFormValues>;
     levelName: string;
     instituteLogo: string;
 }
-
-// Utility to extract YouTube video ID
-const extractYouTubeVideoId = (url: string): string | null => {
-    const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[1] && match[1].length === 11 ? match[1] : null;
-};
 
 const PreviewInviteLink = ({ form, levelName, instituteLogo }: PreviewInviteLinkProps) => {
     const { t } = useTranslation('manageStudentsPreviewInviteLink');
