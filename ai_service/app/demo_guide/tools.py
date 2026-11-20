@@ -48,6 +48,8 @@ class TurnContext:
     # what this turn will show the visitor
     tour_id: Optional[str] = None
     screen: Optional[str] = None
+    after_tour: Optional[str] = None                      # set on a tour_end turn
+    audience: Optional[str] = None
     choices: List[Dict[str, str]] = field(default_factory=list)
     form_reason: Optional[str] = None
     notes: Dict[str, str] = field(default_factory=dict)

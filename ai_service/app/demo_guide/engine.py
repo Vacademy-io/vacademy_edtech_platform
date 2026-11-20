@@ -262,6 +262,10 @@ async def turn(session: Dict[str, Any], product: S.Product, body: Dict[str, Any]
                         knowledge=await cat.load_knowledge(product.knowledge_url),
                         lead_saved=bool(session.get("lead_id")) or kind == "contact_saved",
                         forms_shown=forms_shown, tours_seen=seen)
+    if kind == "tour_end":
+        ctx.after_tour = user_actions["tour_id"]
+        known = session.get("qualification") if isinstance(session.get("qualification"), dict) else {}
+        ctx.audience = str(known.get("audience") or "") or None
     system = build_system_prompt(
         product_name=str(catalogue.get("product") or product.key).capitalize(), lang=lang,
         catalogue=cat.prompt_view(catalogue, lang),
@@ -429,6 +433,9 @@ async def _model_reply(ctx: T.TurnContext, reply: _Reply, messages: List[Dict[st
         yield ("error", {"code": "internal", "message": MESSAGES["internal"]})
         return
 
+    if ctx.after_tour and not (ctx.choices or ctx.tour_id or ctx.form_reason):
+        # A tour just ended and the model offered nothing to tap: offer the nearest unseen tours.
+        ctx.choices = cat.next_tours(ctx.catalogue, ctx.after_tour, ctx.tours_seen, ctx.audience, ctx.lang)
     reply.extra.update({"model": model_used, "tools": tools_used})
     reply.save(ctx, final=True)
     if ctx.choices:

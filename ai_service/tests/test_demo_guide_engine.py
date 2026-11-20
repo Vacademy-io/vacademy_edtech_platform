@@ -267,6 +267,8 @@ def test_tour_end_marks_the_tour_and_tells_the_model(fx):
     llm = ScriptedLLM([tokens("What would you like to see next?")])
     events = run(fx, {"kind": "tour_end", "tour_id": "fee-collection", "finished": False}, llm=llm)
     assert names(events)[-1] == "done"
+    offered = [d for n, d in events if n == "choices"][0]["options"]       # the server offers the other tours
+    assert offered and "fee-collection" not in [o["id"] for o in offered] and all(o["label"] for o in offered)
     assert fx.store.sessions[fx.sid]["tours"] == [{"id": "fee-collection", "finished": False}]
     assert llm.calls[0]["messages"][-1]["content"].startswith(
         '[event] The tour "Fee collection" was stopped early by the visitor.')

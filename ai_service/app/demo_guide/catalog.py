@@ -149,6 +149,29 @@ def audiences(catalog: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [a for a in ((catalog or {}).get("audiences") or []) if isinstance(a, dict) and isinstance(a.get("id"), str)]
 
 
+def next_tours(catalog: Optional[Dict[str, Any]], after: str, seen: List[str], audience: Any, lang: str,
+               limit: int = 4) -> List[Dict[str, str]]:
+    """Choices to show when a tour ends and the guide offered none: the tour's own
+    ``next`` ids first, then its neighbours in catalogue order (authors keep related
+    tours together), leaving out tours already played and tours for another audience."""
+    all_tours = tours(catalog)
+    by_id = {t["id"]: t for t in all_tours}
+    here = next((i for i, t in enumerate(all_tours) if t["id"] == after), 0)
+    order = [by_id[i] for i in ((by_id.get(after) or {}).get("next") or []) if isinstance(i, str) and i in by_id]
+    order += sorted(all_tours, key=lambda t: abs(all_tours.index(t) - here))
+    aud = str(audience or "").strip().lower()
+    out: List[Dict[str, str]] = []
+    for t in order:
+        fits = not t.get("audiences") or not aud or aud in t["audiences"]
+        label = _clip(text_in(t.get("title"), lang), 60)
+        if t["id"] == after or t["id"] in seen or not fits or not label or any(o["id"] == t["id"] for o in out):
+            continue
+        out.append({"id": t["id"][:40], "label": label})
+        if len(out) >= limit:
+            break
+    return out
+
+
 def screens(catalog: Optional[Dict[str, Any]]) -> List[Dict[str, str]]:
     """Screens the guide may open while it answers: [{route, label}], routes starting with '/'."""
     out = []
