@@ -5,13 +5,9 @@ import ProgressReports from './progressReports';
 import BatchAiAnalysis from './batchAiAnalysis';
 import LearnerProgressReports from './learnerProgressReports';
 import BatchOverviewReport from './batchOverviewReport';
-import BatchLiveSessions from './batchLiveSessions';
-import { ChartPieSlice, UsersThree, VideoCamera } from '@phosphor-icons/react';
-import {
-    getTerminology,
-    getTerminologyPlural,
-} from '@/components/common/layout-container/sidebar/utils';
-import { ContentTerms, RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
+import { ChartPieSlice, UsersThree } from '@phosphor-icons/react';
+import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
+import { RoleTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { useLearnerProgressReportEnabled } from './useLearnerProgressReportEnabled';
 
 interface BatchReportsProps {
@@ -46,13 +42,6 @@ export default function BatchReports({ packageSessionId, courseId }: BatchReport
                         >
                             <ChartPieSlice size={16} />
                             Overview
-                        </TabsTrigger>
-                        <TabsTrigger
-                            value="live-sessions"
-                            className="flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all duration-200 hover:bg-primary-50 hover:text-primary-600 data-[state=active]:bg-primary-500 data-[state=active]:text-white data-[state=active]:shadow-sm"
-                        >
-                            <VideoCamera size={16} />
-                            {getTerminologyPlural(ContentTerms.LiveSession, SystemTerms.LiveSession)}
                         </TabsTrigger>
                         {showLearnerProgress && (
                             <TabsTrigger
@@ -103,10 +92,6 @@ export default function BatchReports({ packageSessionId, courseId }: BatchReport
                 <div className="bg-white">
                     <TabsContent value="overview" className="mt-0 p-6 focus-visible:outline-none">
                         <BatchOverviewReport fixedPackageSessionId={packageSessionId} />
-                    </TabsContent>
-
-                    <TabsContent value="live-sessions" className="mt-0 p-6 focus-visible:outline-none">
-                        <BatchLiveSessions fixedPackageSessionId={packageSessionId} />
                     </TabsContent>
 
                     {showLearnerProgress && (
