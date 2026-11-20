@@ -205,6 +205,48 @@ class ImportFileParserTest {
         assertMessage("too large once unpacked", () -> parser.parse("products.xlsx", out.toByteArray()));
     }
 
+    @Test
+    void readTableGivesTheSameCellsAsParseForCsvAndXlsx() throws IOException {
+        String csv = "\uFEFFhandle,name_en,sku,barcode,price\ntest-shirt,Test Shirt,TST-0001,8901234567890,1350.50\n"
+                + "\ntest-shirt,,TST-0002,,1350\n";
+        java.util.List<java.util.List<String>> table = ImportFileParser.readTable("costs.csv", utf8(csv));
+        ParsedImportFile parsed = parser.parse("costs.csv", utf8(csv));
+        assertEquals(4, table.size(), "blank rows keep their place");
+        assertEquals(java.util.List.of("handle", "name_en", "sku", "barcode", "price"), table.get(0));
+        assertEquals(parsed.rows().get(0).get(ImportColumn.SKU), table.get(1).get(2));
+        assertEquals(parsed.rows().get(0).get(ImportColumn.PRICE), table.get(1).get(4));
+        assertEquals(parsed.rows().get(1).get(ImportColumn.SKU), table.get(3).get(2));
+        assertEquals(parsed.rows().get(1).rowNumber(), 4);
+
+        byte[] workbook;
+        try (XSSFWorkbook book = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheet = book.createSheet("products");
+            String[] headers = {"handle", "name_en", "sku", "barcode", "price"};
+            Row header = sheet.createRow(0);
+            for (int i = 0; i < headers.length; i++) {
+                header.createCell(i).setCellValue(headers[i]);
+            }
+            Row first = sheet.createRow(1);
+            first.createCell(0).setCellValue("test-shirt");
+            first.createCell(2).setCellValue("TST-0001");
+            first.createCell(3).setCellValue(8901234567890d);
+            first.createCell(4).setCellValue(1350.5d);
+            book.write(out);
+            workbook = out.toByteArray();
+        }
+        java.util.List<java.util.List<String>> xlsx = ImportFileParser.readTable("costs.xlsx", workbook);
+        ParsedImportFile parsedXlsx = parser.parse("costs.xlsx", workbook);
+        assertEquals(parsedXlsx.rows().get(0).get(ImportColumn.SKU), xlsx.get(1).get(2));
+        assertEquals(parsedXlsx.rows().get(0).get(ImportColumn.BARCODE), xlsx.get(1).get(3));
+        assertEquals("1350.5", xlsx.get(1).get(4));
+        assertNull(xlsx.get(1).get(1), "a cell the sheet leaves out stays blank");
+
+        assertMessage("empty", () -> ImportFileParser.readTable("costs.csv", new byte[0]));
+        assertMessage("only .csv", () -> ImportFileParser.readTable("costs.txt", utf8("sku\n")));
+        assertMessage("larger than", () -> ImportFileParser.readTable("costs.csv",
+                new byte[ImportLimits.MAX_FILE_BYTES + 1]));
+    }
+
     private static void assertMessage(String part, org.junit.jupiter.api.function.Executable call) {
         InvalidRequestException e = assertThrows(InvalidRequestException.class, call);
         assertTrue(e.getMessage().contains(part), e.getMessage());

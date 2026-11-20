@@ -38,6 +38,7 @@ import {
     type ImportValidation,
 } from '@/routes/commerce/-shared/catalogue-types';
 import { readCommerceError } from '@/routes/commerce/-shared/commerce-errors';
+import { ItemCostImportCard } from './ItemCostImportCard';
 
 const ACCEPT = '.csv,.xlsx';
 /** Rows of problems drawn on the page; the error-rows file has all of them. */
@@ -67,6 +68,7 @@ export function ProductImportPage() {
             backTo={{ to: '/commerce/products', label: t('products.editor.back') }}
         >
             <ImportContent />
+            <ItemCostImportCard />
         </CommercePage>
     );
 }
