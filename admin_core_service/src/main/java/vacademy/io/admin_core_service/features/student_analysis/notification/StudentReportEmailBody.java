@@ -1,5 +1,7 @@
 package vacademy.io.admin_core_service.features.student_analysis.notification;
 
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
+
 /**
  * Themed HTML email body for the "your report is ready" learner notification.
  * Mirrors the certificate/live-class email pattern: institute theme color + name, learner name,
@@ -7,14 +9,16 @@ package vacademy.io.admin_core_service.features.student_analysis.notification;
  */
 public final class StudentReportEmailBody {
 
-    private static final String DEFAULT_THEME = "#ed7424";
+    private static final String DEFAULT_THEME = "#333333";
 
     private StudentReportEmailBody() {
     }
 
     public static String build(String themeColor, String instituteName, String studentName,
                                String reportName, String reportUrl) {
-        String theme = (themeColor == null || themeColor.isBlank()) ? DEFAULT_THEME : themeColor.trim();
+        // institute_theme_code may be a preset name ("primary", "blue", ...) that CSS cannot paint.
+        String resolvedTheme = ThemeColorResolver.resolve(themeColor);
+        String theme = resolvedTheme != null ? resolvedTheme : DEFAULT_THEME;
         return """
                 <!DOCTYPE html>
                 <html>

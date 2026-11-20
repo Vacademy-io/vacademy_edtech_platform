@@ -17,6 +17,7 @@ import vacademy.io.admin_core_service.features.notification.dto.NotificationToUs
 import vacademy.io.admin_core_service.features.notification.dto.UnifiedSendRequest;
 import vacademy.io.admin_core_service.features.notification.util.PhoneCountryUtil;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.institute.entity.Institute;
 
@@ -62,7 +63,7 @@ public class MentorshipNotificationService {
 
     /** Global-default templates live under this pseudo institute (see V424 seed). */
     private static final String DEFAULT_INSTITUTE_ID = "DEFAULT";
-    private static final String FALLBACK_THEME_COLOR = "#FF9800";
+    private static final String FALLBACK_THEME_COLOR = "#333333";
     private static final String FALLBACK_SUPPORT_EMAIL = "support@vacademy.io";
     private static final String FALLBACK_LEARNER_URL = "https://learner.vacademy.io";
 
@@ -524,10 +525,9 @@ public class MentorshipNotificationService {
 
     /** Accept a raw hex (with/without '#') or CSS keyword; blank -> fallback. Mirrors doubt emails. */
     private static String normalizeThemeColor(String themeCode) {
-        if (themeCode == null || themeCode.trim().isEmpty()) return FALLBACK_THEME_COLOR;
-        String t = themeCode.trim();
-        if (t.matches("^[0-9A-Fa-f]{6}$")) return "#" + t;
-        return t;
+        // Hex or a theme preset ("primary", "blue", ...) -> hex; anything else -> neutral.
+        String resolved = ThemeColorResolver.resolve(themeCode);
+        return resolved != null ? resolved : FALLBACK_THEME_COLOR;
     }
 
     // --------------------------------------------------------------- channels

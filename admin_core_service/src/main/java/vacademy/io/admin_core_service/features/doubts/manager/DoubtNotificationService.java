@@ -19,6 +19,7 @@ import vacademy.io.admin_core_service.features.domain_routing.entity.InstituteDo
 import vacademy.io.admin_core_service.features.domain_routing.repository.InstituteDomainRoutingRepository;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.institute.entity.Institute;
 
@@ -57,8 +58,8 @@ public class DoubtNotificationService {
 
     /** Last-resort sender when an institute has no utility email configured. */
     private static final String FALLBACK_SUPPORT_EMAIL = "support@vacademy.io";
-    /** Matches the default in DynamicNotificationService's theme resolver. */
-    private static final String FALLBACK_THEME_COLOR = "#FF9800";
+    /** Neutral colour when the institute has no usable theme (never a platform brand colour). */
+    private static final String FALLBACK_THEME_COLOR = "#333333";
 
     /**
      * Sentinel {@code institute_id} for the single global default template row. V215 inserts
@@ -634,10 +635,12 @@ public class DoubtNotificationService {
      * Only when the column is null/blank do we use the fallback.
      */
     private String normalizeThemeColor(String themeCode) {
+        // Hex (with/without '#') or a theme preset such as "primary"/"blue" -> hex. A preset
+        // name is not a CSS colour ("primary" rendered as no colour at all), so map it first.
+        String resolved = ThemeColorResolver.resolve(themeCode);
+        if (resolved != null) return resolved;
         if (themeCode == null || themeCode.trim().isEmpty()) return FALLBACK_THEME_COLOR;
-        String t = themeCode.trim();
-        if (t.matches("^[0-9A-Fa-f]{6}$")) return "#" + t;  // hex without '#' → normalize
-        return t;                                            // hex with '#', CSS keyword, or any valid CSS color → pass through
+        return themeCode.trim();                             // other CSS keyword → pass through
     }
 
     /** Strip HTML and truncate for push body / placeholder use. */

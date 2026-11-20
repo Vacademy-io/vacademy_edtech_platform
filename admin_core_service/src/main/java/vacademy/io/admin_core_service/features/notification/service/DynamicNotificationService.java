@@ -21,6 +21,7 @@ import vacademy.io.admin_core_service.features.notification_service.service.Send
 import vacademy.io.admin_core_service.features.institute.entity.Template;
 import vacademy.io.admin_core_service.features.institute.repository.TemplateRepository;
 import vacademy.io.admin_core_service.features.packages.repository.PackageSessionRepository;
+import vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver;
 import vacademy.io.admin_core_service.features.user_subscription.entity.PaymentOption;
 import vacademy.io.admin_core_service.features.user_subscription.service.CouponCodeService;
 import vacademy.io.admin_core_service.features.learner.service.LearnerInvitationLinkService;
@@ -132,7 +133,10 @@ public class DynamicNotificationService {
                     if (subOrgInstitute != null) {
                         templateVars.setInstituteName(subOrgInstitute.getInstituteName());
                         if (subOrgInstitute.getInstituteThemeCode() != null) {
-                            templateVars.setThemeColor(subOrgInstitute.getInstituteThemeCode().trim());
+                            // Presets ("primary", "blue") are not CSS colours; map them, keep anything else as-is.
+                            String subOrgHex = ThemeColorResolver.resolve(subOrgInstitute.getInstituteThemeCode());
+                            templateVars.setThemeColor(subOrgHex != null ? subOrgHex
+                                    : subOrgInstitute.getInstituteThemeCode().trim());
                         }
                     }
                 } catch (Exception e) {
@@ -406,24 +410,10 @@ public class DynamicNotificationService {
     }
 
     private String getThemeColorFromInstitute(Institute institute) {
-        if (institute == null || institute.getInstituteThemeCode() == null ||
-                institute.getInstituteThemeCode().trim().isEmpty()) {
-            return "#FF9800"; // Default orange color
-        }
-
-        String themeCode = institute.getInstituteThemeCode().trim();
-
-        // If theme code is already a hex color, return it
-        if (themeCode.startsWith("#") && themeCode.length() == 7) {
-            return themeCode;
-        }
-
-        // If theme code is a hex color without #, add it
-        if (themeCode.matches("^[0-9A-Fa-f]{6}$")) {
-            return "#" + themeCode;
-        }
-
-        return "#FF9800"; // Default orange color
+        // Hex or a theme preset ("primary", "blue", ...) -> hex. Presets used to fall through to
+        // a fixed orange, so a blue institute got orange mails. Unknown/blank -> neutral.
+        String resolved = institute == null ? null : ThemeColorResolver.resolve(institute.getInstituteThemeCode());
+        return resolved != null ? resolved : "#333333";
     }
 
     public void sendReferralInvitationNotification(
