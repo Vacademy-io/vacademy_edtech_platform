@@ -9,6 +9,10 @@ export interface ProductPlan {
     price_inr: number | null;
     credits: number | null;
     users: number | null;
+    /** PLATFORM (dashboard) or API on a product sold both ways (Telleo); null = every workspace. */
+    access_mode?: 'PLATFORM' | 'API' | null;
+    /** Months one period lasts when it differs from plan_validity_months (monthly next to yearly). */
+    validity_months?: number | null;
 }
 
 /** What this Evalezy workspace bought, from admin-core plan-access. */

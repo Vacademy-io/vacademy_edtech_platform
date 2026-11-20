@@ -17,7 +17,7 @@ import { useInstituteDetailsStore } from '@/stores/students/students-list/useIns
 import { RouteAccessGuard } from './route-access-guard';
 import { TrialBanner } from '@/components/common/trial-banner/TrialBanner';
 import { useNavSnapshotStore } from '@/lib/capabilities/use-entitlement';
-import { PLANS_SETTINGS_PATH } from '@/services/ai-plans/storefront';
+import { TELLEO_PLANS_PATH } from '@/services/ai-plans/storefront';
 import { isIOS } from '@/native/platform';
 
 /**
@@ -157,7 +157,7 @@ export const LayoutContainer = ({
             >
                 <Navbar showMobileBackButton={showMobileBackButton} />
                 {/* Product sign-ups shown the four-page dashboard (Telleo): the platform trial
-                    banner, asked only for them. Recharge opens Settings, AI plan. */}
+                    banner, asked only for them. Upgrade opens Telleo's plan page. */}
                 <TrialBanner
                     ns="telleoSetup"
                     enabled={allowListOnly}
@@ -165,7 +165,7 @@ export const LayoutContainer = ({
                         // Apple Guideline 3.1.1: no purchase link in the iPhone app.
                         isIOS() ? null : (
                             <a
-                                href={PLANS_SETTINGS_PATH}
+                                href={TELLEO_PLANS_PATH}
                                 className="shrink-0 font-semibold underline"
                             >
                                 {label}
