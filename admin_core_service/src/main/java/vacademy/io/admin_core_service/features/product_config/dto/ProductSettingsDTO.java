@@ -67,6 +67,9 @@ public class ProductSettingsDTO {
     /** Links the sign-up welcome mail lists, in order (the product's video tutorials). None = no list. */
     private java.util.List<ProductLinkDTO> welcomeLinks;
 
+    /** Short links on the product's website (&lt;website&gt;/&lt;code&gt;), each with a source and campaign. None = no list. */
+    private java.util.List<ProductShortLinkDTO> shortLinks;
+
     private String updatedBy;
     private String updatedAt;
 }

@@ -12,6 +12,7 @@ import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductPlanDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO;
+import vacademy.io.admin_core_service.features.product_config.dto.ProductShortLinkDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.PublicProductOfferDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.SignupRulesDTO;
 
@@ -58,6 +59,11 @@ public class PlatformProductService {
     /** A plan for the dashboard or for API use (ProductPlanDTO.accessMode). */
     static final java.util.Set<String> ACCESS_MODES = java.util.Set.of("PLATFORM", "API");
     static final int MAX_WELCOME_LINKS = 12;
+    static final int MAX_SHORT_LINKS = 50;
+    /** A short link's path: it becomes a page address on the product's website. */
+    private static final Pattern SHORT_CODE = Pattern.compile("^[a-z0-9][a-z0-9-]{0,29}$");
+    /** A utm value as reports group it: lowercase, no spaces. */
+    private static final Pattern UTM_VALUE = Pattern.compile("^[a-z0-9][a-z0-9_.-]{0,59}$");
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -120,6 +126,8 @@ public class PlatformProductService {
         row.put("signup_rules", body.getSignupRules() != null ? body.getSignupRules() : existing.getSignupRules());
         row.put("welcome_links", body.getWelcomeLinks() != null
                 ? cleanLinks(body.getWelcomeLinks()) : existing.getWelcomeLinks());
+        row.put("short_links", body.getShortLinks() != null
+                ? cleanShortLinks(body.getShortLinks()) : existing.getShortLinks());
         if (jdbcTemplate.update(UPDATE, toJson(row), actor, key) == 0) {
             throw new VacademyException(HttpStatus.NOT_FOUND, "No such product");
         }
@@ -151,6 +159,35 @@ public class PlatformProductService {
         validatePlans(b);
         validateSignupRules(b.getSignupRules());
         validateWelcomeLinks(b.getWelcomeLinks());
+        validateShortLinks(b.getShortLinks());
+    }
+
+    /** Checked as saved: trimmed and lowercased (cleanShortLinks). */
+    static void validateShortLinks(List<ProductShortLinkDTO> links) {
+        if (links == null) {
+            return;
+        }
+        require(links.size() <= MAX_SHORT_LINKS, "At most " + MAX_SHORT_LINKS + " short links");
+        java.util.Set<String> codes = new java.util.HashSet<>();
+        for (ProductShortLinkDTO link : links) {
+            require(link != null, "A short link is empty");
+            String code = lower(link.getCode());
+            require(code != null && SHORT_CODE.matcher(code).matches(),
+                    "Short link must be 1-30 lowercase letters, numbers or -, starting with a letter or number: "
+                            + link.getCode());
+            require(codes.add(code), "Short link used twice: " + code);
+            String source = lower(link.getSource());
+            require(source != null && UTM_VALUE.matcher(source).matches(),
+                    "Short link " + code + " needs a source of lowercase letters, numbers, - _ or . (no spaces)");
+            String campaign = lower(link.getCampaign());
+            require(campaign == null || UTM_VALUE.matcher(campaign).matches(),
+                    "Short link " + code + ": the campaign can hold only lowercase letters, numbers, - _ or . (no spaces)");
+        }
+    }
+
+    /** Trimmed and lowercased; blank is null. */
+    private static String lower(String value) {
+        return StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : null;
     }
 
     static void validateWelcomeLinks(List<ProductLinkDTO> links) {
@@ -249,6 +286,11 @@ public class PlatformProductService {
     private static List<ProductLinkDTO> cleanLinks(List<ProductLinkDTO> links) {
         return links.stream().map(l -> ProductLinkDTO.builder().title(l.getTitle().trim()).url(l.getUrl().trim())
                 .subtitle(emptyToNull(l.getSubtitle())).build()).toList();
+    }
+
+    private static List<ProductShortLinkDTO> cleanShortLinks(List<ProductShortLinkDTO> links) {
+        return links.stream().map(l -> ProductShortLinkDTO.builder().code(lower(l.getCode()))
+                .source(lower(l.getSource())).campaign(lower(l.getCampaign())).build()).toList();
     }
 
     /**
