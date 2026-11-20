@@ -2180,6 +2180,43 @@ public class ApplicantService {
                                 .toList();
         }
 
+    /**
+     * The shared learner portal (default.learner.portal.url). Institutes without a portal of their
+     * own have their learners sign in there, so their links fall back to it rather than vanish.
+     */
+    @org.springframework.beans.factory.annotation.Value("${default.learner.portal.url:}")
+    private String defaultLearnerPortalUrl;
+
+    private String defaultPortalOrNull() {
+        if (defaultLearnerPortalUrl == null || defaultLearnerPortalUrl.isBlank()) {
+            return null;
+        }
+        String base = defaultLearnerPortalUrl.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
+    }
+
+        /**
+         * The institute's own learner-portal origin ({@code https://host}, no trailing slash), else
+         * the shared learner portal its learners sign in to; null only when neither is configured.
+         */
+        private String resolveInstitutePortalUrl(Institute institute) {
+                if (institute == null || !org.springframework.util.StringUtils
+                                .hasText(institute.getLearnerPortalBaseUrl())) {
+                        return defaultPortalOrNull();
+                }
+                String base = institute.getLearnerPortalBaseUrl().trim();
+                if (!base.startsWith("http://") && !base.startsWith("https://")) {
+                        base = "https://" + base;
+                }
+                while (base.endsWith("/")) {
+                        base = base.substring(0, base.length() - 1);
+                }
+                return base;
+        }
+
         /**
          * Send application confirmation email with credentials
          * Tries to fetch template from notification_event_config, falls back to default
@@ -2227,8 +2264,9 @@ public class ApplicantService {
                                 }
                         }
 
-                        // Build portal URL (hardcoded for now)
-                        String portalUrl = "https://learner-portal.vacademy.io";
+                        // The institute's own learner portal; null when it has none, and the
+                        // default mails then leave the portal link out.
+                        String portalUrl = resolveInstitutePortalUrl(institute);
 
                         // Format submission time
                         java.time.ZonedDateTime now = java.time.ZonedDateTime.now();
@@ -2393,9 +2431,14 @@ public class ApplicantService {
                                 + "</span></p>" +
                                 "<p><span class='detail-label'>Password:</span> <span class='detail-value'>" + password
                                 + "</span></p>" +
-                                "<p><span class='detail-label'>Portal URL:</span> <a href='" + portalUrl + "'>"
-                                + portalUrl + "</a></p>" +
-                                "<a href='" + portalUrl + "' class='button'>Access Portal Now</a>" +
+                                (portalUrl != null
+                                                ? "<p><span class='detail-label'>Portal URL:</span> <a href='"
+                                                                + portalUrl + "'>"
+                                                                + portalUrl + "</a></p>" +
+                                                                "<a href='" + portalUrl
+                                                                + "' class='button'>Access Portal Now</a>"
+                                                : "")
+                                +
                                 "</div>" +
                                 "<div class='detail-section'>" +
                                 "<h3>Next Steps</h3>" +
@@ -2472,12 +2515,19 @@ public class ApplicantService {
                                 "<div class='cred-row'>Username: <span class='cred-val'>" + username + "</span></div>" +
                                 "<div class='cred-row'>Password: <span class='cred-val'>" + password + "</span></div>" +
                                 "</div>" +
-                                "<div style='text-align: center; margin: 40px 0;'>" +
-                                "<a href='" + loginUrl + "' class='button'>Login to Parent Portal</a>" +
-                                "</div>" +
-                                "<p>If you have any questions before classes begin, please visit our <a href='"
-                                + websiteUrl
-                                + "' style='color: #ED8F03;'>website</a> or reach out to our administration team.</p>" +
+                                (loginUrl != null
+                                                ? "<div style='text-align: center; margin: 40px 0;'>" +
+                                                                "<a href='" + loginUrl
+                                                                + "' class='button'>Login to Parent Portal</a>" +
+                                                                "</div>"
+                                                : "")
+                                +
+                                (websiteUrl != null
+                                                ? "<p>If you have any questions before classes begin, please visit our <a href='"
+                                                                + websiteUrl
+                                                                + "' style='color: #ED8F03;'>website</a> or reach out to our administration team.</p>"
+                                                : "<p>If you have any questions before classes begin, please reach out to our administration team.</p>")
+                                +
                                 "</div>" +
                                 "<div class='footer'>" +
                                 "<p>You are receiving this email because you have successfully enrolled at "
