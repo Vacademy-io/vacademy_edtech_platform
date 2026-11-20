@@ -40,6 +40,9 @@ from .report import build_and_post_report, report_spool_sweeper
 
 logging.basicConfig(level=logging.INFO,
                     format="%(asctime)s %(levelname)s %(name)s %(message)s")
+# Pipecat's loguru output: INFO plus a short DEBUG allowlist (app/pipecat_logs.py).
+from . import pipecat_logs  # noqa: E402
+pipecat_logs.configure()
 from .sarvam_v4_voices import SARVAM_V4_MODEL  # noqa: E402
 
 # Before any HTTP session exists: every later aiohttp/httpx client is covered.
@@ -84,6 +87,13 @@ async def lifespan(app: FastAPI):
             logger.info("lifespan: LLM provider pre-warmed")
         except Exception:
             logger.exception("lifespan: LLM pre-warm failed (non-fatal)")
+        try:
+            # Silero + Smart Turn loaded once here, shared by every call
+            # (app/audio_models.py), so no call pays the load at answer time.
+            from . import audio_models
+            await asyncio.to_thread(audio_models.warm)
+        except Exception:
+            logger.exception("lifespan: audio model pre-load failed (non-fatal)")
         # The heavy imports are in: freeze them out of every future collection
         # (see app/memory.py) — but only while no call is live.
         if _active_calls == 0:
