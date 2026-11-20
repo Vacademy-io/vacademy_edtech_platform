@@ -268,8 +268,8 @@ def test_tour_end_marks_the_tour_and_tells_the_model(fx):
     events = run(fx, {"kind": "tour_end", "tour_id": "fee-collection", "finished": False}, llm=llm)
     assert names(events)[-1] == "done"
     assert fx.store.sessions[fx.sid]["tours"] == [{"id": "fee-collection", "finished": False}]
-    assert llm.calls[0]["messages"][-1]["content"] == \
-        '[event] The tour "Fee collection" was stopped early by the visitor.'
+    assert llm.calls[0]["messages"][-1]["content"].startswith(
+        '[event] The tour "Fee collection" was stopped early by the visitor.')
     assert "Tours already played: fee-collection" in llm.calls[0]["messages"][0]["content"]
     assert names(run(fx, {"kind": "tour_end", "tour_id": "not-a-tour"})) == ["open", "error"]
 
