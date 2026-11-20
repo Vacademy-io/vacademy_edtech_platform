@@ -3,5 +3,6 @@
     "addManually": "Add Manually",
     "uploadDocument": "Upload Document",
     "createWithAi": "Create with AI",
-    "uploadCsvExcel": "Upload CSV/Excel"
+    "uploadCsvExcel": "Upload CSV/Excel",
+    "fromQuestionBank": "From Question Bank / Paper"
 }
