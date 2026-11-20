@@ -501,6 +501,12 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
 
     // ==================== COMMUNICATION TIMELINE METHODS ====================
 
+    // Every timeline query below hides the campaign tracking row: the EMAIL row an announcement
+    // writes beside the real send, holding only the campaign title. The real send is the row with
+    // the content and the SES events, so the learner side view keeps showing that one. A tracking
+    // row that records a FAILED send stays, because no real send exists for it and it carries the
+    // reason.
+
     /**
      * Find all non-event logs for a user filtered by notification types, paginated and sorted by date DESC.
      * Used by the unified communication timeline to fetch EMAIL, WHATSAPP_MESSAGE_OUTGOING, WHATSAPP_MESSAGE_INCOMING.
@@ -509,6 +515,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                 SELECT nl FROM NotificationLog nl
                 WHERE nl.userId = :userId
                 AND nl.notificationType IN :types
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
                 ORDER BY nl.notificationDate DESC
             """)
     Page<NotificationLog> findByUserIdAndNotificationTypeInOrderByNotificationDateDesc(
@@ -523,6 +530,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                 SELECT nl FROM NotificationLog nl
                 WHERE nl.userId = :userId
                 AND nl.notificationType IN :types
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
                 AND (:fromDate IS NULL OR nl.notificationDate >= :fromDate)
                 AND (:toDate IS NULL OR nl.notificationDate <= :toDate)
                 ORDER BY nl.notificationDate DESC
@@ -537,14 +545,24 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     // ==================== CHANNEL-ID BASED COMMUNICATION TIMELINE ====================
 
     /** Single channel: channelId (email or phone) + type set, paginated DESC. */
+    @Query("""
+                SELECT nl FROM NotificationLog nl
+                WHERE nl.channelId = :channelId
+                AND nl.notificationType IN :types
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
+                ORDER BY nl.notificationDate DESC
+            """)
     Page<NotificationLog> findByChannelIdAndNotificationTypeInOrderByNotificationDateDesc(
-            String channelId, List<String> notificationTypes, Pageable pageable);
+            @Param("channelId") String channelId,
+            @Param("types") List<String> notificationTypes,
+            Pageable pageable);
 
     /** Single channel with date range. */
     @Query("""
                 SELECT nl FROM NotificationLog nl
                 WHERE nl.channelId = :channelId
                 AND nl.notificationType IN :types
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
                 AND (:fromDate IS NULL OR nl.notificationDate >= :fromDate)
                 AND (:toDate IS NULL OR nl.notificationDate <= :toDate)
                 ORDER BY nl.notificationDate DESC
@@ -559,8 +577,11 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     /** Combined email + phone query — email matched to emailTypes, phone matched to phoneTypes. */
     @Query("""
                 SELECT nl FROM NotificationLog nl
-                WHERE (nl.channelId = :email AND nl.notificationType IN :emailTypes)
-                   OR (nl.channelId = :phone AND nl.notificationType IN :phoneTypes)
+                WHERE (
+                    (nl.channelId = :email AND nl.notificationType IN :emailTypes)
+                    OR (nl.channelId = :phone AND nl.notificationType IN :phoneTypes)
+                )
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
                 ORDER BY nl.notificationDate DESC
             """)
     Page<NotificationLog> findByEmailAndPhoneChannels(
@@ -577,6 +598,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                     (nl.channelId = :email AND nl.notificationType IN :emailTypes)
                     OR (nl.channelId = :phone AND nl.notificationType IN :phoneTypes)
                 )
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
                 AND (:fromDate IS NULL OR nl.notificationDate >= :fromDate)
                 AND (:toDate IS NULL OR nl.notificationDate <= :toDate)
                 ORDER BY nl.notificationDate DESC
