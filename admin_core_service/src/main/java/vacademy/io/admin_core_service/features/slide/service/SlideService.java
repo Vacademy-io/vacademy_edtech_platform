@@ -329,7 +329,13 @@ public class SlideService {
         slideRepository.save(slide);
 
         if (SlideStatus.PUBLISHED.name().equals(status)) {
-            slideNotificationService.sendNotificationForAddingSlide(instituteId, chapterToSlides.getChapter(), slide);
+            // Same guard as notifyIfPublished: an email failure must not fail (or roll back) the status change.
+            try {
+                slideNotificationService.sendNotificationForAddingSlide(instituteId, chapterToSlides.getChapter(), slide);
+            } catch (Exception e) {
+                log.error("Slide status set to PUBLISHED but 'notify learners' email failed for slide {} in chapter {}: {}",
+                        slideId, chapterId, e.getMessage(), e);
+            }
         }
 
         // Offline plan Part A2 bump hook: PUBLISHED/DELETED transitions change

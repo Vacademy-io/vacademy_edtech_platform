@@ -407,7 +407,7 @@ public class LearnerInvitationResponseService {
                     .collect(Collectors.toList());
 
             Institute institute = getInstitute(responses.get(0).getInstituteId());
-            notification.sendStatusUpdateNotification(emails, institute.getInstituteName(), institute.getId());
+            notification.sendStatusUpdateNotification(emails, institute);
         }
     }
 

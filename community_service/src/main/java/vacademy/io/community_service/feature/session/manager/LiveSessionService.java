@@ -1172,7 +1172,7 @@ public class LiveSessionService {
                             </div>
                         </div>
                         <div class="footer">
-                            <p>&copy; %s Vcademy.io. All rights reserved.</p>
+                            <p>&copy; %s Vacademy. All rights reserved.</p>
                         </div>
                     </div>
                 </body>

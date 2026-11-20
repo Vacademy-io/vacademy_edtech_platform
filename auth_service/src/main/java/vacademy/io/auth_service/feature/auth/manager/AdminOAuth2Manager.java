@@ -153,7 +153,7 @@ public class AdminOAuth2Manager {
         String instituteId = InstituteChoice.forUser(originInstituteResolver, user);
         InstituteInfoDTO instituteInfoDTO = null;
         String instituteName = "Vacademy"; // Default fallback
-        String theme = "#E67E22";
+        String theme = "#333333"; // neutral when the institute has no theme code
         String learnerLoginUrl = "https://dash.vacademy.io";
         if (StringUtils.hasText(instituteId)) {
             instituteInfoDTO = instituteInternalService.getInstituteByInstituteId(instituteId);
