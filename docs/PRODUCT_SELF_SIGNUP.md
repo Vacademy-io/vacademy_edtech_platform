@@ -500,12 +500,12 @@ Go live: verify `voomsales.com` in SES, add the Cloudflare domain, run the secti
 
 Telleo is sold two ways, chosen on the first setup step (`telleo_onboarding.access_mode`, V718): the
 dashboard (`PLATFORM`) or the API. Each has its own plans, tagged `access_mode` in `product.telleo`
-(V734 replaced the Evalezy Starter plan V713 had copied in).
+(V734).
 
 | Piece | Value |
 |---|---|
-| Dashboard plans | Starter ₹3,499 / month (4,375 credits, about 875 minutes), Pro ₹6,999 / month (8,750 credits), Annual ₹29,999 / year (no bundled minutes). Same as `telleo.ai/src/content/pricing.ts` |
-| API plans | Not set yet. Add them on the Products page with `access_mode` `API`, keys like `api-starter` |
+| Dashboard plans | Evalezy's plan, as V713 copied it (its Starter: price, credits, users, length). Prices live in the database; the website reads them from the public offer |
+| API plans | The telleo.ai/pricing plans: `api-starter` ₹3,499 / month (4,375 credits, about 875 minutes), `api-pro` ₹6,999 / month (8,750 credits), `api-annual` ₹29,999 / year (no bundled minutes). Same as `telleo.ai/src/content/pricing.ts` |
 | Website choice | `telleo.ai/pricing` has a Dashboard / API toggle. Trial links add `mode=api` or `mode=dashboard`; Buy links add `buy=<key>`. The sign-up page remembers the choice (`product-access-intent.ts`) and setup saves it, so the visitor is not asked again. An `api-` plan key means API |
 | Plan page | `/telleo/plan`: trial or plan (`plan-access`), the plans of the workspace's kind with a toggle to the other, and the AI plans checkout. The trial banner, setup's "Pay now" and the product mails link here |
 | Storefront | Checkout charges the storefront plan `telleo_<key>`. Each plan may have its own length (`period_months` per plan on the product plans form), so monthly and yearly plans sit side by side; a form that sends one period falls back to each plan's `validity_months`. After V734, re-save Telleo's pricing on the health dashboard so the storefront matches |
