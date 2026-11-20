@@ -22,13 +22,13 @@ public class LiveClassTemplateService {
 
     private static final String DEFAULT_SOURCE_ID = "DEFAULT";
 
-    // Template IDs from V177 migration — used as direct DB fallback
+    // Template IDs from V177 migration (on-edit: V745) — used as direct DB fallback
     private static final Map<NotificationEventType, String> DEFAULT_TEMPLATE_IDS = Map.of(
             NotificationEventType.LIVE_CLASS_ON_CREATE, "default-live-class-on-create-email",
             NotificationEventType.LIVE_CLASS_BEFORE_LIVE, "default-live-class-before-live-email",
             NotificationEventType.LIVE_CLASS_ON_LIVE, "default-live-class-on-live-email",
             NotificationEventType.LIVE_CLASS_DELETE, "default-live-class-delete-email",
-            NotificationEventType.LIVE_CLASS_ON_EDIT, "default-live-class-on-edit-email"
+            NotificationEventType.LIVE_CLASS_ON_EDIT, "default-edit-live-class-email"
     );
 
     private final NotificationEventConfigRepository notificationEventConfigRepository;
