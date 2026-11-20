@@ -576,6 +576,7 @@ public class EnrolmentBreakService {
                     SELECT COUNT(*) FROM student_session_institute_group_mapping
                      WHERE user_id = :u AND institute_id = :i AND package_session_id = :p
                        AND status = 'ACTIVE' AND id <> :id
+                       AND (type IS NULL OR type NOT IN ('ABANDONED_CART', 'PAYMENT_FAILED'))
                     """)
                     .setParameter("u", r[1]).setParameter("i", r[3]).setParameter("p", r[2]).setParameter("id", rowId)
                     .getSingleResult();
