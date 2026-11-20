@@ -37,7 +37,7 @@
         "COUNT_NOT_POSTED": "The recount passed, but the count it checked is still open. Post that count so its figures become stock."
     },
     "withoutCost": "Without a cost: {{skus}}",
-    "otherWithoutCost": "{{count}} other item(s) of the shop have no cost yet (not at this place).",
+    "otherWithoutCost": "{{items}} other item(s) of the shop have no cost yet (not at this place).",
     "uncostedReceipts": "Receipts with lines without a cost: {{numbers}}",
     "actions": {
         "receive": "Receive opening stock",

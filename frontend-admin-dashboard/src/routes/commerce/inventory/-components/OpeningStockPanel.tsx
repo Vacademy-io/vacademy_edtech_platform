@@ -135,7 +135,7 @@ function OpeningBody({ data, onGo }: { data: OpeningReadiness; onGo: (tab: Openi
             {(data.items.institute_without_cost ?? 0) > data.items.without_cost && (
                 <p className="text-caption text-muted-foreground" data-testid="opening-other-without-cost">
                     {tr('otherWithoutCost', {
-                        count: n((data.items.institute_without_cost ?? 0) - data.items.without_cost),
+                        items: n((data.items.institute_without_cost ?? 0) - data.items.without_cost),
                     })}
                 </p>
             )}

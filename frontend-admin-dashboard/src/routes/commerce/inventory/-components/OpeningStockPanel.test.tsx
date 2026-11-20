@@ -171,7 +171,7 @@ describe('OpeningStockPanel', () => {
         renderPanel();
         const list = await screen.findByTestId('opening-blockers');
         expect(list.textContent).toContain('blockers.COUNT_NOT_POSTED');
-        expect(screen.getByTestId('opening-other-without-cost').textContent).toContain('otherWithoutCost count=5');
+        expect(screen.getByTestId('opening-other-without-cost').textContent).toContain('otherWithoutCost items=5');
         expect(api.normalizeOpeningReadiness({ blockers: ['COUNT_NOT_POSTED'], items: { institute_without_cost: 5 } })
             .items.institute_without_cost).toBe(5);
     });
