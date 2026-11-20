@@ -53,7 +53,8 @@ public class PlatformProductService {
     private static final Pattern PATH = Pattern.compile("^/[A-Za-z0-9/_-]*$");
     private static final Pattern PRODUCT_KEY = Pattern.compile("^[A-Za-z0-9_-]{1,40}$");
     private static final Pattern PLAN_KEY = Pattern.compile("^[a-z0-9-]{1,30}$");
-    private static final int MAX_PLANS = 6;
+    /** As the storefront allows (ai_service plans_admin PRODUCT_PLANS_MAX): Telleo holds a dashboard and an API list. */
+    private static final int MAX_PLANS = 8;
     private static final int MAX_PLAN_NUMBER = 10_000_000;
     /** A plan for the dashboard or for API use (ProductPlanDTO.accessMode). */
     static final java.util.Set<String> ACCESS_MODES = java.util.Set.of("PLATFORM", "API");

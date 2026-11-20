@@ -504,7 +504,7 @@ dashboard (`PLATFORM`) or the API. Each has its own plans, tagged `access_mode` 
 
 | Piece | Value |
 |---|---|
-| Dashboard plans | Evalezy's plan, as V713 copied it (its Starter: price, credits, users, length). Prices live in the database; the website reads them from the public offer |
+| Dashboard plans | All of Evalezy's plans (price, credits, users, length), copied from `product.evalezy` and tagged `PLATFORM`. Prices live in the database; the website reads them from the public offer. A product holds up to 8 plans, as the storefront allows |
 | API plans | The telleo.ai/pricing plans: `api-starter` ₹3,499 / month (4,375 credits, about 875 minutes), `api-pro` ₹6,999 / month (8,750 credits), `api-annual` ₹29,999 / year (no bundled minutes). Same as `telleo.ai/src/content/pricing.ts` |
 | Website choice | `telleo.ai/pricing` has a Dashboard / API toggle. Trial links add `mode=api` or `mode=dashboard`; Buy links add `buy=<key>`. The sign-up page remembers the choice (`product-access-intent.ts`) and setup saves it, so the visitor is not asked again. An `api-` plan key means API |
 | Plan page | `/telleo/plan`: trial or plan (`plan-access`), the plans of the workspace's kind with a toggle to the other, and the AI plans checkout. The trial banner, setup's "Pay now" and the product mails link here |
