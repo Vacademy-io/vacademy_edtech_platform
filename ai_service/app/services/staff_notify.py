@@ -9,7 +9,7 @@ looks like every other one in the bell.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import httpx
 
@@ -99,6 +99,55 @@ async def email(
         },
     }
     return await _send(payload, "email")
+
+
+async def whatsapp_template(
+    institute_id: str,
+    phones: Iterable[str],
+    template_name: str,
+    variables: Dict[str, str],
+    *,
+    language_code: str = "en",
+    source: str = "AI_SERVICE",
+    source_id: Optional[str] = None,
+) -> List[Dict[str, Any]]:
+    """One approved template message per number, the same body fields for each, sent from the
+    institute's WhatsApp account. Returns every number's result {"phone", "success", "error"}:
+    notification_service answers 200 even when Meta refuses a number, so the HTTP status alone
+    would report a page that nobody received as sent."""
+    numbers = [p for p in phones if p]
+    if not numbers:
+        return []
+    payload = {
+        "instituteId": institute_id or "",
+        "channel": "WHATSAPP",
+        "templateName": template_name,
+        "languageCode": language_code,
+        "recipients": [{"phone": p, "variables": dict(variables)} for p in numbers],
+        "options": {"source": source, "sourceId": source_id},
+    }
+    url = f"{get_settings().notification_service_base_url}{_UNIFIED_SEND}"
+    failed = lambda error: [{"phone": p, "success": False, "error": error} for p in numbers]  # noqa: E731
+    try:
+        headers = await internal_auth_headers({"Content-Type": "application/json"})
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(url, json=payload, headers=headers)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("whatsapp template %s failed: %s", template_name, exc)
+        return failed(str(exc)[:200])
+    if resp.status_code >= 300:
+        logger.warning("whatsapp template %s -> %s: %s", template_name, resp.status_code, resp.text[:200])
+        return failed(f"notification service answered {resp.status_code}")
+    try:
+        results = resp.json().get("results") or []
+    except ValueError:
+        return failed("notification service gave an unreadable answer")
+    if not results:
+        return failed("notification service sent nothing (is WhatsApp set up for the platform institute?)")
+    return [
+        {"phone": r.get("phone"), "success": bool(r.get("success")), "error": r.get("error")}
+        for r in results
+    ]
 
 
 async def _send(payload: Dict[str, Any], what: str) -> bool:

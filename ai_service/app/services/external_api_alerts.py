@@ -1,4 +1,4 @@
-"""Email the team when a third-party API runs out of credits or keeps failing.
+"""Email and WhatsApp the team when a third-party API runs out of credits or keeps failing.
 
 Every few minutes one replica reads the newest external_api_call_log rows of each API and key:
   * CREDITS: the current run of failures includes a 402 or the vendor saying the balance is gone.
@@ -8,6 +8,10 @@ Every few minutes one replica reads the newest external_api_call_log rows of eac
 An alert emails once, again every `alert_repeat_hours` while it lasts, and once more when a call
 succeeds. A key can be muted from the portal. Emails carry the last four characters of a key at
 most, and every problem in a pass shares one email, so an outage does not send one per API.
+
+WhatsApp goes to the numbers set on the portal, one message per pass, through notification_service
+as the platform institute with the already-approved UTILITY template the server health check uses
+(five body fields: status, host, ip, details, time), so it needs no new Meta approval.
 
 Covers what reaches external_api_call_log: calls with a key through httpx (httpx_capture) and
 Serper. Java services and the voice bot do not write there yet.
@@ -28,6 +32,7 @@ from sqlalchemy import text
 logger = logging.getLogger(__name__)
 
 EMAILS_SETTING = "external_apis.alert_emails"
+PHONES_SETTING = "external_apis.alert_whatsapp_phones"
 THRESHOLD_SETTING = "external_apis.alert_consecutive_failures"
 REPEAT_SETTING = "external_apis.alert_repeat_hours"
 
@@ -40,6 +45,13 @@ LOOKBACK_HOURS = 24
 MAX_ROWS_PER_KEY = 100
 MAX_RECIPIENTS = 20
 MAX_ERROR_LENGTH = 300
+MAX_PHONES = 10
+# Meta caps a template body at 1024 characters; the template's own words take some of it.
+WHATSAPP_FIELD_LIMIT = 250
+WHATSAPP_DETAILS_LIMIT = 600
+# India when a number is written without its country code, as people here usually do.
+DEFAULT_COUNTRY_CODE = "91"
+IST = timezone(timedelta(hours=5, minutes=30))
 
 CREDITS = "CREDITS"
 FAILING = "FAILING"
@@ -115,6 +127,30 @@ def invalid_emails(raw: str) -> List[str]:
     return [e for e in (part.strip() for part in raw.split(",")) if e and not _EMAIL.match(e)]
 
 
+def _phone(part: str) -> Optional[str]:
+    """A WhatsApp number as Meta wants it: digits with the country code. None when it is not one."""
+    digits = re.sub(r"[\s\-().]", "", part.strip())
+    if digits.startswith("+"):
+        digits = digits[1:]
+    elif digits.startswith("00"):
+        digits = digits[2:]
+    elif len(digits) == 11 and digits.startswith("0"):
+        digits = DEFAULT_COUNTRY_CODE + digits[1:]
+    elif len(digits) == 10:
+        digits = DEFAULT_COUNTRY_CODE + digits
+    return digits if digits.isdigit() and 11 <= len(digits) <= 15 else None
+
+
+def parse_phones(raw: Any) -> List[str]:
+    """The valid, distinct numbers in the setting, with their country code. Anything else is left out."""
+    found = (_phone(part) for part in str(raw or "").split(","))
+    return list(dict.fromkeys(p for p in found if p))[:MAX_PHONES]
+
+
+def invalid_phones(raw: str) -> List[str]:
+    return [p for p in (part.strip() for part in raw.split(",")) if p and not _phone(p)]
+
+
 def looks_out_of_credits(http_status: Optional[int], error: Optional[str]) -> bool:
     return http_status == 402 or bool(error and _OUT_OF_CREDITS.search(error))
 
@@ -157,11 +193,29 @@ def account_for(details: Mapping[str, Mapping[str, Any]], hint: str) -> Optional
     return None
 
 
-def _settings(db: Any) -> Tuple[List[str], int, float]:
+@dataclass(frozen=True)
+class Recipients:
+    emails: List[str]
+    phones: List[str]
+
+    def __bool__(self) -> bool:
+        return bool(self.emails or self.phones)
+
+
+def _recipients(db: Any) -> Recipients:
+    from .platform_settings_service import get_platform_setting
+
+    return Recipients(
+        emails=parse_emails(get_platform_setting(EMAILS_SETTING, db=db)),
+        phones=parse_phones(get_platform_setting(PHONES_SETTING, default="", db=db)),
+    )
+
+
+def _settings(db: Any) -> Tuple[Recipients, int, float]:
     from .platform_settings_service import get_platform_setting
 
     return (
-        parse_emails(get_platform_setting(EMAILS_SETTING, db=db)),
+        _recipients(db),
         int(get_platform_setting(THRESHOLD_SETTING, db=db)),
         float(get_platform_setting(REPEAT_SETTING, db=db)),
     )
@@ -186,7 +240,7 @@ def evaluate(db: Any, now: Optional[datetime] = None) -> Optional[List[Notice]]:
     # Created by admin_core's Flyway, which may deploy after this service.
     if not db.execute(text("SELECT to_regclass('external_api_alert') IS NOT NULL")).scalar():
         return []
-    emails, threshold, repeat_hours = _settings(db)
+    recipients, threshold, repeat_hours = _settings(db)
 
     calls: Dict[Tuple[str, str], List[Mapping[str, Any]]] = {}
     for row in db.execute(_RECENT_CALLS, {"lookback": LOOKBACK_HOURS, "max_rows": MAX_ROWS_PER_KEY}).mappings():
@@ -199,8 +253,8 @@ def evaluate(db: Any, now: Optional[datetime] = None) -> Optional[List[Notice]]:
             "consecutive": p.consecutive, "http_status": p.http_status, "error": p.error,
         })
 
-    notices = _close_finished(db, problems, calls, now, bool(emails))
-    if emails:
+    notices = _close_finished(db, problems, calls, now, bool(recipients))
+    if recipients:
         notices += _claim_due(db, repeat_hours, now)
     db.commit()
     return notices
@@ -327,24 +381,76 @@ async def send_email(emails: Sequence[str], subject: str, body: str, source_id: 
     )
 
 
+def whatsapp_template() -> str:
+    """The approved UTILITY template the server health check pages with (status, host, ip,
+    details, time). UTILITY matters: Meta throttles MARKETING templates sent to the same number."""
+    return os.getenv("EXTERNAL_API_ALERT_WHATSAPP_TEMPLATE") or "vacademy_server_health_check_utility"
+
+
+def _wa_text(value: Any, limit: int = WHATSAPP_FIELD_LIMIT) -> str:
+    """Meta rejects a template field that is empty, holds a newline or tab, or runs more than
+    four spaces together."""
+    flat = re.sub(r"\s+", " ", str(value or "")).strip() or "-"
+    return flat if len(flat) <= limit else flat[: limit - 1].rstrip() + "…"
+
+
+def _key_line(notice: Notice) -> str:
+    key = f"key ending {notice.key_hint}" if notice.key_hint != "****" else "key too short to show"
+    return f"{notice.account} ({key})" if notice.account else key
+
+
+def whatsapp_fields(notices: Sequence[Notice], now: Optional[datetime] = None) -> Dict[str, str]:
+    """The five fields of the health-check template, for every notice of one pass together."""
+    now = now or datetime.now(timezone.utc)
+    vendors = list(dict.fromkeys(n.vendor for n in notices))
+    details = []
+    for n in notices:
+        status = f" Last status {n.http_status}." if n.http_status else ""
+        error = f" Last error: {n.error}" if n.error and n.event != "recovered" else ""
+        details.append(f"{_headline(n)}: {_advice(n)}{status}{error}")
+    details.append("Recipients and mute: health dashboard, External APIs, Alerts.")
+    return {
+        "1": _wa_text(subject_for(notices)),
+        "2": _wa_text(", ".join(vendors)),
+        "3": _wa_text("; ".join(dict.fromkeys(_key_line(n) for n in notices))),
+        "4": _wa_text(" | ".join(details), WHATSAPP_DETAILS_LIMIT),
+        "5": _wa_text(now.astimezone(IST).strftime("%d %b %Y %I:%M %p IST")),
+    }
+
+
+async def send_whatsapp(phones: Sequence[str], fields: Mapping[str, str], source_id: Optional[str] = None) -> List[Dict[str, Any]]:
+    """One template message per number. Returns each number's result as notification_service
+    reports it: {"phone", "success", "error"}."""
+    from .staff_notify import whatsapp_template as send_template
+
+    return await send_template(
+        platform_institute_id(),
+        phones,
+        whatsapp_template(),
+        dict(fields),
+        source="EXTERNAL_API_ALERT",
+        source_id=source_id,
+    )
+
+
 def platform_institute_id() -> str:
     """notification_service refuses a send with no institute, and team alerts belong to no
     customer. The same platform institute as community_service's team-facing mail."""
     return os.getenv("PLATFORM_INSTITUTE_ID") or "c8a5d265-858b-4a8e-9449-25be857db538"
 
 
-def _with_accounts(db: Any, notices: List[Notice]) -> Tuple[List[Notice], List[str]]:
+def _with_accounts(db: Any, notices: List[Notice]) -> Tuple[List[Notice], Recipients]:
     details = _key_details(db)
     named = [replace(n, account=account_for(details, n.key_hint)) for n in notices]
-    return named, _settings(db)[0]
+    return named, _recipients(db)
 
 
-def _evaluate_pass() -> Tuple[List[Notice], List[str]]:
+def _evaluate_pass() -> Tuple[List[Notice], Recipients]:
     from ..db import db_session
 
     with db_session() as db:
         notices = evaluate(db)
-        return _with_accounts(db, notices) if notices else ([], [])
+        return _with_accounts(db, notices) if notices else ([], Recipients([], []))
 
 
 def _release_pass(notices: List[Notice]) -> None:
@@ -357,12 +463,26 @@ def _release_pass(notices: List[Notice]) -> None:
 async def run_sweep() -> int:
     """The scheduled pass. Returns how many notices went out. Never raises."""
     try:
-        notices, emails = await asyncio.to_thread(_evaluate_pass)
+        notices, recipients = await asyncio.to_thread(_evaluate_pass)
         if not notices:
             return 0
-        if await send_email(emails, subject_for(notices), body_for(notices)):
+        delivered = False
+        if recipients.emails:
+            if await send_email(recipients.emails, subject_for(notices), body_for(notices)):
+                delivered = True
+            else:
+                logger.warning("external API alerts: email not accepted")
+        if recipients.phones:
+            results = await send_whatsapp(recipients.phones, whatsapp_fields(notices))
+            for r in results:
+                if not r.get("success"):
+                    logger.warning("external API alerts: WhatsApp to %s refused: %s", r.get("phone"), r.get("error"))
+            delivered = delivered or any(r.get("success") for r in results)
+        if delivered:
             return len(notices)
-        logger.warning("external API alerts: email not accepted, retrying on the next pass")
+        # Nobody was told: unclaim so the next pass tries again. One channel getting through is
+        # enough, or a broken channel would resend the working one every five minutes.
+        logger.warning("external API alerts: nothing delivered, retrying on the next pass")
         await asyncio.to_thread(_release_pass, notices)
     except Exception as exc:  # noqa: BLE001 - e.g. the database is unreachable
         logger.warning("external API alerts: pass skipped: %s", exc)
@@ -392,12 +512,18 @@ __all__ = [
     "classify",
     "evaluate",
     "invalid_emails",
+    "invalid_phones",
     "is_due",
     "looks_out_of_credits",
     "parse_emails",
+    "parse_phones",
+    "PHONES_SETTING",
     "release",
     "run_sweep",
     "send_email",
+    "send_whatsapp",
     "start_external_api_alerts",
     "subject_for",
+    "whatsapp_fields",
+    "whatsapp_template",
 ]

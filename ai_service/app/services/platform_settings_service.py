@@ -519,6 +519,20 @@ SETTING_SPECS["external_apis.alert_emails"] = SettingSpec(
     max_length=1000,
 )
 
+SETTING_SPECS["external_apis.alert_whatsapp_phones"] = SettingSpec(
+    key="external_apis.alert_whatsapp_phones",
+    group="external_apis",
+    label="External API alerts: WhatsApp numbers",
+    description=(
+        "Comma-separated WhatsApp numbers with country code (919876543210) told when a third-party "
+        "API runs out of credits or keeps failing, through the platform institute's WhatsApp and the "
+        "server health check template. Blank sends no WhatsApp."
+    ),
+    type="string",
+    default=lambda: "",
+    max_length=500,
+)
+
 SETTING_SPECS["external_apis.alert_consecutive_failures"] = SettingSpec(
     key="external_apis.alert_consecutive_failures",
     group="external_apis",

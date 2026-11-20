@@ -7,6 +7,7 @@ carry a key's last four characters at most, never the key. See services/external
 from __future__ import annotations
 
 import json
+from datetime import datetime
 import logging
 import os
 from typing import Any, Dict, List, Mapping, Optional
@@ -208,6 +209,8 @@ def vendor_balances(
 
 class AlertSettingsUpdate(BaseModel):
     emails: str = Field("", max_length=1000)
+    # Comma-separated; a number without a country code is taken as Indian.
+    whatsapp_phones: str = Field("", max_length=500)
     consecutive_failures: int = Field(..., ge=2, le=50)
     repeat_hours: int = Field(..., ge=1, le=168)
 
@@ -226,6 +229,8 @@ def api_alerts(
     _require_super_admin(current_user)
     response: Dict[str, Any] = {
         "emails": get_platform_setting(alerts.EMAILS_SETTING, default="", db=db),
+        "whatsapp_phones": get_platform_setting(alerts.PHONES_SETTING, default="", db=db),
+        "whatsapp_template": alerts.whatsapp_template(),
         "consecutive_failures": get_platform_setting(alerts.THRESHOLD_SETTING, db=db),
         "repeat_hours": get_platform_setting(alerts.REPEAT_SETTING, db=db),
         "alerts": [],
@@ -260,31 +265,52 @@ def save_alert_settings(
         raise HTTPException(status_code=422, detail=f"Not a valid email address: {invalid[0]}")
     if body.emails.count(",") >= alerts.MAX_RECIPIENTS:
         raise HTTPException(status_code=422, detail=f"At most {alerts.MAX_RECIPIENTS} addresses")
+    bad_phones = alerts.invalid_phones(body.whatsapp_phones)
+    if bad_phones:
+        raise HTTPException(status_code=422, detail=(
+            f"Not a WhatsApp number: {bad_phones[0]}. Use digits with the country code, e.g. 919876543210"))
+    if body.whatsapp_phones.count(",") >= alerts.MAX_PHONES:
+        raise HTTPException(status_code=422, detail=f"At most {alerts.MAX_PHONES} WhatsApp numbers")
     emails = alerts.parse_emails(body.emails)
+    phones = alerts.parse_phones(body.whatsapp_phones)
     set_platform_setting(db, alerts.EMAILS_SETTING, ", ".join(emails), updated_by=current_user.user_id)
+    set_platform_setting(db, alerts.PHONES_SETTING, ", ".join(phones), updated_by=current_user.user_id)
     set_platform_setting(db, alerts.THRESHOLD_SETTING, body.consecutive_failures, updated_by=current_user.user_id)
     set_platform_setting(db, alerts.REPEAT_SETTING, body.repeat_hours, updated_by=current_user.user_id)
     logger.info("External API alert settings saved by %s", current_user.user_id)
-    return {"emails": ", ".join(emails)}
+    return {"emails": ", ".join(emails), "whatsapp_phones": ", ".join(phones)}
 
 
-@router.post("/alerts/test", summary="Send a test alert to the saved addresses")
-async def test_alert_email(current_user: CustomUserDetails = Depends(get_current_user)):
+@router.post("/alerts/test", summary="Send a test alert to the saved addresses and WhatsApp numbers")
+async def test_alert(current_user: CustomUserDetails = Depends(get_current_user)):
+    """Each channel is reported on its own, so a refused WhatsApp number does not hide a delivered
+    email (or the other way round). WhatsApp refusals carry Meta's reason."""
     _require_super_admin(current_user)
     emails = alerts.parse_emails(get_platform_setting(alerts.EMAILS_SETTING, default=""))
-    if not emails:
-        raise HTTPException(status_code=422, detail="Save at least one email address first")
-    sent = await alerts.send_email(
-        emails,
-        "API alert: test",
-        "<p>This is a test from the health dashboard. API alerts will arrive at this address.</p>",
-    )
-    if not sent:
-        raise HTTPException(status_code=502, detail="The notification service did not accept the email")
-    return {"sent_to": emails}
+    phones = alerts.parse_phones(get_platform_setting(alerts.PHONES_SETTING, default=""))
+    if not emails and not phones:
+        raise HTTPException(status_code=422, detail="Save at least one email address or WhatsApp number first")
+    result: Dict[str, Any] = {"email": None, "whatsapp": []}
+    if emails:
+        accepted = await alerts.send_email(
+            emails,
+            "API alert: test",
+            "<p>This is a test from the health dashboard. API alerts will arrive at this address.</p>",
+        )
+        result["email"] = {"sent_to": emails, "accepted": accepted}
+    if phones:
+        fields = {
+            "1": "API alert: test",
+            "2": "Health dashboard",
+            "3": "-",
+            "4": "This is a test from the health dashboard. API alerts will arrive on this number.",
+            "5": datetime.now(alerts.IST).strftime("%d %b %Y %I:%M %p IST"),
+        }
+        result["whatsapp"] = await alerts.send_whatsapp(phones, fields)
+    return result
 
 
-@router.put("/alerts/mute", summary="Stop or restart emails about one key")
+@router.put("/alerts/mute", summary="Stop or restart alerts about one key")
 def mute_alert(
     body: AlertMute,
     db: Session = Depends(db_dependency),

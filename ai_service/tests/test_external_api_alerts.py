@@ -188,3 +188,49 @@ class FakeDb:
 
 def test_another_replica_holding_the_lock_means_this_one_does_nothing():
     assert alerts.evaluate(FakeDb(False), NOW) is None
+
+
+def test_whatsapp_numbers_get_their_country_code_and_bad_ones_are_named():
+    assert alerts.parse_phones("+91 98765 43210, 9876543210, 09876543211, 0044 7700 900123, 12345") == [
+        "919876543210", "919876543211", "447700900123",
+    ]
+    assert alerts.parse_phones(None) == []
+    assert alerts.invalid_phones("9876543210, 12345, abc,") == ["12345", "abc"]
+    assert len(alerts.parse_phones(",".join(f"98765432{i:02d}" for i in range(30)))) == alerts.MAX_PHONES
+
+
+def test_whatsapp_fields_fill_the_health_check_template():
+    fields = alerts.whatsapp_fields([notice(account="finance@example.com", http_status=402)], now=NOW)
+
+    assert set(fields) == {"1", "2", "3", "4", "5"}
+    assert fields["1"] == "API alert: openrouter.ai is out of credits"
+    assert fields["2"] == "openrouter.ai"
+    assert fields["3"] == "finance@example.com (key ending ab12)"
+    assert "Top up the account" in fields["4"] and "Last status 402." in fields["4"]
+    assert fields["5"] == "06 Nov 2026 05:30 PM IST"
+
+
+def test_whatsapp_fields_are_text_meta_accepts():
+    long_error = "line one\nline two\t" + "x     " * 400
+    fields = alerts.whatsapp_fields(
+        [notice(error=long_error), notice(vendor="serper", kind=alerts.FAILING, key_hint="****")], now=NOW)
+
+    for value in fields.values():
+        assert value, "Meta refuses an empty field"
+        assert "\n" not in value and "\t" not in value and "     " not in value
+    assert len(fields["4"]) <= alerts.WHATSAPP_DETAILS_LIMIT
+    assert fields["2"] == "openrouter.ai, serper"
+    assert "key too short to show" in fields["3"]
+
+
+def test_the_template_is_the_approved_health_check_one_unless_overridden(monkeypatch):
+    monkeypatch.delenv("EXTERNAL_API_ALERT_WHATSAPP_TEMPLATE", raising=False)
+    assert alerts.whatsapp_template() == "vacademy_server_health_check_utility"
+    monkeypatch.setenv("EXTERNAL_API_ALERT_WHATSAPP_TEMPLATE", "other_utility")
+    assert alerts.whatsapp_template() == "other_utility"
+
+
+def test_recipients_count_when_either_channel_has_someone():
+    assert not alerts.Recipients([], [])
+    assert alerts.Recipients([], ["919876543210"])
+    assert alerts.Recipients(["a@b.co"], [])
