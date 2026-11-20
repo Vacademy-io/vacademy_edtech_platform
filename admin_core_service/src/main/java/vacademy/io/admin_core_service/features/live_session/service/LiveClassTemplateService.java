@@ -113,6 +113,8 @@ public class LiveClassTemplateService {
         return switch (eventType) {
             case LIVE_CLASS_DELETE -> LiveClassEmailBody.Live_Class_Delete_Email_Body;
             case LIVE_CLASS_ON_EDIT -> LiveClassEmailBody.Live_Class_Edit_Email_Body;
+            case LIVE_CLASS_BEFORE_LIVE -> LiveClassEmailBody.Live_Class_Before_Live_Email_Body;
+            case LIVE_CLASS_ON_LIVE -> LiveClassEmailBody.Live_Class_On_Live_Email_Body;
             default -> LiveClassEmailBody.Live_Class_Email_Body;
         };
     }
