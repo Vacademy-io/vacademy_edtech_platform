@@ -187,6 +187,11 @@ describe('commerce strings: every key the code asks for exists', () => {
         if (rawKey.startsWith('sidebar:'))
             return { key: rawKey.slice(8), maps: [sidebar.en, sidebar.hi] };
         if (rawKey.startsWith('categoryRail:')) return null; // checked with the rail above
+        // A screen with its own namespace file names it: `commerceParallelRun:title`.
+        const own = /^(commerce[A-Z]\w*):/.exec(rawKey)?.[1];
+        if (own) {
+            return { key: rawKey.slice(own.length + 1), maps: [flatten(load('en', own)), flatten(load('hi', own))] };
+        }
         return { key: rawKey.replace(/^commerce:/, ''), maps: [en, hi] };
     };
 

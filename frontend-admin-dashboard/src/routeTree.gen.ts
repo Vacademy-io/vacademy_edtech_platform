@@ -155,6 +155,7 @@ import { Route as CommerceSettingsIndexRouteImport } from "./routes/commerce/set
 import { Route as CommerceReportsIndexRouteImport } from "./routes/commerce/reports/index"
 import { Route as CommerceProductsIndexRouteImport } from "./routes/commerce/products/index"
 import { Route as CommercePosIndexRouteImport } from "./routes/commerce/pos/index"
+import { Route as CommerceParallelRunIndexRouteImport } from "./routes/commerce/parallel-run/index"
 import { Route as CommerceOrdersIndexRouteImport } from "./routes/commerce/orders/index"
 import { Route as CommerceInventoryIndexRouteImport } from "./routes/commerce/inventory/index"
 import { Route as CommerceDiscountsIndexRouteImport } from "./routes/commerce/discounts/index"
@@ -1373,6 +1374,14 @@ const CommercePosIndexRoute = CommercePosIndexRouteImport.update({
 } as any).lazy(() =>
   import("./routes/commerce/pos/index.lazy").then((d) => d.Route),
 )
+const CommerceParallelRunIndexRoute =
+  CommerceParallelRunIndexRouteImport.update({
+    id: "/commerce/parallel-run/",
+    path: "/commerce/parallel-run/",
+    getParentRoute: () => rootRouteImport,
+  } as any).lazy(() =>
+    import("./routes/commerce/parallel-run/index.lazy").then((d) => d.Route),
+  )
 const CommerceOrdersIndexRoute = CommerceOrdersIndexRouteImport.update({
   id: "/commerce/orders/",
   path: "/commerce/orders/",
@@ -2826,6 +2835,7 @@ export interface FileRoutesByFullPath {
   "/commerce/discounts/": typeof CommerceDiscountsIndexRoute
   "/commerce/inventory/": typeof CommerceInventoryIndexRoute
   "/commerce/orders/": typeof CommerceOrdersIndexRoute
+  "/commerce/parallel-run/": typeof CommerceParallelRunIndexRoute
   "/commerce/pos/": typeof CommercePosIndexRoute
   "/commerce/products/": typeof CommerceProductsIndexRoute
   "/commerce/reports/": typeof CommerceReportsIndexRoute
@@ -3132,6 +3142,7 @@ export interface FileRoutesByTo {
   "/commerce/discounts": typeof CommerceDiscountsIndexRoute
   "/commerce/inventory": typeof CommerceInventoryIndexRoute
   "/commerce/orders": typeof CommerceOrdersIndexRoute
+  "/commerce/parallel-run": typeof CommerceParallelRunIndexRoute
   "/commerce/pos": typeof CommercePosIndexRoute
   "/commerce/products": typeof CommerceProductsIndexRoute
   "/commerce/reports": typeof CommerceReportsIndexRoute
@@ -3441,6 +3452,7 @@ export interface FileRoutesById {
   "/commerce/discounts/": typeof CommerceDiscountsIndexRoute
   "/commerce/inventory/": typeof CommerceInventoryIndexRoute
   "/commerce/orders/": typeof CommerceOrdersIndexRoute
+  "/commerce/parallel-run/": typeof CommerceParallelRunIndexRoute
   "/commerce/pos/": typeof CommercePosIndexRoute
   "/commerce/products/": typeof CommerceProductsIndexRoute
   "/commerce/reports/": typeof CommerceReportsIndexRoute
@@ -3751,6 +3763,7 @@ export interface FileRouteTypes {
     | "/commerce/discounts/"
     | "/commerce/inventory/"
     | "/commerce/orders/"
+    | "/commerce/parallel-run/"
     | "/commerce/pos/"
     | "/commerce/products/"
     | "/commerce/reports/"
@@ -4057,6 +4070,7 @@ export interface FileRouteTypes {
     | "/commerce/discounts"
     | "/commerce/inventory"
     | "/commerce/orders"
+    | "/commerce/parallel-run"
     | "/commerce/pos"
     | "/commerce/products"
     | "/commerce/reports"
@@ -4365,6 +4379,7 @@ export interface FileRouteTypes {
     | "/commerce/discounts/"
     | "/commerce/inventory/"
     | "/commerce/orders/"
+    | "/commerce/parallel-run/"
     | "/commerce/pos/"
     | "/commerce/products/"
     | "/commerce/reports/"
@@ -4665,6 +4680,7 @@ export interface RootRouteChildren {
   CommerceDiscountsIndexRoute: typeof CommerceDiscountsIndexRoute
   CommerceInventoryIndexRoute: typeof CommerceInventoryIndexRoute
   CommerceOrdersIndexRoute: typeof CommerceOrdersIndexRoute
+  CommerceParallelRunIndexRoute: typeof CommerceParallelRunIndexRoute
   CommercePosIndexRoute: typeof CommercePosIndexRoute
   CommerceProductsIndexRoute: typeof CommerceProductsIndexRoute
   CommerceReportsIndexRoute: typeof CommerceReportsIndexRoute
@@ -5878,6 +5894,13 @@ declare module "@tanstack/react-router" {
       path: "/commerce/pos"
       fullPath: "/commerce/pos/"
       preLoaderRoute: typeof CommercePosIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    "/commerce/parallel-run/": {
+      id: "/commerce/parallel-run/"
+      path: "/commerce/parallel-run"
+      fullPath: "/commerce/parallel-run/"
+      preLoaderRoute: typeof CommerceParallelRunIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     "/commerce/orders/": {
@@ -7156,6 +7179,7 @@ const rootRouteChildren: RootRouteChildren = {
   CommerceDiscountsIndexRoute: CommerceDiscountsIndexRoute,
   CommerceInventoryIndexRoute: CommerceInventoryIndexRoute,
   CommerceOrdersIndexRoute: CommerceOrdersIndexRoute,
+  CommerceParallelRunIndexRoute: CommerceParallelRunIndexRoute,
   CommercePosIndexRoute: CommercePosIndexRoute,
   CommerceProductsIndexRoute: CommerceProductsIndexRoute,
   CommerceReportsIndexRoute: CommerceReportsIndexRoute,

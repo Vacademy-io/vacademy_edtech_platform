@@ -1,0 +1,74 @@
+{
+    "description": "During the parallel run, enter the old system's totals for each day. The platform compares them with its own figures for the same store and day, and records who checked them.",
+    "filters": {
+        "location": "Store",
+        "pickLocation": "Choose a store",
+        "month": "Month",
+        "noPlaces": "You are not assigned to any store."
+    },
+    "streak": {
+        "progress": "{{streak}} of {{needed}} clean days in a row",
+        "passed": "{{streak}} of {{needed}} clean days in a row: the parallel run has passed",
+        "latest": "Latest saved day: {{date}}",
+        "none": "No day has been saved yet."
+    },
+    "tolerance": "A day is clean when the bill counts match and each amount differs by at most {{amount}}.",
+    "asOf": "Figures as of {{time}}.",
+    "empty": "No days in this month yet.",
+    "openSessions": "Counter sessions still open: {{count}}",
+    "table": {
+        "caption": "Each day: platform figures, the old system's figures and the difference",
+        "date": "Date",
+        "bills": "Bills",
+        "sales": "Sales",
+        "tax": "Tax",
+        "cash": "Cash",
+        "returns": "Returns",
+        "status": "Result",
+        "action": "Action",
+        "legend": "In each cell: the platform's figure, then the old system's, then the difference (old system minus platform) when there is one."
+    },
+    "status": {
+        "CLEAN": "Clean",
+        "DIFFERENT": "Different",
+        "RECHECK": "Check again",
+        "NOT_SAVED": "Not entered",
+        "NO_SALES": "No sales"
+    },
+    "reviewed": "Checked by {{name}}, {{time}}",
+    "recheckHint": "The platform's figures changed after this day was saved. Save it again.",
+    "actions": {
+        "enter": "Enter totals",
+        "edit": "Edit",
+        "save": "Save day",
+        "cancel": "Cancel"
+    },
+    "form": {
+        "title": "Old system's totals for {{date}}",
+        "bills": "Bills",
+        "sales": "Sales value (with tax)",
+        "tax": "Tax",
+        "cash": "Cash (after refunds)",
+        "returns": "Returns (optional)",
+        "returnsHint": "Leave returns empty if the old system's report does not show them; they will not be compared.",
+        "note": "Note",
+        "noteHint": "Needed when the figures differ: say why.",
+        "invalid": {
+            "bills": "Enter a whole number.",
+            "money": "Enter an amount with at most 2 decimals."
+        }
+    },
+    "errors": {
+        "SESSION_OPEN": "A counter session at this store is still open for this day. Close it, then save the day.",
+        "DAY_CHANGED": "Someone else saved this day. Reload the page and try again.",
+        "NOTE_REQUIRED": "The figures differ. Write a note on why before saving.",
+        "VALIDATION": "Some figures are not valid. Check the boxes and the date.",
+        "FEATURE_DISABLED": "Switch-over days are not turned on for this institute.",
+        "ROLE_NOT_ALLOWED": "Your role cannot do this.",
+        "LOCATION_NOT_ALLOWED": "You are not assigned to this store.",
+        "REPORTS_BUSY": "Many reports are being read right now. Try again in a few seconds.",
+        "REPORT_TIMEOUT": "This took too long. Try again.",
+        "network": "Could not reach the server. Check the connection and try again.",
+        "generic": "Something went wrong. Try again."
+    }
+}
