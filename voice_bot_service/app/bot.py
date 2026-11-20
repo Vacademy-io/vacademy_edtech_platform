@@ -5234,6 +5234,35 @@ _STT_LANGS = {
 }
 
 
+# Languages written in their OWN script (not Devanagari, not Latin). The Hindi
+# script/register rules below ("write Hindi words in DEVANAGARI", "speak phone
+# Hindi") are wrong for these: a Tamil agent told to write Hindi in Devanagari
+# is handed two contradictory languages. Marathi is deliberately absent - it is
+# Devanagari, and its live agents keep their exact prompt.
+_OWN_SCRIPT_LANGS = {
+    "ta-IN": "Tamil", "te-IN": "Telugu", "kn-IN": "Kannada", "ml-IN": "Malayalam",
+    "bn-IN": "Bengali", "gu-IN": "Gujarati", "pa-IN": "Gurmukhi", "od-IN": "Odia",
+}
+
+
+def _own_script_rules(lang_label: str, script: str) -> tuple[str, str]:
+    """(script_rule, plain-speech rule) for an agent speaking an own-script language."""
+    script_rule = (
+        f"- SCRIPT: Write every reply in {lang_label}, in the {script} script. Keep common "
+        "English words people actually say on the phone in English letters (admission, "
+        "course, fees, class, demo, WhatsApp, online, link, plan). NEVER write "
+        f"{lang_label} in Latin letters and NEVER use Devanagari - the voice cannot "
+        "pronounce either."
+    )
+    plain_rule = (
+        f"SPEAK EVERYDAY SPOKEN {lang_label.upper()}, NOT TEXTBOOK {lang_label.upper()}. Use "
+        "the words a real counsellor says out loud. Where the everyday word IS English "
+        "(admission, fees, course, class, hostel, scholarship, exam), use the English word - "
+        "that is how people actually speak; it is not a mistake."
+    )
+    return script_rule, plain_rule
+
+
 # Calls 3bc5f884/f8d8478b/be51d77f/5b88b55c (2026-10-22, Arushi CRM): the agent's script
 # pairs every line with a Hinglish version in Latin letters and says "mirror English or
 # Hinglish". With callers who had only said "Yes", the model opened in that Hinglish or
@@ -5724,6 +5753,7 @@ def build_system_prompt(context: Dict[str, Any], sink=None) -> str:
     name = agent.get("name") or "the assistant"
     stt_tag, lang_label = _agent_language(agent)
     is_english = stt_tag == "en-IN"
+    own_script = _OWN_SCRIPT_LANGS.get(stt_tag or "")
     # _agent_voice, not agent["voice"]: if the name was dropped as belonging to
     # the other vendor we speak with the provider default, so the grammar has to
     # match THAT voice, not the discarded config.
@@ -5958,7 +5988,9 @@ def build_system_prompt(context: Dict[str, Any], sink=None) -> str:
     # the configured voice's grammatical gender, the TTS script rule (romanized Hindi
     # synthesizes worse than Devanagari — Sarvam docs), the live lead facts, and the
     # machine end/transfer MARKERS (the agent prompt has no idea these tokens exist).
-    if is_english and _agent_tts_model(agent) == "navana":
+    if own_script:
+        script_rule, _own_plain_rule = _own_script_rules(lang_label, own_script)
+    elif is_english and _agent_tts_model(agent) == "navana":
         # Call a4ce0279 (2026-10-13, Riya): the caller asked for Hindi, the script
         # said "switch", and this rule said "never Devanagari" — so the model wrote
         # "main ab Hindi mein baat karungi" in Latin letters and the English voice
@@ -6005,7 +6037,7 @@ def build_system_prompt(context: Dict[str, Any], sink=None) -> str:
         if _agent_tts_model(agent) == "navana":
             language_lock += (" If you do switch, any Hindi/Hinglish line from your "
                               "instructions is rewritten in Devanagari before you say it.")
-    if not is_english:
+    if not is_english and not own_script:
         # Rumik reads Devanagari-transliterated English as gibberish — live call
         # 8e1e00ad: the model wrote 'लाइव क्लासेस' and the caller heard 'लव असेस'
         # (founder: "it pronounced many words poorly"). Sarvam bulbul handles
@@ -6090,6 +6122,8 @@ def build_system_prompt(context: Dict[str, Any], sink=None) -> str:
             "option (never विकल्प). If a word would sound odd from a shopkeeper or a "
             "customer on a phone call, do not use it."
         )
+    if own_script:
+        plain_hindi_rule = _own_plain_rule
     # The caller HEARS every character — markdown becomes spoken garbage (a live call
     # read out its own bullet list). And a short first clause reaches the ear sooner
     # (TTS synthesizes the first chunk while the rest streams).
