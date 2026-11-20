@@ -46,11 +46,11 @@ public final class StudentReportEmailBody {
                       <p style="text-align:center;"><a class="cta" href="%s">View My Report</a></p>
                       <p class="meta">If the button doesn't work, copy this link into your browser:<br/>%s</p>
                     </div>
-                    <div class="footer">Sent by %s via Vacademy</div>
+                    <div class="footer">Sent by %s</div>
                   </div>
                 </body>
                 </html>
-                """.formatted(theme, theme, escape(instituteName), escape(studentName),
+                """.formatted(theme, theme, escape(instituteName), escape(studentName), escape(reportName),
                 // BUG-20: escape reportUrl in the href attribute to prevent HTML injection;
                 // the plaintext copy (second occurrence) is left unescaped for readability.
                 escape(reportUrl), reportUrl, escape(instituteName));
