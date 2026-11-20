@@ -1,4 +1,4 @@
--- V735: Commerce accounts foundation (WP-60a): institute-wide staff scope, account heads, suppliers and their
+-- V743: Commerce accounts foundation (WP-60a): institute-wide staff scope, account heads, suppliers and their
 -- encrypted identifiers, the supplier ledger, the period lock, and the supplier key on goods receipts.
 -- New tables only, plus one foreign key on stock_receipt (validated against its few rows). Re-runnable.
 SET LOCAL lock_timeout = '5s';

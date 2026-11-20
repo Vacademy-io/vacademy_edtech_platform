@@ -14,7 +14,7 @@ import org.hibernate.annotations.UuidGenerator;
 import java.time.LocalDateTime;
 
 /**
- * A supplier's PAN, encrypted by the commerce field cipher (V735). One row per supplier. Loaded only
+ * A supplier's PAN, encrypted by the commerce field cipher (V743). One row per supplier. Loaded only
  * to show the value to an authorised user; lists read {@code pan_last4} through a projection.
  * {@code toString} prints no field.
  */

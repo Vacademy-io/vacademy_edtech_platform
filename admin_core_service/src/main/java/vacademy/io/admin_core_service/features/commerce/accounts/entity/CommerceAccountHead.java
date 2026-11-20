@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 
 /**
- * What a money entry was for, shown as a category (V735). One level of parent. {@code code} never
+ * What a money entry was for, shown as a category (V743). One level of parent. {@code code} never
  * changes after insert; {@code account_code} is reserved for a later export and not exposed.
  * Values of {@code nature}, {@code expense_kind}, {@code default_itc_eligibility} and
  * {@code status} are the names of {@code HeadNature}, {@code ExpenseKind}, {@code ItcEligibility}

@@ -13,7 +13,7 @@ import org.hibernate.annotations.UuidGenerator;
 import java.time.LocalDateTime;
 
 /**
- * Whether a manager or accountant acts for every location of the institute (V735). One row per
+ * Whether a manager or accountant acts for every location of the institute (V743). One row per
  * institute and user; written by the native upsert of {@code CommerceStaffScopeRepository}. A row on
  * a warehouse or counter role has no effect.
  */

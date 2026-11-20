@@ -135,7 +135,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * WP-60a accounts foundation against a real Postgres 16 with the whole Flyway chain and the real
- * Spring context: the schema of V735, the feature off by default (and a lock dormant while it is
+ * Spring context: the schema of V743, the feature off by default (and a lock dormant while it is
  * off), the starter account heads, suppliers with the PAN encrypted by the field cipher (never in
  * a list, a log line, an audit row or a column in plain text), goods receipts that name a supplier,
  * the supplier ledger (one key, one row, also under 20 threads), the period lock racing real posts
@@ -706,13 +706,13 @@ class CommerceAccountsDatabaseProofIT {
 
     @Test
     @Order(1)
-    void schemaOfV735AndSeed() {
+    void schemaOfV743AndSeed() {
         note("== 1 schema");
-        assertEquals(1, count("SELECT count(*) FROM flyway_schema_history WHERE success AND version = '735' AND "
-                + "script = 'V735__Commerce_accounts_foundation.sql'"), "V735 is applied");
+        assertEquals(1, count("SELECT count(*) FROM flyway_schema_history WHERE success AND version = '743' AND "
+                + "script = 'V743__Commerce_accounts_foundation.sql'"), "V743 is applied");
         assertEquals(0, count("SELECT count(*) FROM flyway_schema_history WHERE NOT success"),
                 "no failed migration in the Flyway history");
-        note("flyway: V735 success, latest " + text("SELECT max(version::int)::text FROM flyway_schema_history "
+        note("flyway: V743 success, latest " + text("SELECT max(version::int)::text FROM flyway_schema_history "
                 + "WHERE version ~ '^[0-9]+$'") + ", failed rows 0");
         for (String table : List.of("commerce_staff_scope", "commerce_account_head", "commerce_supplier",
                 "commerce_supplier_secret", "commerce_supplier_ledger", "commerce_period_lock")) {

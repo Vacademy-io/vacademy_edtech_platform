@@ -14,7 +14,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * One change of a supplier's balance (V735). Append-only: rows are inserted by
+ * One change of a supplier's balance (V743). Append-only: rows are inserted by
  * {@code CommerceSupplierLedgerRepository.insertIfAbsent} (one row per institute and idempotency
  * key) and never updated or deleted; a correction is a new row naming the one it reverses.
  * {@code amount} &gt; 0: owed more; &lt; 0: owed less or an advance. {@code type} is a name of
