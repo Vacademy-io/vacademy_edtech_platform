@@ -1125,8 +1125,12 @@ class Executor(object):
         if plan_key not in self.state.values:
             path = "/admin-core-service/v1/fee-management/user/%s/cpo-user-plans" % user_id
             plans = self.json_of(self.call("GET", path), path)
+            # Accounts are matched by email across the whole platform, so a learner can
+            # hold plans in another institute too. Keep only this institute's fee plans.
+            ours = {v for k, v in self.state.values.items() if k.startswith("cpo/")}
             ids = [pick(p, "user_plan_id", "id") for p in find_objects(
-                plans, lambda d: "user_plan_id" in d or ("id" in d and "cpo_id" in d))]
+                plans, lambda d: "user_plan_id" in d or ("id" in d and "cpo_id" in d))
+                if p.get("cpo_id") in ours]
             ids = [i for i in ids if i]
             if len(set(ids)) != 1:
                 raise SeedError("expected one fee plan for learner %s, got: %s" % (n, json.dumps(plans)[:2000]))
