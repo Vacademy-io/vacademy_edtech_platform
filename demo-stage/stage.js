@@ -497,6 +497,11 @@ const guide = (() => {
                     } else if (event === 'sentence') speak(data.n, data.text);
                     else if (event === 'choices') after.choices = data.options;
                     else if (event === 'tour') after.tour = data.tour_id;
+                    else if (event === 'screen') {
+                        // The guide answers in words and opens the screen it is talking about.
+                        if (typeof data.route === 'string' && data.route.startsWith('/'))
+                            app.send({ type: 'go', to: data.route });
+                    }
                     else if (event === 'form') after.form = data;
                     else if (event === 'error') throw new Error(data.code || 'guide error');
                 });

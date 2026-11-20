@@ -1,6 +1,7 @@
 """The guide's five tools (SPEC 2.3).
 
     play_tour(tour_id)        play one catalogue tour after the reply is spoken
+    show_screen(route)        open one catalogue screen while the reply is spoken
     offer_choices(options)    up to 5 tappable answers
     ask_contact(reason)       show the contact form (at most twice per session)
     search_knowledge(query)   product facts, then the how-to help library
@@ -46,6 +47,7 @@ class TurnContext:
     tours_seen: List[str] = field(default_factory=list)
     # what this turn will show the visitor
     tour_id: Optional[str] = None
+    screen: Optional[str] = None
     choices: List[Dict[str, str]] = field(default_factory=list)
     form_reason: Optional[str] = None
     notes: Dict[str, str] = field(default_factory=dict)
@@ -66,15 +68,27 @@ async def _play_tour(args: Dict[str, Any], ctx: TurnContext) -> str:
     tour_id = _clip(args.get("tour_id"), 80)
     tour = cat.tour(ctx.catalogue, tour_id)
     if tour is None:
-        ids = ", ".join(t["id"] for t in cat.tours(ctx.catalogue)[:40])
+        ids = ", ".join(t["id"] for t in cat.tours(ctx.catalogue)[:80])
         return f"No such tour. Valid tour ids: {ids or 'none'}."
     if ctx.tour_id:
         return f"Only one tour per reply: {ctx.tour_id} is already queued."
     ctx.tour_id = tour["id"]
+    ctx.screen = None           # the tour opens its own screens
     with db_session() as db:
         repo.add_tour(db, ctx.session_id, tour["id"])
     return ("Queued. The tour starts when you finish speaking: say ONE short line introducing it, ask nothing, "
             "and stop.")
+
+
+async def _show_screen(args: Dict[str, Any], ctx: TurnContext) -> str:
+    found = cat.screen(ctx.catalogue, _clip(args.get("route"), 120))
+    if found is None:
+        return "No such screen. Use a route from the catalogue's screens exactly as written, or answer without one."
+    if ctx.tour_id:
+        return "A tour is already queued for this reply; it opens its own screens."
+    ctx.screen = found["route"]
+    return (f"The screen \"{found['label']}\" is opening on the visitor's side. Now answer their question in words; "
+            "do not read out the screen and do not promise a walkthrough.")
 
 
 async def _offer_choices(args: Dict[str, Any], ctx: TurnContext) -> str:
@@ -170,6 +184,11 @@ TOOLS: List[ToolSpec] = [
              "catalogue. At most one per reply.",
              _obj({"tour_id": {"type": "string", "description": "A tour id from the catalogue."}}, ["tour_id"]),
              _play_tour),
+    ToolSpec("show_screen",
+             "Open one screen of the product on the visitor's side while you answer in words. Use a route from the "
+             "catalogue's screens. Not together with play_tour.",
+             _obj({"route": {"type": "string", "description": "A route from the catalogue's screens."}}, ["route"]),
+             _show_screen),
     ToolSpec("offer_choices",
              f"Show up to {MAX_CHOICES} tappable answers under your reply, in the session language.",
              _obj({"options": {"type": "array", "maxItems": MAX_CHOICES, "items": _obj(

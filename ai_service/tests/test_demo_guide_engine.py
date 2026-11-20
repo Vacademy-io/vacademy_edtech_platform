@@ -146,7 +146,7 @@ def test_start_turn_tells_the_model_the_demo_opened_and_offers_tools(fx):
     assert first["messages"][-1] == {"role": "user", "content": first["messages"][-1]["content"]}
     assert first["messages"][-1]["content"].startswith("[event] The visitor just opened the demo")
     assert [t["function"]["name"] for t in first["tools"]] == [
-        "play_tour", "offer_choices", "ask_contact", "search_knowledge", "note_visitor"]
+        "play_tour", "show_screen", "offer_choices", "ask_contact", "search_knowledge", "note_visitor"]
     # plain-string options get ids
     assert dict(events)["choices"]["options"] == [{"id": "c1", "label": "Coaching or online academy"},
                                                   {"id": "c2", "label": "School"}]
@@ -182,6 +182,20 @@ def test_only_one_tour_per_turn_and_only_from_the_catalogue(fx):
     assert results[0].startswith("No such tour.") and "fee-collection" in results[0]
     assert results[2].startswith("Only one tour per reply")
     assert fx.store.sessions[fx.sid]["tours"] == [{"id": "tests", "finished": None}]
+
+
+def test_show_screen_opens_a_catalogue_screen_and_never_with_a_tour(fx):
+    llm = ScriptedLLM([[tool_call("show_screen", {"route": "/settings/secret"}, "c1"),
+                        tool_call("show_screen", {"route": "/manage-institute/teams"}, "c2")],
+                       tokens("You add staff from the team page.")])
+    events = run(fx, {"kind": "text", "text": "how do I add staff"}, llm=llm)
+    assert [d for n, d in events if n == "screen"] == [{"route": "/manage-institute/teams"}]
+    results = [m["content"] for m in llm.calls[1]["messages"] if m["role"] == "tool"]
+    assert results[0].startswith("No such screen.")
+    llm = ScriptedLLM([[tool_call("show_screen", {"route": "/manage-institute/teams"}, "c1"),
+                        tool_call("play_tour", {"tour_id": "tests"}, "c2")], tokens("Here are tests.")])
+    events = run(fx, {"kind": "text", "text": "show tests"}, llm=llm)
+    assert [n for n, _ in events if n in ("screen", "tour")] == ["tour"]
 
 
 def test_a_tour_with_no_line_from_the_model_still_gets_one(fx):

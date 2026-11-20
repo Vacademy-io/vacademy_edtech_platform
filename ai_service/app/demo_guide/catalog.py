@@ -149,6 +149,22 @@ def audiences(catalog: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return [a for a in ((catalog or {}).get("audiences") or []) if isinstance(a, dict) and isinstance(a.get("id"), str)]
 
 
+def screens(catalog: Optional[Dict[str, Any]]) -> List[Dict[str, str]]:
+    """Screens the guide may open while it answers: [{route, label}], routes starting with '/'."""
+    out = []
+    for s in ((catalog or {}).get("screens") or [])[:150]:
+        if isinstance(s, dict) and isinstance(s.get("route"), str) and s["route"].startswith("/") \
+                and "//" not in s["route"] and len(s["route"]) <= 120:
+            out.append({"route": s["route"], "label": _clip(text_in(s.get("label"), "en"), 90)})
+    return out
+
+
+def screen(catalog: Optional[Dict[str, Any]], route: Any) -> Optional[Dict[str, str]]:
+    if not isinstance(route, str):
+        return None
+    return next((s for s in screens(catalog) if s["route"] == route.strip()), None)
+
+
 def step_say(catalog: Optional[Dict[str, Any]], tour_id: str, step: int, lang: str) -> Optional[Tuple[str, str]]:
     """(text, text language) of that tour step's `say` line; None for an unknown
     tour, an out-of-range step or a step that says nothing."""
@@ -163,11 +179,11 @@ def step_say(catalog: Optional[Dict[str, Any]], tour_id: str, step: int, lang: s
 def prompt_view(catalog: Optional[Dict[str, Any]], lang: str) -> Dict[str, Any]:
     """What the model may know of the catalogue. Never step selectors or step text."""
     out_tours = []
-    for t in tours(catalog)[:40]:
+    for t in tours(catalog)[:80]:
         out_tours.append({
             "id": t["id"][:80],
             "title": _clip(text_in(t.get("title"), "en"), 120),
-            "about": _clip(t.get("about") if isinstance(t.get("about"), str) else text_in(t.get("about"), "en"), 300),
+            "about": _clip(t.get("about") if isinstance(t.get("about"), str) else text_in(t.get("about"), "en"), 220),
             "audiences": [str(a)[:40] for a in (t.get("audiences") or []) if isinstance(a, str)][:10],
         })
     out_aud = [{"id": a["id"][:40], "label": _clip(text_in(a.get("label"), lang), 80)} for a in audiences(catalog)[:10]]
@@ -177,4 +193,4 @@ def prompt_view(catalog: Optional[Dict[str, Any]], lang: str) -> Dict[str, Any]:
             out_topics.append({"id": tp["id"][:40], "tour": str(tp.get("tour") or "")[:80],
                                "label": _clip(text_in(tp.get("label"), lang), 80)})
     return {"product": _clip((catalog or {}).get("product"), 60), "audiences": out_aud, "topics": out_topics,
-            "tours": out_tours}
+            "tours": out_tours, "screens": screens(catalog)}

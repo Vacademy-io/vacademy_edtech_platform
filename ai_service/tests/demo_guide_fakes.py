@@ -43,6 +43,8 @@ PRODUCTS = {"vacademy": {"catalog_url": CATALOG_URL, "knowledge_url": KNOWLEDGE_
                          "lead_institute_id": LEAD_INST, "app_institute_id": APP_INST, "stage_origins": [STAGE]}}
 
 CATALOG = {
+    "screens": [{"route": "/manage-institute/teams", "label": "Team and roles"},
+                {"route": "https://evil.example/x", "label": "bad"}],
     "product": "vacademy",
     "copy": {"hello": {"en": "Hi"}},
     "audiences": [{"id": "academy", "label": {"en": "Coaching or online academy", "hi": "कोचिंग या ऑनलाइन अकादमी"}},

@@ -5,6 +5,7 @@
     sentence {n, text}…            each completed sentence, in order (speech)
     choices {options}              at most 5
     tour {tour_id}                 at most one, played after the speech
+    screen {route}                 at most one and never with a tour; opened at once
     form {kind:"contact", reason}  at most twice per session
     done {message_id, turn}        or   error {code, message}
 
@@ -303,6 +304,8 @@ class _Reply:
                 actions["choices"] = ctx.choices
             if ctx.tour_id:
                 actions["tour"] = ctx.tour_id
+            elif ctx.screen:
+                actions["screen"] = ctx.screen
             if ctx.form_reason:
                 actions["form"] = {"kind": "contact", "reason": ctx.form_reason}
         return actions
@@ -432,6 +435,8 @@ async def _model_reply(ctx: T.TurnContext, reply: _Reply, messages: List[Dict[st
         yield ("choices", {"options": ctx.choices})
     if ctx.tour_id:
         yield ("tour", {"tour_id": ctx.tour_id})
+    elif ctx.screen:
+        yield ("screen", {"route": ctx.screen})
     if ctx.form_reason:
         yield ("form", {"kind": "contact", "reason": ctx.form_reason})
     yield ("done", {"message_id": reply.message_id, "turn": reply.turn_no})

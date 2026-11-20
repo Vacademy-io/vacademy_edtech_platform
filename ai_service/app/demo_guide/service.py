@@ -430,7 +430,7 @@ def admin_session(products: List[str], session_id: str) -> Dict[str, Any]:
         actions = r.get("actions") if isinstance(r.get("actions"), dict) else {}
         item: Dict[str, Any] = {"id": r["id"], "role": r["role"], "kind": r.get("kind"), "text": r.get("text") or "",
                                 "created_at": r.get("created_at")}
-        shown = {k: actions[k] for k in ("choices", "tour", "form", "choice_id", "tour_id", "finished", "spoken",
+        shown = {k: actions[k] for k in ("choices", "tour", "screen", "form", "choice_id", "tour_id", "finished", "spoken",
                                          "fixed", "error") if k in actions}
         if shown:
             item["actions"] = shown
