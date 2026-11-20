@@ -57,6 +57,15 @@ public class DynamicNotificationService {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     /**
+     * Learner-portal fallback for credential mails when the institute row has no portal URL
+     * (sub-org portal, then the platform portal those learners actually sign in to). Optional
+     * and lazy so the generated constructor is unchanged and no bean cycle can form.
+     */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    @org.springframework.context.annotation.Lazy
+    private vacademy.io.admin_core_service.features.learner.service.LearnerPortalAccessService learnerPortalAccessService;
+
+    /**
      * If the institute's setting JSON contains
      *   setting.EMAIL_SETTING.data.REFERRAL_EMAIL.invite_code = "xxxxxx"
      * resolve and return that EnrollInvite for use in referral / invitation
@@ -932,7 +941,7 @@ public class DynamicNotificationService {
                     .name(learner.getFullName())
                     .userPassword(password)
                     // Credentials are for the LEARNER portal, never the admin one.
-                    .portalUrl(resolveLearnerPortalUrl(institute))
+                    .portalUrl(credentialPortalUrl(institute, instituteId, learner.getId()))
                     .instituteName(institute != null ? institute.getInstituteName() : null)
                     .instituteId(instituteId)
                     .themeColor(getThemeColorFromInstitute(institute))
@@ -944,6 +953,25 @@ public class DynamicNotificationService {
             log.error("Error sending learner credentials ({}) for institute {}: {}",
                     channel, instituteId, e.getMessage(), e);
             return false;
+        }
+    }
+
+    /**
+     * Portal link for a credentials mail. The institute's own portal URL first; when that is
+     * blank, the same resolver the password-reset link uses, so the "Sign in" button never
+     * renders as a bare "/login".
+     */
+    private String credentialPortalUrl(Institute institute, String instituteId, String learnerId) {
+        String url = resolveLearnerPortalUrl(institute);
+        if (org.springframework.util.StringUtils.hasText(url) || learnerPortalAccessService == null) {
+            return url;
+        }
+        try {
+            String resolved = learnerPortalAccessService.resolvePortalBaseUrl(instituteId, learnerId);
+            return org.springframework.util.StringUtils.hasText(resolved) ? resolved : url;
+        } catch (Exception e) {
+            log.warn("Learner portal lookup failed for institute {}: {}", instituteId, e.getMessage());
+            return url;
         }
     }
 
