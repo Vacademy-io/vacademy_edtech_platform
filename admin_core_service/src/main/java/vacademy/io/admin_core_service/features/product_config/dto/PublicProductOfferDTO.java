@@ -24,4 +24,6 @@ public class PublicProductOfferDTO {
     private java.util.List<ProductPlanDTO> plans;
     private Integer planValidityMonths;
     private java.math.BigDecimal extraCreditPriceInr;
+    /** The website builds its short-link redirects from these. They are public links anyway. */
+    private java.util.List<ProductShortLinkDTO> shortLinks;
 }

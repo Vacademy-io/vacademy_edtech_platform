@@ -269,6 +269,70 @@ class PlatformProductServiceTest {
         assertDoesNotThrow(() -> PlatformProductService.validate(ok));
     }
 
+    private static vacademy.io.admin_core_service.features.product_config.dto.ProductShortLinkDTO shortLink(
+            String code, String source, String campaign) {
+        return vacademy.io.admin_core_service.features.product_config.dto.ProductShortLinkDTO.builder()
+                .code(code).source(source).campaign(campaign).build();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shortLinksSaveCleanedAndAnOlderDashboardKeepsThem() {
+        when(jdbcTemplate.update(anyString(), anyString(), anyString(), anyString())).thenReturn(1);
+        ProductSettingsDTO stored = valid();
+        stored.setShortLinks(List.of(shortLink("ig", "instagram", "launch")));
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("product.evalezy"))).thenReturn(List.of(stored));
+        ProductSettingsDTO withLinks = valid();
+        withLinks.setShortLinks(List.of(shortLink(" IG ", "Instagram", " Launch "), shortLink("li", "linkedin", " ")));
+        service.update("evalezy", withLinks, "admin1");
+        service.update("evalezy", valid(), "admin1");
+        ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
+        verify(jdbcTemplate, times(2)).update(contains("ai_platform_settings"), json.capture(), eq("admin1"), eq("product.evalezy"));
+        String sent = json.getAllValues().get(0);
+        assertTrue(sent.contains("{\"code\":\"ig\",\"source\":\"instagram\",\"campaign\":\"launch\"}"), sent);
+        assertTrue(sent.contains("{\"code\":\"li\",\"source\":\"linkedin\",\"campaign\":null}"), sent);
+        // The dashboard does not send the links: the stored ones stay.
+        assertTrue(json.getAllValues().get(1).contains("\"short_links\":[{\"code\":\"ig\""), json.getAllValues().get(1));
+    }
+
+    @Test
+    void badShortLinksAreRefused() {
+        for (var bad : List.of(
+                shortLink("a b", "instagram", null),       // space in the path
+                shortLink("-ig", "instagram", null),       // starts with -
+                shortLink("ig/x", "instagram", null),      // a slash makes it two path parts
+                shortLink("ig", " ", null),                // no source
+                shortLink("ig", "insta gram", null),       // space in the source
+                shortLink("ig", "instagram", "big sale"))) { // space in the campaign
+            ProductSettingsDTO p = valid();
+            p.setShortLinks(List.of(bad));
+            assertThrows(VacademyException.class, () -> PlatformProductService.validate(p), bad.toString());
+        }
+        ProductSettingsDTO twice = valid();
+        twice.setShortLinks(List.of(shortLink("ig", "instagram", null), shortLink("IG", "linkedin", null)));
+        assertThrows(VacademyException.class, () -> PlatformProductService.validate(twice));
+        ProductSettingsDTO tooMany = valid();
+        List<vacademy.io.admin_core_service.features.product_config.dto.ProductShortLinkDTO> many = new java.util.ArrayList<>();
+        for (int i = 0; i <= PlatformProductService.MAX_SHORT_LINKS; i++) many.add(shortLink("c" + i, "instagram", null));
+        tooMany.setShortLinks(many);
+        assertThrows(VacademyException.class, () -> PlatformProductService.validate(tooMany));
+        ProductSettingsDTO ok = valid();
+        ok.setShortLinks(List.of(shortLink("IG", "Instagram", "Launch-2026"), shortLink("wa", "whatsapp", null)));
+        assertDoesNotThrow(() -> PlatformProductService.validate(ok));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void publicOfferCarriesTheShortLinks() {
+        ProductSettingsDTO stored = valid();
+        stored.setProductKey("evalezy");
+        stored.setShortLinks(List.of(shortLink("ig", "instagram", "launch")));
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("product.evalezy"))).thenReturn(List.of(stored));
+        String json = assertDoesNotThrow(() -> new com.fasterxml.jackson.databind.ObjectMapper()
+                .writeValueAsString(service.publicOffer("evalezy")));
+        assertTrue(json.contains("\"short_links\":[{\"code\":\"ig\",\"source\":\"instagram\",\"campaign\":\"launch\"}]"), json);
+    }
+
     @Test
     void badPlansAreRefused() {
         ProductSettingsDTO dup = valid();
