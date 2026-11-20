@@ -642,3 +642,60 @@ export interface LabelRequestBody {
     note?: string;
     lines: LabelRequestLine[];
 }
+
+// ─── Opening stock (WP-53) ───────────────────────────────────────────────────
+
+/** Where a location stands with its opening stock, in order. */
+export const OPENING_STATUSES = ['NOT_STARTED', 'RECEIVING', 'COUNTING', 'RECOUNT_FAILED', 'PASSED'] as const;
+export type OpeningStatus = (typeof OPENING_STATUSES)[number];
+
+export const OPENING_BLOCKERS = [
+    'COSTS_MISSING',
+    'UNCOSTED_OPENING_RECEIPT',
+    'SAMPLE_TOO_SMALL',
+    'AGREEMENT_BELOW_98',
+] as const;
+export type OpeningBlocker = (typeof OPENING_BLOCKERS)[number];
+
+export interface OpeningUncostedReceipt {
+    id: string;
+    receipt_number: string | null;
+    received_date: string | null;
+    lines: number;
+    units: number;
+}
+
+export interface OpeningRecount {
+    recount_id: string;
+    recount_number: string | null;
+    count_id: string | null;
+    count_number: string | null;
+    main_lines: number;
+    compared: number;
+    agreeing: number;
+    percent: number;
+    sample_percent: number;
+    sample_needed: number;
+    sample_ok: boolean;
+    agreement_ok: boolean;
+    passes: boolean;
+}
+
+/** `GET /stock/opening/readiness?locationId=`. `value` is null for those who do not see cost. */
+export interface OpeningReadiness {
+    location_id: string;
+    status: OpeningStatus;
+    ready: boolean;
+    blockers: OpeningBlocker[];
+    items: { tracked: number; with_cost: number; without_cost: number; without_cost_skus: string[]; untracked: number };
+    receipts: {
+        count: number;
+        lines: number;
+        units: number;
+        units_costed: number;
+        value: number | null;
+        uncosted_receipts: OpeningUncostedReceipt[];
+    };
+    recount: OpeningRecount | null;
+    sees_cost: boolean;
+}

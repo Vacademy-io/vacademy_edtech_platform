@@ -3238,6 +3238,7 @@
             "SERIES_EXHAUSTED": "This numbering has run out. A manager adds a new one.",
             "SERIES_PREFIX_IN_USE": "This prefix is already used. Choose another.",
             "RECEIPT_BILLED": "This receipt is billed and cannot be reversed.",
+            "OPENING_COST_MISSING": "Some items have no cost yet. A manager or the accountant loads item costs before opening stock is received.",
             "PROBABLY_SAVED": "This was probably saved already. Refresh the page and check before trying again.",
             "uncertain": "No clear answer from the server. Try again: it will not be saved twice.",
             "QTY_REQUIRED": "Type the length of this item; a scan does not count measured goods.",

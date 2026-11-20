@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { TokenKey } from '@/constants/auth/tokens';
 import { getInstituteId } from '@/constants/helper';
 import { getTokenDecodedData, getTokenFromCookie } from '@/lib/auth/sessionUtility';
-import { COMMERCE_ROLE } from '@/lib/commerce/commerce-access';
+import { COMMERCE_FEATURE, COMMERCE_ROLE } from '@/lib/commerce/commerce-access';
 import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
 import {
     fetchChallanSeries,
@@ -15,6 +15,7 @@ import {
     fetchLabelsToReplace,
     fetchLowStock,
     fetchMovements,
+    fetchOpeningReadiness,
     fetchOverview,
     fetchReceipt,
     fetchReceipts,
@@ -57,6 +58,7 @@ export const inventoryKeys = {
     review: (id: string) => [...inventoryRoot(), 'review', id] as const,
     labels: (args: object) => [...inventoryRoot(), 'labels', args] as const,
     toReplace: (locationId: string) => [...inventoryRoot(), 'to-replace', locationId] as const,
+    opening: (locationId: string) => [...inventoryRoot(), 'opening', locationId] as const,
 };
 
 /** Who is looking: the gate of every query and the manager-only parts. */
@@ -290,6 +292,22 @@ export function useLabelsToReplace(locationId: string | null, open: boolean) {
         queryKey: inventoryKeys.toReplace(locationId ?? ''),
         queryFn: () => fetchLabelsToReplace(locationId as string),
         enabled: enabled && open && !!locationId,
+        staleTime: LIST_STALE_MS,
+    });
+}
+
+/**
+ * Opening-stock readiness of one place (WP-53). Asked only when the institute has the
+ * switch-over feature and a single place is chosen.
+ */
+export function useOpeningReadiness(locationId: string | null) {
+    const { enabled } = useInventoryAccess();
+    const access = useCommerceAccess();
+    const featureOn = access.isFeatureOn(COMMERCE_FEATURE.MIGRATION);
+    return useQuery({
+        queryKey: inventoryKeys.opening(locationId ?? ''),
+        queryFn: () => fetchOpeningReadiness(locationId as string),
+        enabled: enabled && featureOn && !!locationId,
         staleTime: LIST_STALE_MS,
     });
 }

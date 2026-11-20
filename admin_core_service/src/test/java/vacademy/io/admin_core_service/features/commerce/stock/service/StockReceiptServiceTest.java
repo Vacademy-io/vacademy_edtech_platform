@@ -26,6 +26,8 @@ import vacademy.io.admin_core_service.features.commerce.stock.repository.StockVa
 import vacademy.io.admin_core_service.features.commerce.stock.service.StockPosting.CostTreatment;
 import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.InvalidRequestException;
+import vacademy.io.common.exceptions.VacademyException;
+import org.springframework.http.HttpStatus;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -35,6 +37,7 @@ import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -377,5 +380,109 @@ class StockReceiptServiceTest {
     @Test
     void aReversalNeedsAReason() {
         assertThrows(InvalidRequestException.class, () -> service.reverse(INST, "manager-1", "rcpt-1", " "));
+    }
+
+    // ── WP-53: an opening receipt needs a cost while the switch-over feature is on ───────────
+
+    private static final String MIGRATION = "commerce.migration";
+
+    @Test
+    void openingWithTheSwitchOverOnRefusesItemsWithNoCostBeforeANumberIsTaken() {
+        when(capabilities.isFeatureGranted(INST, MIGRATION)).thenReturn(true);
+        item("ps-z", "QUANTITY", "80");
+        Object[] idAndQuantity = new Object[14 + 2];
+        idAndQuantity[0] = "ps-z";
+        idAndQuantity[1] = 1;
+        for (int i = 0; i < 7; i++) {
+            String id = "ps-" + (char) ('a' + i);
+            item(id, "QUANTITY", null);
+            idAndQuantity[2 + 2 * i] = id;
+            idAndQuantity[3 + 2 * i] = 2;
+        }
+
+        VacademyException refused = assertThrows(VacademyException.class,
+                () -> service.create(INST, "staff-1", false, request("OPENING", idAndQuantity)));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, refused.getStatus());
+        assertTrue(refused.getMessage().startsWith("OPENING_COST_MISSING: 7 item(s) have no cost yet "
+                + "(SKU-ps-a, SKU-ps-b, SKU-ps-c, SKU-ps-d, SKU-ps-e, …)"), refused.getMessage());
+        assertFalse(refused.getMessage().contains("SKU-ps-f"));
+        assertFalse(refused.getMessage().contains("SKU-ps-z"));
+        verifyNoInteractions(counters, ledger);
+        verify(receipts, never()).saveAndFlush(any(StockReceipt.class));
+    }
+
+    @Test
+    void openingWithTheSwitchOverOnTakesATypedCostOrTheStandardCost() {
+        when(capabilities.isFeatureGranted(INST, MIGRATION)).thenReturn(true);
+        item("ps-a", "QUANTITY", null);
+        item("ps-b", "QUANTITY", "80");
+        ReceiptRequest request = request("OPENING", "ps-a", 5, "ps-b", 3);
+        request.getLines().get(0).setUnitCost(new BigDecimal("12.50"));
+
+        StockReceipt receipt = service.create(INST, "manager-1", true, request);
+
+        assertEquals("GRN-000001", receipt.getReceiptNumber());
+        List<StockPosting> postings = posted(2);
+        assertEquals(CostTreatment.KNOWN, postings.get(0).getCostTreatment());
+        assertEquals(CostTreatment.KNOWN, postings.get(1).getCostTreatment());
+        ArgumentCaptor<StockReceiptLine> saved = ArgumentCaptor.forClass(StockReceiptLine.class);
+        verify(lines, times(2)).saveAndFlush(saved.capture());
+        assertEquals("TYPED", saved.getAllValues().get(0).getCostSource());
+        assertEquals("STANDARD", saved.getAllValues().get(1).getCostSource());
+    }
+
+    @Test
+    void openingWithTheSwitchOverOffPostsUncostedAsBefore() {
+        when(capabilities.isFeatureGranted(INST, MIGRATION)).thenReturn(false);
+        item("ps-a", "QUANTITY", null);
+
+        StockReceipt receipt = service.create(INST, "staff-1", false, request("OPENING", "ps-a", 5));
+
+        assertEquals("GRN-000001", receipt.getReceiptNumber());
+        assertEquals(CostTreatment.PROVISIONAL, posted(1).get(0).getCostTreatment());
+        verify(capabilities).isFeatureGranted(INST, MIGRATION);
+    }
+
+    @Test
+    void openingPostsAsBeforeWhenTheFeatureCannotBeRead() {
+        when(capabilities.isFeatureGranted(INST, MIGRATION)).thenThrow(new IllegalStateException("down"));
+        item("ps-a", "QUANTITY", null);
+
+        StockReceipt receipt = service.create(INST, "staff-1", false, request("OPENING", "ps-a", 5));
+
+        assertEquals("GRN-000001", receipt.getReceiptNumber());
+        posted(1);
+    }
+
+    @Test
+    void otherSourcesNeverAskForTheSwitchOverFeature() {
+        when(capabilities.isFeatureGranted(anyString(), anyString())).thenReturn(true);
+        item("ps-a", "QUANTITY", null);
+        StockLocation source = new StockLocation();
+        source.setId("loc-src");
+        source.setStatus("ACTIVE");
+        source.setSource(true);
+        when(locations.findByInstituteIdAndId(INST, "loc-src")).thenReturn(Optional.of(source));
+
+        service.create(INST, "staff-1", false, request("OTHER", "ps-a", 5));
+        ReceiptRequest own = request("OWN_SOURCE", "ps-a", 5);
+        own.setClientRequestId("req-2");
+        own.setSourceLocationId("loc-src");
+        service.create(INST, "staff-1", false, own);
+
+        posted(2);
+        verify(capabilities, never()).isFeatureGranted(INST, MIGRATION);
+    }
+
+    @Test
+    void aReplayOfAnEarlierOpeningReceiptStillAnswersIt() {
+        item("ps-a", "QUANTITY", null);
+        StockReceipt first = service.create(INST, "staff-1", false, request("OPENING", "ps-a", 5));
+        when(receipts.findByInstituteIdAndClientRequestId(INST, "req-1")).thenReturn(Optional.of(first));
+        when(capabilities.isFeatureGranted(INST, MIGRATION)).thenReturn(true);
+
+        assertSame(first, service.create(INST, "staff-1", false, request("OPENING", "ps-a", 5)));
+        verify(counters, times(1)).nextNumber(INST, "GRN");
     }
 }

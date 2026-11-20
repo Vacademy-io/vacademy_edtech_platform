@@ -36,8 +36,9 @@ import {
     COMMERCE_STOCK_TRANSFER_RECEIVE,
     COMMERCE_STOCK_TRANSFERS,
     COMMERCE_STOCK_VARIANTS,
+    COMMERCE_BASE,
 } from '@/routes/commerce/-shared/commerce-urls';
-import { REVIEW_PIECE_GROUPS } from './inventory-types';
+import { OPENING_BLOCKERS, OPENING_STATUSES, REVIEW_PIECE_GROUPS } from './inventory-types';
 import type {
     AdjustBody,
     Agreement,
@@ -62,6 +63,9 @@ import type {
     LowRow,
     MovementFilters,
     MovementRow,
+    OpeningBlocker,
+    OpeningReadiness,
+    OpeningStatus,
     OverviewFilter,
     OverviewPage,
     OverviewRow,
@@ -941,3 +945,73 @@ export async function fetchLabelsToReplace(locationId: string): Promise<ToReplac
         ];
     });
 }
+
+// ─── Opening stock (WP-53) ───────────────────────────────────────────────────
+
+export const COMMERCE_STOCK_OPENING_READINESS = `${COMMERCE_BASE}/stock/opening/readiness`;
+
+export function normalizeOpeningReadiness(data: unknown): OpeningReadiness {
+    const r = rec(data);
+    const items = rec(r.items);
+    const receipts = rec(r.receipts);
+    const recount = asRecord(r.recount);
+    const status = str(r.status);
+    return {
+        location_id: str(r.location_id) ?? '',
+        status: (OPENING_STATUSES as readonly string[]).includes(status ?? '') ? (status as OpeningStatus) : 'NOT_STARTED',
+        ready: r.ready === true,
+        blockers: (Array.isArray(r.blockers) ? r.blockers : []).filter((b): b is OpeningBlocker =>
+            (OPENING_BLOCKERS as readonly unknown[]).includes(b)
+        ),
+        items: {
+            tracked: int(items.tracked),
+            with_cost: int(items.with_cost),
+            without_cost: int(items.without_cost),
+            without_cost_skus: (Array.isArray(items.without_cost_skus) ? items.without_cost_skus : [])
+                .map(str)
+                .filter((s): s is string => !!s),
+            untracked: int(items.untracked),
+        },
+        receipts: {
+            count: int(receipts.count),
+            lines: int(receipts.lines),
+            units: int(receipts.units),
+            units_costed: int(receipts.units_costed),
+            value: num(receipts.value),
+            uncosted_receipts: records(receipts.uncosted_receipts).flatMap((u) => {
+                const id = str(u.id);
+                if (!id) return [];
+                return [
+                    {
+                        id,
+                        receipt_number: str(u.receipt_number),
+                        received_date: str(u.received_date),
+                        lines: int(u.lines),
+                        units: int(u.units),
+                    },
+                ];
+            }),
+        },
+        recount: recount
+            ? {
+                  recount_id: str(recount.recount_id) ?? '',
+                  recount_number: str(recount.recount_number),
+                  count_id: str(recount.count_id),
+                  count_number: str(recount.count_number),
+                  main_lines: int(recount.main_lines),
+                  compared: int(recount.compared),
+                  agreeing: int(recount.agreeing),
+                  percent: int(recount.percent),
+                  sample_percent: int(recount.sample_percent),
+                  sample_needed: int(recount.sample_needed),
+                  sample_ok: recount.sample_ok === true,
+                  agreement_ok: recount.agreement_ok === true,
+                  passes: recount.passes === true,
+              }
+            : null,
+        sees_cost: r.sees_cost === true,
+    };
+}
+
+export const fetchOpeningReadiness = async (locationId: string) =>
+    normalizeOpeningReadiness(await get(COMMERCE_STOCK_OPENING_READINESS, { locationId }));

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { CheckCircle, Plus, Trash } from '@phosphor-icons/react';
@@ -54,7 +54,7 @@ const fromPick = (item: VariantPick, lang: 'hi' | 'en'): ReceiveItem => ({
  * cost anywhere on this tab. Save posts once: a double tap is held by the
  * button, a retry after no answer reuses the request id.
  */
-export function ReceiveTab({ locationId, allPlaces }: TabProps) {
+export function ReceiveTab({ locationId, allPlaces, presetSource }: TabProps) {
     const { t } = useTranslation('commerce');
     const lang = useAdminLanguage();
     const errorText = useInventoryErrorText();
@@ -62,7 +62,11 @@ export function ReceiveTab({ locationId, allPlaces }: TabProps) {
     const write = useInventoryWrite('grn');
     const place = locationId as string;
 
-    const [source, setSource] = useState<ReceiveSource | null>(null);
+    const [source, setSource] = useState<ReceiveSource | null>(presetSource ?? null);
+    // The opening-stock panel's link chooses Opening stock, unless a source is already chosen.
+    useEffect(() => {
+        if (presetSource) setSource((chosen) => chosen ?? presetSource);
+    }, [presetSource]);
     const [sourceLocationId, setSourceLocationId] = useState('');
     const [note, setNote] = useState('');
     const [lines, setLines] = useState<ReceiptLineDraft[]>([]);

@@ -1,0 +1,45 @@
+{
+    "title": "Opening stock",
+    "description": "Before this place starts selling here: item costs loaded, opening stock received, counted, and a blind recount of at least a tenth of the count agreeing at 98% or more.",
+    "status": {
+        "NOT_STARTED": "Not started",
+        "RECEIVING": "Receiving",
+        "COUNTING": "Counting",
+        "RECOUNT_FAILED": "Recount failed",
+        "PASSED": "Passed"
+    },
+    "statusHelp": {
+        "NOT_STARTED": "No opening stock has been received here yet. Receive it with the source Opening stock.",
+        "RECEIVING": "Opening stock is received. Print the labels, tag every item, then start a count by scanning the labels.",
+        "COUNTING": "A count is open. When it is saved, a second person does a blind recount of at least a tenth of its lines.",
+        "RECOUNT_FAILED": "The blind recount did not pass. Count the place again and recount.",
+        "PASSED": "The blind recount passed. The count can now be posted."
+    },
+    "figures": {
+        "costs": "Item costs",
+        "costsValue": "{{withCost}} of {{tracked}} items",
+        "receipts": "Opening receipts",
+        "receiptsValue": "{{receipts}} receipt(s), {{units}} units",
+        "unitsCosted": "Units with a cost",
+        "unitsCostedValue": "{{costed}} of {{units}}",
+        "value": "Value at cost",
+        "recount": "Blind recount",
+        "recountValue": "{{compared}} of {{lines}} lines ({{sample}}%)",
+        "recountNone": "Not done yet",
+        "agreement": "Agreement",
+        "agreementValue": "{{percent}}%"
+    },
+    "blockers": {
+        "COSTS_MISSING": "{{items}} item(s) have no cost yet. A manager or the accountant loads item costs first.",
+        "UNCOSTED_OPENING_RECEIPT": "An opening receipt here carries no cost. Reverse it before counted opening stock is received.",
+        "SAMPLE_TOO_SMALL": "The recount checked {{compared}} line(s); at least {{needed}} are needed (a tenth of the count).",
+        "AGREEMENT_BELOW_98": "The recount agreed on {{percent}}% of its lines; 98% is needed."
+    },
+    "withoutCost": "Without a cost: {{skus}}",
+    "uncostedReceipts": "Receipts with no cost: {{numbers}}",
+    "actions": {
+        "receive": "Receive opening stock",
+        "labels": "Print labels",
+        "counts": "Counts"
+    }
+}
