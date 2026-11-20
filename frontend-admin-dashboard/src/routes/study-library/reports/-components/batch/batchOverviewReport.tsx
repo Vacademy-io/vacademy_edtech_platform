@@ -57,8 +57,14 @@ import {
     type BatchSummaryReport,
     type BatchSummaryRequest,
 } from '@/services/batch-summary-report';
+import {
+    fetchLiveClassDashboard,
+    type LiveClassDashboardData,
+} from '@/routes/study-library/live-session/-services/live-class-dashboard';
+import { getInstituteId } from '@/constants/helper';
 import { useBatchOptions } from '../batchMultiSelect';
 import { BatchComparison } from './batchComparison';
+import { BatchLiveSessionsBlock } from './batchLiveSessions';
 import { BatchPointsBlock, BatchTimelineBlock } from './batchTimeline';
 import { GenerateBatchReportDialog } from './generateBatchReportDialog';
 
@@ -120,11 +126,13 @@ const BatchOverviewBody = ({
     brand,
     batchLabels,
     dailyTime,
+    live,
 }: {
     data: BatchSummaryReport;
     brand: string;
     batchLabels: Map<string, string>;
     dailyTime: BatchDailyTimeRow[] | undefined;
+    live: LiveClassDashboardData | undefined;
 }) => {
     const single = !!data.package_session_id;
     const scored = useMemo(() => data.learners.filter((l) => l.avg_score != null), [data]);
@@ -262,6 +270,8 @@ const BatchOverviewBody = ({
             {data.timeline && <BatchTimelineBlock timeline={data.timeline} brand={brand} />}
 
             <DailyTimeBlock brand={brand} rows={dailyTime} />
+
+            {live && <BatchLiveSessionsBlock data={live} brand={brand} />}
 
             {data.gamification && <BatchPointsBlock gamification={data.gamification} brand={brand} />}
 
@@ -636,6 +646,21 @@ export default function BatchOverviewReport({
     const dailyTime = useQuery({
         ...getBatchDailyTimeQuery(request ?? { start_date: '', end_date: '' }),
     });
+    const instituteId = getInstituteId() ?? '';
+    const liveBatchIds = batchId ? [batchId] : several;
+    const live = useQuery({
+        queryKey: ['BATCH_OVERVIEW_LIVE_SESSIONS', instituteId, liveBatchIds.join(), range?.start, range?.end],
+        queryFn: () =>
+            fetchLiveClassDashboard({
+                instituteId,
+                startDate: range?.start ?? '',
+                endDate: range?.end ?? '',
+                batchIds: liveBatchIds,
+                instructorIds: [],
+            }),
+        enabled: !!instituteId && !!range,
+        staleTime: 60_000,
+    });
     // Options come from the unfiltered list the report returns, so picking one keeps the rest.
     const assessmentOptions = useMemo(
         () =>
@@ -701,6 +726,7 @@ export default function BatchOverviewReport({
                     brand={brand}
                     batchLabels={batchLabels}
                     dailyTime={dailyTime.data}
+                    live={live.data}
                 />
             )}
         </div>
