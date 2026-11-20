@@ -234,3 +234,36 @@ def test_recipients_count_when_either_channel_has_someone():
     assert not alerts.Recipients([], [])
     assert alerts.Recipients([], ["919876543210"])
     assert alerts.Recipients(["a@b.co"], [])
+
+
+def test_whatsapp_payload_is_the_health_check_format():
+    fields = {"2": "openrouter.ai", "1": "API alert: x", "10": "ten", "3": "k", "4": "d", "5": "t"}
+    payload = alerts.whatsapp_payload("919876543210", "vacademy_server_health_check_utility", fields)
+
+    assert payload["messaging_product"] == "whatsapp"
+    assert payload["to"] == "919876543210"
+    assert payload["type"] == "template"
+    assert payload["template"]["name"] == "vacademy_server_health_check_utility"
+    assert payload["template"]["language"] == {"code": "en"}
+    params = payload["template"]["components"][0]["parameters"]
+    assert [p["text"] for p in params] == ["API alert: x", "openrouter.ai", "k", "d", "t", "ten"]
+    assert all(p["type"] == "text" for p in params)
+
+
+def test_meta_refusals_are_reported_in_metas_words():
+    body = {"error": {"code": 132001, "message": "(#132001) Template name does not exist in the translation",
+                      "error_data": {"details": "template name (x) does not exist in en"}}}
+    assert alerts.meta_error(body) == "(#132001) template name (x) does not exist in en"
+    assert alerts.meta_error({"error": {"message": "Invalid OAuth access token"}}) == "Invalid OAuth access token"
+    assert alerts.meta_error("not json") == "refused"
+
+
+def test_without_the_token_every_number_is_reported_not_silently_skipped(monkeypatch):
+    import asyncio
+
+    monkeypatch.delenv("WHATSAPP_ACCESS_TOKEN_VIDYAYATAN", raising=False)
+    monkeypatch.delenv("WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN", raising=False)
+    results = asyncio.run(alerts.send_whatsapp(["919876543210", "447700900123"], {"1": "a"}))
+
+    assert [r["success"] for r in results] == [False, False]
+    assert "WHATSAPP_ACCESS_TOKEN_VIDYAYATAN" in results[0]["error"]
