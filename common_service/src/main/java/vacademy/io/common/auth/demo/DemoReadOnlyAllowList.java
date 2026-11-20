@@ -54,6 +54,7 @@ public final class DemoReadOnlyAllowList {
         read("POST", "/admin-core-service/v1/admin/student-fee/search");
         // Admissions: paged list of admission responses
         read("POST", "/admin-core-service/v1/admission/responses/list");
+        read("POST", "/admin-core-service/v1/applicant/list");
         // Leads, enquiries, campaigns: lists and analytics that post a filter body
         read("POST", "/admin-core-service/v1/audience/campaigns");
         read("POST", "/admin-core-service/v1/audience/center-heatmap");
@@ -78,6 +79,8 @@ public final class DemoReadOnlyAllowList {
         read("POST", "/admin-core-service/institute/v1/faculty/faculty/get-all");
         // Learners: v1 list (no credentials) and learner stats. The v2 list is NOT here: it returns learner passwords
         read("POST", "/admin-core-service/institute/institute_learner/get/v1/all");
+        // v2 list: StudentListManager leaves the passwords out for the demo user
+        read("POST", "/admin-core-service/institute/institute_learner/get/v2/all");
         read("POST", "/admin-core-service/institute/institute_learner/stats/users");
         // Bulk upload: returns the CSV column layout only
         read("POST", "/admin-core-service/institute/institute_learner-bulk/v1/init-institute_learner-upload");
@@ -93,6 +96,8 @@ public final class DemoReadOnlyAllowList {
         // Learner and batch progress reports (JSON; the PDF exports are not here)
         read("POST", "/admin-core-service/learner-management/batch-report");
         read("POST", "/admin-core-service/learner-management/batch-report/leaderboard");
+        read("POST", "/admin-core-service/learner-management/batch-summary-report/daily-time");
+        read("POST", "/admin-core-service/learner-management/batch-summary-report/summary");
         read("POST", "/admin-core-service/learner-management/learner-report");
         read("POST", "/admin-core-service/learner-management/learner-report/slide-wise-progress");
         // Courses: catalogue search
@@ -158,6 +163,7 @@ public final class DemoReadOnlyAllowList {
         read("POST", "/admin-core-service/v1/user-plan/payment-logs/instalment-forecast");
         read("POST", "/admin-core-service/v1/user-plan/payment-logs/learner-plan-breakdown");
         read("POST", "/admin-core-service/v1/user-plan/payment-logs/outstanding-learners");
+        read("POST", "/admin-core-service/v1/user-plan/payment-logs/summary");
         // Workflows: list with schedules
         read("POST", "/admin-core-service/v1/workflow/institute/workflows-with-schedules/list");
         // Workflow runs: list
@@ -184,6 +190,8 @@ public final class DemoReadOnlyAllowList {
         read("POST", "/auth-service/v1/refresh-token");
         // Users: names and avatars by id
         read("POST", "/auth-service/v1/user-details/get-basic-details");
+        // Team list: RoleController leaves the passwords out for the demo user
+        read("POST", "/auth-service/v1/user-roles/users-of-status");
 
         // ───── community-service ─────
         // Tags and entities filter

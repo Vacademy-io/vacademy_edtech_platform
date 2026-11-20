@@ -55,12 +55,15 @@ and demo-guide visitor tokens.
    110 read-only, 96 write/send/spend/export, 8 unsure. Unsure counts as refused.
 4. From the 110, previews, internal routes, routes outside the admin app and one route that forwards the caller's
    token to a refused endpoint were dropped; `/auth-service/v1/refresh-token` was added. Result: 93 entries.
+   2026-11-20: six more added after a sweep of every sidebar screen as the demo visitor found screens that
+   could not load (applicants, payment summary, learning reports, the main Learners list, the Team list). Each
+   handler was read end to end; the two that used to return passwords now leave them out for the demo user. Result: 99.
    No entry overlaps a write route of the same shape (checked by script against all 1,820 non-GET routes).
 5. GETs: all 1,510 were reviewed for writes, sends, spend, credentials and bulk exports: 588 by reading the
    handler and what it calls, 922 by a static call tracer with a hand read of every hit (654 of those rest on the
    tracer alone, see "Known gaps").
 
-## Allowed non-GET reads (93)
+## Allowed non-GET reads (99)
 
 
 ### admin-core-service: Fee tracking: search, collection dashboard, adjustment lists
@@ -77,6 +80,7 @@ and demo-guide visitor tokens.
 | Method | Path | Controller method | Evidence |
 |---|---|---|---|
 | POST | `/admin-core-service/v1/admission/responses/list` | `AdmissionController#listAdmissionResponses` | AdmissionResponsesService.list -> native SELECT (AdmissionResponsesRepositoryCustomImpl) + findByUserIdIn/findAllById lookups; no writes |
+| POST | `/admin-core-service/v1/applicant/list` | `ApplicantAdminController` | ApplicantService list: four repository SELECTs + auth-service users-with-children lookup; fields copied one by one, no credential |
 
 ### admin-core-service: Leads, enquiries, campaigns: lists and analytics that post a filter body
 
@@ -132,11 +136,12 @@ and demo-guide visitor tokens.
 |---|---|---|---|
 | POST | `/admin-core-service/institute/v1/faculty/faculty/get-all` | `FacultyController#getAllTeachers` | FacultyService.getAllFaculty -> facultyRepository.findByFilters* + DTO mapping |
 
-### admin-core-service: Learners: v1 list (no credentials) and learner stats. The v2 list is NOT here: it returns learner passwords
+### admin-core-service: Learners: v1 and v2 lists (no credentials for the demo user) and learner stats
 
 | Method | Path | Controller method | Evidence |
 |---|---|---|---|
 | POST | `/admin-core-service/institute/institute_learner/get/v1/all` | `InstituteGetStudentController#getLinkedStudents` | StudentListManager.getLinkedStudents -> faculty access filter reads, studentFilterService SELECTs, attendance report reads; no writes. Returns learner PII page |
+| POST | `/admin-core-service/institute/institute_learner/get/v2/all` | `StudentGetV2Controller#getLinkedStudentsV2` | StudentListManager.getLinkedStudentsV2: SELECTs + `SET LOCAL plan_cache_mode`; no writes. The password enrichment (`enrichWithUserCredentials`) is skipped when `DemoReadOnlyGate.isDemoCaller` is true, so no row carries a password for the demo user |
 | POST | `/admin-core-service/institute/institute_learner/stats/users` | `StudentStatsController#getStudentStats` | StudentStatsManager.getStudentStats -> findUserStatsWithTypePaginated + auth-service user lookup |
 
 ### admin-core-service: Bulk upload: returns the CSV column layout only
@@ -176,6 +181,8 @@ and demo-guide visitor tokens.
 |---|---|---|---|
 | POST | `/admin-core-service/learner-management/batch-report` | `BatchReportController#getBatchReportDetails` | BatchReportService.getBatchReport: ActivityLogRepository / ConcentrationScoreRepository aggregate SELECTs only |
 | POST | `/admin-core-service/learner-management/batch-report/leaderboard` | `BatchReportController#getBatchActivityDataWithRanks` | BatchReportService.getBatchActivityData: ActivityLogRepository.getBatchActivityDataWithRankPaginated only |
+| POST | `/admin-core-service/learner-management/batch-summary-report/daily-time` | `BatchSummaryReportController` | BatchSummaryReportService: activityLogRepository.findDailyTimeForInstitute / findDailyTimeForBatches, SELECTs only |
+| POST | `/admin-core-service/learner-management/batch-summary-report/summary` | `BatchSummaryReportController` | BatchSummaryReportService summary: settings JSON, assessment-service cohort history lookup, stored analysis JSON (no LLM), SELECTs. The WhatsApp/email/PDF code is reached only from `/send`, which is refused |
 | POST | `/admin-core-service/learner-management/learner-report` | `LearnerReportController#getLearnerProgressReport` | LearnerReportService.getLearnerProgressReport + BatchReportService.getBatchReport: ActivityLogRepository / ConcentrationScoreRepository SELECTs only |
 | POST | `/admin-core-service/learner-management/learner-report/slide-wise-progress` | `LearnerReportController#getSlideWiseProgress` | LearnerReportService.getSlideProgressForLearner: ActivityLogRepository.getSlideActivityByDate only |
 
@@ -325,6 +332,7 @@ and demo-guide visitor tokens.
 | POST | `/admin-core-service/v1/user-plan/payment-logs/instalment-forecast` | `UserPlanController#getInstalmentForecast` | PaymentLogService.getInstalmentForecast: UserPlanRepository.getInstalmentProgress/getUpcomingByMonth only |
 | POST | `/admin-core-service/v1/user-plan/payment-logs/learner-plan-breakdown` | `UserPlanController#getLearnerPlanBreakdown` | PaymentLogService.getLearnerPlanBreakdown: UserPlanRepository.findLearnerPlanBreakdown only |
 | POST | `/admin-core-service/v1/user-plan/payment-logs/outstanding-learners` | `UserPlanController#getOutstandingLearners` | PaymentLogService.getOutstandingLearners: UserPlanRepository.findLearnersDueInMonth/findLearnersWithBalance/findOutstandingLearners + auth-service user-details-list read |
+| POST | `/admin-core-service/v1/user-plan/payment-logs/summary` | `UserPlanController` | PaymentLogService summary: aggregateCombinedPaymentGroups/Logs, findDistinctPaymentPlanNames, findUsedPaymentModes, SELECTs only |
 
 ### admin-core-service: Workflows: list with schedules
 
@@ -380,6 +388,12 @@ and demo-guide visitor tokens.
 |---|---|---|---|
 | POST | `/auth-service/v1/user-details/get-basic-details` | `UserDetailController#getUserBasicDetails` | UserDetailService.getUserBasicDetails -> userRepository.findAllById; returns id, name, face file id only. Note: no institute check on the ids |
 
+### auth-service: Team list (passwords left out for the demo user)
+
+| Method | Path | Controller method | Evidence |
+|---|---|---|---|
+| POST | `/auth-service/v1/user-roles/users-of-status` | `RoleController#getUsersOfStatus` | UserService.getUsersByInstituteIdAndStatusPaged = paged SELECTs. `hidePasswordsCallerMayNotSee` sets every row's password to null when `DemoReadOnlyGate.isDemoCaller` is true |
+
 ### community-service: Tags and entities filter
 
 | Method | Path | Controller method | Evidence |
@@ -410,11 +424,9 @@ These look like reads by name or are used by read screens, and are **not** on th
 
 | Method | Path | Why it is refused |
 |---|---|---|
-| POST | `/admin-core-service/institute/institute_learner/get/v2/all` | **The main Learners list.** Writes nothing, but every row carries the learner's password from auth-service (`StudentListManager.java:487`, `:944`). A learner password is a sign-in the gate does not cover. The Learners screen shows an error in the demo until this endpoint stops returning passwords for the role. Owner decision needed. |
 | POST | `/admin-core-service/institute/institute_learner/get/v1/all-csv` | whole-list CSV export of learners |
 | POST | `/admin-core-service/institute/institute_learner/get/v1/basic-details-csv` | CSV of learners with username and password |
 | POST | `/auth-service/v1/user/users-credential` | returns usernames and passwords |
-| POST | `/auth-service/v1/user-roles/users-of-status` | team list; rows can carry the member's password (`UserService.java:386`). The Team/roles screen and chat people search depend on it |
 | POST | `/notification-service/v1/chat/people/search` | forwards the caller's token to `users-of-status`, which is refused |
 | POST | `/admin-core-service/institute/v1/certificate/learner/get` | named "get" but generates, stores and notifies when a certificate is missing |
 | POST | `/admin-core-service/open/v1/catalogue-resources/download` | saves a download-analytics row |
@@ -455,7 +467,7 @@ The full verdict for each of the 214 candidates:
 | WRITES | POST | `/admin-core-service/institute/institute_learner-operation/v1/update` | `InstituteStudentOperationController#updateStudentStatus` | @Auditable; StudentSessionManager.updateStudentStatus runs @Modifying updates (institute_learner/manager/StudentSessionManager.java:54) |
 | WRITES | POST | `/admin-core-service/institute/institute_learner/get/v1/all-csv` | `InstituteGetStudentController#getStudentsCsvExport` | No DB write, but EXPORT: loops every page and returns the whole learner list as a CSV file (bulk personal data) … |
 | WRITES | POST | `/admin-core-service/institute/institute_learner/get/v1/basic-details-csv` | `InstituteGetStudentController#getStudentsBasicDetailsCsvExport` | No DB write, but EXPORT: CSV file of all learners with username + PASSWORD fetched from auth-service users-credential … |
-| UNSURE | POST | `/admin-core-service/institute/institute_learner/get/v2/all` | `StudentGetV2Controller#getLinkedStudentsV2` | No DB write found (SELECTs + SET LOCAL plan_cache_mode, StudentListManager.java:518), BUT every row is enriched with the learner password from … |
+| ALLOWED 2026-11-20 (password left out for the demo user) | POST | `/admin-core-service/institute/institute_learner/get/v2/all` | `StudentGetV2Controller#getLinkedStudentsV2` | No DB write found (SELECTs + SET LOCAL plan_cache_mode, StudentListManager.java:518), BUT every row is enriched with the learner password from … |
 | WRITES | POST | `/admin-core-service/institute/learner-batch/v1/approve-learner-request` | `LearnerBatchController#approveLearnerRequest` | LearnerBatchEnrollService.shiftLearnerFromPendingForApprovalToActivePackageSessions shifts batch, triggers enrollment workflow, referral benefits … |
 | WRITES | POST | `/admin-core-service/institute/learner-batch/v1/approve-learner-request-bulk` | `LearnerBatchController#approveLearnerRequestBulk` | LearnerBatchEnrollService.processBulkLearnerApproval loops the same shift/enrol path (institute_learner/service/LearnerBatchEnrollService.java:383) |
 | WRITES | POST | `/admin-core-service/institute/v1/certificate/learner/get` | `InstituteCertificateController#generateCourseCertification` | Named "get" but writes on every path: generates + stores certificate, saves mapping and notifies when missing or body regenerate=true … |
@@ -548,7 +560,7 @@ The full verdict for each of the 214 candidates:
 | WRITES | POST | `/auth-service/v1/user-details/update` | `UserDetailController#updateUserDetails` | Updates a user's details and roles: userRepository.save + updateRolesOfUser; … |
 | WRITES | PUT | `/auth-service/v1/user-details/update-user` | `UserDetailController#updateUser` | Updates username/password/profile: userCredentialUpdateService.updateCredentials + userService.updateUserDetails; … |
 | WRITES | PUT | `/auth-service/v1/user-roles/update-role-status` | `RoleController#updateUserRoleStatus` | Changes users' role status: userRoleRepository.updateUserRoleStatusByInstituteIdAndUserId; … |
-| UNSURE | POST | `/auth-service/v1/user-roles/users-of-status` | `RoleController#getUsersOfStatus` | No write (UserService.getUsersByInstituteIdAndStatusPaged = paged selects) BUT each row carries the member's PLAINTEXT password … |
+| ALLOWED 2026-11-20 (password left out for the demo user) | POST | `/auth-service/v1/user-roles/users-of-status` | `RoleController#getUsersOfStatus` | No write (UserService.getUsersByInstituteIdAndStatusPaged = paged selects) BUT each row carries the member's PLAINTEXT password … |
 | UNSURE | POST | `/auth-service/v1/user/users-credential` | `UserController#getUsersCredentials` | No write (UserService.getUsersCredentials = findAllById) BUT returns username + PLAINTEXT password for every id the caller may manage … |
 | WRITES | POST | `/auth-service/v1/verify-generic-whatsapp-otp-login` | `AuthController#verifyGenericWhatsAppOtpAndLogin` | Verifies WhatsApp OTP then generateJwtResponse: deletes refresh tokens, mints refresh token + JWT; … |
 | EXCLUDED | POST | `/auth-service/v1/vimotion/invite-codes/validate` | `VimotionAuthController#validateInviteCode` | not part of the admin app |

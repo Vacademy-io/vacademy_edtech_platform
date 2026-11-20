@@ -101,6 +101,11 @@ public class RoleController {
         if (response == null || response.getContent() == null || response.getContent().isEmpty()) {
             return;
         }
+        // The read-only demo user is ADMIN of the demo institute but never gets a password.
+        if (vacademy.io.common.auth.demo.DemoReadOnlyGate.isDemoCaller(caller)) {
+            response.getContent().forEach(row -> row.setPassword(null));
+            return;
+        }
         List<String> ids = response.getContent().stream().map(UserWithRolesDTO::getId).filter(Objects::nonNull).toList();
         Set<String> visible = userAccountAccessGuard.loginsCallerMayView(caller, ids);
         for (UserWithRolesDTO row : response.getContent()) {

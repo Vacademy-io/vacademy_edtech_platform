@@ -170,10 +170,49 @@ class DemoReadOnlyGateTest {
     }
 
     @Test
+    void listsThatLeaveThePasswordOutForTheDemoUserAreAllowed() {
+        assertFalse(DemoReadOnlyGate.refuses("POST", "/admin-core-service/institute/institute_learner/get/v2/all", null));
+        assertFalse(DemoReadOnlyGate.refuses("POST", "/auth-service/v1/user-roles/users-of-status", null));
+        assertFalse(DemoReadOnlyGate.refuses("POST", "/admin-core-service/v1/applicant/list", null));
+        assertFalse(DemoReadOnlyGate.refuses("POST", "/admin-core-service/v1/user-plan/payment-logs/summary", null));
+        assertFalse(DemoReadOnlyGate.refuses("POST",
+                "/admin-core-service/learner-management/batch-summary-report/summary", null));
+        assertTrue(DemoReadOnlyGate.refuses("POST",
+                "/admin-core-service/learner-management/batch-summary-report/send", null));
+    }
+
+    @Test
+    void demoCallerIsKnownFromTheUserOrTheRequest() {
+        assertTrue(DemoReadOnlyGate.isDemoCaller(user(false, "ADMIN", "DEMO_READ_ONLY")));
+        assertFalse(DemoReadOnlyGate.isDemoCaller(user(false, "ADMIN")));
+        assertFalse(DemoReadOnlyGate.isDemoCaller(null));
+        java.util.Map<String, Object> attributes = new java.util.HashMap<>();
+        jakarta.servlet.http.HttpServletRequest request = (jakarta.servlet.http.HttpServletRequest)
+                java.lang.reflect.Proxy.newProxyInstance(getClass().getClassLoader(),
+                        new Class<?>[]{jakarta.servlet.http.HttpServletRequest.class}, (proxy, method, args) -> {
+                            switch (method.getName()) {
+                                case "getMethod": return "POST";
+                                case "getRequestURI": return LEADS;
+                                case "getAttribute": return attributes.get((String) args[0]);
+                                case "setAttribute": attributes.put((String) args[0], args[1]); return null;
+                                default: return null;
+                            }
+                        });
+        org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(
+                new org.springframework.web.context.request.ServletRequestAttributes(request));
+        try {
+            assertFalse(DemoReadOnlyGate.isDemoCaller(user(false, "ADMIN")));
+            // The token names the role under another institute: the loaded user does not show it.
+            assertFalse(DemoReadOnlyGate.refuses(request, user(false, "ADMIN"), claim("other", "DEMO_READ_ONLY")));
+            assertTrue(DemoReadOnlyGate.isDemoCaller(user(false, "ADMIN")));
+        } finally {
+            org.springframework.web.context.request.RequestContextHolder.resetRequestAttributes();
+        }
+    }
+
+    @Test
     void credentialReturningListsAreNotOnTheAllowList() {
-        assertTrue(DemoReadOnlyGate.refuses("POST", "/admin-core-service/institute/institute_learner/get/v2/all", null));
         assertTrue(DemoReadOnlyGate.refuses("POST", "/auth-service/v1/user/users-credential", null));
-        assertTrue(DemoReadOnlyGate.refuses("POST", "/auth-service/v1/user-roles/users-of-status", null));
         assertTrue(DemoReadOnlyGate.refuses("POST",
                 "/admin-core-service/institute/institute_learner/get/v1/basic-details-csv", null));
     }
@@ -227,7 +266,7 @@ class DemoReadOnlyGateTest {
     @Test
     void listSizesMatchTheDocument() {
         // docs/demo-stage/READ_ALLOWLIST.md states these numbers; change both together.
-        assertEquals(93, DemoReadOnlyAllowList.readCount());
+        assertEquals(99, DemoReadOnlyAllowList.readCount());
         assertEquals(40, DemoReadOnlyAllowList.blockedGetCount());
     }
 }

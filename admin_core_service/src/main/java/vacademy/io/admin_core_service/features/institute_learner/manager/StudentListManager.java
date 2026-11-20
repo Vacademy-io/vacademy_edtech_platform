@@ -484,7 +484,10 @@ public class StudentListManager {
             Pageable pageable = createPageable(studentListFilter, pageNo, pageSize);
             Page<StudentListV2Projection> page = fetchStudentPage(studentListFilter, pageable);
             List<StudentV2DTO> content = page != null ? mapProjectionsToDTOs(page.getContent()) : new ArrayList<>();
-            if (!content.isEmpty()) enrichWithUserCredentials(content);
+            // The read-only demo user never gets a learner's password.
+            if (!content.isEmpty() && !vacademy.io.common.auth.demo.DemoReadOnlyGate.isDemoCaller(user)) {
+                enrichWithUserCredentials(content);
+            }
             return ResponseEntity.ok(buildResponse(content, page, pageSize, false));
         }
 

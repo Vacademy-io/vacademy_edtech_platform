@@ -3,6 +3,8 @@ package vacademy.io.common.auth.demo;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.io.IOException;
@@ -26,6 +28,9 @@ import java.util.Map;
 public final class DemoReadOnlyGate {
 
     public static final String ROLE = "DEMO_READ_ONLY";
+
+    /** Request attribute the filters set to TRUE for every request made by the demo user. */
+    public static final String REQUEST_ATTRIBUTE = "vacademy.demoReadOnly";
 
     /** The exact response body; ai_service answers with the same bytes. */
     public static final String REFUSAL_BODY =
@@ -95,8 +100,27 @@ public final class DemoReadOnlyGate {
 
     /** {@link #holdsRole} and {@link #refuses} together: true when this request must be refused. */
     public static boolean refuses(HttpServletRequest request, CustomUserDetails user, Object authoritiesClaim) {
-        return holdsRole(user, authoritiesClaim)
-                && refuses(request.getMethod(), request.getRequestURI(), request.getQueryString());
+        if (!holdsRole(user, authoritiesClaim)) {
+            return false;
+        }
+        request.setAttribute(REQUEST_ATTRIBUTE, Boolean.TRUE);
+        return refuses(request.getMethod(), request.getRequestURI(), request.getQueryString());
+    }
+
+    /**
+     * True when the request being served was made by the demo user. For the few allowed
+     * reads that would otherwise return a sign-in (a learner's or team member's password):
+     * the handler leaves the password out when this is true. Checks the attribute the
+     * filter set from the token (covers every institute the token names) and the loaded
+     * user's authorities.
+     */
+    public static boolean isDemoCaller(CustomUserDetails user) {
+        if (holdsRole(user, null)) {
+            return true;
+        }
+        RequestAttributes attributes = RequestContextHolder.getRequestAttributes();
+        return attributes != null
+                && Boolean.TRUE.equals(attributes.getAttribute(REQUEST_ATTRIBUTE, RequestAttributes.SCOPE_REQUEST));
     }
 
     public static void writeRefusal(HttpServletResponse response) throws IOException {
