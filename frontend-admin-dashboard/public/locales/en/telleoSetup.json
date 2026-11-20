@@ -88,7 +88,7 @@
         "left_one": "Free trial: {{count}} day left",
         "left_other": "Free trial: {{count}} days left",
         "ended": "Your free trial has ended, so calls are paused. Your leads and call logs are safe.",
-        "upgrade": "Recharge"
+        "upgrade": "Choose a plan"
     },
     "ready": {
         "title": "Your agent is ready",
@@ -103,5 +103,39 @@
         "trialNoteWithDate": "Your free trial runs until {{date}} and includes the credits on your account. Recharge any time to keep calling.",
         "editAgent": "Edit the script and voice",
         "apiKeys": "API keys"
+    },
+    "plans": {
+        "title": "Plans",
+        "back": "Back to Telleo",
+        "loadFailed": "Your plan could not be loaded.",
+        "retry": "Try again",
+        "current": "Current plan",
+        "freeTrial": "Free trial",
+        "trialBadge": "Trial",
+        "trialEnded": "Trial ended",
+        "trialEndsOn": "Your free trial runs until {{date}}.",
+        "trialEndedOn": "Your free trial ended on {{date}}. Choose a plan to start calling again.",
+        "pendingTitle": "Waiting for payment",
+        "pendingBody": "You signed up to buy a plan. Pay for it below to start making calls.",
+        "managed": "Set up by our team",
+        "validTill": "Valid till {{date}}",
+        "trackDashboard": "Dashboard",
+        "trackApi": "API",
+        "trackDashboardBody": "Upload leads, run AI agents and see every call in the Telleo dashboard.",
+        "trackApiBody": "Place calls from your own software with an API key. No dashboard seats.",
+        "yourTrack": "Your setup",
+        "perMonth": "/ month",
+        "perYear": "/ year",
+        "perMonths": "/ {{count}} months",
+        "minutes": "About {{minutes}} minutes of AI calling included",
+        "payPerUse": "No bundled minutes: pay per connected minute",
+        "rate": "{{rate}} per minute",
+        "gst": "Prices exclude 18% GST.",
+        "currentBadge": "Current",
+        "buy": "Buy {{plan}}",
+        "noPrice": "Price on request",
+        "noPlans": "Plans for this setup are not online yet. Write to {{email}} and we will set you up.",
+        "enterprise": "Need volume rates or a dedicated calling line? Write to {{email}}.",
+        "checkoutUnavailable": "Online payment is not open for your account yet. Write to {{email}} and we will send you a payment link."
     }
 }

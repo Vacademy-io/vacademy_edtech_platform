@@ -161,7 +161,9 @@ class PlatformProductServiceTest {
         assertEquals(6000, offer.getPlans().get(0).getPriceInr());
         assertEquals(150, offer.getPlans().get(0).getCredits());
         assertEquals(1, offer.getPlans().get(0).getUsers());
+        assertEquals(6, offer.getPlans().get(0).getValidityMonths());
         assertEquals(20000, offer.getPlans().get(1).getPriceInr());
+        assertNull(offer.getPlans().get(1).getValidityMonths());
         assertEquals(6, offer.getPlanValidityMonths());
     }
 
@@ -305,5 +307,33 @@ class PlatformProductServiceTest {
         assertEquals(2, offer.getPlans().size());
         assertEquals(2000, offer.getPlans().get(1).getCredits());
         assertEquals(12, offer.getPlanValidityMonths());
+    }
+
+    private static vacademy.io.admin_core_service.features.product_config.dto.ProductPlanDTO plan(
+            String key, String mode, Integer months) {
+        return vacademy.io.admin_core_service.features.product_config.dto.ProductPlanDTO.builder()
+                .key(key).name(key).priceInr(100).credits(10).users(1).accessMode(mode).validityMonths(months).build();
+    }
+
+    @Test
+    void aPlanSavedWithoutAccessOrLengthKeepsTheStoredOnes() {
+        var saved = PlatformProductService.cleanPlans(
+                List.of(plan("starter", null, null), plan("api-pro", "api", 12)),
+                List.of(plan("starter", "PLATFORM", 1)));
+        assertEquals("PLATFORM", saved.get(0).getAccessMode());
+        assertEquals(1, saved.get(0).getValidityMonths());
+        assertEquals("API", saved.get(1).getAccessMode());
+        assertEquals(12, saved.get(1).getValidityMonths());
+    }
+
+    @Test
+    void planAccessIsPlatformOrApi() {
+        ProductSettingsDTO b = valid();
+        b.setPlans(List.of(plan("starter", "PORTAL", null)));
+        assertThrows(VacademyException.class, () -> PlatformProductService.validatePlans(b));
+        b.setPlans(List.of(plan("starter", "API", 0)));
+        assertThrows(VacademyException.class, () -> PlatformProductService.validatePlans(b));
+        b.setPlans(List.of(plan("starter", "api", 12), plan("pro", null, null)));
+        assertDoesNotThrow(() -> PlatformProductService.validatePlans(b));
     }
 }

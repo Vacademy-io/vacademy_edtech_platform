@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -19,8 +19,9 @@ import {
     type TelleoOnboardingStatus,
 } from './-services/telleo-onboarding';
 import { takePlanBuyIntent } from '@/lib/plan-buy-intent';
+import { accessIntentOfPlan, takeAccessIntent } from '@/lib/product-access-intent';
 import { isIOS } from '@/native/platform';
-import { PLANS_SETTINGS_PATH } from '@/services/ai-plans/storefront';
+import { TELLEO_PLANS_PATH } from '@/services/ai-plans/storefront';
 
 /**
  * Where a new Telleo sign-up lands (the product's app_path): a few business questions, then the
@@ -55,6 +56,8 @@ function TelleoSetupPage() {
     // "Buy <plan>" on the website: such an account starts with no trial and no credits, so point
     // it at the plans (no purchase link in the iPhone app: Apple Guideline 3.1.1).
     const [buyPlan] = useState(() => (isIOS() ? null : takePlanBuyIntent('telleo')));
+    // Dashboard or API, already picked on telleo.ai/pricing (its toggle, or an API plan's Buy).
+    const [presetMode] = useState(() => takeAccessIntent('telleo') ?? accessIntentOfPlan(buyPlan));
     const status = useQuery({
         queryKey: [QUERY_KEY, instituteId],
         queryFn: () => fetchOnboarding(instituteId),
@@ -83,7 +86,7 @@ function TelleoSetupPage() {
     const data = status.data;
     const step =
         data.status === 'NEW' && !data.access_mode ? (
-            <AccessStep status={data} />
+            <AccessStep status={data} preset={presetMode} />
         ) : data.status === 'NEW' ? (
             <QuestionsStep status={data} />
         ) : data.status === 'RUNNING' ? (
@@ -107,7 +110,10 @@ function TelleoSetupPage() {
                                 'You chose the {{plan}} plan. Pay for it to start making calls.',
                         })}
                     </span>
-                    <a href={PLANS_SETTINGS_PATH} className="shrink-0 font-semibold underline">
+                    <a
+                        href={`${TELLEO_PLANS_PATH}?buy=${encodeURIComponent(buyPlan)}`}
+                        className="shrink-0 font-semibold underline"
+                    >
                         {t('buy.pay', 'Pay now')}
                     </a>
                 </div>
@@ -156,14 +162,33 @@ const GoToDashboard = () => {
 /** Where an API account makes its keys and finds the docs (routes/telleo/api.tsx). */
 const API_KEYS_PATH = '/telleo/api';
 
-/** The first step: how this account will use Telleo. Dashboard and API are priced differently. */
-const AccessStep = ({ status }: { status: TelleoOnboardingStatus }) => {
+/**
+ * The first step: how this account will use Telleo. Dashboard and API are priced differently.
+ * Chosen already on the website (preset): saved straight away, so the visitor is not asked twice.
+ */
+const AccessStep = ({
+    status,
+    preset,
+}: {
+    status: TelleoOnboardingStatus;
+    preset?: AccessMode | null;
+}) => {
     const { t } = useTranslation('telleoSetup');
     const queryClient = useQueryClient();
     const choose = useMutation({
         mutationFn: (mode: AccessMode) => chooseAccess(status.institute_id, mode),
         onSuccess: (next) => queryClient.setQueryData([QUERY_KEY, status.institute_id], next),
     });
+    const presetSent = useRef(false);
+    useEffect(() => {
+        if (!preset || presetSent.current) return;
+        presetSent.current = true;
+        choose.mutate(preset);
+        // Once, on the first render with a preset.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [preset]);
+    // Saving the website's choice: no options to click meanwhile (a failure shows them).
+    if (preset && !choose.isError) return <DashboardLoader />;
     const option = (mode: AccessMode, title: string, body: string) => (
         <button
             type="button"

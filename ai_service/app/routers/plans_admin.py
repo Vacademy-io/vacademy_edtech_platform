@@ -2378,6 +2378,9 @@ class ProductPlanIn(BaseModel):
     name: str = Field(..., max_length=128)
     price_inr: int = Field(..., ge=0, le=10_000_000)
     credits: float = Field(..., ge=0, le=100_000_000)
+    #: this plan's length when it differs from the form's period_months (Telleo sells monthly
+    #: and yearly plans side by side); None = the form's period_months
+    period_months: Optional[int] = Field(None, ge=1, le=36)
 
 
 class ProductPlansPut(BaseModel):
@@ -2421,6 +2424,33 @@ def _ensure_offered(db: Session, plan_id: Optional[str], segment: str, actor: Op
                     "true, :why, :a, now())"),
                {"id": str(uuid.uuid4()), "p": plan_id, "g": segment, "why": reason, "a": actor or "unknown"})
     return True
+
+
+def _product_plan_months(db: Session, product: str) -> Dict[str, int]:
+    """Each website plan's own length from the product settings row (product.<key> plans[].
+    validity_months), so a form that sends one period_months for all plans keeps a yearly plan
+    yearly next to monthly ones. Keys as the storefront writes them ("-" becomes "_")."""
+    try:
+        row = one(db, "SELECT setting_value FROM ai_platform_settings WHERE setting_key = :k",
+                  {"k": f"product.{product}"})
+    except DBAPIError:
+        _rollback(db)
+        return {}
+    value = row.get("setting_value") if row else None
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            value = None
+    out: Dict[str, int] = {}
+    for p in (value.get("plans") if isinstance(value, dict) else None) or []:
+        try:
+            months = int(p.get("validity_months") or 0)
+        except (TypeError, ValueError, AttributeError):
+            continue
+        if 1 <= months <= PERIOD_MONTHS_MAX:
+            out[str(p.get("key") or "").strip().lower().replace("-", "_")] = months
+    return out
 
 
 def _product_plan_rows(db: Session, product: str, segment: str) -> List[Dict[str, Any]]:
@@ -2479,6 +2509,7 @@ def put_product_plans(product: str, body: ProductPlansPut, db: Session = Depends
     segment = _product_segment_key(prod)
     seen: set = set()
     wanted = []
+    plan_months = _product_plan_months(db, prod)
     for p in body.plans:
         k = str(p.key or "").strip().lower().replace("-", "_")   # website ids may use "-"; plan keys can't
         if not PRODUCT_PLAN_KEY_RE.match(k):
@@ -2489,14 +2520,15 @@ def put_product_plans(product: str, body: ProductPlansPut, db: Session = Depends
         name = str(p.name or "").strip()
         if not name:
             raise HTTPException(status_code=422, detail=f"plan {k!r} needs a name")
-        wanted.append((k, name, int(p.price_inr) * 100, Decimal(str(p.credits))))
+        wanted.append((k, name, int(p.price_inr) * 100, Decimal(str(p.credits)),
+                       p.period_months or plan_months.get(k) or body.period_months))
     feats = features_by_key(db)
     new_items = [validate_item(feats.get(f), {"mode": "ALLOWANCE", "model_policy": "ANY",
                                               "display_cap_text": "Uses the plan's credits, then your credits"}, key=f)
                  for f in dict.fromkeys(str(x or "").strip() for x in body.allowance_features) if f]
     changes: List[Dict[str, Any]] = []
     try:
-        for i, (k, name, price_minor, credits) in enumerate(wanted):
+        for i, (k, name, price_minor, credits, period_months) in enumerate(wanted):
             plan_key = f"{prod}_{k}"
             plan = one(db, "SELECT * FROM ai_plan WHERE plan_key = :k FOR UPDATE", {"k": plan_key})
             if plan is None:
@@ -2516,7 +2548,7 @@ def put_product_plans(product: str, body: ProductPlansPut, db: Session = Depends
                 audit(db, "ai_storefront_audience", f"plan:{plan_key}", None, {"segments": [segment]}, reason, actor)
             pub = _latest_published(db, pid)
             terms = {"currency": "INR", "price_minor": price_minor, "is_tax_inclusive": False,
-                     "period_months": body.period_months, "allowance_credits": credits}
+                     "period_months": period_months, "allowance_credits": credits}
             if pub is not None and all(
                     (Decimal(str(pub[f])) == Decimal(str(v))) if f == "allowance_credits" else pub[f] == v
                     for f, v in terms.items()):
