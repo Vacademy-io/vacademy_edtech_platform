@@ -396,6 +396,13 @@ def create_app() -> FastAPI:
         lifespan=_lifespan,
     )
 
+    # Read-only demo user (core/demo_read_only.py): refuses writes made with that user's
+    # token on every route. Added before CORS so it sits INSIDE it and the 403 still
+    # carries the CORS headers the browser needs to read the body.
+    from .core import demo_read_only as _demo_read_only
+    app.add_middleware(_demo_read_only.DemoReadOnlyMiddleware, base_path=settings.api_base_path)
+    app.add_exception_handler(_demo_read_only.DemoReadOnlyRefused, _demo_read_only.refused_handler)
+
     # CORS
     allow_origins = [o.strip() for o in settings.cors_allow_origins.split(",") if o.strip()]
     allow_methods = [m.strip() for m in settings.cors_allow_methods.split(",") if m.strip()]

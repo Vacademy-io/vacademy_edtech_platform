@@ -10,6 +10,7 @@ import httpx
 
 from ..config import get_settings, Settings
 from ..schemas.auth import CustomUserDetails, AuthError, PinnedPrincipal
+from . import demo_read_only
 
 logger = logging.getLogger(__name__)
 
@@ -113,6 +114,10 @@ def decode_access_token(token: str) -> Optional[dict]:
     """
     if not token:
         return None
+    # No HTTP request to judge here (sockets spend on speech and models), so the
+    # read-only demo user is refused outright.
+    if demo_read_only.token_holds_role(token):
+        return None
     return _decode_jwt_token(token, get_settings())
 
 
@@ -196,6 +201,8 @@ async def get_optional_user(
     if not authorization:
         return None
 
+    demo_read_only.enforce_request(request, authorization)
+
     try:
         return await _verify_and_fetch_user(authorization, _client_id_from_request(request), settings)
     except Exception as e:
@@ -216,7 +223,9 @@ async def get_current_user(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing Authorization header"
         )
-        
+
+    demo_read_only.enforce_request(request, authorization)
+
     try:
         user = await _verify_and_fetch_user(authorization, _client_id_from_request(request), settings)
         if not user:
@@ -374,6 +383,7 @@ async def get_pinned_principal(
         401 — missing/invalid token (via get_current_user).
         403 — no `clientId` header, or the user is not a member of that institute.
     """
+    demo_read_only.enforce_request(request, authorization)
     return await resolve_pinned_principal(
         token=_extract_bearer(authorization),
         client_id=_client_id_from_request(request),
