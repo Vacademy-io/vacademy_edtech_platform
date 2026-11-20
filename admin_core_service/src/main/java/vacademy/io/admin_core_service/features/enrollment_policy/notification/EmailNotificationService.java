@@ -37,6 +37,10 @@ public class EmailNotificationService implements INotificationService {
     @Autowired
     private MembershipPlaceholderService membershipPlaceholderService;
 
+    /** Learners on a break whose fee reminders are stopped (docs/ENROLMENT_BREAKS.md). */
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
+
     private final EnrollmentTemplateService enrollmentTemplateService;
 
     @Override
@@ -48,6 +52,13 @@ public class EmailNotificationService implements INotificationService {
             
         if (instituteId == null) {
             log.warn("No institute ID found in context, skipping EMAIL notification");
+            return;
+        }
+        if (enrolmentBreakGuard != null && context.getUserPlan() != null
+                && enrolmentBreakGuard.isFeeHeldForPlan(instituteId, context.getUserPlan().getUserId(),
+                        context.getUserPlan().getId())) {
+            log.info("Skipping {} email for plan {}: learner on a break with fee reminders stopped",
+                    policy.getTrigger(), context.getUserPlan().getId());
             return;
         }
 

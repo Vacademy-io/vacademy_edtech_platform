@@ -86,6 +86,29 @@ public class EnrolmentBreakGuard {
         return LocalDate.now(zone(instituteId));
     }
 
+    /** Cheap: true when any institute has a live break (false = nothing anywhere to check). */
+    public boolean anyLive() {
+        return !active().isEmpty();
+    }
+
+    /**
+     * Fee reminder check when only the membership is known (no institute): true when a live break
+     * on this plan stops fee reminders today, or the plan is paused.
+     */
+    public boolean isPlanFeeHeld(String userPlanId) {
+        if (userPlanId == null) return false;
+        try {
+            for (EnrolmentBreak b : active()) {
+                if (!userPlanId.equals(b.getUserPlanId())) continue;
+                if (b.isPause() && EnrolmentBreak.STATUS_ACTIVE.equals(b.getStatus())) return true;
+                if (b.isStopFeeReminders() && b.covers(today(b.getInstituteId()))) return true;
+            }
+        } catch (Exception e) {
+            log.warn("[enrolment-break] plan fee-hold check failed for {}: {}", userPlanId, e.getMessage());
+        }
+        return false;
+    }
+
     /** Cheap: true when this institute has at least one live (active or scheduled) break. */
     public boolean instituteHasActiveBreaks(String instituteId) {
         if (instituteId == null) return false;
@@ -140,6 +163,31 @@ public class EnrolmentBreakGuard {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * The break category a workflow run belongs to, from the event that fired it: live-class
+     * events are CLASS, the membership-expiry reminder is FEE. Anything else (scheduled runs,
+     * hand-started runs, every other event) returns null and is never held here; scheduled fee
+     * reminders are filtered where their recipients are queried.
+     */
+    public static Category categoryForWorkflow(Map<String, Object> context) {
+        if (context == null) return null;
+        Object event = context.get("triggerEvents");
+        if (event == null) return null;
+        String name = String.valueOf(event).trim();
+        return switch (name) {
+            case "LIVE_SESSION_START", "LIVE_SESSION_END" -> Category.CLASS;
+            case "MEMBERSHIP_EXPIRY" -> Category.FEE;
+            default -> null;
+        };
+    }
+
+    /** Fee/renewal reminder check for one membership: breaks on the plan, or the learner's all-course hold. */
+    public boolean isFeeHeldForPlan(String instituteId, String userId, String userPlanId) {
+        if (!anyLive()) return false;
+        return isPlanFeeHeld(userPlanId)
+                || (instituteId != null && userId != null && isHeld(instituteId, userId, Category.FEE, null, userPlanId));
+    }
+
     /** True when the plan is under an active pause: charging, renewal and expiry skip it. */
     public boolean isPlanPaused(String userPlanId) {
         if (userPlanId == null) return false;
@@ -152,6 +200,22 @@ public class EnrolmentBreakGuard {
             }
         } catch (Exception e) {
             log.warn("[enrolment-break] pause check failed for plan {}: {}", userPlanId, e.getMessage());
+        }
+        return false;
+    }
+
+    /** True when an active pause has switched this learner's access to this course off. */
+    public boolean isCourseAccessPaused(String userId, String packageSessionId) {
+        if (userId == null || packageSessionId == null) return false;
+        try {
+            for (EnrolmentBreak b : active()) {
+                if (b.isPause() && b.isRemoveAccess() && EnrolmentBreak.STATUS_ACTIVE.equals(b.getStatus())
+                        && userId.equals(b.getUserId()) && packageSessionId.equals(b.getPackageSessionId())) {
+                    return true;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("[enrolment-break] access-pause check failed for {}: {}", userId, e.getMessage());
         }
         return false;
     }
