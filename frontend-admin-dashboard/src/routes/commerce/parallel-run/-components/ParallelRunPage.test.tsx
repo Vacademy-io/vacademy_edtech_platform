@@ -32,6 +32,9 @@ vi.mock('@/lib/commerce/use-commerce-access', async () => {
     };
 });
 vi.mock('@/constants/helper', () => ({ getInstituteId: () => 'inst-1' }));
+vi.mock('@/routes/commerce/products/-components/ItemCostImportCard', () => ({
+    ItemCostImportCard: () => <div data-testid="item-cost-card" />,
+}));
 vi.mock('@/lib/auth/axiosInstance', () => ({ default: { get: vi.fn(), put: vi.fn() } }));
 vi.mock('@/lib/save-blob', () => ({ saveBlob: vi.fn() }));
 vi.mock('@/routes/commerce/reports/-shared/reports-api', () => ({
@@ -194,6 +197,28 @@ describe('ParallelRunPage', () => {
         expect(await screen.findByTestId('parallel-run-day-2026-11-01')).toBeTruthy();
         expect(screen.queryByTestId('parallel-run-edit-2026-11-01')).toBeNull();
         expect(screen.queryByTestId('parallel-run-edit-2026-11-02')).toBeNull();
+    });
+
+    it('the accountant gets the item-costs card here; a manager and an admin load costs on the import page', async () => {
+        who.roles = ['COMMERCE_ACCOUNTANT'];
+        const first = renderWithQuery(<ParallelRunPage />);
+        expect(await screen.findByTestId('item-cost-card')).toBeTruthy();
+        first.unmount();
+        for (const roles of [['COMMERCE_STORE_MANAGER'], ['ADMIN'], ['COMMERCE_ACCOUNTANT', 'COMMERCE_STORE_MANAGER']]) {
+            who.roles = roles;
+            const view = renderWithQuery(<ParallelRunPage />);
+            expect(await screen.findByTestId('parallel-run-day-2026-11-01')).toBeTruthy();
+            expect(screen.queryByTestId('item-cost-card')).toBeNull();
+            view.unmount();
+        }
+    });
+
+    it('no item-costs card for the accountant while the migration feature is off', async () => {
+        who.roles = ['COMMERCE_ACCOUNTANT'];
+        who.off = ['commerce.migration'];
+        renderWithQuery(<ParallelRunPage />);
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        expect(screen.queryByTestId('item-cost-card')).toBeNull();
     });
 
     it('asks nothing while the migration feature is off', async () => {

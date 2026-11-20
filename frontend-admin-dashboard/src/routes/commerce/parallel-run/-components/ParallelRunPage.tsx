@@ -7,12 +7,14 @@ import { StatusChip, type StatusType } from '@/components/design-system/status-c
 import { Textarea } from '@/components/ui/textarea';
 import { getInstituteId } from '@/constants/helper';
 import { formatNumber } from '@/lib/formatters';
+import { COMMERCE_ROLE } from '@/lib/commerce/commerce-access';
 import { useCommerceAccess } from '@/lib/commerce/use-commerce-access';
 import { cn } from '@/lib/utils';
 import { PlainSelect } from '@/routes/commerce/-components/CatalogueBits';
 import { CommercePage } from '@/routes/commerce/-components/CommercePage';
 import { CommerceEmptyState, CommerceLoadingRows } from '@/routes/commerce/-components/CommerceStates';
 import { inputClass, OrderNotice } from '@/routes/commerce/orders/-components/order-ui';
+import { ItemCostImportCard } from '@/routes/commerce/products/-components/ItemCostImportCard';
 import { readOrderError } from '@/routes/commerce/orders/-shared/order-errors';
 import { ExportButtons } from '@/routes/commerce/reports/-components/ExportButtons';
 import { placeLabel } from '@/routes/commerce/reports/-components/ReportFilters';
@@ -149,6 +151,15 @@ export function ParallelRunPage() {
     const { t } = useTranslation([NS, 'sidebar']);
     const access = useCommerceAccess();
     const open = access.isResolved && access.canOpen('commerce-parallel-run') && !!getInstituteId();
+    /*
+     * The item-costs card lives on the product import page, which only a store
+     * manager opens. An accountant who cannot open that page loads costs here;
+     * the card keeps its own gates (stock + switch-over feature, M/Ac role).
+     */
+    const showItemCosts =
+        open &&
+        access.commerceRoles.includes(COMMERCE_ROLE.ACCOUNTANT) &&
+        !access.canOpen('commerce-products');
     const today = indiaToday();
     const months = useMemo(() => recentMonths(today), [today]);
     const [month, setMonth] = useState(monthOf(today));
@@ -235,6 +246,7 @@ export function ParallelRunPage() {
                         />
                     </>
                 )}
+                {showItemCosts && <ItemCostImportCard />}
             </div>
         </CommercePage>
     );
