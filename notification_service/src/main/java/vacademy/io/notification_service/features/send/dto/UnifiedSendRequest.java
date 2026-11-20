@@ -141,5 +141,13 @@ public class UnifiedSendRequest {
         private String originType;
         private String originId;
         private String originName;
+
+        /**
+         * Name of the template an EMAIL was built from, recorded on the log row so the student
+         * timeline can show it. Display only: unlike the request-level templateName it never
+         * triggers a template lookup, so callers that render the template themselves (workflows,
+         * campaigns, resends) pass the name here.
+         */
+        private String logTemplateName;
     }
 }

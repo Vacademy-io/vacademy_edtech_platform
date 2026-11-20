@@ -46,7 +46,7 @@ class UnifiedSendPlainLogSourceTest {
         EmailCcResolver ccResolver = mock(EmailCcResolver.class);
         when(ccResolver.resolve(any(), any())).thenReturn(new EmailCcResolver.CopyRecipients(List.of(), "BCC"));
         when(emailService.sendHtmlEmail(anyString(), anyString(), anyString(), anyString(), any(), any(), any(), any(),
-                any(), any(), any(), any(), any())).thenReturn(EmailService.SendOutcome.SENT);
+                any(), any(), any(), any(), any(), any())).thenReturn(EmailService.SendOutcome.SENT);
         service = new UnifiedSendService(
                 mock(WhatsAppService.class),
                 emailService,
@@ -76,7 +76,7 @@ class UnifiedSendPlainLogSourceTest {
         service.routeSync(emailRequest(optsSource));
         ArgumentCaptor<String> source = ArgumentCaptor.forClass(String.class);
         verify(emailService).sendHtmlEmail(eq(TO), anyString(), source.capture(), anyString(), eq(INSTITUTE),
-                any(), any(), any(), any(), any(), any(), any(), any());
+                any(), any(), any(), any(), any(), any(), any(), any(), any());
         return source.getValue();
     }
 
