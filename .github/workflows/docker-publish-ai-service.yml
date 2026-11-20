@@ -152,6 +152,15 @@ jobs:
                 OPENROUTER_MANAGEMENT_KEY=${{ secrets.OPENROUTER_MANAGEMENT_KEY }} >/dev/null
             fi
 
+            # WhatsApp for External API alerts: the same Vidyayatan account and secrets
+            # community_service pages the server health check with. Only when present;
+            # without them the alerts still email and the test send says WhatsApp is not set up.
+            if [ -n "${{ secrets.WHATSAPP_ACCESS_TOKEN_VIDYAYATAN }}" ] && [ -n "${{ secrets.WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN }}" ]; then
+              kubectl set env deployment/"$DEPLOYMENT_NAME" --namespace "$NAMESPACE" \
+                WHATSAPP_ACCESS_TOKEN_VIDYAYATAN=${{ secrets.WHATSAPP_ACCESS_TOKEN_VIDYAYATAN }} \
+                WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN=${{ secrets.WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN }} >/dev/null
+            fi
+
             # Spatius (premium teacher avatar). Same rule: only when the secret is
             # present; the feature stays dark without SPATIUS_API_KEY + SPATIUS_APP_ID.
             if [ -n "${{ secrets.SPATIUS_API_KEY }}" ] && [ -n "${{ secrets.SPATIUS_APP_ID }}" ]; then
