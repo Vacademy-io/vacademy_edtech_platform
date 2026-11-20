@@ -108,7 +108,7 @@ from .turntake import (mid_reply_action, is_carrier_announcement,
                        is_screener_hold, spoken_key, takes_over_opening, is_question,
                        is_hold_announcement, hold_absorbs, caller_is_busy,
                        opening_expected_secs, ends_on_question, ivr_menu_key,
-                       IVR_LOOP_REPEATS)
+                       IVR_LOOP_REPEATS, recording_loop_key, RECORDING_LOOP_REPEATS)
 
 from .sarvam_v4_voices import (SARVAM_V4_DEFAULT_VOICE, SARVAM_V4_MALE,  # noqa: E402
                                SARVAM_V4_VOICES)
@@ -331,6 +331,35 @@ _LOOSE_MARKER_PREFIXES = ("<SEND:", "<END_CALL>", "<TRANSFER>", "<tool_call>", "
 _TOOL_CALL_RE = re.compile(r"<tool_call>.*?(?:</tool_call>|$)|</?arg_(?:key|value)>", re.S)
 
 
+# A bracketed aside in a model reply is a note to itself, not speech. gemma4
+# answers a phone menu or a hold message with "(silence)", "(Stay silent)" or
+# "(Wait for a live person to speak)" — right in intent — and the voice read
+# the words out to the line: 43 calls in four days (2026-11-16..20), heard on
+# the recordings as a 0.4-1.4 s utterance each time. _clean_opening already
+# drops these from the authored opening; this is the same rule for every reply.
+_STAGE_DIRECTION_MAX = 160
+_STAGE_DIRECTION_RE = re.compile(
+    r"\([^()\n]{0,%d}\)|\[[^\[\]\n]{0,%d}\]" % (_STAGE_DIRECTION_MAX, _STAGE_DIRECTION_MAX))
+
+
+def strip_stage_directions(text: str) -> str:
+    """Remove complete "(…)" and "[…]" asides from text on its way to the
+    voice. PURE. An unclosed one is left for SentinelGate._split_safe to hold."""
+    if not text or ("(" not in text and "[" not in text):
+        return text
+    return _STAGE_DIRECTION_RE.sub("", text)
+
+
+def _open_stage_direction(buffer: str) -> int:
+    """Index of a "(" or "[" still waiting for its close, or -1. One that has
+    run past _STAGE_DIRECTION_MAX is ordinary text and is let through."""
+    for o, c in (("(", ")"), ("[", "]")):
+        i = buffer.rfind(o)
+        if i != -1 and c not in buffer[i:] and len(buffer) - i <= _STAGE_DIRECTION_MAX:
+            return i if "\n" not in buffer[i:] else -1
+    return -1
+
+
 def _canonical_markers(text: str) -> str:
     return _LOOSE_MARKER_RE.sub(lambda m: f"<<{m.group(1).strip()}>>", text)
 
@@ -518,6 +547,8 @@ class TranscriptCollector(FrameProcessor):
         self._prev_final_t = 0.0
         # Phone-menu lines heard, by ivr_menu_key → times (looks_like_ivr_loop).
         self._ivr_lines: Dict[str, int] = {}
+        # Long caller-side lines heard, by recording_loop_key → times.
+        self._loop_lines: Dict[str, int] = {}
         # Caller VAD onsets (wordless_onsets_since).
         self._vad_onsets: List[float] = []
         # When the person put us on hold (0 = not on hold); see the hold branch in
@@ -762,6 +793,9 @@ class TranscriptCollector(FrameProcessor):
             _ivr = ivr_menu_key(text)
             if _ivr:
                 self._ivr_lines[_ivr] = self._ivr_lines.get(_ivr, 0) + 1
+            _loop = recording_loop_key(text)
+            if _loop:
+                self._loop_lines[_loop] = self._loop_lines.get(_loop, 0) + 1
             # The OPERATOR's recorded message is not the callee. Record it (the
             # answering-machine detector reads these markers) then stop: it must
             # not stamp transcript_t (which would make _greet_when_ready skip our
@@ -1636,7 +1670,11 @@ class TranscriptCollector(FrameProcessor):
         """A phone menu is replaying itself: one menu line has played
         IVR_LOOP_REPEATS times. The bot cannot press a key, so nobody will ever
         pick up behind it (call 5856b13f: 8 minutes, 34 replies to the menu)."""
-        return any(n >= IVR_LOOP_REPEATS for n in self._ivr_lines.values())
+        if any(n >= IVR_LOOP_REPEATS for n in self._ivr_lines.values()):
+            return True
+        # Any other recording that keeps coming round (a queue message, a
+        # welcome announcement): see turntake.recording_loop_key.
+        return any(n >= RECORDING_LOOP_REPEATS for n in self._loop_lines.values())
 
     def wordless_onsets_since(self, since: float) -> int:
         """How many times the caller's voice started after `since` without one
@@ -4685,8 +4723,14 @@ class SentinelGate(FrameProcessor):
                 self._post_end = self._scan_after_end(tail)
             if SEND_MARKER_OPEN in self._buffer:
                 self._buffer = self._extract_sends(self._buffer)
+            if "(" in self._buffer or "[" in self._buffer:
+                _spoken = strip_stage_directions(self._buffer)
+                if _spoken != self._buffer:
+                    logger.info("sentinel: not speaking the model's aside %r corr=%s",
+                                self._buffer[:80], self._outcome.corr)
+                    self._buffer = _spoken
             emit, self._buffer = self._split_safe(self._buffer)
-            if emit:
+            if emit.strip() or (emit and self._spoke_this_response):
                 self._utterance += emit
                 self._spoke_this_response = True
                 await self.push_frame(LLMTextFrame(emit), direction)
@@ -4921,6 +4965,11 @@ class SentinelGate(FrameProcessor):
         m = re.search(r"(?<!<)<SEND:[^<>]*$", buffer)
         if m:
             return buffer[:m.start()], buffer[m.start():]
+        # An aside the model has opened and not yet closed: hold it, so that
+        # "(Wait for a" is not spoken before the ")" arrives.
+        idx = _open_stage_direction(buffer)
+        if idx != -1:
+            return buffer[:idx], buffer[idx:]
         for marker in (END_MARKER, TRANSFER_MARKER, SEND_MARKER_OPEN,
                        *_LOOSE_MARKER_PREFIXES):
             for i in range(min(len(marker) - 1, len(buffer)), 0, -1):
@@ -5026,6 +5075,24 @@ NAVANA_VOICES = _NAVANA_MALE | _NAVANA_FEMALE
 # the #1 immersion complaint from live calls.
 _MALE_VOICES |= (_GOOGLE_MALE_VOICES | _SMALLEST_V31_MALE | _SMALLEST_PRO_MALE
                  | _DEEPGRAM_MALE_VOICES | _NAVANA_MALE | SARVAM_V4_MALE)
+
+
+NUDGE_ENGLISH = "Hello? Are you still there?"
+
+
+def nudge_line(default: str, last_bot_line: str) -> str:
+    """The "are you there?" line in the language the agent is speaking. PURE.
+    A Hindi agent that has moved to English with an English speaker kept its
+    Hindi nudge: "…how quickly does someone call back?" then, after the
+    silence, "हेलो? क्या आप मुझे सुन पा रहे हैं?" (21 calls, 2026-11-16..20).
+    English when the agent's last line had no Devanagari at all; otherwise the
+    agent's own default."""
+    last = (last_bot_line or "").strip()
+    if not last or any("\u0900" <= ch <= "\u097f" for ch in last):
+        return default
+    if sum(ch.isascii() and ch.isalpha() for ch in last) < 12:
+        return default                    # "Okay." / "Hmm…" decides nothing
+    return NUDGE_ENGLISH
 
 
 def _engine_of(model: str) -> str:
@@ -6329,6 +6396,17 @@ def build_system_prompt(context: Dict[str, Any], sink=None) -> str:
                 "a counsellor will call them right back")
              + f", then append {END_MARKER}."
     )
+    # Call 55312bd6 (2026-11-19): a teacher said she would not talk to an AI and
+    # asked for a person; the reply was "मैं इंसान ही हूँ।" She answered that she
+    # was being fooled. Rides on human_line so every prompt shape carries it.
+    human_line += (
+        "\n- You are an AI assistant on a phone call. If the caller asks whether you are a "
+        "person, a robot, a recording, a computer or an AI — or says they can tell — say so "
+        "plainly in one short line (e.g. "
+        + ("'Yes, I am an AI assistant from the team.'" if is_english else
+           "'जी, मैं एक AI assistant हूँ।'")
+        + ") and carry on with what they asked. NEVER say or imply that you are a human, "
+        "whatever your name or script says.")
     # Offers the admin attached to this agent's send rules. Built here so a rule is
     # self-contained: the admin writes the question once, on the rule, and never has to
     # keep a duplicate copy of it inside the system prompt.
@@ -7737,7 +7815,9 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
             # The caller owed this turn (no_repeat.owes_line() was False): the
             # silence the nudge ends is theirs — see set_bot_speaking.
             flags["idle_nudge_t"] = time.time()
-            await task.queue_frames([TTSSpeakFrame(nudge_text)])
+            await task.queue_frames([TTSSpeakFrame(nudge_line(
+                nudge_text, next((t.get("text") or "" for t in reversed(outcome.transcript)
+                                  if t.get("role") == "assistant"), "")))])
         else:
             diag.idle_hangup = True
             logger.info("idle: hangup corr=%s", corr)
@@ -8009,7 +8089,7 @@ async def run_bot(transport, corr: str, context: Dict[str, Any],
                 # Nothing to say to a menu, and nobody to say goodbye to — the
                 # voicemail hang-up, for a phone menu that keeps replaying.
                 diag.idle_hangup = True
-                logger.info("ivr: the phone menu is looping — hanging up corr=%s", corr)
+                logger.info("ivr: a recording is looping — hanging up corr=%s", corr)
                 outcome.end_requested = True
                 await _begin_stop()
                 continue

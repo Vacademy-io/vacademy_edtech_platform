@@ -454,6 +454,32 @@ def ivr_menu_key(text: str) -> str:
     return spoken_key(t)
 
 
+# ── any recording that loops ─────────────────────────────────────────────────
+# Call 258fb517 (2026-11-19): a front-desk queue ("Your call is important to
+# us. … And your call will be connected shortly.") replayed for EIGHT minutes
+# and the bot answered "Okay." to every round; LNCT's and Amity's welcome
+# messages did the same for two. None of them says "press 1" every round, so
+# the menu rule above never counted them. A person does not say the same full
+# sentence, word for word, three times in one call; a recording says nothing
+# else. Long lines only, and never a line that sounds like a person (a
+# question, a hello, "not interested", "I …") or the network's own hold
+# announcement, which the hold clock (bot.HOLD_MAX_SECS) waits out on purpose.
+RECORDING_LOOP_MIN_WORDS = 5
+RECORDING_LOOP_REPEATS = 3
+
+
+def recording_loop_key(text: str) -> str:
+    """The comparison key of a line long enough to recognise a recording by
+    when it comes round again, or "" when the line must not be counted. PURE;
+    the live gate counts these."""
+    t = " ".join((text or "").casefold().split())
+    if not t or t.startswith("[") or len(_words(t)) < RECORDING_LOOP_MIN_WORDS:
+        return ""
+    if sounds_like_person(t) or is_hold_announcement(t) or is_hold_fragment(t):
+        return ""
+    return spoken_key(t)
+
+
 def is_hold_fragment(text: str) -> bool:
     """While on hold: a piece of the looping recording — every word of it is a
     word the recordings say ("उन्होंने आपके।", "Speaking with.", "See shortly.")."""
