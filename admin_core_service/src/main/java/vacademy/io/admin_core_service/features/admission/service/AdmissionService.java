@@ -29,6 +29,7 @@ import vacademy.io.admin_core_service.features.notification.dto.NotificationTemp
 import vacademy.io.admin_core_service.features.notification.entity.NotificationEventConfig;
 import vacademy.io.admin_core_service.features.notification.enums.NotificationEventType;
 import vacademy.io.admin_core_service.features.notification.enums.NotificationSourceType;
+import vacademy.io.admin_core_service.features.notification.enums.NotificationTemplateType;
 import vacademy.io.admin_core_service.features.notification.repository.NotificationEventConfigRepository;
 import vacademy.io.admin_core_service.features.notification_service.service.NotificationService;
 import vacademy.io.admin_core_service.features.notification_service.service.SendUniqueLinkService;
@@ -125,7 +126,8 @@ public class AdmissionService {
         Applicant applicant = handleApplicantAndStage(request, ar, userResult.parentUser());
 
         sendAdmissionWelcomeEmail(userResult.parentUser(), userResult.childUser(), userResult.sendCredentials(),
-                userResult.password(), request.getInstituteId());
+                userResult.password(), request.getInstituteId(),
+                applicant != null ? applicant.getApplicationStageId() : null);
 
         // --- NEW: Record Admission in Pipeline ---
         admissionPipelineService.recordAdmission(
@@ -185,7 +187,8 @@ public class AdmissionService {
         updateEnquiryStatus(request.getEnquiryId());
 
         sendAdmissionWelcomeEmail(userResult.parentUser(), userResult.childUser(), userResult.sendCredentials(),
-                userResult.password(), request.getInstituteId());
+                userResult.password(), request.getInstituteId(),
+                applicant != null ? applicant.getApplicationStageId() : null);
 
         // --- NEW: Record Admission in Pipeline ---
         admissionPipelineService.recordAdmission(
@@ -267,7 +270,8 @@ public class AdmissionService {
         applicant.setOverallStatus("ADMISSION_COMPLETED");
         applicant = applicantRepository.save(applicant);
 
-        sendAdmissionWelcomeEmail(parentUser, childUser, false, null, request.getInstituteId());
+        sendAdmissionWelcomeEmail(parentUser, childUser, false, null, request.getInstituteId(),
+                admissionStage.getId().toString());
 
         // --- NEW: Record Admission in Pipeline ---
         admissionPipelineService.recordAdmission(
@@ -791,27 +795,38 @@ public class AdmissionService {
     }
 
     private void sendAdmissionWelcomeEmail(UserDTO parent, UserDTO child, boolean sendCreds, String password,
-            String instituteId) {
+            String instituteId, String admissionStageId) {
         try {
-            Optional<NotificationEventConfig> configOpt = notificationEventConfigRepository
-                    .findByEventAndSourceType(
-                            NotificationEventType.ADMISSION_FORM_SUBMISSION,
-                            NotificationSourceType.APPLICATION_STAGE)
-                    .stream().findFirst();
+            // Scoped to this institute's ADMISSION stage. Looking the config up by event and
+            // source type alone returned the first row across ALL institutes, so a parent could
+            // get another institute's welcome template.
+            Optional<NotificationEventConfig> configOpt = org.springframework.util.StringUtils.hasText(admissionStageId)
+                    ? notificationEventConfigRepository
+                            .findFirstByEventNameAndSourceTypeAndSourceIdAndTemplateTypeAndIsActiveTrueOrderByUpdatedAtDesc(
+                                    NotificationEventType.ADMISSION_FORM_SUBMISSION,
+                                    NotificationSourceType.APPLICATION_STAGE,
+                                    admissionStageId,
+                                    NotificationTemplateType.EMAIL)
+                    : Optional.empty();
+
+            Institute institute = instituteRepository.findById(instituteId).orElse(null);
+            String instituteName = (institute != null && institute.getInstituteName() != null)
+                    ? institute.getInstituteName() : "";
 
             boolean sentViaTemplate = false;
 
             if (configOpt.isPresent() && configOpt.get().getTemplateId() != null) {
                 // Configured Template Found
                 String templateId = configOpt.get().getTemplateId();
-                Optional<Template> templateOpt = templateRepository.findById(templateId);
+                Optional<Template> templateOpt = templateRepository.findById(templateId)
+                        .filter(t -> isTemplateUsableByInstitute(t, instituteId));
 
                 if (templateOpt.isPresent()) {
                     NotificationTemplateVariables vars = NotificationTemplateVariables.builder()
                             .userFullName(parent.getFullName())
                             .userEmail(parent.getEmail())
                             .childName(child.getFullName())
-                            .instituteName("Vacademy")
+                            .instituteName(instituteName)
                             .build();
 
                     if (sendCreds && password != null) {
@@ -828,11 +843,9 @@ public class AdmissionService {
                 // FALLBACK DEFAULT STYLED EMAIL
                 logger.info("No Admission Template found. Sending Default Styled Fallback Email.");
 
-                // Fetch institute name for personalization
-                Institute institute = instituteRepository.findById(instituteId).orElse(null);
-                String instituteName = (institute != null && institute.getInstituteName() != null)
-                        ? institute.getInstituteName() : "Vacademy";
-                String portalUrl = "https://learner-portal.vacademy.io";
+                String displayName = !instituteName.isBlank() ? instituteName : "our institute";
+                // Institute's own learner portal; null (no portal configured) drops the links.
+                String portalUrl = resolveInstitutePortalUrl(institute);
 
                 String username = (sendCreds && password != null) ? parent.getUsername() : "";
                 String pwd = (sendCreds && password != null) ? password : "";
@@ -840,7 +853,7 @@ public class AdmissionService {
                 String body = buildDefaultAdmissionEmailBody(
                         parent.getFullName(),
                         child != null ? child.getFullName() : "Student",
-                        instituteName,
+                        displayName,
                         portalUrl,
                         portalUrl,
                         username,
@@ -848,13 +861,63 @@ public class AdmissionService {
 
                 GenericEmailRequest emailReq = new GenericEmailRequest();
                 emailReq.setTo(parent.getEmail());
-                emailReq.setSubject("Admission Confirmed! Welcome to " + instituteName);
+                emailReq.setSubject("Admission Confirmed! Welcome to " + displayName);
                 emailReq.setBody(body);
                 notificationService.sendGenericHtmlMailViaUnified(emailReq, instituteId);
             }
         } catch (Exception e) {
             logger.error("Failed to send Admission Welcome Email", e);
         }
+    }
+
+    /**
+     * Second guard on the configured template: it must belong to this institute (or be a
+     * shared DEFAULT/unowned template), never another institute's.
+     */
+    private boolean isTemplateUsableByInstitute(Template template, String instituteId) {
+        String owner = template.getInstituteId();
+        if (owner == null || owner.isBlank() || "DEFAULT".equals(owner) || owner.equals(instituteId)) {
+            return true;
+        }
+        logger.warn("Admission welcome template {} belongs to institute {}, not {} - using the default email",
+                template.getId(), owner, instituteId);
+        return false;
+    }
+
+    /**
+     * The shared learner portal (default.learner.portal.url). Institutes without a portal of their
+     * own have their learners sign in there, so their links fall back to it rather than vanish.
+     */
+    @org.springframework.beans.factory.annotation.Value("${default.learner.portal.url:}")
+    private String defaultLearnerPortalUrl;
+
+    private String defaultPortalOrNull() {
+        if (defaultLearnerPortalUrl == null || defaultLearnerPortalUrl.isBlank()) {
+            return null;
+        }
+        String base = defaultLearnerPortalUrl.trim();
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
+    }
+
+    /**
+     * The institute's own learner-portal origin ({@code https://host}, no trailing slash), else
+     * the shared learner portal its learners sign in to; null only when neither is configured.
+     */
+    private String resolveInstitutePortalUrl(Institute institute) {
+        if (institute == null || !org.springframework.util.StringUtils.hasText(institute.getLearnerPortalBaseUrl())) {
+            return defaultPortalOrNull();
+        }
+        String base = institute.getLearnerPortalBaseUrl().trim();
+        if (!base.startsWith("http://") && !base.startsWith("https://")) {
+            base = "https://" + base;
+        }
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
     }
 
     private record UserManagementResult(UserDTO parentUser, UserDTO childUser, boolean sendCredentials,
@@ -919,10 +982,13 @@ public class AdmissionService {
                 "<div class='cred-row'>Username: <span class='cred-val'>" + username + "</span></div>" +
                 "<div class='cred-row'>Password: <span class='cred-val'>" + password + "</span></div>" +
                 "</div>" +
+                (loginUrl != null ?
                 "<div style='text-align: center; margin: 40px 0;'>" +
                 "<a href='" + loginUrl + "' class='button'>Login to Parent Portal</a>" +
-                "</div>" : "") +
-                "<p>If you have any questions, please visit our <a href='" + websiteUrl + "' style='color: #ED8F03;'>website</a> or reach out to our administration team.</p>" +
+                "</div>" : "") : "") +
+                (websiteUrl != null ?
+                "<p>If you have any questions, please visit our <a href='" + websiteUrl + "' style='color: #ED8F03;'>website</a> or reach out to our administration team.</p>" :
+                "<p>If you have any questions, please reach out to our administration team.</p>") +
                 "</div>" +
                 "<div class='footer'>" +
                 "<p>You are receiving this email because you have successfully enrolled at " + instituteName + ".</p>" +
