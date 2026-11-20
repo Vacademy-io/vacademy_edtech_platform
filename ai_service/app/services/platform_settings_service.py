@@ -506,6 +506,55 @@ SETTING_SPECS["external_apis.auto_capture"] = SettingSpec(
     default=lambda: True,
 )
 
+SETTING_SPECS["external_apis.alert_emails"] = SettingSpec(
+    key="external_apis.alert_emails",
+    group="external_apis",
+    label="External API alerts: who to email",
+    description=(
+        "Comma-separated addresses told when a third-party API runs out of credits or keeps failing. "
+        "Blank sends nothing; problems still show on the External APIs page."
+    ),
+    type="string",
+    default=lambda: "",
+    max_length=1000,
+)
+
+SETTING_SPECS["external_apis.alert_whatsapp_phones"] = SettingSpec(
+    key="external_apis.alert_whatsapp_phones",
+    group="external_apis",
+    label="External API alerts: WhatsApp numbers",
+    description=(
+        "Comma-separated WhatsApp numbers with country code (919876543210) told when a third-party "
+        "API runs out of credits or keeps failing, through the platform institute's WhatsApp and the "
+        "server health check template. Blank sends no WhatsApp."
+    ),
+    type="string",
+    default=lambda: "",
+    max_length=500,
+)
+
+SETTING_SPECS["external_apis.alert_consecutive_failures"] = SettingSpec(
+    key="external_apis.alert_consecutive_failures",
+    group="external_apis",
+    label="External API alerts: failures in a row",
+    description="How many failed calls in a row, with no success between them, raise an alert.",
+    type="number",
+    default=lambda: 5,
+    min_value=2,
+    max_value=50,
+)
+
+SETTING_SPECS["external_apis.alert_repeat_hours"] = SettingSpec(
+    key="external_apis.alert_repeat_hours",
+    group="external_apis",
+    label="External API alerts: hours between reminders",
+    description="While a problem lasts, how long to wait before reminding people about it again.",
+    type="number",
+    default=lambda: 6,
+    min_value=1,
+    max_value=168,
+)
+
 SETTING_SPECS["metering.history_v2_institutes"] = SettingSpec(
     key="metering.history_v2_institutes",
     group="rollout",
