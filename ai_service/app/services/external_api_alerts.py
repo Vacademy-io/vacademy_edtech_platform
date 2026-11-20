@@ -9,9 +9,9 @@ An alert emails once, again every `alert_repeat_hours` while it lasts, and once 
 succeeds. A key can be muted from the portal. Emails carry the last four characters of a key at
 most, and every problem in a pass shares one email, so an outage does not send one per API.
 
-WhatsApp goes to the numbers set on the portal, one message per pass, through notification_service
-as the platform institute with the already-approved UTILITY template the server health check uses
-(five body fields: status, host, ip, details, time), so it needs no new Meta approval.
+WhatsApp goes to the numbers set on the portal, one message per pass, straight to Meta from the
+Vidyayatan account exactly as community_service's server health check pages (same env vars, same
+already-approved UTILITY template: status, host, ip, details, time), so it needs no new approval.
 
 Covers what reaches external_api_call_log: calls with a key through httpx (httpx_capture) and
 Serper. Java services and the voice bot do not write there yet.
@@ -418,19 +418,75 @@ def whatsapp_fields(notices: Sequence[Notice], now: Optional[datetime] = None) -
     }
 
 
-async def send_whatsapp(phones: Sequence[str], fields: Mapping[str, str], source_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """One template message per number. Returns each number's result as notification_service
-    reports it: {"phone", "success", "error"}."""
-    from .staff_notify import whatsapp_template as send_template
+META_API = "https://graph.facebook.com/v21.0"
 
-    return await send_template(
-        platform_institute_id(),
-        phones,
-        whatsapp_template(),
-        dict(fields),
-        source="EXTERNAL_API_ALERT",
-        source_id=source_id,
-    )
+
+def whatsapp_payload(phone: str, template: str, fields: Mapping[str, str]) -> Dict[str, Any]:
+    """The Meta Cloud API template message, exactly as community_service's health check builds it:
+    the body parameters in order 1..5."""
+    return {
+        "messaging_product": "whatsapp",
+        "to": phone,
+        "type": "template",
+        "template": {
+            "name": template,
+            "language": {"code": "en"},
+            "components": [{
+                "type": "body",
+                "parameters": [{"type": "text", "text": fields[k]} for k in sorted(fields, key=int)],
+            }],
+        },
+    }
+
+
+def meta_error(body: Any) -> str:
+    """Meta's own words for a refusal ("(#132001) Template name does not exist in the translation")."""
+    error = body.get("error") if isinstance(body, dict) else None
+    if isinstance(error, dict):
+        code = error.get("code")
+        message = (error.get("error_data") or {}).get("details") or error.get("message") or ""
+        return f"(#{code}) {message}".strip() if code else str(message) or "refused"
+    return "refused"
+
+
+async def send_whatsapp(phones: Sequence[str], fields: Mapping[str, str]) -> List[Dict[str, Any]]:
+    """One template message per number, straight to Meta from the Vidyayatan WhatsApp account, the
+    way community_service pages the server health check (same token and phone number id env vars).
+    Returns each number's result {"phone", "success", "error"}; one bad number never stops the rest."""
+    import httpx
+
+    token = (os.getenv("WHATSAPP_ACCESS_TOKEN_VIDYAYATAN") or "").strip()
+    phone_number_id = (os.getenv("WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN") or "").strip()
+    if not token or not phone_number_id:
+        # Loud: an alert was due and could not go. Silence here looks like a healthy channel.
+        logger.warning("external API alerts: WhatsApp not configured on ai-service "
+                       "(WHATSAPP_ACCESS_TOKEN_VIDYAYATAN / WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN)")
+        return [{"phone": p, "success": False,
+                 "error": "WhatsApp is not set up on ai-service: WHATSAPP_ACCESS_TOKEN_VIDYAYATAN "
+                          "and WHATSAPP_PHONE_NUMBER_ID_VIDYAYATAN are missing"} for p in phones]
+
+    url = f"{META_API}/{phone_number_id}/messages"
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    template = whatsapp_template()
+    results: List[Dict[str, Any]] = []
+    async with httpx.AsyncClient(timeout=15.0) as client:
+        for phone in phones:
+            try:
+                resp = await client.post(url, json=whatsapp_payload(phone, template, fields), headers=headers)
+            except Exception as exc:  # noqa: BLE001
+                results.append({"phone": phone, "success": False, "error": f"{type(exc).__name__}: {exc}"[:200]})
+                continue
+            if resp.is_success:
+                results.append({"phone": phone, "success": True, "error": None})
+                continue
+            try:
+                error = meta_error(resp.json())
+            except ValueError:
+                error = f"HTTP {resp.status_code}"
+            logger.warning("external API alerts: Meta refused WhatsApp to %s: HTTP %s %s",
+                           phone, resp.status_code, error)
+            results.append({"phone": phone, "success": False, "error": error})
+    return results
 
 
 def platform_institute_id() -> str:
@@ -521,7 +577,9 @@ __all__ = [
     "release",
     "run_sweep",
     "send_email",
+    "meta_error",
     "send_whatsapp",
+    "whatsapp_payload",
     "start_external_api_alerts",
     "subject_for",
     "whatsapp_fields",
