@@ -35,6 +35,9 @@ import vacademy.io.admin_core_service.features.commerce.catalogue.service.Commer
 import vacademy.io.admin_core_service.features.commerce.document.dto.DocumentSeriesDTO;
 import vacademy.io.admin_core_service.features.commerce.document.service.CommerceDocumentSeriesService;
 import vacademy.io.admin_core_service.features.commerce.media.CommerceRenditionClient;
+import vacademy.io.admin_core_service.features.commerce.order.dto.CheckoutRequest;
+import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceStaffOrderService;
+import vacademy.io.admin_core_service.features.commerce.order.desk.dto.StaffOrderRequest;
 import vacademy.io.admin_core_service.features.commerce.parallelrun.ParallelRunController;
 import vacademy.io.admin_core_service.features.commerce.parallelrun.ParallelRunDtos.DayView;
 import vacademy.io.admin_core_service.features.commerce.parallelrun.ParallelRunDtos.DaysAnswer;
@@ -165,6 +168,7 @@ class CommerceSwitchoverDatabaseProofIT {
     @Autowired private PosSessionService sessions;
     @Autowired private PosSaleService sales;
     @Autowired private PosReturnService posReturns;
+    @Autowired private CommerceStaffOrderService staffOrders;
     // The routes, called as a request would call them (guard first, then the service).
     @Autowired private ItemCostImportController costImport;
     @Autowired private OpeningStockController opening;
@@ -226,6 +230,8 @@ class CommerceSwitchoverDatabaseProofIT {
     private String coaster; // QUANTITY 100.00, sold and returned at the counter
     private String vase;    // QUANTITY 300.00, sold for UPI
     private String offItem; // QUANTITY at the feature-off institute, no cost
+    private String offItem2; // QUANTITY at the feature-off institute, received with a typed cost
+    private String cloth;   // QUANTITY sold by the metre, qty_scale 10 (base unit = a tenth of a metre)
 
     private LocalDate today;
     private LocalDate salesDay;
@@ -397,10 +403,15 @@ class CommerceSwitchoverDatabaseProofIT {
 
     private String product(String instituteId, String slug, String name, String sku, String price, boolean pieces,
                            String taxClassId) {
+        return product(instituteId, slug, name, sku, price, pieces, taxClassId, "PCS", 1);
+    }
+
+    private String product(String instituteId, String slug, String name, String sku, String price, boolean pieces,
+                           String taxClassId, String unit, int qtyScale) {
         ProductRequest request = ProductRequest.builder().slug(slug + "-" + run)
                 .translations(List.of(ProductTranslationDTO.builder().locale("en").name(name).build()))
-                .taxClassId(taxClassId).status("ACTIVE").stockMode(pieces ? "PIECE" : "QUANTITY").unit("PCS")
-                .qtyScale(1)
+                .taxClassId(taxClassId).status("ACTIVE").stockMode(pieces ? "PIECE" : "QUANTITY").unit(unit)
+                .qtyScale(qtyScale)
                 .variants(List.of(VariantRequest.builder().sku(sku).name("One size")
                         .price(new BigDecimal(price)).weightGrams(200).build()))
                 .build();
@@ -599,7 +610,10 @@ class CommerceSwitchoverDatabaseProofIT {
         assertEquals(1, count("SELECT count(*) FROM pg_constraint WHERE conname = 'uq_parallel_run_day'"));
         assertEquals(1, count("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_parallel_run_day_result'"));
         assertEquals(1, count("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_parallel_run_day_counts'"));
-        assertEquals(1, count("SELECT count(*) FROM pg_indexes WHERE indexname = 'idx_parallel_run_day_location'"));
+        assertEquals(0, count("SELECT count(*) FROM pg_indexes WHERE indexname = 'idx_parallel_run_day_location'"),
+                "X13: no second index beside the unique constraint's");
+        assertEquals(1, count("SELECT count(*) FROM pg_indexes WHERE tablename = 'commerce_parallel_run_day' AND "
+                + "indexname = 'uq_parallel_run_day'"), "the unique constraint's index serves the reads");
 
         db.update("INSERT INTO level (id, level_name, status) VALUES ('DEFAULT', 'DEFAULT', 'ACTIVE'), ('INVITED', "
                 + "'INVITED', 'ACTIVE') ON CONFLICT DO NOTHING");
@@ -647,6 +661,9 @@ class CommerceSwitchoverDatabaseProofIT {
         vase = product(inst, "test-vase", "Test vase", sku("0008"), "300.00", false, taxClass);
         offItem = product(offInst, "sample-item", "Sample item", "TST-0001-" + offInst.substring(0, 8), "100.00", false,
                 null);
+        offItem2 = product(offInst, "sample-item-2", "Sample item 2", "TST-0002-" + offInst.substring(0, 8), "100.00",
+                false, null);
+        cloth = product(inst, "test-cloth", "Test cloth", sku("0009"), "150.00", false, taxClass, "MTR", 10);
         // Counter stock arrives as OTHER with a typed cost (not an opening receipt).
         receiptService.create(inst, adminId, true, receipt(l1, "OTHER", lamp, 10, "200.00", coaster, 10, "40.00",
                 vase, 10, "150.00"));
@@ -815,7 +832,10 @@ class CommerceSwitchoverDatabaseProofIT {
         assertEquals("COUNTING", readiness(manager, inst, l1).get("status"), "recount still open");
         finish(w2, recount.id());
         Map<String, Object> passed = readiness(manager, inst, l1);
-        assertEquals("PASSED", passed.get("status"), String.valueOf(passed));
+        // X7: the recount passed, but the count it checked is still open: not ready, not PASSED.
+        assertEquals("COUNTING", passed.get("status"), String.valueOf(passed));
+        assertTrue(((List<String>) passed.get("blockers")).contains("COUNT_NOT_POSTED"), String.valueOf(passed));
+        assertEquals(Boolean.FALSE, passed.get("ready"));
         Map<String, Object> verdict = part(passed, "recount");
         assertEquals(20, ((Number) verdict.get("main_lines")).intValue());
         assertEquals(2, ((Number) verdict.get("compared")).intValue());
@@ -824,7 +844,7 @@ class CommerceSwitchoverDatabaseProofIT {
         same("100.0", verdict.get("percent"), "C3 agreement 100 %");
         assertEquals(Boolean.TRUE, verdict.get("passes"));
         assertEquals("OPEN", text("SELECT status FROM stock_count WHERE id = ?", main.id()), "main count still open");
-        note("C3 PASSED: " + verdict);
+        note("C3/X7 recount passes, main count open -> COUNTING + COUNT_NOT_POSTED: " + verdict);
 
         // C4: a recount of 1 line is too small a sample.
         CountView small = openCount(manager, "RECOUNT", main.id());
@@ -847,16 +867,44 @@ class CommerceSwitchoverDatabaseProofIT {
         assertEquals("COUNTING", readiness(manager, inst, l1).get("status"), "C4b: an open recount");
         note("C4b 1 of 2 agree -> AGREEMENT_BELOW_98; open recount -> COUNTING");
 
+        // X7: the open recount is finished agreeing, then the main count is posted -> PASSED.
+        countLines(w2, pending.id(), List.of(scanned(codes.get(9)), scanned(codes.get(11))));
+        finish(w2, pending.id());
+        assertEquals("COUNTING", readiness(manager, inst, l1).get("status"), "X7: passes, main count still open");
+        CountView postedMain = body(counts.post(manager, inst, main.id(),
+                new StockOpsDtos.CountPostRequest(key(), "SKIP", null, null, null)));
+        assertEquals("POSTED", postedMain.status());
+        Map<String, Object> afterPost = readiness(manager, inst, l1);
+        assertEquals("PASSED", afterPost.get("status"), String.valueOf(afterPost));
+        assertFalse(((List<String>) afterPost.get("blockers")).contains("COUNT_NOT_POSTED"));
+        assertEquals(main.id(), part(afterPost, "recount").get("count_id"));
+        // X10: costs counted for the location's goods only (stock or opening lines here).
+        Map<String, Object> goods = part(afterPost, "items");
+        assertEquals(6, ((Number) goods.get("tracked")).intValue(), "shirt, plain, scarf + counter lamp, coaster, "
+                + "vase: " + goods);
+        assertEquals(3, ((Number) goods.get("with_cost")).intValue(), String.valueOf(goods));
+        note("X7 recount of the open count passes -> COUNTING; count posted -> PASSED; X10 items here " + goods);
+
+        // X7: a later count posted with no recount of its own -> COUNTING.
+        CountView second = openCount(w1, "COUNT", null);
+        countLines(w1, second.id(), List.of(set(plain, onHand(l1, plain))));
+        body(counts.post(manager, inst, second.id(), new StockOpsDtos.CountPostRequest(key(), "SKIP", null, null,
+                null)));
+        Map<String, Object> laterCount = readiness(manager, inst, l1);
+        assertEquals("COUNTING", laterCount.get("status"), String.valueOf(laterCount));
+        assertNull(laterCount.get("recount"), "the earlier recount does not cover the later count");
+        note("X7 later count posted without a recount -> COUNTING");
+
         // C5: a new opening receipt after all this sends the location back to RECEIVING.
         postReceipt(manager, inst, receipt(l1, "OPENING", bowl, 2, null));
         Map<String, Object> back = readiness(manager, inst, l1);
         assertEquals("RECEIVING", back.get("status"), String.valueOf(back));
         assertNull(back.get("recount"));
         note("C5 new OPENING receipt -> RECEIVING, recount null");
-        assertNotNull(pending.id());
         cancelOpenCounts();
-        assertEquals(0, count("SELECT count(*) FROM stock_movement WHERE reference_id IN (?, ?, ?, ?)", recount.id(),
-                small.id(), off.id(), main.id()), "recounts and the cancelled count post no movement");
+        assertEquals(0, count("SELECT count(*) FROM stock_movement WHERE reference_id IN (?, ?, ?, ?, ?, ?)",
+                recount.id(), small.id(), off.id(), pending.id(), main.id(), second.id()),
+                "recounts post no movement, and the counts matched the stock");
     }
 
     // ================================================================== 5. feature off (F1, C1b, C1d, C6, C7)
@@ -887,8 +935,8 @@ class CommerceSwitchoverDatabaseProofIT {
         assertEquals(0, count("SELECT count(*) FROM commerce_parallel_run_day WHERE institute_id = ?", offInst));
         note("F1 feature off: " + checks + " route checks -> FEATURE_DISABLED");
 
-        // C1b: an opening receipt without a cost posts as today.
-        ReceiptRequest uncosted = receipt(lOff, "OPENING", offItem, 5, null);
+        // C1b: an opening receipt without a cost posts as today (one line typed, one with no cost).
+        ReceiptRequest uncosted = receipt(lOff, "OPENING", offItem, 5, null, offItem2, 2, "40.00");
         Map<String, Object> posted = postReceipt(admin, offInst, uncosted);
         String receiptId = String.valueOf(posted.get("id"));
         String number = String.valueOf(posted.get("receipt_number"));
@@ -912,6 +960,9 @@ class CommerceSwitchoverDatabaseProofIT {
         List<Map<String, Object>> uncostedList = (List<Map<String, Object>>) part(flagged, "receipts")
                 .get("uncosted_receipts");
         assertEquals(number, uncostedList.get(0).get("receipt_number"));
+        // X9: flagged although one of its lines carries a cost; the counts are of the uncosted lines.
+        assertEquals(1, ((Number) uncostedList.get(0).get("lines")).intValue(), String.valueOf(uncostedList));
+        assertEquals(5, ((Number) uncostedList.get(0).get("units")).intValue());
         assertTrue(((List<String>) flagged.get("blockers")).contains("COSTS_MISSING"));
         ReceiptActionRequest reverse = new ReceiptActionRequest();
         reverse.setReason("Website figures replaced by counted opening stock");
@@ -1044,9 +1095,9 @@ class CommerceSwitchoverDatabaseProofIT {
         PlatformView paperDay = day(d.minusDays(3)).platform();
         assertEquals(1, paperDay.bills());
         same("400.00", paperDay.salesValue(), "the paper bill's sale is on its paper date");
-        // Cash is booked by the day the tender was received (the day it was keyed), not the paper date.
-        same("0", paperDay.cash(), "the paper bill's cash is not on its paper date");
-        note("D5 paper bill dated d-3: " + paperDay + "; its cash lands on the day it was keyed");
+        // X4: a paper bill's cash is counted on the bill's date (when it went into the drawer), not the day it was keyed.
+        same("400.00", paperDay.cash(), "the paper bill's cash is on its paper date");
+        note("X4 paper bill dated d-3: " + paperDay + "; its cash is on the bill's date");
 
         saveAgreeing(d);
         saveAgreeing(d.minusDays(1));
@@ -1081,6 +1132,9 @@ class CommerceSwitchoverDatabaseProofIT {
         DayView recheck = after.days().stream().filter(v -> v.date().equals(d.minusDays(1).toString())).findFirst()
                 .orElseThrow();
         assertEquals("RECHECK", recheck.status());
+        same("400.00", recheck.platform().cash(), "X4: the late paper bill's cash is on d-1");
+        DayView keyedOn = after.days().stream().filter(v -> v.date().equals(d.toString())).findFirst().orElseThrow();
+        assertEquals("CLEAN", keyedOn.status(), "X4: the day it was keyed is untouched");
         assertFalse(after.passed());
         assertTrue(after.streak() < 2, "streak " + after.streak());
         note("D5 late paper bill for d-1 -> RECHECK, streak " + after.streak() + ", statuses " + after.days().stream()
@@ -1158,5 +1212,102 @@ class CommerceSwitchoverDatabaseProofIT {
         assertEquals(rows, count("SELECT count(*) FROM commerce_parallel_run_day WHERE institute_id = ?", inst));
         assertEquals(adj, adjustments());
         note("F2/A7 " + checks + " refusals, nothing written; " + seen);
+    }
+
+    // ================================================================== 12. cash outside a counter session (X5)
+
+    @Test
+    @Order(12)
+    void cashTakenOutsideACounterSessionIsNotDayCash() {
+        DayView before = day(today);
+        StaffOrderRequest request = StaffOrderRequest.builder().clientRequestId(key())
+                .customer(StaffOrderRequest.Customer.builder().phone("9876500001").name("Phone Buyer").build())
+                .shippingAddress(CheckoutRequest.Address.builder().line1("2 Test Lane").city("Test City")
+                        .pincode("100001").build())
+                .lines(List.of(StaffOrderRequest.Line.builder().variantId(lamp).quantity(1).build()))
+                .tenders(List.of(StaffOrderRequest.Tender.builder().mode("CASH").amount(new BigDecimal("100.00"))
+                        .build()))
+                .restOnCredit(true).build();
+        String orderId = staffOrders.create(admin, inst, request).detail().getOrder().getId();
+        assertEquals(l1, text("SELECT fulfilment_location_id FROM commerce_order WHERE id = ?", orderId),
+                "the staff order is fulfilled from the store");
+        assertEquals(1, count("SELECT count(*) FROM commerce_order_tender WHERE order_id = ? AND mode = 'CASH' AND "
+                + "status = 'RECEIVED' AND pos_session_id IS NULL", orderId), "cash received outside a session");
+        DayView after = day(today);
+        same(before.platform().cash().toPlainString(), after.platform().cash(), "X5: day cash unchanged");
+        assertEquals(before.platform().bills(), after.platform().bills());
+        assertEquals(before.status(), after.status(), "X5: the day's verdict is unchanged");
+        note("X5 staff-order cash 100 at the store outside a session: day cash " + after.platform().cash()
+                + " (was " + before.platform().cash() + "), status " + after.status());
+    }
+
+    // ================================================================== 13. measured goods and re-commit (X1, X2, X3, X8)
+
+    @Test
+    @Order(13)
+    void aMeasuredItemsCostIsStoredPerBaseUnitAndAnEarlierFileRestores() {
+        // X8: a typed cost of 0 is no cost: refused while the switch-over is on.
+        assertEquals("OPENING_COST_MISSING", code(() -> postReceipt(manager, inst, receipt(l2, "OPENING", cloth, 500,
+                "0"))));
+
+        // X1: 120 per metre at qty_scale 10 is 12.0000 per tenth of a metre.
+        MockMultipartFile x = csv(sku("0009") + ",120,no,,");
+        ValidateResponse checked = validate(accountant, x);
+        assertEquals(0, checked.errorCount(), String.valueOf(checked.errors()));
+        same("120", checked.spotCheck().get(0).price(), "sheet price per metre");
+        same("120.0000", checked.spotCheck().get(0).costPerUnit(), "cost per metre");
+        same("12.0000", checked.spotCheck().get(0).cost(), "cost per base unit");
+        assertEquals(10, checked.spotCheck().get(0).qtyScale());
+        assertEquals("MTR", checked.spotCheck().get(0).unit());
+        assertEquals("REMOVE_INCLUDED_TAX", checked.taxRule(), "the proof shop is in REGULAR tax mode");
+        commit(accountant, x, checked.token());
+        same("12.0000", standardCost(cloth), "X1 stored per base unit");
+
+        // 50 m opening = 500 base units at 12.0000 = 6,000.
+        Map<String, Object> opened = postReceipt(manager, inst, receipt(l2, "OPENING", cloth, 500, null));
+        assertEquals("STANDARD", lineCostSource(String.valueOf(opened.get("id")), cloth));
+        same("12.0000", money("SELECT unit_cost FROM stock_movement WHERE institute_id = ? AND package_session_id = ? "
+                + "AND type = 'RECEIPT' ORDER BY created_at DESC LIMIT 1", inst, cloth), "X1 movement unit_cost");
+        Map<String, Object> atL2 = readiness(manager, inst, l2);
+        same("6000.00", part(atL2, "receipts").get("value"), "X1: 50 m opening = 6,000");
+        // X10: the location's goods are the cloth only; the counter items without a cost are elsewhere.
+        Map<String, Object> goods = part(atL2, "items");
+        assertEquals(1, ((Number) goods.get("tracked")).intValue(), String.valueOf(goods));
+        assertEquals(0, ((Number) goods.get("without_cost")).intValue(), String.valueOf(goods));
+        assertEquals(3, ((Number) goods.get("institute_without_cost")).intValue(), String.valueOf(goods));
+        assertFalse(((List<String>) atL2.get("blockers")).contains("COSTS_MISSING"), String.valueOf(atL2));
+        note("X1 cloth 120/m, scale 10 -> 12.0000; 500 base units -> value " + part(atL2, "receipts").get("value")
+                + "; X10 items at L2 " + goods);
+
+        // X3: X, then Y, then X again puts X's cost back.
+        MockMultipartFile y = csv(sku("0009") + ",130,no,,");
+        ValidateResponse checkedY = validate(accountant, y);
+        assertEquals(1, commit(accountant, y, checkedY.token()).changed());
+        same("13.0000", standardCost(cloth), "Y");
+        assertEquals("IMPORT_CHANGED", code(() -> commit(accountant, x, checked.token())),
+                "X's old token is stale once the cost changed");
+        ValidateResponse again = validate(accountant, x);
+        assertEquals(1, again.toChange());
+        CommitResponse restored = commit(accountant, x, again.token());
+        assertEquals(1, restored.changed());
+        assertEquals(0, restored.alreadyDone());
+        same("12.0000", standardCost(cloth), "X3: X restored");
+        assertEquals(3, count("SELECT count(*) FROM stock_cost_adjustment WHERE institute_id = ? AND package_session_id "
+                + "= ? AND reason = 'STANDARD_SET'", inst, cloth));
+        assertEquals(1, count("SELECT count(*) FROM commerce_audit WHERE institute_id = ? AND kind = "
+                + "'ITEM_COSTS_IMPORT' AND new_value_json LIKE ?", inst, "%" + again.token().substring(0, 16) + "%"));
+        note("X3 X -> Y -> X: standard cost 12.0000 again, STANDARD_SET x3");
+
+        // X2: an institute that is not in REGULAR tax mode keeps the tax in the cost.
+        header(offInst);
+        MockMultipartFile taxed = csv("TST-0001-" + offInst.substring(0, 8) + ",1180,yes,18,");
+        ValidateResponse kept = (ValidateResponse) body(costImport.importCosts(admin, offInst, "validate", null,
+                taxed));
+        header(inst);
+        assertEquals("UNREGISTERED", kept.taxMode());
+        assertEquals("KEEP_TAX_IN_COST", kept.taxRule());
+        same("1180.0000", kept.spotCheck().get(0).cost(), "X2: tax kept in cost");
+        assertTrue(kept.warnings().stream().anyMatch(w -> "TAX_KEPT_IN_COST".equals(w.code())));
+        note("X2 UNREGISTERED: 1180 incl. 18 % -> 1180.0000 with TAX_KEPT_IN_COST");
     }
 }
