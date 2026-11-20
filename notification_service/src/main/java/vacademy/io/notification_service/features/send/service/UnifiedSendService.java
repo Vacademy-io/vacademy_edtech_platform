@@ -211,6 +211,27 @@ public class UnifiedSendService implements SendChannelRouter {
         return INBOX_REPLY_SOURCE.equals(optsSource) ? INBOX_REPLY_SOURCE : PLAIN_LOG_SOURCE;
     }
 
+    /**
+     * Keys an EMAIL log row stores beside its subject: the template it was built from (the
+     * display-only logTemplateName, else the template this request looked up) and who sent it
+     * (originType / originId / originName, e.g. an admin resending from the student timeline).
+     */
+    static Map<String, String> emailLogMeta(UnifiedSendRequest request, UnifiedSendRequest.SendOptions opts) {
+        Map<String, String> meta = new HashMap<>();
+        String template = opts != null && opts.getLogTemplateName() != null && !opts.getLogTemplateName().isBlank()
+                ? opts.getLogTemplateName()
+                : request.getTemplateName();
+        if (template != null && !template.isBlank()) {
+            meta.put(EmailService.TEMPLATE_NAME_PAYLOAD_KEY, template);
+        }
+        if (opts != null && opts.getOriginType() != null && !opts.getOriginType().isBlank()) {
+            meta.put(MessageOriginPayload.TYPE_KEY, opts.getOriginType());
+            if (opts.getOriginId() != null) meta.put(MessageOriginPayload.ID_KEY, opts.getOriginId());
+            if (opts.getOriginName() != null) meta.put(MessageOriginPayload.NAME_KEY, opts.getOriginName());
+        }
+        return meta;
+    }
+
     private boolean isEngagementEngineSend(UnifiedSendRequest request) {
         return request.getOptions() != null
                 && ENGAGEMENT_ENGINE_SOURCE.equals(request.getOptions().getSource());
@@ -568,6 +589,9 @@ public class UnifiedSendService implements SendChannelRouter {
         // through would double-count campaigns there. Only inbox replies need to be told apart.
         final String plainLogSource = plainLogSource(opts.getSource());
 
+        // Template name and sender for the log row, so the student timeline can show them.
+        final Map<String, String> emailLogMeta = emailLogMeta(request, opts);
+
         // Membership merge tags ({{practice_name}}, {{expiry_date_long}}, {{subscription_link}}, ...)
         // live in admin-core. Fetch them once for the whole batch, and only when the message
         // uses one, so ordinary sends never make the call.
@@ -679,7 +703,7 @@ public class UnifiedSendService implements SendChannelRouter {
                 } else {
                     outcome = emailService.sendHtmlEmail(email, subject, plainLogSource, body,
                             request.getInstituteId(), opts.getFromEmail(), opts.getFromName(), emailType,
-                            null, null, finalCopyRecipients, finalCopyMode, billingClass);
+                            null, null, finalCopyRecipients, finalCopyMode, billingClass, emailLogMeta);
                 }
 
                 // Sending controls decide the final status: an over-cap send is queued (still a

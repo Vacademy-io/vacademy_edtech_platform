@@ -416,6 +416,7 @@ public class SendEmailNodeHandler implements NodeHandler {
                             newDto.setNotificationType("EMAIL");
                             newDto.setSource("WORKFLOW");
                             newDto.setSourceId("send_email_node_batch");
+                            newDto.setTemplateName((String) request.get("templateName"));
                             newDto.setUsers(new ArrayList<>());
                             return newDto;
                         });
@@ -1040,6 +1041,8 @@ public class SendEmailNodeHandler implements NodeHandler {
                 request.put("subject", template.getSubject());
                 request.put("body", template.getContent());
                 request.put("placeholders", finalVars);
+                // Labels the notification_log row, so the student timeline names the template.
+                request.put("templateName", templateName);
 
             }
             // Fallback to hardcoded subject/body
@@ -1272,6 +1275,7 @@ public class SendEmailNodeHandler implements NodeHandler {
                     chunkDto.setSource(batch.getSource());
                     chunkDto.setSourceId(batch.getSourceId());
                     chunkDto.setEmailType(batch.getEmailType());
+                    chunkDto.setTemplateName(batch.getTemplateName());
                     chunkDto.setUsers(new ArrayList<>(users.subList(i, end)));
                 }
                 int chunkUserCount = end - i;

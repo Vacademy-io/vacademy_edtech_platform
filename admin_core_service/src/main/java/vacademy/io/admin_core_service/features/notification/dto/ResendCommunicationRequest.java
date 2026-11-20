@@ -30,7 +30,10 @@ public class ResendCommunicationRequest {
     /** The notification_log row being replayed — carried into the audit row as the entity id. */
     private String sourceLogId;
 
-    /** WhatsApp only: the approved template being replayed. */
+    /**
+     * The template being replayed. WhatsApp sends it by this name; for EMAIL it only labels the
+     * new log row (the stored body is sent as is).
+     */
     private String templateName;
 
     private String languageCode;
