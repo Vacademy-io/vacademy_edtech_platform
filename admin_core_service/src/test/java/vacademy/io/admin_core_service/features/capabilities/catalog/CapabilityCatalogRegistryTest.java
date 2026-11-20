@@ -102,12 +102,12 @@ public class CapabilityCatalogRegistryTest {
         assertFalse(commerce.core());
         assertTrue(commerce.optIn());
         assertEquals(java.util.List.of("commerce.catalogue", "commerce.orders", "commerce.stock",
-                        "commerce.pos", "commerce.tax_reports", "commerce.accounts"),
+                        "commerce.pos", "commerce.tax_reports", "commerce.accounts", "commerce.migration"),
                 commerce.features().stream().map(CapabilityCatalog.Feature::key).toList());
         for (CapabilityCatalog.Feature feature : commerce.features()) {
-            if ("commerce.accounts".equals(feature.key())) {
+            if ("commerce.accounts".equals(feature.key()) || "commerce.migration".equals(feature.key())) {
                 // Off for every institute until it is given the feature row.
-                assertFalse(feature.defaultOn(), "commerce.accounts must not be default_on");
+                assertFalse(feature.defaultOn(), feature.key() + " must not be default_on");
             } else {
                 assertTrue(feature.defaultOn(), feature.key() + " must be default_on");
             }
@@ -123,6 +123,9 @@ public class CapabilityCatalogRegistryTest {
         assertEquals(java.util.List.of("commerce-pos"), nav.get("commerce.pos"));
         assertTrue(nav.get("commerce.tax_reports").isEmpty());
         assertTrue(nav.get("commerce.accounts").isEmpty());
+        assertEquals(java.util.List.of("commerce-parallel-run"), nav.get("commerce.migration"));
+        assertEquals(java.util.List.of("/commerce/parallel-run"), commerce.features().stream()
+                .filter(f -> "commerce.migration".equals(f.key())).findFirst().orElseThrow().governs().routes());
         for (String ungoverned : java.util.List.of("commerce-home", "commerce-settings", "commerce-reports")) {
             assertTrue(nav.values().stream().noneMatch(list -> list.contains(ungoverned)), ungoverned);
         }

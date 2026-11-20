@@ -204,6 +204,7 @@
             "commerce-customers": "दुकान से ख़रीदने वाले लोग।",
             "commerce-discounts": "कूपन और ऑफ़र।",
             "commerce-reports": "बिक्री, GST और रोज़नामचा रिपोर्ट।",
+            "commerce-parallel-run": "बदलाव से पहले हर दिन का जोड़ पुराने सिस्टम से मिलाएँ।",
             "commerce-settings": "व्यवसाय, टैक्स, जगहें और स्टाफ़।"
         }
     },

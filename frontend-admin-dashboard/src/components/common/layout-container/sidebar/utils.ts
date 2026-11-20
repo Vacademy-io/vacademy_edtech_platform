@@ -44,6 +44,7 @@ import {
     UsersThree,
     SealPercent,
     ChartPieSlice,
+    Scales,
     Wrench,
 } from '@phosphor-icons/react';
 import i18next from 'i18next';
@@ -1076,6 +1077,13 @@ export const getSidebarItemsData = (): SidebarItemsType[] => [
         id: 'commerce-reports',
         title: sidebarT('sidebar:commerceReports'),
         to: '/commerce/reports',
+        category: 'COMMERCE',
+    },
+    {
+        icon: Scales,
+        id: 'commerce-parallel-run',
+        title: sidebarT('sidebar:commerceParallelRun'),
+        to: '/commerce/parallel-run',
         category: 'COMMERCE',
     },
     {

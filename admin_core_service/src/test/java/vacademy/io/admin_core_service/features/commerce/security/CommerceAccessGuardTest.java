@@ -457,14 +457,30 @@ class CommerceAccessGuardTest {
         CommerceAccessDeniedException off = assertThrows(CommerceAccessDeniedException.class,
                 () -> guard.require(admin, INSTITUTE, CommerceFeature.ACCOUNTS, Set.of()));
         assertEquals(CommerceAccessDeniedException.FEATURE_DISABLED, off.getCode());
-        // The other five stay on with the module row alone.
+        // The other five stay on with the module row alone (switch-over is off too, see below).
         for (CommerceFeature feature : CommerceFeature.values()) {
-            if (feature != CommerceFeature.ACCOUNTS) {
+            if (feature != CommerceFeature.ACCOUNTS && feature != CommerceFeature.MIGRATION) {
                 assertDoesNotThrow(() -> guard.require(admin, INSTITUTE, feature, Set.of()));
             }
         }
         grantAccounts();
         assertDoesNotThrow(() -> guard.require(admin, INSTITUTE, CommerceFeature.ACCOUNTS, Set.of()));
         assertEquals("commerce.accounts", CommerceFeature.ACCOUNTS.key());
+    }
+
+    @Test
+    void migrationIsOffWithTheModuleRowAloneAndOnWithItsFeatureRow() {
+        CustomUserDetails admin = principal(false, "ADMIN");
+        CommerceAccessDeniedException off = assertThrows(CommerceAccessDeniedException.class,
+                () -> guard.require(admin, INSTITUTE, CommerceFeature.MIGRATION, Set.of()));
+        assertEquals(CommerceAccessDeniedException.FEATURE_DISABLED, off.getCode());
+        // Granting accounts does not grant the switch-over feature.
+        grantAccounts();
+        assertThrows(CommerceAccessDeniedException.class,
+                () -> guard.require(admin, INSTITUTE, CommerceFeature.MIGRATION, Set.of()));
+        grantCommerce(INSTITUTE, row(INSTITUTE, "commerce.migration", true));
+        resolver.evict(INSTITUTE);
+        assertDoesNotThrow(() -> guard.require(admin, INSTITUTE, CommerceFeature.MIGRATION, Set.of()));
+        assertEquals("commerce.migration", CommerceFeature.MIGRATION.key());
     }
 }

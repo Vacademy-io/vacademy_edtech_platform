@@ -26,6 +26,8 @@ export const COMMERCE_FEATURE = {
     TAX_REPORTS: 'commerce.tax_reports',
     /** Read as off until the catalogue carries it. */
     ACCOUNTS: 'commerce.accounts',
+    /** Opening stock and switch-over; off for every institute until granted. */
+    MIGRATION: 'commerce.migration',
 } as const;
 
 export type CommerceFeatureKey = (typeof COMMERCE_FEATURE)[keyof typeof COMMERCE_FEATURE];
@@ -61,6 +63,7 @@ export type CommerceNavId =
     | 'commerce-customers'
     | 'commerce-discounts'
     | 'commerce-reports'
+    | 'commerce-parallel-run'
     | 'commerce-settings';
 
 export interface CommerceNavRule {
@@ -74,13 +77,15 @@ export interface CommerceNavRule {
      * feature at all" (Home, Settings).
      */
     anyFeature: readonly CommerceFeatureKey[];
+    /** Features that must ALL be on as well (an add-on on top of `anyFeature`). */
+    allFeatures?: readonly CommerceFeatureKey[];
     /** Commerce roles that see the screen. Institute ADMIN always does. */
     roles: readonly CommerceRoleName[];
 }
 
 const { STORE_MANAGER, WAREHOUSE_STAFF, POS_CASHIER, ACCOUNTANT } = COMMERCE_ROLE;
 
-/** The ten Phase 1 shop screens, in sidebar order. */
+/** The shop screens, in sidebar order: the ten of Phase 1 and the switch-over days. */
 export const COMMERCE_NAV: readonly CommerceNavRule[] = [
     {
         id: 'commerce-home',
@@ -152,6 +157,15 @@ export const COMMERCE_NAV: readonly CommerceNavRule[] = [
         roles: [STORE_MANAGER, ACCOUNTANT],
     },
     {
+        // The old system's day totals beside the platform's during a store's parallel run.
+        id: 'commerce-parallel-run',
+        route: '/commerce/parallel-run',
+        labelKey: 'commerceParallelRun',
+        anyFeature: [COMMERCE_FEATURE.TAX_REPORTS],
+        allFeatures: [COMMERCE_FEATURE.MIGRATION],
+        roles: [STORE_MANAGER, ACCOUNTANT],
+    },
+    {
         id: 'commerce-settings',
         route: '/commerce/settings',
         labelKey: 'commerceSettings',
@@ -210,6 +224,7 @@ export function resolveCommerceAccess({
     const isNavFeatureOn = (navId: CommerceNavId) => {
         const rule = NAV_BY_ID.get(navId);
         if (!rule || !moduleOn) return false;
+        if (rule.allFeatures && !rule.allFeatures.every(featureOn)) return false;
         return rule.anyFeature.length === 0 || rule.anyFeature.some(featureOn);
     };
     const denialFor = (navId: CommerceNavId): CommerceDenial | null => {

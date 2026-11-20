@@ -1188,6 +1188,25 @@
             "routes": []
           },
           "setting_keys": []
+        },
+        {
+          "key": "commerce.migration",
+          "label": "Opening stock and switch-over",
+          "description": "Item-cost import, opening-stock checks, re-measure before go-live, daily comparison with the old system.",
+          "default_on": false,
+          "governs": {
+            "nav": [
+              "commerce-parallel-run"
+            ],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": [
+              "/commerce/parallel-run"
+            ]
+          },
+          "setting_keys": []
         }
       ]
     },

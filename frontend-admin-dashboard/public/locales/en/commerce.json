@@ -204,6 +204,7 @@
             "commerce-customers": "People who bought from the shop.",
             "commerce-discounts": "Coupons and offers.",
             "commerce-reports": "Sales, GST and day book reports.",
+            "commerce-parallel-run": "Compare each day's totals with the old system before switching over.",
             "commerce-settings": "Business, tax, locations and staff."
         }
     },
