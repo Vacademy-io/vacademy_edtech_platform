@@ -16,7 +16,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * One business day of a store's parallel run (V744): the old system's day totals as a manager
+ * One business day of a store's parallel run (V747): the old system's day totals as a manager
  * entered them, the platform's figures for the same day and location as computed at save time
  * ({@code platform_json}), and the verdict. One row per institute, location and date.
  * {@code result} holds a name of {@code ParallelRunResult}.

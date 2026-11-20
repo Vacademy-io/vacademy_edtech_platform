@@ -599,13 +599,13 @@ class CommerceSwitchoverDatabaseProofIT {
                 p.returns(), null, now.version())));
     }
 
-    // ================================================================== 1. the shop, V744
+    // ================================================================== 1. the shop, V747
 
     @Test
     @Order(1)
     void migrationAppliedAndShopSeeded() {
-        assertEquals(1, count("SELECT count(*) FROM flyway_schema_history WHERE success AND version = '744' AND "
-                + "script = 'V744__Commerce_parallel_run.sql'"), "V744 parallel run is applied");
+        assertEquals(1, count("SELECT count(*) FROM flyway_schema_history WHERE success AND version = '747' AND "
+                + "script = 'V747__Commerce_parallel_run.sql'"), "V747 parallel run is applied");
         assertEquals(0, count("SELECT count(*) FROM flyway_schema_history WHERE NOT success"), "no failed migration");
         assertEquals(1, count("SELECT count(*) FROM pg_constraint WHERE conname = 'uq_parallel_run_day'"));
         assertEquals(1, count("SELECT count(*) FROM pg_constraint WHERE conname = 'ck_parallel_run_day_result'"));

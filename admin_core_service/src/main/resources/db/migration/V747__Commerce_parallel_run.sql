@@ -1,4 +1,4 @@
--- V744: Commerce switch-over (WP-53): the old system's day totals entered during a store's parallel run, with the
+-- V747: Commerce switch-over (WP-53): the old system's day totals entered during a store's parallel run, with the
 -- platform figures at save time. New table only; locks only stock_location (foreign key, brief). Re-runnable.
 SET LOCAL lock_timeout = '5s';
 
