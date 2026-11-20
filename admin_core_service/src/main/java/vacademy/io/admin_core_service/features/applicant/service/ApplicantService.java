@@ -2001,6 +2001,32 @@ public class ApplicantService {
                                 .orElse("learner.vacademy.io");
         }
 
+        /**
+         * The amount the application payment stage asks for, from the payment option's ACTIVE
+         * plans: one price when they all agree, every price (" / "-joined) when the parent picks
+         * a plan on the payment page, or "0" (the previous value) when no plan can be read.
+         */
+        private String resolveApplicationPaymentAmount(String paymentOptionId) {
+                try {
+                        PaymentOption option = paymentOptionRepository.findById(paymentOptionId).orElse(null);
+                        if (option == null || option.getPaymentPlans() == null) {
+                                return "0";
+                        }
+                        List<String> prices = option.getPaymentPlans().stream()
+                                        .filter(p -> "ACTIVE".equals(p.getStatus()))
+                                        .map(PaymentPlan::getActualPrice)
+                                        .distinct()
+                                        .sorted()
+                                        .map(price -> String.format(Locale.ENGLISH, "%,.2f", price))
+                                        .toList();
+                        return prices.isEmpty() ? "0" : String.join(" / ", prices);
+                } catch (Exception e) {
+                        logger.warn("Could not read the payment amount for option {}: {}", paymentOptionId,
+                                        e.getMessage());
+                        return "0";
+                }
+        }
+
         private void sendApplicationPaymentEmail(String applicantId, ApplicationStage paymentStage) {
                 try {
                         Applicant applicant = applicantRepository.findById(UUID.fromString(applicantId))
@@ -2062,7 +2088,7 @@ public class ApplicantService {
                                         childName,
                                         applicant.getTrackingId(),
                                         paymentStage.getSourceId(),
-                                        "0");
+                                        resolveApplicationPaymentAmount(paymentOptionId));
 
                 } catch (Exception e) {
                         logger.error("Error sending payment email", e);
