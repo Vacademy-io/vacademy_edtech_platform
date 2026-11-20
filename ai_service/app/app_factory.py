@@ -53,6 +53,7 @@ from .routers.lead_agent import router as lead_agent_router
 from .routers.kb_paper import router as kb_paper_router
 from .routers.kb_companion import router as kb_companion_router
 from .site_assistant.router import router as site_assistant_router
+from .demo_guide.router import router as demo_guide_router
 from .routers.paper_digitise import router as paper_digitise_router
 from .routers.kb_library import router as kb_library_router
 from .routers.voice_agent import router as voice_agent_router
@@ -430,6 +431,12 @@ def create_app() -> FastAPI:
         expose_headers=["Server-Timing", "Mcp-Session-Id", "Mcp-Protocol-Version"],
     )
 
+    # Demo guide (app/demo_guide): its routes answer CORS only to the products'
+    # stage origins. Sits outside the app-wide CORS middleware above and acts on
+    # /demo-guide/v1 paths only; every other path passes through untouched.
+    from .demo_guide.cors import DemoGuideCorsMiddleware
+    app.add_middleware(DemoGuideCorsMiddleware)
+
     # AI usage limits (services/metering/limit_gate.py): LimitExceeded -> HTTP 429
     # {"error": "AI_USAGE_LIMIT", ...} + Retry-After, and the soft-limit header
     # X-AI-Usage-Warning. The middleware sits OUTSIDE CORS so it can expose its
@@ -511,6 +518,7 @@ def create_app() -> FastAPI:
     app.include_router(kb_companion_router, prefix=settings.api_base_path)
     # Public website assistant for institute sites (hosted + embed), docs/site-assistant.
     app.include_router(site_assistant_router, prefix=settings.api_base_path)
+    app.include_router(demo_guide_router, prefix=settings.api_base_path)
     # A question-paper PDF read into gradable questions for offline tests.
     app.include_router(paper_digitise_router, prefix=settings.api_base_path)
     app.include_router(kb_library_router, prefix=settings.api_base_path)

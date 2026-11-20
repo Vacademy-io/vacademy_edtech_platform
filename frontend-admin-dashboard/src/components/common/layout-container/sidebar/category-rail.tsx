@@ -159,6 +159,7 @@ export const CategoryRail: React.FC<CategoryRailProps> = ({
 
         const buttonContent = (
             <button
+                data-tour={`category-${cat.id}`}
                 className={cn(
                     'relative flex w-14 flex-col items-center gap-0.5 rounded-xl px-1 py-2.5 transition-all duration-200',
                     'hover:bg-white/10',

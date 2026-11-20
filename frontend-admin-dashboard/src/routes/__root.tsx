@@ -28,6 +28,7 @@ import { QuickSettingsDialog } from '@/components/settings/quick-access/QuickSet
 import { EVALEZY_HOME, evalezyPathFor, isEvalezyMode } from '@/lib/evalezy-mode';
 import { isNative, shouldForceVimShell } from '@/native';
 import { setDeepLinkListener } from '@/native/deepLinks';
+import { isDemoStage } from '@/lib/demo-stage/bridge';
 
 const TanStackRouterDevtools =
     process.env.NODE_ENV === 'production'
@@ -228,7 +229,8 @@ export const Route = createRootRouteWithContext<{
         usePushNotifications();
 
         // The Evalezy shell is deliberately bare: no assistant, dock or popups.
-        if (isEvalezyMode()) {
+        // So is the public demo frame: the stage page brings its own guide.
+        if (isEvalezyMode() || isDemoStage()) {
             return (
                 <>
                     <NativeDeepLinks />

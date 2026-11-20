@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import { RouterProvider, createRouter } from '@tanstack/react-router';
+import { installDemoBridge } from '@/lib/demo-stage/bridge';
 import { StrictMode } from 'react';
 import ReactDOM from 'react-dom/client';
 import { SmartErrorPage as RootErrorComponent } from './components/core/SmartErrorPage';
@@ -113,6 +114,9 @@ const router = createRouter({
     // error pages show; it keeps the component stack for "Report Issue".
     defaultOnCatch: rememberComponentStack,
 });
+
+// Public product demo: obey the stage page when framed by it. No-op otherwise.
+installDemoBridge(router, import.meta.env.MODE === 'development');
 
 // Register the router instance for type safety
 declare module '@tanstack/react-router' {

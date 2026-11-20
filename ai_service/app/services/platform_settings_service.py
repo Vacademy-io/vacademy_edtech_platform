@@ -808,6 +808,60 @@ SETTING_SPECS["site_assistant.llm.disable_reasoning"] = SettingSpec(
     default=lambda: True,
 )
 
+# Demo guide (app/demo_guide, docs/demo-stage/SPEC.md 2.1): the AI guide beside the
+# framed demo app on demo.vacademy.io. Off until switched on; the products (tour
+# catalogue, facts file, lead list, demo institute, allowed pages) are one JSON value.
+# Secrets (the demo user's password, the token secret) are environment variables.
+SETTING_SPECS["demo_guide.enabled"] = SettingSpec(
+    key="demo_guide.enabled",
+    group="demo_guide",
+    label="Demo guide: on (platform kill switch)",
+    description=(
+        "Off (default) = the demo guide refuses every session, turn, speech and narration request with no model "
+        "or voice call. On = it serves the products configured below. Takes up to 30 s."
+    ),
+    type="bool",
+    default=lambda: False,
+)
+SETTING_SPECS["demo_guide.products"] = SettingSpec(
+    key="demo_guide.products",
+    group="demo_guide",
+    label="Demo guide: products (JSON)",
+    description=(
+        'One entry per product: {"vacademy": {"catalog_url": "https://demo.vacademy.io/tours/vacademy.json", '
+        '"knowledge_url": "https://demo.vacademy.io/knowledge/vacademy.md", "audience_id": "<lead list id>", '
+        '"lead_institute_id": "<institute that gets the leads and the usage rows>", '
+        '"app_institute_id": "<demo institute the framed app signs in to>", '
+        '"stage_origins": ["https://demo.vacademy.io"]}}. Only pages on stage_origins can use the guide.'
+    ),
+    type="string",
+    default=lambda: "{}",
+    max_length=6000,
+)
+for _dg_key, _dg_label, _dg_default, _dg_max, _dg_help in (
+    ("sessions_per_ip_per_day", "sessions per network (IP) per day", 30, 10000,
+     "New demo sessions one IP address may open in a day."),
+    ("turns_per_session", "turns per session", 60, 1000,
+     "Replies the guide gives in one session; then it only offers the contact form."),
+    ("turns_per_ip_per_day", "turns per network (IP) per day", 200, 100000,
+     "All sessions behind one IP address share this daily ceiling of replies."),
+    ("daily_turns", "turns per day, all visitors", 3000, 1000000,
+     "The guide's total replies in a day across every visitor (the spend ceiling)."),
+    ("speech_chars_per_session", "spoken characters per session", 12000, 1000000,
+     "Characters of the guide's replies one session may have spoken aloud."),
+    ("listen_seconds_per_session", "microphone seconds per session", 600, 100000,
+     "Seconds of microphone audio one session may have transcribed."),
+):
+    SETTING_SPECS[f"demo_guide.{_dg_key}"] = SettingSpec(
+        key=f"demo_guide.{_dg_key}",
+        group="demo_guide",
+        label=f"Demo guide: {_dg_label}",
+        description=_dg_help,
+        type="number",
+        default=lambda _d=_dg_default: _d,
+        min_value=0, max_value=_dg_max,
+    )
+
 # Learner profile (app/services/learner_profile): after a Student AI chat goes idle,
 # a cheap model notes what it showed about the learner (admin_core V608). Phase 1
 # only writes; admins read it on the learner's Reports tab. Off by default.
@@ -1069,6 +1123,7 @@ SETTING_SPECS["youtube_captions.requeue_per_sweep"] = SettingSpec(
 GROUP_LABELS = {
     "chatbot": "Student chatbot",
     "site_assistant": "Website assistant",
+    "demo_guide": "Demo guide",
     "course_knowledge": "Course knowledge",
     "learner_profile": "Learner profile",
     "kb": "Knowledge base",

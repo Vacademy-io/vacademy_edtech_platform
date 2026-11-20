@@ -1,0 +1,475 @@
+{
+  "product": "vacademy",
+  "copy": {
+    "hello": {
+      "en": "Hi, I'm the Vacademy guide, an AI assistant. I can walk you through the real product on a demo account. First, what do you run?",
+      "hi": "नमस्ते, मैं Vacademy गाइड हूँ, एक AI सहायक। मैं आपको डेमो अकाउंट पर असली प्रोडक्ट दिखा सकता हूँ। पहले बताइए, आप क्या चलाते हैं?",
+      "kn": "ನಮಸ್ಕಾರ, ನಾನು Vacademy ಗೈಡ್, ಒಂದು AI ಸಹಾಯಕ. ಡೆಮೊ ಖಾತೆಯಲ್ಲಿ ನಿಜವಾದ ಪ್ರಾಡಕ್ಟ್ ಅನ್ನು ನಿಮಗೆ ತೋರಿಸಬಲ್ಲೆ. ಮೊದಲು ಹೇಳಿ, ನೀವು ಏನು ನಡೆಸುತ್ತೀರಿ?",
+      "fr": "Bonjour, je suis le guide Vacademy, un assistant IA. Je peux vous montrer le vrai produit sur un compte de démonstration. D'abord, que gérez-vous ?"
+    },
+    "askTopic": {
+      "en": "Got it. What would you like to see first?",
+      "hi": "ठीक है। आप सबसे पहले क्या देखना चाहेंगे?",
+      "kn": "ಸರಿ. ಮೊದಲು ಏನು ನೋಡಲು ಬಯಸುತ್ತೀರಿ?",
+      "fr": "Très bien. Que souhaitez-vous voir en premier ?"
+    },
+    "next": {
+      "en": "That was the short version. What next?",
+      "hi": "यह छोटा रूप था। अब आगे क्या देखें?",
+      "kn": "ಇದು ಚಿಕ್ಕ ಪರಿಚಯ. ಮುಂದೆ ಏನು ನೋಡೋಣ?",
+      "fr": "C'était la version courte. Et ensuite ?"
+    },
+    "talk": {
+      "en": "Talk to the team",
+      "hi": "टीम से बात करें",
+      "kn": "ತಂಡದೊಂದಿಗೆ ಮಾತನಾಡಿ",
+      "fr": "Parler à l'équipe"
+    },
+    "askContact": {
+      "en": "Sure. Where can the team reach you?",
+      "hi": "ज़रूर। टीम आपसे कहाँ संपर्क करे?",
+      "kn": "ಖಂಡಿತ. ತಂಡ ನಿಮ್ಮನ್ನು ಎಲ್ಲಿ ಸಂಪರ್ಕಿಸಬೇಕು?",
+      "fr": "Bien sûr. Où l'équipe peut-elle vous joindre ?"
+    },
+    "thanks": {
+      "en": "Thanks {name}. Someone from Vacademy will call you. You can keep exploring meanwhile.",
+      "hi": "धन्यवाद {name}। Vacademy से कोई आपको कॉल करेगा। तब तक आप देखते रहिए।",
+      "kn": "ಧನ್ಯವಾದಗಳು {name}. Vacademy ತಂಡದಿಂದ ಒಬ್ಬರು ನಿಮಗೆ ಕರೆ ಮಾಡುತ್ತಾರೆ. ಅಲ್ಲಿಯವರೆಗೆ ನೋಡುತ್ತಿರಿ.",
+      "fr": "Merci {name}. Quelqu'un de Vacademy vous appellera. Vous pouvez continuer à explorer."
+    },
+    "notYet": {
+      "en": "Free questions arrive with the next build of this demo. For now, pick a topic and I'll show it on screen.",
+      "hi": "खुले सवाल इस डेमो के अगले संस्करण में आएँगे। अभी कोई विषय चुनिए, मैं स्क्रीन पर दिखाता हूँ।",
+      "kn": "ಮುಕ್ತ ಪ್ರಶ್ನೆಗಳು ಈ ಡೆಮೊದ ಮುಂದಿನ ಆವೃತ್ತಿಯಲ್ಲಿ ಬರುತ್ತವೆ. ಈಗ ಒಂದು ವಿಷಯ ಆರಿಸಿ, ನಾನು ಪರದೆಯಲ್ಲಿ ತೋರಿಸುತ್ತೇನೆ.",
+      "fr": "Les questions libres arrivent avec la prochaine version. Pour l'instant, choisissez un sujet et je vous le montre à l'écran."
+    },
+    "idle": {
+      "en": "The screen is yours. Click around, or pick another topic.",
+      "hi": "स्क्रीन आपकी है। खुद देखिए, या कोई और विषय चुनिए।",
+      "kn": "ಪರದೆ ನಿಮ್ಮದು. ನೀವೇ ನೋಡಿ, ಅಥವಾ ಬೇರೆ ವಿಷಯ ಆರಿಸಿ.",
+      "fr": "L'écran est à vous. Explorez, ou choisissez un autre sujet."
+    },
+    "name": {
+      "en": "Your name",
+      "hi": "आपका नाम",
+      "kn": "ನಿಮ್ಮ ಹೆಸರು",
+      "fr": "Votre nom"
+    },
+    "phone": {
+      "en": "Phone number",
+      "hi": "फ़ोन नंबर",
+      "kn": "ಫೋನ್ ಸಂಖ್ಯೆ",
+      "fr": "Numéro de téléphone"
+    },
+    "institute": {
+      "en": "Institute or company",
+      "hi": "संस्थान या कंपनी",
+      "kn": "ಸಂಸ್ಥೆ ಅಥವಾ ಕಂಪನಿ",
+      "fr": "Établissement ou entreprise"
+    },
+    "send": {
+      "en": "Ask for a call",
+      "hi": "कॉल के लिए कहें",
+      "kn": "ಕರೆಗಾಗಿ ಕೇಳಿ",
+      "fr": "Demander un appel"
+    },
+    "consent": {
+      "en": "By sending this you agree that the Vacademy team may call or message you about this demo.",
+      "hi": "भेजकर आप सहमत हैं कि Vacademy टीम इस डेमो के बारे में आपको कॉल या संदेश कर सकती है।",
+      "kn": "ಕಳುಹಿಸುವ ಮೂಲಕ, ಈ ಡೆಮೊ ಕುರಿತು Vacademy ತಂಡ ನಿಮಗೆ ಕರೆ ಅಥವಾ ಸಂದೇಶ ಮಾಡಬಹುದು ಎಂದು ನೀವು ಒಪ್ಪುತ್ತೀರಿ.",
+      "fr": "En envoyant, vous acceptez que l'équipe Vacademy vous appelle ou vous écrive au sujet de cette démo."
+    },
+    "trouble": {
+      "en": "I could not answer just now. Please try again, or keep exploring the screen.",
+      "hi": "अभी मैं जवाब नहीं दे पाया। कृपया दोबारा कोशिश करें, या स्क्रीन देखते रहें।",
+      "kn": "ಈಗ ಉತ್ತರಿಸಲು ಆಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ, ಅಥವಾ ಪರದೆಯನ್ನು ನೋಡುತ್ತಿರಿ.",
+      "fr": "Je n'ai pas pu répondre à l'instant. Réessayez, ou continuez à explorer l'écran."
+    },
+    "micBlocked": {
+      "en": "The microphone is blocked in this browser. You can type instead.",
+      "hi": "इस ब्राउज़र में माइक्रोफ़ोन बंद है। आप लिखकर पूछ सकते हैं।",
+      "kn": "ಈ ಬ್ರೌಸರ್‌ನಲ್ಲಿ ಮೈಕ್ರೊಫೋನ್ ನಿರ್ಬಂಧಿಸಲಾಗಿದೆ. ನೀವು ಟೈಪ್ ಮಾಡಬಹುದು.",
+      "fr": "Le micro est bloqué dans ce navigateur. Vous pouvez écrire."
+    },
+    "notHeard": {
+      "en": "I could not hear that. Please try again or type.",
+      "hi": "मैं सुन नहीं पाया। कृपया दोबारा बोलें या लिखें।",
+      "kn": "ನನಗೆ ಕೇಳಿಸಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಮತ್ತೆ ಹೇಳಿ ಅಥವಾ ಟೈಪ್ ಮಾಡಿ.",
+      "fr": "Je n'ai pas entendu. Réessayez ou écrivez."
+    },
+    "placeholder": {
+      "en": "Ask anything about Vacademy",
+      "hi": "Vacademy के बारे में कुछ भी पूछें",
+      "kn": "Vacademy ಬಗ್ಗೆ ಏನಾದರೂ ಕೇಳಿ",
+      "fr": "Posez une question sur Vacademy"
+    },
+    "sendMessage": {
+      "en": "Send",
+      "hi": "भेजें",
+      "kn": "ಕಳುಹಿಸಿ",
+      "fr": "Envoyer"
+    },
+    "note": {
+      "en": "You are talking to an AI. The screen is a real Vacademy account with sample data; nothing you do there is saved.",
+      "hi": "आप एक AI से बात कर रहे हैं। स्क्रीन पर नमूना डेटा वाला असली Vacademy अकाउंट है; वहाँ किया गया कुछ भी सेव नहीं होता।",
+      "kn": "ನೀವು AI ಜೊತೆ ಮಾತನಾಡುತ್ತಿದ್ದೀರಿ. ಪರದೆಯಲ್ಲಿ ಮಾದರಿ ಡೇಟಾ ಇರುವ ನಿಜವಾದ Vacademy ಖಾತೆ ಇದೆ; ಅಲ್ಲಿ ಮಾಡಿದ ಯಾವುದೂ ಉಳಿಯುವುದಿಲ್ಲ.",
+      "fr": "Vous parlez à une IA. L'écran est un vrai compte Vacademy avec des données d'exemple ; rien de ce que vous y faites n'est enregistré."
+    },
+    "live": {
+      "en": "Real product, demo account",
+      "hi": "असली प्रोडक्ट, डेमो अकाउंट",
+      "kn": "ನಿಜವಾದ ಪ್ರಾಡಕ್ಟ್, ಡೆಮೊ ಖಾತೆ",
+      "fr": "Vrai produit, compte de démonstration"
+    }
+  },
+  "audiences": [
+    {
+      "id": "academy",
+      "label": {
+        "en": "Coaching or online academy",
+        "hi": "कोचिंग या ऑनलाइन अकादमी",
+        "kn": "ಕೋಚಿಂಗ್ ಅಥವಾ ಆನ್‌ಲೈನ್ ಅಕಾಡೆಮಿ",
+        "fr": "Centre de préparation ou académie en ligne"
+      }
+    },
+    {
+      "id": "school",
+      "label": {
+        "en": "School",
+        "hi": "स्कूल",
+        "kn": "ಶಾಲೆ",
+        "fr": "École"
+      }
+    },
+    {
+      "id": "university",
+      "label": {
+        "en": "University or distance learning",
+        "hi": "विश्वविद्यालय या दूरस्थ शिक्षा",
+        "kn": "ವಿಶ್ವವಿದ್ಯಾಲಯ ಅಥವಾ ದೂರ ಶಿಕ್ಷಣ",
+        "fr": "Université ou enseignement à distance"
+      }
+    },
+    {
+      "id": "corporate",
+      "label": {
+        "en": "Corporate training",
+        "hi": "कॉर्पोरेट ट्रेनिंग",
+        "kn": "ಕಾರ್ಪೊರೇಟ್ ತರಬೇತಿ",
+        "fr": "Formation en entreprise"
+      }
+    }
+  ],
+  "topics": [
+    {
+      "id": "grow",
+      "tour": "leads-and-calling",
+      "label": {
+        "en": "Get more admissions",
+        "hi": "ज़्यादा एडमिशन पाएँ",
+        "kn": "ಹೆಚ್ಚು ಪ್ರವೇಶಗಳನ್ನು ಪಡೆಯಿರಿ",
+        "fr": "Obtenir plus d'inscriptions"
+      },
+      "intro": {
+        "en": "Here is how leads and follow-ups are handled.",
+        "hi": "लीड और फ़ॉलो-अप ऐसे सँभाले जाते हैं।",
+        "kn": "ಲೀಡ್‌ಗಳು ಮತ್ತು ಫಾಲೋ-ಅಪ್‌ಗಳನ್ನು ಹೀಗೆ ನಿರ್ವಹಿಸಲಾಗುತ್ತದೆ.",
+        "fr": "Voici comment les prospects et les relances sont gérés."
+      }
+    },
+    {
+      "id": "teach",
+      "tour": "courses-and-ai",
+      "label": {
+        "en": "Build courses with AI",
+        "hi": "AI से कोर्स बनाएँ",
+        "kn": "AI ಮೂಲಕ ಕೋರ್ಸ್ ರಚಿಸಿ",
+        "fr": "Créer des cours avec l'IA"
+      },
+      "intro": {
+        "en": "Let me show you courses and the AI course builder.",
+        "hi": "आइए कोर्स और AI कोर्स बिल्डर देखें।",
+        "kn": "ಕೋರ್ಸ್‌ಗಳು ಮತ್ತು AI ಕೋರ್ಸ್ ಬಿಲ್ಡರ್ ನೋಡೋಣ.",
+        "fr": "Je vous montre les cours et le créateur de cours par IA."
+      }
+    },
+    {
+      "id": "exams",
+      "tour": "tests",
+      "label": {
+        "en": "Run tests and exams",
+        "hi": "टेस्ट और परीक्षाएँ कराएँ",
+        "kn": "ಟೆಸ್ಟ್ ಮತ್ತು ಪರೀಕ್ಷೆಗಳನ್ನು ನಡೆಸಿ",
+        "fr": "Organiser des tests et examens"
+      },
+      "intro": {
+        "en": "Here is where tests are created and tracked.",
+        "hi": "टेस्ट यहाँ बनते और ट्रैक होते हैं।",
+        "kn": "ಟೆಸ್ಟ್‌ಗಳನ್ನು ಇಲ್ಲಿ ರಚಿಸಿ ಗಮನಿಸಲಾಗುತ್ತದೆ.",
+        "fr": "Voici où les tests sont créés et suivis."
+      }
+    },
+    {
+      "id": "fees",
+      "tour": "fee-collection",
+      "label": {
+        "en": "Collect fees",
+        "hi": "फ़ीस जमा करें",
+        "kn": "ಶುಲ್ಕ ಸಂಗ್ರಹಿಸಿ",
+        "fr": "Encaisser les frais"
+      },
+      "intro": {
+        "en": "Here is the fee collection view.",
+        "hi": "यह फ़ीस कलेक्शन का दृश्य है।",
+        "kn": "ಇದು ಶುಲ್ಕ ಸಂಗ್ರಹದ ನೋಟ.",
+        "fr": "Voici la vue d'encaissement des frais."
+      }
+    }
+  ],
+  "tours": [
+    {
+      "id": "leads-and-calling",
+      "title": {
+        "en": "Leads and AI calling",
+        "hi": "लीड और AI कॉलिंग",
+        "kn": "ಲೀಡ್‌ಗಳು ಮತ್ತು AI ಕರೆ",
+        "fr": "Prospects et appels par IA"
+      },
+      "about": "Lead pipeline and follow-up health on the dashboard, the recent leads list with sources, and AI calling agents that phone new leads.",
+      "audiences": [],
+      "steps": [
+        {
+          "go": "/dashboard",
+          "spot": "[data-tour=category-CRM]",
+          "say": {
+            "en": "Everything about admissions sits under CRM: leads, calls, follow-ups and fees.",
+            "hi": "एडमिशन से जुड़ा सब कुछ CRM में है: लीड, कॉल, फ़ॉलो-अप और फ़ीस।",
+            "kn": "ಪ್ರವೇಶಕ್ಕೆ ಸಂಬಂಧಿಸಿದ ಎಲ್ಲವೂ CRM ನಲ್ಲಿದೆ: ಲೀಡ್‌ಗಳು, ಕರೆಗಳು, ಫಾಲೋ-ಅಪ್‌ಗಳು ಮತ್ತು ಶುಲ್ಕ.",
+            "fr": "Tout ce qui concerne les inscriptions se trouve dans le CRM : prospects, appels, relances et frais."
+          }
+        },
+        {
+          "spot": {
+            "sel": "h2,h3",
+            "text": "Lead pipeline",
+            "closest": "section"
+          },
+          "say": {
+            "en": "The dashboard opens on your lead pipeline: how many enquiries came in, how many were contacted and how many converted.",
+            "hi": "डैशबोर्ड आपकी लीड पाइपलाइन से खुलता है: कितनी पूछताछ आईं, कितनों से संपर्क हुआ और कितने एडमिशन बने।",
+            "kn": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್ ನಿಮ್ಮ ಲೀಡ್ ಪೈಪ್‌ಲೈನ್‌ನಿಂದ ತೆರೆಯುತ್ತದೆ: ಎಷ್ಟು ವಿಚಾರಣೆಗಳು ಬಂದವು, ಎಷ್ಟು ಜನರನ್ನು ಸಂಪರ್ಕಿಸಲಾಯಿತು ಮತ್ತು ಎಷ್ಟು ಪ್ರವೇಶಗಳಾದವು.",
+            "fr": "Le tableau de bord s'ouvre sur votre pipeline : combien de demandes sont arrivées, combien ont été contactées et combien se sont inscrites."
+          }
+        },
+        {
+          "spot": {
+            "sel": "h2,h3",
+            "text": "Follow-up health",
+            "closest": "section"
+          },
+          "say": {
+            "en": "Follow-up health shows what is overdue and what is due today, so no enquiry is forgotten.",
+            "hi": "फ़ॉलो-अप हेल्थ बताता है कि क्या बकाया है और आज क्या करना है, ताकि कोई पूछताछ छूटे नहीं।",
+            "kn": "ಫಾಲೋ-ಅಪ್ ಹೆಲ್ತ್ ಯಾವುದು ಬಾಕಿ ಇದೆ ಮತ್ತು ಇಂದು ಏನು ಮಾಡಬೇಕು ಎಂದು ತೋರಿಸುತ್ತದೆ, ಯಾವ ವಿಚಾರಣೆಯೂ ತಪ್ಪದಂತೆ.",
+            "fr": "La santé des relances montre ce qui est en retard et ce qui est dû aujourd'hui, pour qu'aucune demande ne soit oubliée."
+          }
+        },
+        {
+          "go": "/audience-manager/recent-leads",
+          "spot": {
+            "sel": "h1,h2",
+            "text": "Recent Leads"
+          },
+          "say": {
+            "en": "Every enquiry from your website, forms and campaigns lands here, with its source.",
+            "hi": "आपकी वेबसाइट, फ़ॉर्म और कैंपेन की हर पूछताछ यहाँ आती है, अपने स्रोत के साथ।",
+            "kn": "ನಿಮ್ಮ ವೆಬ್‌ಸೈಟ್, ಫಾರ್ಮ್‌ಗಳು ಮತ್ತು ಕ್ಯಾಂಪೇನ್‌ಗಳ ಪ್ರತಿ ವಿಚಾರಣೆ ಅದರ ಮೂಲದೊಂದಿಗೆ ಇಲ್ಲಿಗೆ ಬರುತ್ತದೆ.",
+            "fr": "Chaque demande venant de votre site, de vos formulaires et de vos campagnes arrive ici, avec sa source."
+          }
+        },
+        {
+          "go": "/calling/ai-agents",
+          "spot": {
+            "sel": "button",
+            "text": "New agent"
+          },
+          "say": {
+            "en": "And this is AI calling. You set up an agent with a voice and a script, and it calls new leads for you.",
+            "hi": "और यह AI कॉलिंग है। आप आवाज़ और स्क्रिप्ट के साथ एक एजेंट बनाते हैं, और वह नई लीड को आपके लिए कॉल करता है।",
+            "kn": "ಇದು AI ಕರೆ. ನೀವು ಧ್ವನಿ ಮತ್ತು ಸ್ಕ್ರಿಪ್ಟ್‌ನೊಂದಿಗೆ ಏಜೆಂಟ್ ರಚಿಸುತ್ತೀರಿ, ಅದು ಹೊಸ ಲೀಡ್‌ಗಳಿಗೆ ನಿಮ್ಮ ಪರವಾಗಿ ಕರೆ ಮಾಡುತ್ತದೆ.",
+            "fr": "Et voici les appels par IA. Vous créez un agent avec une voix et un script, et il appelle les nouveaux prospects pour vous."
+          }
+        },
+        {
+          "spot": {
+            "sel": "button",
+            "text": "Hear voice"
+          },
+          "say": {
+            "en": "You can hear the agent's voice before it ever speaks to a lead.",
+            "hi": "लीड से बात करने से पहले आप एजेंट की आवाज़ सुन सकते हैं।",
+            "kn": "ಲೀಡ್ ಜೊತೆ ಮಾತನಾಡುವ ಮೊದಲು ನೀವು ಏಜೆಂಟ್ ಧ್ವನಿಯನ್ನು ಕೇಳಬಹುದು.",
+            "fr": "Vous pouvez écouter la voix de l'agent avant qu'il ne parle à un prospect."
+          }
+        }
+      ]
+    },
+    {
+      "id": "courses-and-ai",
+      "title": {
+        "en": "Courses and the AI course builder",
+        "hi": "कोर्स और AI कोर्स बिल्डर",
+        "kn": "ಕೋರ್ಸ್‌ಗಳು ಮತ್ತು AI ಕೋರ್ಸ್ ಬಿಲ್ಡರ್",
+        "fr": "Cours et créateur de cours par IA"
+      },
+      "about": "The course library, what a course holds, creating a course by hand, and Course AI that drafts chapters, videos, notes and quizzes from a description.",
+      "audiences": [],
+      "steps": [
+        {
+          "go": "/study-library/courses",
+          "spot": "[data-tour=category-LMS]",
+          "say": {
+            "en": "Teaching lives under LMS: courses, live classes, tests and reports.",
+            "hi": "पढ़ाई से जुड़ा सब कुछ LMS में है: कोर्स, लाइव क्लास, टेस्ट और रिपोर्ट।",
+            "kn": "ಬೋಧನೆಗೆ ಸಂಬಂಧಿಸಿದ ಎಲ್ಲವೂ LMS ನಲ್ಲಿದೆ: ಕೋರ್ಸ್‌ಗಳು, ಲೈವ್ ತರಗತಿಗಳು, ಟೆಸ್ಟ್‌ಗಳು ಮತ್ತು ವರದಿಗಳು.",
+            "fr": "L'enseignement se trouve dans le LMS : cours, classes en direct, tests et rapports."
+          }
+        },
+        {
+          "point": {
+            "sel": "button,[role=tab]",
+            "text": "All Courses"
+          },
+          "click": true,
+          "spot": {
+            "sel": "button",
+            "text": "View Course",
+            "closest": "div.rounded-lg, div.rounded-xl, div.rounded-2xl"
+          },
+          "say": {
+            "en": "Each course holds its chapters, videos, notes and quizzes, and can be listed in your public catalogue.",
+            "hi": "हर कोर्स में उसके चैप्टर, वीडियो, नोट्स और क्विज़ होते हैं, और उसे आपके पब्लिक कैटलॉग में दिखाया जा सकता है।",
+            "kn": "ಪ್ರತಿ ಕೋರ್ಸ್‌ನಲ್ಲಿ ಅದರ ಅಧ್ಯಾಯಗಳು, ವೀಡಿಯೊಗಳು, ನೋಟ್ಸ್ ಮತ್ತು ಕ್ವಿಜ್‌ಗಳಿರುತ್ತವೆ, ಮತ್ತು ಅದನ್ನು ನಿಮ್ಮ ಸಾರ್ವಜನಿಕ ಕ್ಯಾಟಲಾಗ್‌ನಲ್ಲಿ ತೋರಿಸಬಹುದು.",
+            "fr": "Chaque cours contient ses chapitres, vidéos, notes et quiz, et peut figurer dans votre catalogue public."
+          }
+        },
+        {
+          "spot": {
+            "sel": "button",
+            "text": "Create Course"
+          },
+          "say": {
+            "en": "You can build a course by hand, or let AI draft it.",
+            "hi": "आप कोर्स खुद बना सकते हैं, या AI से उसका ड्राफ़्ट बनवा सकते हैं।",
+            "kn": "ನೀವು ಕೋರ್ಸ್ ಅನ್ನು ಕೈಯಾರೆ ರಚಿಸಬಹುದು, ಅಥವಾ AI ಯಿಂದ ಕರಡು ಮಾಡಿಸಬಹುದು.",
+            "fr": "Vous pouvez créer un cours à la main, ou laisser l'IA en préparer une première version."
+          }
+        },
+        {
+          "go": "/study-library/ai-copilot",
+          "spot": {
+            "sel": "h1,h2",
+            "text": "Create with Course AI"
+          },
+          "say": {
+            "en": "This is Course AI. Describe the course, pick the language and length, and it drafts chapters, videos, notes and quizzes for you to review.",
+            "hi": "यह Course AI है। कोर्स के बारे में बताइए, भाषा और अवधि चुनिए, और यह चैप्टर, वीडियो, नोट्स और क्विज़ का ड्राफ़्ट बना देता है, जिसे आप जाँच सकते हैं।",
+            "kn": "ಇದು Course AI. ಕೋರ್ಸ್ ಬಗ್ಗೆ ವಿವರಿಸಿ, ಭಾಷೆ ಮತ್ತು ಅವಧಿ ಆರಿಸಿ, ಅದು ಅಧ್ಯಾಯಗಳು, ವೀಡಿಯೊಗಳು, ನೋಟ್ಸ್ ಮತ್ತು ಕ್ವಿಜ್‌ಗಳ ಕರಡನ್ನು ನಿಮ್ಮ ಪರಿಶೀಲನೆಗಾಗಿ ಸಿದ್ಧಪಡಿಸುತ್ತದೆ.",
+            "fr": "Voici Course AI. Décrivez le cours, choisissez la langue et la durée, et il prépare chapitres, vidéos, notes et quiz que vous relisez ensuite."
+          }
+        }
+      ]
+    },
+    {
+      "id": "tests",
+      "title": {
+        "en": "Tests and exams",
+        "hi": "टेस्ट और परीक्षाएँ",
+        "kn": "ಟೆಸ್ಟ್ ಮತ್ತು ಪರೀಕ್ಷೆಗಳು",
+        "fr": "Tests et examens"
+      },
+      "about": "Where tests, mock exams and surveys are created, the live/upcoming/past/draft tabs, and opening a test to see attempts, marks and answers to check.",
+      "audiences": [],
+      "steps": [
+        {
+          "go": "/assessment/assessment-list?selectedTab=liveTests",
+          "spot": "#create-assessment",
+          "say": {
+            "en": "Tests, mock exams and surveys are created from here.",
+            "hi": "टेस्ट, मॉक परीक्षा और सर्वे यहाँ से बनते हैं।",
+            "kn": "ಟೆಸ್ಟ್‌ಗಳು, ಮಾಕ್ ಪರೀಕ್ಷೆಗಳು ಮತ್ತು ಸಮೀಕ್ಷೆಗಳನ್ನು ಇಲ್ಲಿಂದ ರಚಿಸಲಾಗುತ್ತದೆ.",
+            "fr": "Les tests, examens blancs et sondages se créent ici."
+          }
+        },
+        {
+          "spot": {
+            "sel": "[role=tablist]"
+          },
+          "say": {
+            "en": "Live, upcoming, past and draft tests each have their own tab, so you always know what is running.",
+            "hi": "चल रहे, आने वाले, पिछले और ड्राफ़्ट टेस्ट के अलग टैब हैं, ताकि आपको हमेशा पता रहे कि क्या चल रहा है।",
+            "kn": "ನಡೆಯುತ್ತಿರುವ, ಮುಂಬರುವ, ಹಿಂದಿನ ಮತ್ತು ಕರಡು ಟೆಸ್ಟ್‌ಗಳಿಗೆ ಪ್ರತ್ಯೇಕ ಟ್ಯಾಬ್‌ಗಳಿವೆ, ಏನು ನಡೆಯುತ್ತಿದೆ ಎಂದು ನಿಮಗೆ ಯಾವಾಗಲೂ ತಿಳಿಯುವಂತೆ.",
+            "fr": "Les tests en cours, à venir, passés et en brouillon ont chacun leur onglet, pour toujours savoir ce qui est en cours."
+          }
+        },
+        {
+          "spot": {
+            "sel": "button",
+            "text": "View details",
+            "closest": "div.rounded-lg, div.rounded-xl, div.rounded-2xl"
+          },
+          "say": {
+            "en": "Open any test to see who attempted it, the marks, and the answers that still need checking.",
+            "hi": "किसी भी टेस्ट को खोलकर देखिए कि किसने दिया, कितने अंक आए और कौन से उत्तर अभी जाँचने बाकी हैं।",
+            "kn": "ಯಾವುದೇ ಟೆಸ್ಟ್ ತೆರೆದು ಯಾರು ಬರೆದರು, ಅಂಕಗಳು ಎಷ್ಟು ಮತ್ತು ಯಾವ ಉತ್ತರಗಳನ್ನು ಇನ್ನೂ ಪರಿಶೀಲಿಸಬೇಕು ಎಂದು ನೋಡಿ.",
+            "fr": "Ouvrez un test pour voir qui l'a passé, les notes et les réponses qui restent à corriger."
+          }
+        }
+      ]
+    },
+    {
+      "id": "fee-collection",
+      "title": {
+        "en": "Fee collection",
+        "hi": "फ़ीस कलेक्शन",
+        "kn": "ಶುಲ್ಕ ಸಂಗ್ರಹ",
+        "fr": "Encaissement des frais"
+      },
+      "about": "The fee collection dashboard: fees due, collected and overdue, and the accounts that need chasing first.",
+      "audiences": [
+        "academy",
+        "school",
+        "university"
+      ],
+      "steps": [
+        {
+          "go": "/financial-management/collection-dashboard",
+          "spot": {
+            "sel": "h1,h2,h3,p,div",
+            "text": "COLLECTION PIPELINE",
+            "closest": "section, div.rounded-lg, div.rounded-xl, div.rounded-2xl"
+          },
+          "say": {
+            "en": "The collection view shows fees due, collected and overdue.",
+            "hi": "कलेक्शन व्यू में बकाया, जमा हुई और देर से आने वाली फ़ीस दिखती है।",
+            "kn": "ಸಂಗ್ರಹ ನೋಟದಲ್ಲಿ ಬಾಕಿ, ಸಂಗ್ರಹವಾದ ಮತ್ತು ತಡವಾದ ಶುಲ್ಕ ಕಾಣುತ್ತದೆ.",
+            "fr": "La vue d'encaissement montre les frais dus, encaissés et en retard."
+          }
+        },
+        {
+          "spot": {
+            "sel": "h1,h2,h3",
+            "text": "Needs attention",
+            "closest": "section, div.rounded-lg, div.rounded-xl, div.rounded-2xl"
+          },
+          "say": {
+            "en": "Needs attention lists the accounts to chase first.",
+            "hi": "\"Needs attention\" में वे खाते हैं जिनसे सबसे पहले बात करनी है।",
+            "kn": "\"Needs attention\" ನಲ್ಲಿ ಮೊದಲು ಸಂಪರ್ಕಿಸಬೇಕಾದ ಖಾತೆಗಳಿವೆ.",
+            "fr": "« Needs attention » liste les comptes à relancer en priorité."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import axios from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 import * as Sentry from '@sentry/react';
 import { getInstituteId } from '@/constants/helper';
+import { demoBlocksRequest } from '@/lib/demo-stage/bridge';
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
 // Locale helper only (reads the zustand store lazily at request time) — no
 // import cycle: formatters → language store → i18n/locales, none touch axios.
@@ -185,6 +186,12 @@ if (typeof window !== 'undefined') {
 
 authenticatedAxiosInstance.interceptors.request.use(
     async (request) => {
+        // Public demo frame: nothing is saved. The server refuses too; this
+        // just answers at once and tells the visitor why.
+        if (demoBlocksRequest(request.method, request.url)) {
+            return Promise.reject(new Error('Demo mode: changes are not saved'));
+        }
+
         let accessToken = getTokenFromCookie(TokenKey.accessToken);
 
         if (!accessToken) {
