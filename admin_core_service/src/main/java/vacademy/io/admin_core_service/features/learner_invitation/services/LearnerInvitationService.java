@@ -54,14 +54,14 @@ public class LearnerInvitationService {
 
         List<String> emails = addLearnerInvitationDTO.getEmailsToSendInvitation();
         if (emails != null && !emails.isEmpty()) {
-            sendLearnerInvitationNotificationAsync(emails, institute.getInstituteName(),institute.getId(), learnerInvitationDTO.getInviteCode());
+            sendLearnerInvitationNotificationAsync(emails, institute, learnerInvitationDTO.getInviteCode());
         }
 
         return learnerInvitation.mapToDTO();
     }
 
-    public void sendLearnerInvitationNotificationAsync(List<String> emails, String instituteName,String instituteId, String invitationCode) {
-        notification.sendLearnerInvitationNotification(emails, instituteName,instituteId, invitationCode);
+    public void sendLearnerInvitationNotificationAsync(List<String> emails, Institute institute, String invitationCode) {
+        notification.sendLearnerInvitationNotification(emails, institute, invitationCode);
     }
 
     private void validateRequest(LearnerInvitationDTO learnerInvitationDTO) {
@@ -206,7 +206,7 @@ public class LearnerInvitationService {
 
             List<String> emails = originalDTO.getEmailsToSendInvitation();
             if (emails != null && !emails.isEmpty()) {
-                sendLearnerInvitationNotificationAsync(emails, institute.getInstituteName(), institute.getId(), saved.getInviteCode());
+                sendLearnerInvitationNotificationAsync(emails, institute, saved.getInviteCode());
             }
 
             result.add(saved.mapToDTO());
