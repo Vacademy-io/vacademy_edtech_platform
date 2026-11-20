@@ -59,9 +59,9 @@ android {
 			// bundle and deletes every stored OTA bundle. Bumping it is what stops a
 			// device that already has OTA bundle 2.4.9 from carrying that older JS
 			// over this build's embedded code.
-			versionCode 33
+			versionCode 34
 			// Was 2.4.8 while package.json (the OTA bundle version) said 2.4.9.
-			versionName "2.5.2"
+			versionName "2.5.3"
 			// Deep link host for this client
 			manifestPlaceholders.DEEP_LINK_HOST = "learner.vacademy.io"
 		}
@@ -69,8 +69,8 @@ android {
 		seven_cs {
 			dimension "client"
 			applicationId "com.sevencs.app"
-			versionCode 25
-			versionName "2.1.0"
+			versionCode 26
+			versionName "2.1.1"
 			// Change app name for Seven CS
 			resValue "string", "app_name", "The 7Cs"
 			// Set the deep link host for Seven CS (adjust to your domain)
@@ -79,8 +79,8 @@ android {
 		fivesep {
 			dimension "client"
 			applicationId "com.fivesep.app"
-			versionCode 12
-			versionName "1.0.8"
+			versionCode 13
+			versionName "1.0.9"
 			// Change app name for Fivesep
 			resValue "string", "app_name", "iThinkers by Fivesep"
 			// Set the deep link host for Fivesep (adjust to your domain)
@@ -89,8 +89,8 @@ android {
 		shikshanation {
 			dimension "client"
 			applicationId "com.shikshanation.new.app"
-			versionCode 13
-			versionName "2.5.7"
+			versionCode 14
+			versionName "2.5.8"
 			// Change app name for Fivesep
 			resValue "string", "app_name", "Shiksha Nation"
 			// Set the deep link host for Fivesep (adjust to your domain)
@@ -99,48 +99,48 @@ android {
 		enark{
 			dimension "client"
 			applicationId "com.enarkuplift.app"
-			versionCode 9
-			versionName "1.5.4"
+			versionCode 10
+			versionName "1.5.5"
 			resValue "string", "app_name", "Uplift Teacher Training"
 			manifestPlaceholders.DEEP_LINK_HOST = "training.enarkuplift.in"
 		}
 		edzumo {
 			dimension "client"
 			applicationId "com.edzumo.app"
-			versionCode 6
-			versionName "1.0.5"
+			versionCode 7
+			versionName "1.0.6"
 			resValue "string", "app_name", "Edzumo"
 			manifestPlaceholders.DEEP_LINK_HOST = "workout.edzumo.com"
 		}
 		chanakaya {
 			dimension "client"
 			applicationId "com.chanakayaiasacademy.app"
-			versionCode 6
-			versionName "1.0.5"
+			versionCode 7
+			versionName "1.0.6"
 			resValue "string", "app_name", "SADBHAVANA"
 			manifestPlaceholders.DEEP_LINK_HOST = "student-chanakayaiasacademy.vacademy.io"
 		}
 		stemx {
 			dimension "client"
 			applicationId "com.stemx.app"
-			versionCode 7
-			versionName "1.0.6"
+			versionCode 8
+			versionName "1.0.7"
 			resValue "string", "app_name", "STEMx Education"
 			manifestPlaceholders.DEEP_LINK_HOST = "learn.stemxindia.com"
 		}
 		elevate {
 			dimension "client"
 			applicationId "com.elevateeducation.app"
-			versionCode 6
-			versionName "1.0.5"
+			versionCode 7
+			versionName "1.0.6"
 			resValue "string", "app_name", "Elevate Education"
 			manifestPlaceholders.DEEP_LINK_HOST = "student.elevateeducation.in"
 		}
 		hcca {
 			dimension "client"
 			applicationId "com.hcca.app"
-			versionCode 5
-			versionName "1.0.4"
+			versionCode 6
+			versionName "1.0.5"
 			resValue "string", "app_name", "HCCA Learning"
 			manifestPlaceholders.DEEP_LINK_HOST = "learn.hcca.in"
 		}
@@ -150,12 +150,12 @@ android {
 			// Bumped for the ZOE "Online School" rebrand (new name, launcher icon and
 			// splash). The versionCode bump also forces @capgo/capacitor-updater to
 			// drop any stored OTA bundle and fall back to this build's builtin one.
-			versionCode 4
+			versionCode 5
 			// MUST stay above every OTA bundle this app can be offered (highest
 			// untargeted ANDROID row 2.2.4, plus the ZOE-targeted 2.5.4). A 1.0.x
 			// versionName gets force-dragged onto a bundle cut before ZOE existed in
 			// flavor.config.ts, which loses the institute branding entirely.
-			versionName "2.5.5"
+			versionName "2.5.6"
 			resValue "string", "app_name", "ZOE Online School"
 			manifestPlaceholders.DEEP_LINK_HOST = "student.zoeedtech.com"
 		}
@@ -163,40 +163,40 @@ android {
 			dimension "client"
 			applicationId "com.learningbridge.app"
 			// vc5 (1.0.4) was built 2026-09-06; this is the next code up.
-			versionCode 6
-			versionName "1.0.5"
+			versionCode 7
+			versionName "1.0.6"
 			resValue "string", "app_name", "The Learning Bridge"
 			manifestPlaceholders.DEEP_LINK_HOST = "student.thelearningbridge.uk"
 		}
 		brahmvarchas {
 			dimension "client"
 			applicationId "com.brahmvarchas.app"
-			versionCode 3
-			versionName "1.0.2"
+			versionCode 5
+			versionName "1.0.4"
 			resValue "string", "app_name", "Brahm Varchas Shiksha"
 			manifestPlaceholders.DEEP_LINK_HOST = "learning.brahmvarchas.org"
 		}
 		dumbee {
 			dimension "client"
 			applicationId "com.dumbee.app"
-			versionCode 1
-			versionName "1.0.0"
+			versionCode 3
+			versionName "1.0.2"
 			resValue "string", "app_name", "DumBee"
 			manifestPlaceholders.DEEP_LINK_HOST = "learner.soullifee.com"
 		}
 		agilore {
 			dimension "client"
 			applicationId "com.agilore.app"
-			versionCode 2
-			versionName "1.0.1"
+			versionCode 3
+			versionName "1.0.2"
 			resValue "string", "app_name", "Agilore Global"
 			manifestPlaceholders.DEEP_LINK_HOST = "learner.agilore.com"
 		}
 		oui {
 			dimension "client"
 			applicationId "com.ouiacademie.io"
-			versionCode 2
-			versionName "1.0.1"
+			versionCode 3
+			versionName "1.0.2"
 			resValue "string", "app_name", "Oui Académie"
 			manifestPlaceholders.DEEP_LINK_HOST = "student.oui-academie.com"
 		}
@@ -205,8 +205,8 @@ android {
 			applicationId "com.smartaiacademy.app"
 			// Play automatic protection rejects bundles below minSdk 24.
 			minSdkVersion 24
-			versionCode 2
-			versionName "1.0.1"
+			versionCode 3
+			versionName "1.0.2"
 			resValue "string", "app_name", "Smart AI Academy"
 			manifestPlaceholders.DEEP_LINK_HOST = "student.smartaiacademy.co.in"
 		}
@@ -215,8 +215,8 @@ android {
 			applicationId "com.mecademy.app"
 			// Play automatic protection rejects bundles below minSdk 24.
 			minSdkVersion 24
-			versionCode 2
-			versionName "1.0.1"
+			versionCode 3
+			versionName "1.0.2"
 			resValue "string", "app_name", "Mecademy"
 			manifestPlaceholders.DEEP_LINK_HOST = "student.mecademy.in"
 		}
@@ -225,8 +225,8 @@ android {
 			applicationId "com.sreedhar.app"
 			// Play automatic protection rejects bundles below minSdk 24.
 			minSdkVersion 24
-			versionCode 2
-			versionName "1.0.1"
+			versionCode 3
+			versionName "1.0.2"
 			// Apostrophe must stay escaped or AAPT rejects the generated string resource.
 			resValue "string", "app_name", "Sreedhar\\'s TTS"
 			manifestPlaceholders.DEEP_LINK_HOST = "learn.ttsedu.co.in"
@@ -236,8 +236,8 @@ android {
 			applicationId "app.edum3ntor.com"
 			// Play automatic protection rejects bundles below minSdk 24.
 			minSdkVersion 24
-			versionCode 3
-			versionName "1.0.2"
+			versionCode 4
+			versionName "1.0.3"
 			resValue "string", "app_name", "EDUM3NTOR"
 			manifestPlaceholders.DEEP_LINK_HOST = "learner-edum3ntor.vacademy.io"
 		}
