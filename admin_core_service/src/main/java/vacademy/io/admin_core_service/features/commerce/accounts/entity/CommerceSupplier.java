@@ -13,7 +13,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 /**
- * Anyone the seller owes or pays (V734): trader, worker, landlord, courier; the kind is
+ * Anyone the seller owes or pays (V735): trader, worker, landlord, courier; the kind is
  * {@code group_code}. The PAN is not here but in {@link CommerceSupplierSecret}.
  *
  * <p>The id is assigned by the caller before the first save ({@code UUID.randomUUID()}), so data

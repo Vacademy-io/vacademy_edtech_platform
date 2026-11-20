@@ -1,4 +1,4 @@
--- V734: Commerce accounts foundation (WP-60a): institute-wide staff scope, account heads, suppliers and their
+-- V735: Commerce accounts foundation (WP-60a): institute-wide staff scope, account heads, suppliers and their
 -- encrypted identifiers, the supplier ledger, the period lock, and the supplier key on goods receipts.
 -- New tables only, plus one foreign key on stock_receipt (validated against its few rows). Re-runnable.
 SET LOCAL lock_timeout = '5s';
@@ -174,7 +174,8 @@ CREATE TABLE IF NOT EXISTS commerce_period_lock (
 -- Goods receipts name a supplier of the same table from now on (stock_receipt holds no supplier rows yet).
 DO $$
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_stock_receipt_supplier') THEN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_stock_receipt_supplier'
+                                                 AND conrelid = 'stock_receipt'::regclass) THEN
         ALTER TABLE stock_receipt ADD CONSTRAINT fk_stock_receipt_supplier
             FOREIGN KEY (supplier_id) REFERENCES commerce_supplier (id);
     END IF;

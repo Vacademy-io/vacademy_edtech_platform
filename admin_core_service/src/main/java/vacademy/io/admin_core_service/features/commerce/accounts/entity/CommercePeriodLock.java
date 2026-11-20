@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
- * The date through which an institute's books are closed (V734); null = nothing closed. One row per
+ * The date through which an institute's books are closed (V735); null = nothing closed. One row per
  * institute, created on first need. Read-only through JPA: the row is created and changed only by
  * the native statements of {@code CommercePeriodLockRepository}, which read it under row locks.
  */
