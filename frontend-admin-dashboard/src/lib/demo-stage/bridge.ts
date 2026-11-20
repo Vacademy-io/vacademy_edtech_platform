@@ -14,9 +14,8 @@
  * - A sign-in handed over by the stage is accepted only on the demo app host
  *   (DEMO_APP_HOSTS), never on dash.vacademy.io or a customer's admin domain,
  *   so a demo can never replace a real admin's session.
- * - Requests that would change data are refused here (demoBlocksRequest). That
- *   is a courtesy for the visitor, not the security boundary: the demo user is
- *   also read-only on the server.
+ * - The demo user is read-only on the server (DemoReadOnlyGate). This file only
+ *   shows the visitor a notice when the server refuses a change.
  */
 
 import Cookies from 'js-cookie';
@@ -67,24 +66,28 @@ const acceptsHandedSignIn = (dev: boolean): boolean => {
 
 // ── Read-only courtesy guard ────────────────────────────────────────────────
 
-// Many list and search endpoints are POSTs. These path words mark a read.
-const READ_PATH =
-    /(\/|-|_)(get|list|search|filter|fetch|find|details?|paginated|page|query|report|reports|analytics|stats|summary|count|counts|overview|dashboard|export|preview|validate|check|lookup|options|init|all|capabilities|by-[a-z-]+|me)(\/|-|_|\?|$)/i;
-
-/** True when demo mode should refuse this request because it would change data. */
-export function demoBlocksRequest(method: string | undefined, url: string | undefined): boolean {
-    if (!isDemoStage()) return false;
+/**
+ * Tell the visitor a change was refused. The server decides what the demo user
+ * may do (DemoReadOnlyGate); the app does not guess, because many reads are
+ * POSTs and a wrong guess here breaks a screen that the server would serve.
+ */
+export function demoNoteRefusal(
+    status: number | undefined,
+    data: unknown,
+    method: string | undefined,
+    url: string | undefined
+): void {
+    if (status !== 403 || !isDemoStage()) return;
+    if ((data as { code?: string } | null | undefined)?.code !== 'DEMO_READ_ONLY') return;
     const verb = (method || 'get').toLowerCase();
-    if (verb === 'get' || verb === 'head' || verb === 'options') return false;
+    if (verb === 'get') return;
     let path = url || '';
     try {
         path = new URL(path, window.location.origin).pathname;
     } catch {
         // keep the raw value
     }
-    if (verb === 'post' && READ_PATH.test(path)) return false;
     notifyBlocked(verb, path);
-    return true;
 }
 
 // ── Talking to the stage ────────────────────────────────────────────────────
