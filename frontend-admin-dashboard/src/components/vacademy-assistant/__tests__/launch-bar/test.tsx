@@ -23,7 +23,7 @@ const groups: AssistantCapabilities['groups'] = [
     { key: 'announcements', mode: 'WRITE', tools: ['list_announcements', 'send_announcement'] },
     { key: 'assessments', mode: 'READ', tools: ['get_assessment_results'] },
     { key: 'institute_overview', mode: 'READ', tools: ['get_institute_overview'] },
-    { key: 'learner_data', mode: 'READ', tools: ['find_batch', 'learners', 'learner_report'] },
+    { key: 'learner_data', mode: 'READ', tools: ['find_batch', 'learners', 'learner_report', 'list_recent_enrollments'] },
     { key: 'schedule', mode: 'READ', tools: ['get_class_schedule'] },
 ];
 
@@ -52,16 +52,16 @@ describe('dashboard assistant entry', () => {
             Array.from(suggestions.querySelectorAll('button')).map((button) => button.textContent)
         ).toEqual([
             'Check pending fees',
-            'Find a learner',
+            'New learners this week',
             'Pending evaluations',
-            'Draft an announcement',
+            'Recent announcements',
         ]);
     });
 
-    it('does not advertise a write tool to a read-only user or use an unrelated placeholder', () => {
-        mount({ groups: [{ key: 'announcements', mode: 'READ', tools: ['list_announcements'] }] });
+    it('offers a starter only with the tool it asks for, and no unrelated placeholder', () => {
+        mount({ groups: [{ key: 'announcements', mode: 'WRITE', tools: ['send_announcement'] }] });
         expect(
-            screen.queryByRole('button', { name: 'Draft an announcement' })
+            screen.queryByRole('button', { name: 'Recent announcements' })
         ).not.toBeInTheDocument();
         expect(screen.getByRole('textbox')).toHaveAttribute(
             'placeholder',
@@ -71,18 +71,18 @@ describe('dashboard assistant entry', () => {
 
     it('lets the admin edit a suggested task before handing it to the existing chat', () => {
         mount({ groups });
-        fireEvent.click(screen.getByRole('button', { name: 'Draft an announcement' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Recent announcements' }));
         const input = screen.getByRole('textbox');
         expect(input).toHaveFocus();
         expect(input).toHaveValue(copy.assistant.starters.announcement.prompt);
         expect(useAssistDock.getState().pendingPrompt).toBeNull();
         fireEvent.change(input, {
-            target: { value: '  Draft an announcement for the weekend batch.  ' },
+            target: { value: '  Show the last 3 announcements we sent.  ' },
         });
         fireEvent.click(screen.getByRole('button', { name: 'Ask assistant' }));
         expect(useAssistDock.getState()).toMatchObject({
             panel: 'assistant',
-            pendingPrompt: 'Draft an announcement for the weekend batch.',
+            pendingPrompt: 'Show the last 3 announcements we sent.',
         });
         expect(input).toHaveValue('');
     });

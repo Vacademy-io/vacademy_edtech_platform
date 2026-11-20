@@ -22,7 +22,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Any, AsyncGenerator, Callable, Dict, List, Optional
+from typing import Any, AsyncGenerator, Callable, Dict, List, Optional, Tuple
 
 from ..repositories.chat_session_repository import ChatSessionRepository
 from ..repositories.chat_message_repository import ChatMessageRepository
@@ -795,6 +795,8 @@ class AssistantAgentService:
             return
 
         # ── Phase 2: blocking pre-flight credit gate ──
+        refusal: Optional[Tuple[int, str]] = None
+        has_credits = True
         with self._get_db() as db:
             try:
                 check = CreditService(db).check_credits(
@@ -809,19 +811,30 @@ class AssistantAgentService:
                 usage_limit = _usage_limit_body(e)
                 if usage_limit is not None:
                     # An AI usage limit (contract N3), not a broken gate.
-                    yield _error_event(429, str(usage_limit.get("message") or "AI usage limit reached."))
-                    return
-                # Fail-open on a check error (the per-turn deduction still runs),
-                # but log loudly — a broken gate must be visible.
-                logger.warning("Assistant pre-flight credit check failed (allowing turn): %s", e)
-                has_credits = True
+                    refusal = (429, str(usage_limit.get("message") or "AI usage limit reached."))
+                else:
+                    # Fail-open on a check error (the per-turn deduction still runs),
+                    # but log loudly — a broken gate must be visible.
+                    logger.warning("Assistant pre-flight credit check failed (allowing turn): %s", e)
+                    has_credits = True
 
-        if not has_credits:
-            yield _error_event(
+        if refusal is None and not has_credits:
+            refusal = (
                 402,
                 "AI credits are exhausted for this institute. "
                 "Please add credits to continue using the Assistant.",
             )
+        if refusal is not None:
+            # Kept as the answer, so the chat history shows why the question went unanswered.
+            status, content = refusal
+            yield _error_event(status, content)
+            with self._get_db() as db:
+                refusal_msg = ChatMessageRepository(db).create_message(
+                    session_id=session_id, message_type="assistant", content=content,
+                    metadata={"refused": "usage_limit" if status == 429 else "credits"},
+                )
+                refusal_data = _msg_event(refusal_msg)
+            yield {"event": "message", "data": refusal_data}
             return
 
         # ── Phase 3: build prompt + offered tools (deny-by-default) ──
