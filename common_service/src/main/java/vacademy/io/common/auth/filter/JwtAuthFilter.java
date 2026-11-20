@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import vacademy.io.common.auth.demo.DemoReadOnlyGate;
 import vacademy.io.common.exceptions.AccessRevokedException;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.auth.service.JwtService;
@@ -180,6 +181,15 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                 // Validate the JWT token using user details and JwtService
                 if (jwtService.isTokenValid(jwt, userDetails)) {
+                    // Read-only demo user: refuse writes before the request is authenticated
+                    // or anything else runs. Uses only the token's claims and the user loaded
+                    // above (no query for anyone).
+                    if (DemoReadOnlyGate.refuses(request, userDetails,
+                            jwtService.extractClaim(jwt, claims -> claims.get("authorities")))) {
+                        DemoReadOnlyGate.writeRefusal(response);
+                        return;
+                    }
+
                     // Create an authentication token with user details and authorities
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails,
                             null, // As JWT based, no password needed
@@ -190,6 +200,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
                     // Set the authentication object in SecurityContextHolder
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+
                     if (userService != null) {
                         userService.updateLastLoginTimeForUser(userDetails.getUserId());
                     }
