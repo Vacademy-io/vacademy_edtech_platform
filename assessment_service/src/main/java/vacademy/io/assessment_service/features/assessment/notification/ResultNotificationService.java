@@ -49,6 +49,10 @@ public class ResultNotificationService {
 
     /** The templates for one release, looked up once. */
     public record Templates(Map<String, Object> email, Map<String, Object> whatsapp) {
+        /** Where the email template was bound: ASSESSMENT, INSTITUTE or DEFAULT; null when none resolved. */
+        public String emailLevel() {
+            return email == null || email.get("level") == null ? null : email.get("level").toString();
+        }
     }
 
     /**
