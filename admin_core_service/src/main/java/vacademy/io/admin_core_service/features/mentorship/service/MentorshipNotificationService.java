@@ -499,6 +499,7 @@ public class MentorshipNotificationService {
         String name = "";
         String themeColor = FALLBACK_THEME_COLOR;
         String cta = FALLBACK_LEARNER_URL;
+        String supportEmail = FALLBACK_SUPPORT_EMAIL;
         try {
             Institute inst = instituteRepository.findById(instituteId).orElse(null);
             if (inst != null) {
@@ -506,6 +507,10 @@ public class MentorshipNotificationService {
                     name = inst.getInstituteName();
                 }
                 themeColor = normalizeThemeColor(inst.getInstituteThemeCode());
+                // Institute's own contact address for {{support_email}}, not the platform inbox.
+                if (inst.getEmail() != null && !inst.getEmail().isBlank()) {
+                    supportEmail = inst.getEmail().trim();
+                }
             }
         } catch (Exception ignore) {
             // fall back to defaults
@@ -519,7 +524,7 @@ public class MentorshipNotificationService {
         } catch (Exception ignore) {
             // fall back to the default learner URL
         }
-        return new InstituteContext(name, themeColor, FALLBACK_SUPPORT_EMAIL, cta,
+        return new InstituteContext(name, themeColor, supportEmail, cta,
                 name.isBlank() ? null : name);
     }
 

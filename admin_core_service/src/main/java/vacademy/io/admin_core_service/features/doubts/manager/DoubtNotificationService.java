@@ -448,7 +448,7 @@ public class DoubtNotificationService {
         m.put("THEME_COLOR", ctx.themeColor);
         m.put("themeColor", ctx.themeColor);
         m.put("INSTITUTE_NAME", ctx.instituteName);
-        m.put("support_email", ctx.fromEmail);
+        m.put("support_email", ctx.supportEmail);
         return m;
     }
 
@@ -571,6 +571,7 @@ public class DoubtNotificationService {
         String themeColor = FALLBACK_THEME_COLOR;
         String fromEmail = FALLBACK_SUPPORT_EMAIL;
         String fromName = null;
+        String supportEmail = null;
 
         try {
             Optional<Institute> opt = instituteRepository.findById(instituteId);
@@ -582,11 +583,15 @@ public class DoubtNotificationService {
                 }
                 themeColor = normalizeThemeColor(institute.getInstituteThemeCode());
                 fromEmail = resolveUtilityFromEmail(institute).orElse(FALLBACK_SUPPORT_EMAIL);
+                if (institute.getEmail() != null && !institute.getEmail().isBlank()) {
+                    supportEmail = institute.getEmail().trim();
+                }
             }
         } catch (Exception e) {
             log.warn("Failed to load institute context for {}: {}", instituteId, e.getMessage());
         }
-        return new InstituteContext(instituteId, instituteName, themeColor, fromEmail, fromName);
+        return new InstituteContext(instituteId, instituteName, themeColor, fromEmail, fromName,
+                supportEmail);
     }
 
     /**
@@ -671,14 +676,17 @@ public class DoubtNotificationService {
         final String themeColor;
         final String fromEmail;
         final String fromName;
+        /** {{support_email}}: the institute's contact address, else the sender address. */
+        final String supportEmail;
 
         InstituteContext(String instituteId, String instituteName, String themeColor,
-                         String fromEmail, String fromName) {
+                         String fromEmail, String fromName, String supportEmail) {
             this.instituteId = instituteId == null ? "" : instituteId;
             this.instituteName = instituteName == null ? "" : instituteName;
             this.themeColor = themeColor == null ? FALLBACK_THEME_COLOR : themeColor;
             this.fromEmail = fromEmail == null ? FALLBACK_SUPPORT_EMAIL : fromEmail;
             this.fromName = fromName;
+            this.supportEmail = supportEmail == null || supportEmail.isBlank() ? this.fromEmail : supportEmail;
         }
     }
 
