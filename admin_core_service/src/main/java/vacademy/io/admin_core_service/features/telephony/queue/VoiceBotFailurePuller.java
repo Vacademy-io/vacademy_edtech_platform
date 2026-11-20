@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -58,6 +59,8 @@ public class VoiceBotFailurePuller {
     /** True while the bot's health cannot be read, so an outage is logged once, not every 30 s. */
     private volatile boolean unreachable;
 
+    // Two constructors: Spring needs to be told which one to use, or it looks for a no-arg one and fails startup.
+    @Autowired
     public VoiceBotFailurePuller(AiVoiceBoxRepository boxes, VoiceBotVendorFailureRecorder recorder) {
         this(boxes, recorder, HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(3)).build());
     }
