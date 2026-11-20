@@ -41,6 +41,9 @@ import { cn } from '@/lib/utils';
 /** Placeholder shape the email send path interpolates — `{{word}}`, no inner spaces. */
 const EMAIL_PLACEHOLDER_SOURCE = '\\{\\{(\\w+)\\}\\}';
 
+/** notification_log.source of an announcement's tracking row (title only, no email body). */
+const CAMPAIGN_RECORD_SOURCE = 'announcement-service';
+
 /** Media header kinds the send API accepts; a TEXT/NONE header carries no URL to thread through. */
 const MEDIA_HEADERS = new Set(['IMAGE', 'VIDEO', 'DOCUMENT']);
 
@@ -62,6 +65,9 @@ export function resendBlockedReason(item: CommunicationItem): string | null {
         return item.templateName ? null : 'noTemplate';
     }
     if (item.channel === 'EMAIL') {
+        // A campaign's tracking row holds only the campaign title, not the email. Replaying it
+        // mails the bare title as both subject and body, so it is never a resend source.
+        if (item.source === CAMPAIGN_RECORD_SOURCE) return 'campaignRecord';
         return item.fullBody ? null : 'noBody';
     }
     return 'unsupportedChannel';
