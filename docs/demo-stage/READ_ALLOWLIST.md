@@ -58,12 +58,13 @@ and demo-guide visitor tokens.
    2026-11-20: six more added after a sweep of every sidebar screen as the demo visitor found screens that
    could not load (applicants, payment summary, learning reports, the main Learners list, the Team list). Each
    handler was read end to end; the two that used to return passwords now leave them out for the demo user. Result: 99.
+   Later the same day two count-only reads were added (call metrics, question-library facets). Result: 101.
    No entry overlaps a write route of the same shape (checked by script against all 1,820 non-GET routes).
 5. GETs: all 1,510 were reviewed for writes, sends, spend, credentials and bulk exports: 588 by reading the
    handler and what it calls, 922 by a static call tracer with a hand read of every hit (654 of those rest on the
    tracer alone, see "Known gaps").
 
-## Allowed non-GET reads (99)
+## Allowed non-GET reads (101)
 
 
 ### admin-core-service: Fee tracking: search, collection dashboard, adjustment lists
@@ -310,6 +311,7 @@ and demo-guide visitor tokens.
 | Method | Path | Controller method | Evidence |
 |---|---|---|---|
 | POST | `/admin-core-service/v1/telephony/calls/dispositions/counts` | `CallDashboardController#dispositionCounts` | CallSearchService.dispositionCounts: jdbc.query + CallDispositionOptionsService.filterOptions (listForInstituteWithoutSeeding, AiAgentRepository find, jdbc.queryForList) |
+| POST | `/admin-core-service/v1/telephony/calls/metrics` | `CallDashboardController` | CallSearchService.metrics: one aggregate SELECT + two COUNTs; scope lookup = internal auth reads. Response is counts only. Siblings (`/connect`, `/bulk/*`, `/export`, `/{id}/disposition`) write and stay refused |
 | POST | `/admin-core-service/v1/telephony/calls/search` | `CallDashboardController#search` | CallSearchService.search: jdbc.queryForObject/query only, cached lead-report settings, scope resolver reads, auth-service user-details-list read; numbers masked unless … |
 
 ### admin-core-service: Lead timeline: batched journey and latest notes
@@ -367,6 +369,7 @@ and demo-guide visitor tokens.
 
 | Method | Path | Controller method | Evidence |
 |---|---|---|---|
+| POST | `/assessment-service/question-library/v1/questions/facets` | `QuestionLibraryController` | QuestionLibraryFacetService.facets (@Transactional readOnly): four native COUNT ... GROUP BY queries; counts and tag names only. Siblings (`/assign`, `/edit`, `/copy`, `/import`, `/tags/auto`) write and stay refused |
 | POST | `/assessment-service/question-library/v1/questions/filter` | `QuestionLibraryController#listQuestions` | QuestionLibraryService.listQuestions -> QuestionLibraryScope.of (selects) + GetQuestionBankManager.getQuestions + nodeRepository.find*/count* (selects) |
 
 ### assessment-service: Question papers: filter
@@ -427,6 +430,7 @@ These look like reads by name or are used by read screens, and are **not** on th
 | POST | `/admin-core-service/institute/institute_learner/get/v1/all-csv` | whole-list CSV export of learners |
 | POST | `/admin-core-service/institute/institute_learner/get/v1/basic-details-csv` | CSV of learners with username and password |
 | POST | `/auth-service/v1/user/users-credential` | returns usernames and passwords |
+| POST | `/assessment-service/assessment/admin-participants/all/registered-participants` | Reads only, but returns every participant's email, phone and username and does NOT check that the caller belongs to the `instituteId` it is given. Allowing it would let anyone holding the demo sign-in read another institute's roster if they know its ids. Needs an institute check first. The demo shows an empty Submissions tab until then |
 | POST | `/notification-service/v1/chat/people/search` | forwards the caller's token to `users-of-status`, which is refused |
 | POST | `/admin-core-service/institute/v1/certificate/learner/get` | named "get" but generates, stores and notifies when a certificate is missing |
 | POST | `/admin-core-service/open/v1/catalogue-resources/download` | saves a download-analytics row |

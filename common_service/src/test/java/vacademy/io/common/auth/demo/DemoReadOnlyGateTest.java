@@ -179,6 +179,12 @@ class DemoReadOnlyGateTest {
                 "/admin-core-service/learner-management/batch-summary-report/summary", null));
         assertTrue(DemoReadOnlyGate.refuses("POST",
                 "/admin-core-service/learner-management/batch-summary-report/send", null));
+        assertFalse(DemoReadOnlyGate.refuses("POST", "/admin-core-service/v1/telephony/calls/metrics", null));
+        assertTrue(DemoReadOnlyGate.refuses("POST", "/admin-core-service/v1/telephony/calls/connect", null));
+        assertFalse(DemoReadOnlyGate.refuses("POST",
+                "/assessment-service/question-library/v1/questions/facets", null));
+        assertTrue(DemoReadOnlyGate.refuses("POST",
+                "/assessment-service/question-library/v1/questions/import", null));
     }
 
     @Test
@@ -266,7 +272,7 @@ class DemoReadOnlyGateTest {
     @Test
     void listSizesMatchTheDocument() {
         // docs/demo-stage/READ_ALLOWLIST.md states these numbers; change both together.
-        assertEquals(99, DemoReadOnlyAllowList.readCount());
+        assertEquals(101, DemoReadOnlyAllowList.readCount());
         assertEquals(40, DemoReadOnlyAllowList.blockedGetCount());
     }
 }

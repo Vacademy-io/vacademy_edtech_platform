@@ -149,6 +149,7 @@ public final class DemoReadOnlyAllowList {
         read("POST", "/admin-core-service/tag-management/institutes/*/tags/users/details");
         // Call dashboard: call search and disposition counts
         read("POST", "/admin-core-service/v1/telephony/calls/dispositions/counts");
+        read("POST", "/admin-core-service/v1/telephony/calls/metrics");
         read("POST", "/admin-core-service/v1/telephony/calls/search");
         // Lead timeline: batched journey and latest notes
         read("POST", "/admin-core-service/timeline/v1/student/journey-batch");
@@ -180,6 +181,7 @@ public final class DemoReadOnlyAllowList {
         // Question bank: filter
         read("POST", "/assessment-service/question-bank/v1/questions/filter");
         // Question library: filter
+        read("POST", "/assessment-service/question-library/v1/questions/facets");
         read("POST", "/assessment-service/question-library/v1/questions/filter");
         // Question papers: filter
         read("POST", "/assessment-service/question-paper/public/view/v1/get-with-filters");
