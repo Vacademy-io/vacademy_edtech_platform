@@ -38,15 +38,18 @@ class VoiceBotVendorFailureRecorderTest {
                  {"id":"vb-ab12-2","at":"2026-11-18T09:00:05Z","vendor":"waves-api.smallest.ai",
                   "operation":"POST /api/v1","httpStatus":401,"reason":null,
                   "request":{"method":"POST","path":"/api/v1/tts"},"response":{"status":401,"body":{"detail":"Invalid key"}}}]"""));
-        // occurred_at, vendor, source_service, operation, http_status, error_message, run_id (twice: the NOT EXISTS key)
-        verify(jdbc).update(anyString(), eq(Timestamp.from(Instant.parse("2026-11-18T09:00:00Z"))),
+        // occurred_at, vendor, source_service, operation, http_status, error_message, run_id, request, response,
+        // then occurred_at + run_id again: the NOT EXISTS key
+        Timestamp first = Timestamp.from(Instant.parse("2026-11-18T09:00:00Z"));
+        Timestamp second = Timestamp.from(Instant.parse("2026-11-18T09:00:05Z"));
+        verify(jdbc).update(anyString(), eq(first),
                 eq("api.sarvam.ai"), eq("voice_bot"), eq("STT stream, key 1"), isNull(),
                 startsWith("Out of credits"), eq("vb-ab12-1"), isNull(), eq("{\"error\":\"Credits exhausted\"}"),
-                eq("vb-ab12-1"));
-        verify(jdbc).update(anyString(), eq(Timestamp.from(Instant.parse("2026-11-18T09:00:05Z"))),
+                eq(first), eq("vb-ab12-1"));
+        verify(jdbc).update(anyString(), eq(second),
                 eq("waves-api.smallest.ai"), eq("voice_bot"), eq("POST /api/v1"), eq(401),
                 isNull(), eq("vb-ab12-2"), eq("{\"method\":\"POST\",\"path\":\"/api/v1/tts\"}"),
-                eq("{\"status\":401,\"body\":{\"detail\":\"Invalid key\"}}"), eq("vb-ab12-2"));
+                eq("{\"status\":401,\"body\":{\"detail\":\"Invalid key\"}}"), eq(second), eq("vb-ab12-2"));
     }
 
     @Test
