@@ -15,6 +15,9 @@ import vacademy.io.admin_core_service.features.commerce.stock.costimport.ItemCos
 import vacademy.io.admin_core_service.features.commerce.stock.entity.StockCostAdjustment;
 import vacademy.io.admin_core_service.features.commerce.stock.repository.StockCostAdjustmentRepository;
 import vacademy.io.admin_core_service.features.commerce.stock.service.StockLedgerService;
+import vacademy.io.admin_core_service.features.commerce.tax.enums.TaxMode;
+import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxContext;
+import vacademy.io.admin_core_service.features.commerce.tax.service.CommerceTaxSettingService;
 import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.VacademyException;
@@ -28,12 +31,14 @@ import java.util.Optional;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -54,6 +59,8 @@ class ItemCostImportServiceTest {
     private PlatformTransactionManager transactions;
     private ItemCostImportService service;
     private List<VariantRow> variants;
+    private CommerceTaxSettingService taxSettings;
+    private TaxMode taxMode;
 
     @BeforeEach
     void setUp() {
@@ -69,7 +76,10 @@ class ItemCostImportServiceTest {
         variants.add(variant("ps-2", "TST-0002", "ref-2", null));
         variants.add(variant("ps-3", "TST-0003", "ref-3", new BigDecimal("50.0000")));
         when(reader.variants(INSTITUTE)).thenAnswer(i -> variants);
-        service = new ItemCostImportService(reader, ledger, adjustments, audit, transactions);
+        taxSettings = mock(CommerceTaxSettingService.class);
+        taxMode = TaxMode.REGULAR;
+        when(taxSettings.context(INSTITUTE)).thenAnswer(i -> CommerceTaxContext.builder().mode(taxMode).build());
+        service = new ItemCostImportService(reader, ledger, adjustments, audit, taxSettings, transactions);
     }
 
     private static VariantRow variant(String psid, String sku, String ref, BigDecimal standardCost) {
@@ -151,6 +161,76 @@ class ItemCostImportServiceTest {
         assertEquals(new BigDecimal("1000.0000"), answer.spotCheck().get(0).cost());
         assertEquals(64, answer.token().length());
         verifyNoInteractions(ledger, adjustments, audit, transactions);
+        assertEquals("REGULAR", answer.taxMode());
+        assertEquals("REMOVE_INCLUDED_TAX", answer.taxRule());
+    }
+
+    // ───────────────────────────────────── X1: the sheet price is per selling unit, the cost per base unit
+
+    @Test
+    void aMeasuredItemStoresTheCostOfOneBaseUnit() {
+        // Cloth sold by the metre, stock kept in tenths of a metre.
+        variants.set(0, new VariantRow("ps-1", "TST-0001", null, false, true, null, "Sample cloth", 10, "MTR", 0));
+        byte[] file = csv("sku,purchase_price,includes_tax", "TST-0001,120,no");
+        ValidateResponse answer = service.validate(INSTITUTE, "costs.csv", file);
+        assertEquals(0, answer.errorCount());
+        assertEquals(0, answer.warningCount());
+        ItemCostDtos.SpotCheckRow row = answer.spotCheck().get(0);
+        assertEquals(new BigDecimal("120"), row.price(), "the sheet price, per metre");
+        assertEquals(new BigDecimal("120.0000"), row.costPerUnit(), "cost per metre");
+        assertEquals(new BigDecimal("12.0000"), row.cost(), "cost of one tenth of a metre, as stored");
+        assertEquals("MTR", row.unit());
+        assertEquals(10, row.qtyScale());
+        assertEquals(new BigDecimal("12.0000"), answer.sumNew());
+
+        service.commit(INSTITUTE, ACTOR, "costs.csv", file, answer.token());
+        ArgumentCaptor<BigDecimal> stored = ArgumentCaptor.forClass(BigDecimal.class);
+        verify(ledger).setStandardCost(eq(INSTITUTE), eq("ps-1"), stored.capture(), eq(ACTOR), anyString());
+        assertEquals(new BigDecimal("12.0000"), stored.getValue());
+        // An opening receipt of 50 m is 500 base units: 500 x 12 = 6,000, not 60,000.
+        assertEquals(0, new BigDecimal("6000").compareTo(stored.getValue().multiply(BigDecimal.valueOf(500))));
+    }
+
+    @Test
+    void aBaseUnitCostThatDoesNotDivideIsRoundedWithAWarningAndZeroIsAnError() {
+        variants.set(0, new VariantRow("ps-1", "TST-0001", null, false, true, null, "Sample thread", 1000, "KG", 0));
+        variants.set(1, new VariantRow("ps-2", "TST-0002", null, false, true, null, "Sample bead", 1000, "KG", 0));
+        ValidateResponse answer = service.validate(INSTITUTE, "costs.csv", csv(
+                "sku,purchase_price,includes_tax", "TST-0001,99.99,no", "TST-0002,0.0004,no"));
+        assertEquals(List.of(ItemCostImportService.COST_ROUNDED), codes(answer.warnings()));
+        assertEquals(new BigDecimal("0.1000"), answer.spotCheck().get(0).cost(), "99.99 / 1000, half up");
+        assertEquals(List.of(ItemCostSheet.INVALID_PRICE), codes(answer.errors()), "0.0004 / 1000 rounds to 0");
+        assertEquals(3, answer.errors().get(0).row());
+    }
+
+    // ───────────────────────────────────── X2: included tax comes out only in REGULAR tax mode
+
+    @Test
+    void includedTaxStaysInTheCostOutsideRegularTaxMode() {
+        byte[] file = csv("sku,purchase_price,includes_tax,gst_rate_percent", "TST-0001,1180,yes,18",
+                "TST-0002,500,no,");
+        for (TaxMode mode : List.of(TaxMode.UNREGISTERED, TaxMode.COMPOSITION)) {
+            taxMode = mode;
+            ValidateResponse answer = service.validate(INSTITUTE, "costs.csv", file);
+            assertEquals(mode.name(), answer.taxMode());
+            assertEquals("KEEP_TAX_IN_COST", answer.taxRule());
+            assertEquals(0, answer.errorCount(), String.valueOf(answer.errors()));
+            assertEquals(new BigDecimal("1180.0000"), answer.spotCheck().get(0).cost(), mode + ": tax kept");
+            assertEquals(new BigDecimal("500.0000"), answer.spotCheck().get(1).cost());
+            assertEquals(List.of(ItemCostImportService.TAX_KEPT_IN_COST), codes(answer.warnings()));
+        }
+        // No rate is needed when the tax stays in the cost.
+        taxMode = TaxMode.UNREGISTERED;
+        ValidateResponse noRate = service.validate(INSTITUTE, "costs.csv", csv(
+                "sku,purchase_price,includes_tax", "TST-0001,1180,yes"));
+        assertEquals(0, noRate.errorCount(), String.valueOf(noRate.errors()));
+        assertEquals(new BigDecimal("1180.0000"), noRate.spotCheck().get(0).cost());
+
+        taxMode = TaxMode.REGULAR;
+        ValidateResponse regular = service.validate(INSTITUTE, "costs.csv", file);
+        assertEquals("REMOVE_INCLUDED_TAX", regular.taxRule());
+        assertEquals(new BigDecimal("1000.0000"), regular.spotCheck().get(0).cost(), "REGULAR: tax taken out");
+        assertEquals(0, regular.warningCount());
     }
 
     @Test
@@ -234,7 +314,7 @@ class ItemCostImportServiceTest {
     }
 
     @Test
-    void twelveHundredAndOneChangesAreThreeTransactions() {
+    void twelveHundredAndOneChangesAreThirteenTransactionsOfAtMostAHundred() {
         variants.clear();
         StringBuilder sheet = new StringBuilder("sku,purchase_price,includes_tax\n");
         for (int i = 0; i < 1201; i++) {
@@ -246,8 +326,8 @@ class ItemCostImportServiceTest {
         String token = service.validate(INSTITUTE, "costs.csv", file).token();
         CommitResponse answer = service.commit(INSTITUTE, ACTOR, "costs.csv", file, token);
         assertEquals(1201, answer.changed());
-        verify(transactions, times(3)).getTransaction(any());
-        verify(transactions, times(3)).commit(any());
+        verify(transactions, times(13)).getTransaction(any());
+        verify(transactions, times(13)).commit(any());
         verify(ledger, times(1201)).setStandardCost(eq(INSTITUTE), anyString(), any(), eq(ACTOR), anyString());
     }
 
@@ -267,16 +347,120 @@ class ItemCostImportServiceTest {
     }
 
     @Test
-    void aSecondCommitAfterTheCostsLandedChangesNothingAndKeepsTheToken() {
+    void aSecondCommitAfterTheCostsLandedChangesNothingAndAStaleTokenIsRefused() {
         byte[] file = csv("sku,purchase_price,includes_tax", "TST-0001,10,no");
         String token = service.validate(INSTITUTE, "costs.csv", file).token();
         service.commit(INSTITUTE, ACTOR, "costs.csv", file, token);
-        variants.set(0, variant("ps-1", "TST-0001", null, new BigDecimal("10.0000")));
-        assertEquals(token, service.validate(INSTITUTE, "costs.csv", file).token(),
-                "the token does not depend on the current cost");
-        CommitResponse again = service.commit(INSTITUTE, ACTOR, "costs.csv", file, token);
+        variants.set(0, new VariantRow("ps-1", "TST-0001", null, false, true, new BigDecimal("10.0000"),
+                "Sample item TST-0001", 1, null, 1));
+        String now = service.validate(INSTITUTE, "costs.csv", file).token();
+        assertNotEquals(token, now, "the token covers the current cost");
+        assertEquals("IMPORT_CHANGED", code(assertThrows(ConflictException.class,
+                () -> service.commit(INSTITUTE, ACTOR, "costs.csv", file, token))));
+        CommitResponse again = service.commit(INSTITUTE, ACTOR, "costs.csv", file, now);
         assertEquals(0, again.changed());
         assertEquals(1, again.unchanged());
         verify(ledger, times(1)).setStandardCost(any(), any(), any(), any(), any());
+    }
+
+    // ───────────────────────────────────── X3: X, then Y, then X again restores X
+
+    /** The variant read after a commit: the cost it set, one more time set. */
+    private void landed(String psid, String sku, String cost) {
+        for (int i = 0; i < variants.size(); i++) {
+            VariantRow v = variants.get(i);
+            if (v.packageSessionId().equals(psid)) {
+                variants.set(i, new VariantRow(psid, sku, v.externalRef(), false, true, new BigDecimal(cost), v.name(),
+                        v.qtyScale(), v.unit(), v.standardSets() + 1));
+            }
+        }
+    }
+
+    @Test
+    void fileXThenYThenXAgainSetsXsCostAgain() {
+        // The ledger and the key table behave as the database does.
+        Set<String> keys = new HashSet<>();
+        when(adjustments.findByInstituteIdAndIdempotencyKey(eq(INSTITUTE), anyString()))
+                .thenAnswer(i -> keys.contains((String) i.getArgument(1))
+                        ? Optional.of(new StockCostAdjustment()) : Optional.empty());
+        doAnswer(i -> {
+            keys.add(i.getArgument(4));
+            landed(i.getArgument(1), "TST-0001", ((BigDecimal) i.getArgument(2)).toPlainString());
+            return null;
+        }).when(ledger).setStandardCost(eq(INSTITUTE), eq("ps-1"), any(), eq(ACTOR), anyString());
+        byte[] x = csv("sku,purchase_price,includes_tax", "TST-0001,100,no");
+        byte[] y = csv("sku,purchase_price,includes_tax", "TST-0001,90,no");
+
+        List<String> tokens = new ArrayList<>();
+        for (byte[] file : List.of(x, y, x, y, x)) {
+            ValidateResponse checked = service.validate(INSTITUTE, "costs.csv", file);
+            assertEquals(1, checked.toChange());
+            CommitResponse done = service.commit(INSTITUTE, ACTOR, "costs.csv", file, checked.token());
+            assertEquals(1, done.changed(), "each switch sets the cost");
+            assertEquals(0, done.alreadyDone());
+            tokens.add(checked.token());
+        }
+        assertEquals(new BigDecimal("100.0000"), variants.get(0).standardCost(), "X restored");
+        assertEquals(5, new HashSet<>(tokens).size(), "every state gives its own token and keys");
+        assertEquals(5, keys.size());
+    }
+
+    @Test
+    void aFailingSecondBatchStillWritesTheAuditRowWithTheCountsSoFar() {
+        variants.clear();
+        StringBuilder sheet = new StringBuilder("sku,purchase_price,includes_tax\n");
+        for (int i = 0; i < 250; i++) {
+            String sku = String.format("TST-%04d", i);
+            variants.add(variant(String.format("ps-%04d", i), sku, null, null));
+            sheet.append(sku).append(",10,no\n");
+        }
+        byte[] file = sheet.toString().getBytes(StandardCharsets.UTF_8);
+        String token = service.validate(INSTITUTE, "costs.csv", file).token();
+        RuntimeException blip = new IllegalStateException("lock timeout");
+        doAnswer(i -> {
+            throw blip;
+        }).when(ledger).setStandardCost(eq(INSTITUTE), eq("ps-0150"), any(), any(), any());
+
+        RuntimeException e = assertThrows(RuntimeException.class,
+                () -> service.commit(INSTITUTE, ACTOR, "costs.csv", file, token));
+        assertEquals(blip, e, "the batch's own error goes back");
+        ArgumentCaptor<String> detail = ArgumentCaptor.forClass(String.class);
+        verify(audit, times(1)).record(eq(INSTITUTE), eq(ACTOR), eq("ITEM_COSTS_IMPORT"), eq("STANDARD_COST"),
+                eq(null), detail.capture());
+        String d = detail.getValue();
+        assertTrue(d.contains("\"completed\":false"), d);
+        assertTrue(d.contains("\"changed\":100"), "batch 1 committed: " + d);
+        assertTrue(d.contains("\"failed_batch\":2"), d);
+        assertTrue(d.contains("\"batches\":3"), d);
+        verify(transactions, times(1)).commit(any());
+        verify(transactions, times(1)).rollback(any());
+    }
+
+    // ───────────────────────────────────── X14: one commit per institute at a time
+
+    @Test
+    void aSecondCommitWhileOneRunsIsRefusedWith409AndTheLockIsFreedAfter() {
+        byte[] file = csv("sku,purchase_price,includes_tax", "TST-0001,10,no");
+        String token = service.validate(INSTITUTE, "costs.csv", file).token();
+        List<String> inner = new ArrayList<>();
+        doAnswer(i -> {
+            // While this commit holds the institute, another one (a double click) arrives.
+            inner.add(code(assertThrows(ConflictException.class,
+                    () -> service.commit(INSTITUTE, ACTOR, "costs.csv", file, token))));
+            throw new IllegalStateException("batch fails");
+        }).when(ledger).setStandardCost(eq(INSTITUTE), eq("ps-1"), any(), any(), any());
+        assertThrows(IllegalStateException.class, () -> service.commit(INSTITUTE, ACTOR, "costs.csv", file, token));
+        assertEquals(List.of(ItemCostImportService.IMPORT_RUNNING), inner);
+
+        // Freed after the failure: the retry runs.
+        org.mockito.Mockito.reset(ledger);
+        CommitResponse retry = service.commit(INSTITUTE, ACTOR, "costs.csv", file, token);
+        assertEquals(1, retry.changed());
+        assertFalse(inner.isEmpty());
+    }
+
+    private static String code(RuntimeException e) {
+        String message = e.getMessage();
+        return message.contains(":") ? message.substring(0, message.indexOf(':')) : message;
     }
 }

@@ -14,7 +14,8 @@
     "yes": "Yes",
     "no": "No",
     "rules": {
-        "includesTax": "Say for every row whether the purchase price includes GST (yes or no). When it does, enter the rate; the cost is taken without the tax.",
+        "includesTax": "Say for every row whether the purchase price includes GST (yes or no). In regular GST mode the tax is taken out of the cost (enter the rate); in any other mode the tax paid stays in the cost.",
+        "unit": "Enter the price of one selling unit: per metre, kg or litre for goods sold by measure, else per piece. The cost is stored per base unit.",
         "match": "Items are found by variant_external_ref first, then by SKU. Names are never used.",
         "repeat": "Loading the same file again changes nothing."
     },
@@ -26,6 +27,10 @@
     },
     "summary": "{{rows}} rows: {{ok}} ready, {{errors}} with errors, {{warnings}} warnings.",
     "missingAfter": "{{count}} tracked items would still have no cost: {{skus}}",
+    "taxRule": {
+        "REMOVE_INCLUDED_TAX": "Regular GST mode: where the price includes GST, the tax is taken out of the cost.",
+        "KEEP_TAX_IN_COST": "The shop is not in regular GST mode, so the tax paid stays in the cost, even where the price includes GST."
+    },
     "errorsTitle": "Errors ({{count}})",
     "warningsTitle": "Warnings ({{count}})",
     "moreIssues": "Showing the first {{shown}}. Fix these and check the file again.",
@@ -44,12 +49,14 @@
             "row": "Row",
             "sku": "SKU",
             "name": "Item",
-            "price": "Purchase price",
+            "price": "Purchase price per unit",
             "includesTax": "Includes GST",
             "rate": "GST rate",
-            "cost": "Cost",
+            "costPerUnit": "Cost per unit",
+            "cost": "Stored cost",
             "current": "Current cost"
-        }
+        },
+        "perBaseUnit": "per 1/{{scale}} {{unit}}"
     },
     "result": {
         "toast": "{{count}} costs loaded",

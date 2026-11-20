@@ -22,8 +22,10 @@ import java.util.regex.Pattern;
  * the first row holding {@code sku} or {@code variant_external_ref}; rows above it are ignored
  * (a title row). A header that is not in the template is refused, as in the product import.
  *
- * <p>Cost = the purchase price when it excludes tax, else price × 100 / (100 + rate), rounded
- * half up to four decimals.
+ * <p>Cost per selling unit = the purchase price when it excludes tax, else price × 100 / (100 +
+ * rate), rounded half up to four decimals; under {@link TaxRule#KEEP_TAX_IN_COST} (a seller that
+ * cannot claim the tax back) the price is the cost whether it includes tax or not. The service
+ * turns it into the cost of one base unit.
  */
 public final class ItemCostSheet {
 
@@ -46,6 +48,13 @@ public final class ItemCostSheet {
     public static final String ITEM_KEY_MISSING = "ITEM_KEY_MISSING";
 
     private static final Pattern NUMBER = Pattern.compile("-?(\\d+(\\.\\d*)?|\\.\\d+)");
+
+    /**
+     * What "includes tax = yes" does. A seller in REGULAR tax mode claims the tax back, so it is
+     * taken out of the cost; any other seller pays it as part of the cost (PURCHASES_AND_ACCOUNTS
+     * section 5.2), so it stays in.
+     */
+    public enum TaxRule { REMOVE_INCLUDED_TAX, KEEP_TAX_IN_COST }
 
     /** The template columns, in template order. */
     public enum Column {
@@ -98,8 +107,13 @@ public final class ItemCostSheet {
     private ItemCostSheet() {
     }
 
-    /** Reads a table from {@link ImportFileParser#readTable}. Header problems and the row cap are a 400. */
+    /** {@link #read(List, TaxRule)} for a seller that takes included tax out of the cost. */
     public static Parsed read(List<List<String>> table) {
+        return read(table, TaxRule.REMOVE_INCLUDED_TAX);
+    }
+
+    /** Reads a table from {@link ImportFileParser#readTable}. Header problems and the row cap are a 400. */
+    public static Parsed read(List<List<String>> table, TaxRule taxRule) {
         int headerIndex = findHeader(table);
         Map<Column, Integer> columns = readHeader(table.get(headerIndex));
 
@@ -126,7 +140,7 @@ public final class ItemCostSheet {
                 throw new InvalidRequestException("the file has more than " + MAX_ROWS
                         + " rows; split it into smaller files");
             }
-            rows.add(readRow(i + 1, values, errors));
+            rows.add(readRow(i + 1, values, errors, taxRule));
         }
         return new Parsed(rows, errors, blank);
     }
@@ -195,7 +209,8 @@ public final class ItemCostSheet {
 
     // --------------------------------------------------------------------- row
 
-    private static Row readRow(int rowNumber, Map<Column, String> values, List<Issue> errors) {
+    private static Row readRow(int rowNumber, Map<Column, String> values, List<Issue> errors, TaxRule taxRule) {
+        boolean removeTax = taxRule != TaxRule.KEEP_TAX_IN_COST;
         String sku = values.get(Column.SKU);
         String externalRef = values.get(Column.VARIANT_EXTERNAL_REF);
         if (sku == null && externalRef == null) {
@@ -211,15 +226,16 @@ public final class ItemCostSheet {
         if (rateText != null) {
             rate = readRate(rowNumber, rateText, errors);
             rateOk = rate != null;
-        } else if (Boolean.TRUE.equals(includesTax)) {
+        } else if (Boolean.TRUE.equals(includesTax) && removeTax) {
             errors.add(new Issue(rowNumber, Column.GST_RATE_PERCENT.header, RATE_REQUIRED,
                     "the price includes tax, so enter the GST rate (for example 5, 12 or 18)"));
             rateOk = false;
         }
 
         BigDecimal cost = null;
-        if (price != null && includesTax != null && (!includesTax || (rateOk && rate != null))) {
-            cost = cost(price, includesTax, rate);
+        boolean taxOut = Boolean.TRUE.equals(includesTax) && removeTax;
+        if (price != null && includesTax != null && (!taxOut || (rateOk && rate != null))) {
+            cost = cost(price, taxOut, rate);
             if (cost.signum() <= 0) {
                 errors.add(new Issue(rowNumber, Column.PURCHASE_PRICE.header, INVALID_PRICE,
                         "the cost before tax rounds to zero"));

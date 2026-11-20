@@ -61,9 +61,14 @@ const validation = (extra: Partial<ItemCostValidation> = {}): ItemCostValidation
             rate: '18',
             cost: '1000',
             current_cost: null,
+            unit: 'PCS',
+            qty_scale: 1,
+            cost_per_unit: '1000',
         },
     ],
     token: 'a'.repeat(64),
+    tax_mode: 'REGULAR',
+    tax_rule: 'REMOVE_INCLUDED_TAX',
     ...extra,
 });
 
@@ -150,6 +155,37 @@ describe('ItemCostImportCard', () => {
         expect(mocked.commitItemCosts).toHaveBeenCalledWith(file, 'a'.repeat(64));
         expect(screen.getByTestId('item-costs-load')).toBeDisabled();
     });
+
+    it('shows the price per selling unit beside the cost stored per base unit, and the tax rule', async () => {
+        mocked.validateItemCosts.mockResolvedValue(
+            validation({
+                tax_mode: 'UNREGISTERED',
+                tax_rule: 'KEEP_TAX_IN_COST',
+                spot_check: [
+                    {
+                        row: 2,
+                        sku: 'TST-0009',
+                        name: 'Sample cloth',
+                        price: '120',
+                        includes_tax: false,
+                        rate: null,
+                        cost: '12',
+                        current_cost: null,
+                        unit: 'MTR',
+                        qty_scale: 10,
+                        cost_per_unit: '120',
+                    },
+                ],
+            })
+        );
+        render(<ItemCostImportCard />);
+        await chooseAndCheck();
+        const table = screen.getByTestId('item-costs-spot-check').textContent ?? '';
+        expect(table).toContain('120.00');
+        expect(table).toContain('12.00');
+        expect(table).toContain('spotCheck.perBaseUnit');
+        expect(screen.getByTestId('item-costs-tax-rule').textContent).toBe('taxRule.KEEP_TAX_IN_COST');
+    });
 });
 
 describe('item-costs strings exist in English and Hindi', () => {
@@ -187,9 +223,10 @@ describe('item-costs strings exist in English and Hindi', () => {
         const literal = [...source.matchAll(/\btr\(\s*'([^'\n]+)'/g)].map((m) => m[1] ?? '');
         const built = [
             ...['row', 'item', 'column', 'code', 'message'].map((c) => `columns.${c}`),
-            ...['row', 'sku', 'name', 'price', 'includesTax', 'rate', 'cost', 'current'].map(
+            ...['row', 'sku', 'name', 'price', 'includesTax', 'rate', 'costPerUnit', 'cost', 'current'].map(
                 (c) => `spotCheck.columns.${c}`
             ),
+            ...['REMOVE_INCLUDED_TAX', 'KEEP_TAX_IN_COST'].map((r) => `taxRule.${r}`),
         ];
         expect(literal.length).toBeGreaterThan(25);
         [...literal, ...built].forEach((key) => {

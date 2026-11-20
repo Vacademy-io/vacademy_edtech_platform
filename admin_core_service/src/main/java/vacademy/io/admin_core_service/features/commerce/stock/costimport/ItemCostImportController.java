@@ -113,8 +113,10 @@ public class ItemCostImportController {
     static final String[][] GUIDE = {
             {"sku", "the item's SKU (or use variant_external_ref)", "TST-0001"},
             {"variant_external_ref", "the item's external ref; used before the SKU when both are filled", ""},
-            {"purchase_price", "price paid per unit, more than 0, at most 4 decimals", "1180"},
-            {"includes_tax", "yes if the purchase price includes GST, no if not; required", "yes"},
+            {"purchase_price", "price paid per selling unit (per metre, kg or litre for goods sold by measure, "
+                    + "else per piece), more than 0, at most 4 decimals", "1180"},
+            {"includes_tax", "yes if the purchase price includes GST, no if not; required. GST is taken out of "
+                    + "the cost only in regular GST mode", "yes"},
             {"gst_rate_percent", "GST rate in percent (0 to 40); required when includes_tax is yes", "18"},
             {"note", "anything; not read", ""},
     };

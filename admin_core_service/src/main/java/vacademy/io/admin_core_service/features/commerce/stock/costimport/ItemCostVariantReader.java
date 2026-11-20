@@ -15,17 +15,37 @@ import java.util.List;
 @Component
 public class ItemCostVariantReader {
 
-    /** One variant. {@code archived}: the variant or its product is ARCHIVED. */
+    /**
+     * One variant. {@code archived}: the variant or its product is ARCHIVED. {@code qtyScale}: base
+     * units in one selling unit (10 = a tenth of a metre); {@code unit}: the selling unit.
+     * {@code standardSets}: how many times its standard cost has been set (append-only history),
+     * so the same cost reached twice still reads as a different state.
+     */
     public record VariantRow(String packageSessionId, String sku, String externalRef, boolean archived,
-                             boolean tracked, BigDecimal standardCost, String name) {
+                             boolean tracked, BigDecimal standardCost, String name, int qtyScale, String unit,
+                             long standardSets) {
+
+        public VariantRow {
+            qtyScale = Math.max(1, qtyScale);
+        }
+
+        /** A counted item (scale 1, no cost history). */
+        public VariantRow(String packageSessionId, String sku, String externalRef, boolean archived,
+                          boolean tracked, BigDecimal standardCost, String name) {
+            this(packageSessionId, sku, externalRef, archived, tracked, standardCost, name, 1, null, 0);
+        }
     }
 
     // Text blocks would strip trailing spaces: every fragment below starts with a space.
     static final String SQL = "SELECT cv.package_session_id, cv.sku, cv.external_ref, cv.status AS variant_status,"
-            + " cp.status AS product_status, cv.stock_policy, cv.standard_cost,"
+            + " cp.status AS product_status, cv.stock_policy, cv.standard_cost, cp.qty_scale, cp.unit,"
+            + " COALESCE(a.sets, 0) AS standard_sets,"
             + " p.package_name AS product_name, ps.name AS variant_name"
             + " FROM commerce_variant cv"
             + " JOIN commerce_product cp ON cp.package_id = cv.package_id AND cp.institute_id = cv.institute_id"
+            + " LEFT JOIN (SELECT package_session_id, COUNT(*) AS sets FROM stock_cost_adjustment"
+            + " WHERE institute_id = :instituteId AND reason = 'STANDARD_SET'"
+            + " GROUP BY package_session_id) a ON a.package_session_id = cv.package_session_id"
             + " LEFT JOIN package p ON p.id = cv.package_id"
             + " LEFT JOIN package_session ps ON ps.id = cv.package_session_id"
             + " WHERE cv.institute_id = :instituteId"
@@ -45,7 +65,10 @@ public class ItemCostVariantReader {
                 "ARCHIVED".equals(rs.getString("variant_status")) || "ARCHIVED".equals(rs.getString("product_status")),
                 "TRACKED".equals(rs.getString("stock_policy")),
                 rs.getBigDecimal("standard_cost"),
-                name(rs.getString("product_name"), rs.getString("variant_name"))));
+                name(rs.getString("product_name"), rs.getString("variant_name")),
+                rs.getInt("qty_scale"),
+                rs.getString("unit"),
+                rs.getLong("standard_sets")));
     }
 
     static String name(String product, String variant) {

@@ -19,6 +19,11 @@ export interface ItemCostIssue {
     sku: string | null;
 }
 
+/**
+ * `price` and `cost_per_unit` are per selling unit (`unit`, e.g. one metre);
+ * `cost` and `current_cost` are per base unit, as stored (`qty_scale` base units
+ * make one selling unit; 1 for counted items).
+ */
 export interface ItemCostSpotRow {
     row: number;
     sku: string;
@@ -28,7 +33,13 @@ export interface ItemCostSpotRow {
     rate: string | null;
     cost: string;
     current_cost: string | null;
+    unit: string | null;
+    qty_scale: number;
+    cost_per_unit: string;
 }
+
+/** What "includes tax = yes" did: taken out (REGULAR GST mode) or kept in the cost. */
+export type ItemCostTaxRule = 'REMOVE_INCLUDED_TAX' | 'KEEP_TAX_IN_COST';
 
 export interface ItemCostValidation {
     rows: number;
@@ -44,6 +55,8 @@ export interface ItemCostValidation {
     missing_after: { count: number; skus: string[] };
     spot_check: ItemCostSpotRow[];
     token: string;
+    tax_mode: string | null;
+    tax_rule: ItemCostTaxRule | null;
 }
 
 export interface ItemCostCommit {
@@ -114,9 +127,18 @@ export function normalizeItemCostValidation(data: unknown): ItemCostValidation {
                     s.current_cost === null || s.current_cost === undefined
                         ? null
                         : amount(s.current_cost),
+                unit: str(s.unit) ?? null,
+                qty_scale: num(s.qty_scale) ?? 1,
+                cost_per_unit:
+                    s.cost_per_unit === null || s.cost_per_unit === undefined
+                        ? amount(s.cost)
+                        : amount(s.cost_per_unit),
             };
         }),
         token: str(r.token) ?? '',
+        tax_mode: str(r.tax_mode) ?? null,
+        tax_rule:
+            r.tax_rule === 'REMOVE_INCLUDED_TAX' || r.tax_rule === 'KEEP_TAX_IN_COST' ? r.tax_rule : null,
     };
 }
 

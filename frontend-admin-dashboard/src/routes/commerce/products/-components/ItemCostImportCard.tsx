@@ -197,6 +197,7 @@ function ItemCostImportContent() {
             </div>
             <ul className="flex list-disc flex-col gap-1 ps-5 text-caption text-muted-foreground">
                 <li>{tr('rules.includesTax')}</li>
+                <li>{tr('rules.unit')}</li>
                 <li>{tr('rules.match')}</li>
                 <li>{tr('rules.repeat')}</li>
             </ul>
@@ -217,6 +218,11 @@ function ItemCostImportContent() {
                             warnings: validation.warning_count,
                         })}
                     </p>
+                    {validation.tax_rule && (
+                        <p className="text-caption text-foreground" data-testid="item-costs-tax-rule">
+                            {tr(`taxRule.${validation.tax_rule}`)}
+                        </p>
+                    )}
                     {validation.missing_after.count > 0 && (
                         <p className="text-caption text-muted-foreground">
                             {tr('missingAfter', {
@@ -350,7 +356,17 @@ function SpotCheck({ validation }: { validation: ItemCostValidation }) {
                     <thead className="bg-muted text-muted-foreground">
                         <tr>
                             {(
-                                ['row', 'sku', 'name', 'price', 'includesTax', 'rate', 'cost', 'current'] as const
+                                [
+                                    'row',
+                                    'sku',
+                                    'name',
+                                    'price',
+                                    'includesTax',
+                                    'rate',
+                                    'costPerUnit',
+                                    'cost',
+                                    'current',
+                                ] as const
                             ).map((column) => (
                                 <th
                                     key={column}
@@ -375,8 +391,19 @@ function SpotCheck({ validation }: { validation: ItemCostValidation }) {
                                 <td className="p-2 tabular-nums text-foreground">
                                     {row.rate === null ? '—' : `${row.rate}%`}
                                 </td>
+                                <td className="p-2 tabular-nums text-foreground">
+                                    {formatCost(row.cost_per_unit)}
+                                </td>
                                 <td className="p-2 tabular-nums font-medium text-foreground">
                                     {formatCost(row.cost)}
+                                    {row.qty_scale > 1 && (
+                                        <span className="block text-muted-foreground">
+                                            {tr('spotCheck.perBaseUnit', {
+                                                scale: row.qty_scale,
+                                                unit: row.unit ?? '',
+                                            })}
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="p-2 tabular-nums text-muted-foreground">
                                     {formatCost(row.current_cost)}
