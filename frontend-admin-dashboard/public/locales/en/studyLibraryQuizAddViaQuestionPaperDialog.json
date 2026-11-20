@@ -1,0 +1,9 @@
+{
+    "title": "Add from Question Bank / Paper",
+    "description": "Pick a saved question paper and choose which of its questions to add to this quiz.",
+    "toast": {
+        "noQuestions": "This question paper has no questions to add.",
+        "unsupportedSkipped_one": "{{count}} question was skipped: its type cannot be used in a quiz.",
+        "unsupportedSkipped_other": "{{count}} questions were skipped: their type cannot be used in a quiz."
+    }
+}

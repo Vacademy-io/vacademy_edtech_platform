@@ -89,6 +89,7 @@ export const QuestionPapersList = ({
     setCurrentQuestionIndex,
     examType,
     onManualSelectionReady,
+    onQuestionsPicked,
     sortOrder = 'NEWEST',
 }: {
     questionPaperList: PaginatedResponse;
@@ -104,6 +105,13 @@ export const QuestionPapersList = ({
     setCurrentQuestionIndex: Dispatch<SetStateAction<number>>;
     examType?: string;
     onManualSelectionReady?: (questions: MyQuestion[]) => void;
+    /**
+     * For callers that keep full question copies instead of a section form (the LMS quiz
+     * slide). When set, picking a paper shows the same All / Random / By tag / Manual step,
+     * and the chosen questions are handed over in full rather than written to a section.
+     * `chooseManually` is true when the user picked Manual: the caller shows the selector.
+     */
+    onQuestionsPicked?: (questions: MyQuestion[], options: { chooseManually: boolean }) => void;
     // Question Papers page only: date headers are shown for the date sorts.
     sortOrder?: PaperSort;
 }) => {
@@ -346,7 +354,26 @@ export const QuestionPapersList = ({
     });
 
     const handleConfirmSelection = () => {
-        if (!pendingPaper || !sectionsForm || index === undefined) return;
+        if (!pendingPaper) return;
+
+        // Quiz slide picker: hand the chosen questions over in full; there is no section.
+        if (onQuestionsPicked) {
+            const chooseManually = selectionMode === 'manual';
+            let picked = paperQuestions;
+            if (selectionMode === 'random') {
+                const count = parseInt(questionCount || '0');
+                if (count > 0 && count < picked.length) {
+                    picked = [...picked].sort(() => Math.random() - 0.5).slice(0, count);
+                }
+            } else if (selectionMode === 'tags') {
+                picked = selectQuestionsByTags(paperQuestions, tagCounts);
+            }
+            resetSelectionConfig();
+            onQuestionsPicked(picked, { chooseManually });
+            return;
+        }
+
+        if (!sectionsForm || index === undefined) return;
         const id = pendingPaper.id;
         const questions = paperQuestions;
 
@@ -437,8 +464,8 @@ export const QuestionPapersList = ({
     };
 
     const handleGetQuestionPaperDataById = (questionsData: QuestionPaperInterface) => {
-        // In assessment mode, show selection config before loading
-        if (isAssessment && index !== undefined) {
+        // In assessment mode (and the quiz slide picker), show selection config before loading
+        if (isAssessment && (index !== undefined || onQuestionsPicked)) {
             setPendingPaper(questionsData);
             return;
         }
@@ -816,10 +843,12 @@ export const QuestionPapersList = ({
                 <div
                     key={idx}
                     className={`flex flex-col gap-2 rounded-xl border-2 bg-neutral-50 p-4 ${
-                        index !== undefined || isStudyLibraryAssignment ? 'cursor-pointer' : ''
+                        index !== undefined || isStudyLibraryAssignment || onQuestionsPicked
+                            ? 'cursor-pointer'
+                            : ''
                     }`}
                     onClick={
-                        index !== undefined || isStudyLibraryAssignment
+                        index !== undefined || isStudyLibraryAssignment || onQuestionsPicked
                             ? () => handleGetQuestionPaperDataById(questionsData)
                             : undefined
                     }

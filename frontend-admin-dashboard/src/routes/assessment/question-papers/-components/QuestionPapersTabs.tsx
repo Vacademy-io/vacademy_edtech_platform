@@ -59,6 +59,11 @@ interface QuestionPapersTabsProps {
     onManualSelectionReady?: (
         questions: import('@/types/assessments/question-paper-form').MyQuestion[]
     ) => void;
+    /** Quiz slide picker: receives the chosen questions in full (see QuestionPapersList). */
+    onQuestionsPicked?: (
+        questions: import('@/types/assessments/question-paper-form').MyQuestion[],
+        options: { chooseManually: boolean }
+    ) => void;
 }
 
 export const QuestionPapersTabs = ({
@@ -71,6 +76,7 @@ export const QuestionPapersTabs = ({
     setCurrentQuestionIndex,
     examType,
     onManualSelectionReady,
+    onQuestionsPicked,
 }: QuestionPapersTabsProps) => {
     const { t } = useTranslation('assessmentQuestionPapersTabs');
     const { t: tPage } = useTranslation('assessmentQuestionPapersPage');
@@ -506,6 +512,7 @@ export const QuestionPapersTabs = ({
                 setCurrentQuestionIndex={setCurrentQuestionIndex}
                 examType={examType}
                 onManualSelectionReady={tab === 'ACTIVE' ? onManualSelectionReady : undefined}
+                onQuestionsPicked={onQuestionsPicked}
                 sortOrder={sortOrder}
             />
         ) : null;
