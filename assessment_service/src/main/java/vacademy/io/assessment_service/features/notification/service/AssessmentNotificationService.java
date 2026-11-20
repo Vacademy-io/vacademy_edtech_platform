@@ -3,6 +3,7 @@ package vacademy.io.assessment_service.features.notification.service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import vacademy.io.assessment_service.features.assessment.entity.Assessment;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration;
 import vacademy.io.assessment_service.features.assessment.enums.AssessmentStatus;
@@ -18,8 +19,13 @@ import vacademy.io.assessment_service.features.open_evaluation.policy.ApiCandida
 import vacademy.io.common.auth.dto.UserWithRolesDTO;
 import vacademy.io.common.auth.enums.CompanyStatus;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -53,7 +59,7 @@ public class AssessmentNotificationService {
         return NotificationDTO.builder()
                 .subject("Assessment result released")
                 .body(AssessmentNotificaionEmailBody.getEmailBodyForAdminsForResultRelease(
-                        assessment.getName(), assessment.getBoundStartTime().toString()
+                        assessment.getName(), formatConducted(assessment.getBoundStartTime()), instituteName(instituteId)
                 ))
                 .source(NotificationSourceEnum.ASSESSMENT.name())
                 .sourceId(assessment.getId())
@@ -73,7 +79,7 @@ public class AssessmentNotificationService {
     }
 
     public void sendNotificationsToAdminsAfterReevaluating(Assessment assessment, String instituteId) {
-        NotificationDTO notificationDTO = buildAdminNotificationDTO(assessment, instituteId);
+        NotificationDTO notificationDTO = buildAdminNotificationDTOAfterReevaluating(assessment, instituteId);
         if (notificationDTO == null) {
             return; // no staff role enabled to receive result emails
         }
@@ -90,14 +96,35 @@ public class AssessmentNotificationService {
             return null;
         }
         return NotificationDTO.builder()
-                .subject("Assessment reevaluated!!!")
+                .subject(StringUtils.hasText(assessment.getName())
+                        ? "Assessment reevaluated: " + assessment.getName().trim() : "Assessment reevaluated")
                 .body(AssessmentNotificaionEmailBody.getEmailBodyForAdminsForReevaluation(
-                        assessment.getName(), assessment.getBoundStartTime().toString()
+                        assessment.getName(), formatConducted(assessment.getBoundStartTime()), instituteName(instituteId)
                 ))
                 .source(NotificationSourceEnum.ASSESSMENT.name())
                 .sourceId(assessment.getId())
                 .notificationType(NotificationType.EMAIL.name())
                 .users(mapToAdminNotificationUsers(users))
                 .build();
+    }
+
+    /** Staff mails show the start in IST like the other assessment mails; a dash when the test has no start time. */
+    private static final DateTimeFormatter CONDUCTED =
+            DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a z", Locale.ENGLISH);
+
+    static String formatConducted(Date start) {
+        if (start == null) {
+            return "—";
+        }
+        return CONDUCTED.format(Instant.ofEpochMilli(start.getTime()).atZone(ZoneId.of("Asia/Kolkata")));
+    }
+
+    /** The institute's display name for the sign-off; null (no name line) when admin_core cannot be read. */
+    private String instituteName(String instituteId) {
+        try {
+            return adminCoreServiceClient.getInstituteName(instituteId);
+        } catch (Exception e) {
+            return null;
+        }
     }
 }
