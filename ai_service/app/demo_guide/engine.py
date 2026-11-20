@@ -391,6 +391,11 @@ async def _model_reply(ctx: T.TurnContext, reply: _Reply, messages: List[Dict[st
                 tools_used.append(name)
                 policy.learn(result)
                 messages.append({"role": "tool", "tool_call_id": c["id"], "content": result})
+            if round_text.strip() and "search_knowledge" not in [
+                    str((c.get("function") or {}).get("name") or "") for c in calls]:
+                # The line is written and the tools only put something on the stage (choices, a tour,
+                # the form, a note): the reply is complete. Another round only repeats the question.
+                break
             if round_text.strip():
                 # Text written before a tool call is followed by more text: keep a space between them.
                 rest = sanitizer.push(" ")
