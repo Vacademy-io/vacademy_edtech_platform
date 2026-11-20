@@ -756,11 +756,16 @@ public class DynamicNotificationService {
      * Guardian account created (link, link-new-guardian, or backfill) —
      * notifies whichever party the Guardian Setting is configured to notify
      * ("STUDENT" or "GUARDIAN") with the newly-created guardian's login
-     * credentials. Resolves the EMAIL template via the same
-     * institute-specific-config -> DEFAULT-config fallback used elsewhere
-     * (see {@link vacademy.io.admin_core_service.features.live_session.service.LiveClassTemplateService});
-     * a seed migration guarantees a DEFAULT config/template always exists, so
-     * this is a silent no-op only if that seed was somehow removed.
+     * credentials. Resolves the EMAIL template from the institute's own
+     * binding, then a platform {@code DEFAULT} binding if one exists.
+     *
+     * <p>No {@code DEFAULT} binding is seeded for this event, on purpose: the
+     * link / link-new-guardian / backfill paths send it automatically, gated
+     * only by {@code PARENT_SETTING.sendCredentialEmail}, which defaults to on.
+     * A platform default would start mailing plaintext credentials for every
+     * institute that never chose to. So an institute gets this mail once it
+     * binds a template (Guardian Setting template selector); until then this
+     * is a logged no-op.
      */
     public void sendGuardianAccountCreatedNotification(
             String instituteId,
@@ -1044,7 +1049,9 @@ public class DynamicNotificationService {
      * Tries id-based lookup first so two configs sharing the same template_name can still
      * point at distinct rows (e.g. for session-specific dynamic_parameters while dispatching
      * to one shared WATI-approved template name). Falls back to name-based lookup when no
-     * templateId is set on the config or when the id no longer resolves to a row.
+     * templateId is set on the config or when the id no longer resolves to a row: the calling
+     * institute's templates first, then — only for a {@code DEFAULT} config — the
+     * {@code DEFAULT} institute's.
      */
     public Template resolveTemplate(NotificationEventConfig config, String instituteId) {
         if (config.getTemplateId() != null && !config.getTemplateId().isBlank()) {
@@ -1059,6 +1066,14 @@ public class DynamicNotificationService {
                     .findByInstituteIdAndNameAndType(instituteId, templateName, templateTypeStr)
                     .or(() -> templateRepository
                             .findByInstituteIdAndNameAndType(instituteId, templateName, templateTypeStr.toLowerCase()));
+            // A platform DEFAULT binding names a template owned by DEFAULT, not by the calling
+            // institute — scoping the lookup to the institute alone could never find it.
+            if (byName.isEmpty() && "DEFAULT".equals(config.getSourceId()) && !"DEFAULT".equals(instituteId)) {
+                byName = templateRepository
+                        .findByInstituteIdAndNameAndType("DEFAULT", templateName, templateTypeStr)
+                        .or(() -> templateRepository
+                                .findByInstituteIdAndNameAndType("DEFAULT", templateName, templateTypeStr.toLowerCase()));
+            }
             if (byName.isPresent()) return byName.get();
         }
 
