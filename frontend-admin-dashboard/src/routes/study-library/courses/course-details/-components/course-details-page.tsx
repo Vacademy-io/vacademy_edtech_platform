@@ -108,6 +108,7 @@ import type { PackageSessionDTO } from '@/routes/admin-package-management/-types
 import { fetchCourseBatches } from '@/routes/admin-package-management/-services/package-service';
 import { EnrollmentWorkflowStatus } from '@/components/shared/workflow/enrollment-workflow-status';
 import { useOfflineAccessEnabled } from '@/routes/settings/-hooks/use-offline-access-enabled';
+import { extractYouTubeVideoId } from '@/utils/youtube';
 
 type SlideType = {
     id: string;
@@ -228,13 +229,6 @@ interface InstructorWithPicUrl {
     profilePicId?: string;
     profilePicUrl: string;
 }
-
-// Utility to extract YouTube video ID
-const extractYouTubeVideoId = (url: string): string | null => {
-    const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[1] && match[1].length === 11 ? match[1] : null;
-};
 
 // Icon + label for a slide `source_type`. Module-scope so it is not rebuilt for
 // every slide-count row on every render.

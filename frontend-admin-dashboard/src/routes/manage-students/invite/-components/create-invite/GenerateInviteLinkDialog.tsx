@@ -67,6 +67,7 @@ import { Copy } from '@phosphor-icons/react';
 import { getTerminology } from '@/components/common/layout-container/sidebar/utils';
 import { OtherTerms, SystemTerms } from '@/routes/settings/-components/NamingSettings';
 import { useTranslation } from 'react-i18next';
+import { extractYouTubeVideoId } from '@/utils/youtube';
 
 const GenerateInviteLinkDialog = ({
     showSummaryDialog,
@@ -371,12 +372,6 @@ const GenerateInviteLinkDialog = ({
                 duration: 4000,
             });
         }
-    };
-
-    const extractYouTubeVideoId = (url: string): string | null => {
-        const regExp = /^.*(?:youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = url.match(regExp);
-        return match && match[1] && match[1].length === 11 ? match[1] : null;
     };
 
     const handleFileUpload = async (
