@@ -1,0 +1,185 @@
+{
+    "card": {
+        "title": "Breaks and holds",
+        "subtitle": "Stop reminders for a while, or pause an enrolment.",
+        "hold": "Hold reminders",
+        "pause": "Pause",
+        "empty": "No break right now. Use a hold when a learner asks not to be reminded for a while, and a pause when they stop for a while.",
+        "noCourses": "This learner has no current course, so there is nothing to hold or pause.",
+        "error": "Could not load breaks.",
+        "retry": "Try again",
+        "history_one": "Past breaks ({{count}})",
+        "history_other": "Past breaks ({{count}})",
+        "allCourses": "All courses",
+        "untilResumed": "until resumed",
+        "dayOf": "Day {{day}} of {{total}}",
+        "dayN": "Day {{day}}",
+        "startsOn": "Starts {{date}}",
+        "until": "until {{date}}",
+        "change": "Change dates",
+        "resume": "Resume now",
+        "endHold": "End hold",
+        "cancel": "Cancel",
+        "pauseName": "Pause",
+        "holdName": "Reminder hold",
+        "datesMoved_one": "dates moved {{count}} day",
+        "datesMoved_other": "dates moved {{count}} days"
+    },
+    "status": {
+        "onHold": "On hold",
+        "paused": "Paused",
+        "scheduledHold": "Hold scheduled",
+        "scheduledPause": "Pause scheduled",
+        "ended": "Ended",
+        "cancelled": "Cancelled"
+    },
+    "effects": {
+        "classOff": "Class reminders off",
+        "feeOff": "Fee reminders off",
+        "accessOff": "Course access off",
+        "billingOff": "No charges or expiry"
+    },
+    "reasons": {
+        "TRAVEL": "Travel",
+        "EXAMS": "Exams",
+        "HEALTH": "Health",
+        "FAMILY": "Family",
+        "PAYMENT_PROMISED": "Payment promised",
+        "FINANCIAL": "Money trouble",
+        "OTHER": "Other"
+    },
+    "form": {
+        "title": "Give a break",
+        "titleFor": "Give {{name}} a break",
+        "kindLabel": "Type of break",
+        "holdTitle": "Hold reminders",
+        "holdHint": "Stays enrolled and keeps paying. We just stop reminding them.",
+        "pauseTitle": "Pause enrolment",
+        "pauseHint": "Stops for a while. No charges or expiry; dates move forward when they return.",
+        "course": "Course",
+        "allCourses": "All courses",
+        "firstDay": "First day",
+        "lastDay": "Last day",
+        "quickDays_one": "{{count}} day",
+        "quickDays_other": "{{count}} days",
+        "untilResumed": "Until I resume it",
+        "lengthDays_one": "{{count}} day",
+        "lengthDays_other": "{{count}} days",
+        "whatStops": "What stops",
+        "stopClass": "Class reminders",
+        "stopClassHint": "No class links or reminders. They can still join a class.",
+        "stopFee": "Fee and renewal reminders",
+        "stopFeeHint": "No payment, due-date or renewal reminders.",
+        "removeAccess": "Switch the course off while paused",
+        "removeAccessHint": "Off: they keep seeing the course and recordings. On: the course disappears until they return.",
+        "reason": "Reason",
+        "note": "Note",
+        "notePlaceholder": "Anything the team should know (optional)",
+        "cancel": "Cancel",
+        "saving": "Saving…",
+        "submitHold": "Start hold",
+        "submitPause": "Start pause",
+        "submitSchedule": "Schedule break",
+        "errors": {
+            "pauseNeedsCourse": "Choose the course to pause.",
+            "endRequired": "Choose the last day, or pick “Until I resume it”.",
+            "endBeforeStart": "The last day must be on or after the first day.",
+            "nothingToStop": "Choose at least one kind of reminder to stop.",
+            "newDateRequired": "Choose the new end date."
+        }
+    },
+    "preview": {
+        "title": "What will happen",
+        "startsToday": "Starts today,",
+        "startsOn": "Starts {{date}},",
+        "lastDay_one": "last day {{date}} ({{count}} day).",
+        "lastDay_other": "last day {{date}} ({{count}} days).",
+        "untilResumed": "runs until you resume it.",
+        "pausedFor_one": "Paused for {{count}} day.",
+        "pausedFor_other": "Paused for {{count}} days.",
+        "heldFor_one": "On hold for {{count}} day.",
+        "heldFor_other": "On hold for {{count}} days.",
+        "classStops": "Class reminders stop. They can still join any class.",
+        "classRestarts": "Class reminders start again.",
+        "feeStops": "Fee and renewal reminders stop.",
+        "feeRestarts": "Fee and renewal reminders start again.",
+        "accessOff": "The course is switched off until they return.",
+        "accessBack": "The course is switched back on.",
+        "accessStays": "They keep access to the course and recordings.",
+        "billingStops": "No charges, renewals or expiry while paused.",
+        "endMovesOnReturn": "On return, the membership end moves:",
+        "endMoves": "Membership end moves:",
+        "nextPaymentMoves": "Next payment moves:",
+        "instalmentsMove_one": "{{count}} unpaid instalment moves by the same days.",
+        "instalmentsMove_other": "{{count}} unpaid instalments move by the same days.",
+        "datesUnchanged": "Membership dates stay as they are."
+    },
+    "warnings": {
+        "NO_MEMBERSHIP": "This course has no membership, so only access and reminders are paused.",
+        "PLAN_NOT_ACTIVE": "This membership is not active, so there is no billing to pause.",
+        "AUTOPAY_ON": "Autopay is on. No charge is taken while paused; the next charge moves with the dates.",
+        "INSTALMENTS_MOVE_ON_RESUME": "Unpaid instalments can be moved by the paused days when you resume.",
+        "OPEN_ENDED": "No last day: the dates move by however long the pause lasts.",
+        "DUES_STILL_DUE": "Dues stay due on their dates; only the reminders stop."
+    },
+    "blockers": {
+        "COURSE_NOT_FOUND": "The learner is not enrolled in that course.",
+        "PAUSE_NEEDS_COURSE": "Choose the course to pause.",
+        "NO_COURSES": "The learner has no current course.",
+        "NOTHING_TO_STOP": "Choose at least one kind of reminder to stop.",
+        "START_IN_PAST": "The first day cannot be in the past.",
+        "END_BEFORE_START": "The last day must be on or after the first day.",
+        "TOO_LONG": "A break can last at most a year.",
+        "OVERLAP": "The learner already has a break on these dates for this course.",
+        "NEW_DATE_REQUIRED": "Choose the new end date.",
+        "NEW_DATE_NOT_FUTURE": "The new end date must be in the future."
+    },
+    "resume": {
+        "titlePause": "Resume enrolment",
+        "titleHold": "End the hold",
+        "submitPause": "Resume now",
+        "submitHold": "End hold now",
+        "datesLabel": "Membership dates",
+        "modes": {
+            "SHIFT_BY_PAUSED_DAYS": {
+                "title_one": "Move dates forward by the {{count}} paused day (recommended)",
+                "title_other": "Move dates forward by the {{count}} paused days (recommended)",
+                "hint": "The learner gets back the time they were away."
+            },
+            "KEEP_DATES": {
+                "title": "Keep the current dates",
+                "hint": "Nothing moves; the time away is not given back."
+            },
+            "NEW_DATE": {
+                "title": "Set a new end date",
+                "hint": "The membership and its next payment run until a date you choose."
+            }
+        },
+        "newEndDate": "New end date",
+        "moveInstalments_one": "Also move the {{count}} unpaid instalment",
+        "moveInstalments_other": "Also move the {{count}} unpaid instalments",
+        "note": "Note",
+        "notePlaceholder": "Why now, what was agreed (optional)"
+    },
+    "change": {
+        "title": "Change dates",
+        "submit": "Save",
+        "started": "Started on {{date}}."
+    },
+    "cancel": {
+        "title": "Cancel this break?",
+        "description": "It was due to start on {{date}}. Nothing has changed yet, so nothing needs undoing.",
+        "keep": "Keep it",
+        "confirm": "Cancel break"
+    },
+    "toast": {
+        "holdStarted": "Reminders are on hold.",
+        "pauseStarted": "Enrolment paused.",
+        "scheduled": "Break scheduled.",
+        "resumed": "Enrolment resumed.",
+        "holdEnded": "Hold ended. Reminders start again.",
+        "changed": "Break updated.",
+        "cancelled": "Break cancelled.",
+        "failed": "Could not save. Please try again."
+    }
+}

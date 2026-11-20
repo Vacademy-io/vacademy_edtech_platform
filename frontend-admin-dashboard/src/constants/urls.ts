@@ -1307,6 +1307,17 @@ export const USER_PLAN_REMARKS = (userPlanId: string) =>
     `${BASE_URL}/admin-core-service/v1/user-plan/${userPlanId}/remarks`;
 export const CHANGE_USER_PLAN_END_DATE = (userPlanId: string) =>
     `${BASE_URL}/admin-core-service/v1/user-plan/${userPlanId}/end-date`;
+// Breaks and holds (docs/ENROLMENT_BREAKS.md): hold reminders or pause an enrolment.
+export const ENROLMENT_BREAKS_BASE = `${BASE_URL}/admin-core-service/v1/enrolment-breaks`;
+export const ENROLMENT_BREAKS_FOR_LEARNER = (userId: string) =>
+    `${ENROLMENT_BREAKS_BASE}/learner/${userId}`;
+export const ENROLMENT_BREAK_PREVIEW = `${ENROLMENT_BREAKS_BASE}/preview`;
+export const ENROLMENT_BREAK_BY_ID = (breakId: string) => `${ENROLMENT_BREAKS_BASE}/${breakId}`;
+export const ENROLMENT_BREAK_END = (breakId: string) => `${ENROLMENT_BREAKS_BASE}/${breakId}/end`;
+export const ENROLMENT_BREAK_END_PREVIEW = (breakId: string) =>
+    `${ENROLMENT_BREAKS_BASE}/${breakId}/end/preview`;
+export const ENROLMENT_BREAK_CANCEL = (breakId: string) =>
+    `${ENROLMENT_BREAKS_BASE}/${breakId}/cancel`;
 
 // System files
 export const ADD_SYSTEM_FILE = `${BASE_URL}/admin-core-service/system-files/v1/add`;

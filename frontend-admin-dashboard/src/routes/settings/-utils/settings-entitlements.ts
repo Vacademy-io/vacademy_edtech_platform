@@ -108,6 +108,8 @@ export const SETTINGS_TAB_FEATURES: Readonly<Record<SettingsTabs, readonly strin
     // ── Finances ──
     [SettingsTabs.Payment]: FINANCE, // PAYMENT_SETTING
     [SettingsTabs.PaymentGateways]: FINANCE,
+    // Breaks and holds pause memberships and class/fee reminders (ENROLMENT_BREAK_SETTING).
+    [SettingsTabs.EnrolmentBreaks]: [...FINANCE, ...LMS_SIDE],
     [SettingsTabs.Invoice]: FINANCE,
     [SettingsTabs.Coupons]: FINANCE,
     // ── Calling ──

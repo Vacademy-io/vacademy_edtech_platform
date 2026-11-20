@@ -23,6 +23,7 @@ import AssessmentSettings from '../-components/AssessmentSettings';
 import WhatsAppSettings from '../-components/WhatsAppSettings/WhatsAppSettings';
 import LeadSettings from '../-components/LeadSettings';
 import GuardianSettings from '../-components/GuardianSettings';
+import EnrolmentBreakSettings from '../-components/EnrolmentBreakSettings';
 import OnboardingSettings from '../-components/OnboardingSettings';
 import GtmSettings from '../-components/GtmSettings';
 import UtmSettings from '../-components/UtmSettings';
@@ -370,6 +371,13 @@ export const getAvailableSettingsTabs = (): SettingsTabEntry[] => {
             tab: SettingsTabs.Payment,
             value: 'Payment Settings',
             component: PaymentSettings,
+            domain: 'Finances',
+            group: 'Billing & Payments',
+        },
+        {
+            tab: SettingsTabs.EnrolmentBreaks,
+            value: 'Breaks and Holds',
+            component: EnrolmentBreakSettings,
             domain: 'Finances',
             group: 'Billing & Payments',
         },
