@@ -745,7 +745,7 @@ public class EmailService {
                     logger.info("OTP email successfully sent to: {}", to);
 
                     // Preserve existing OTP behavior: sourceId = calling service identifier (replies to OTP emails are not expected).
-                    saveEmailNotificationLog(to, emailSubject, emailBody, "OTP_SERVICE", service, null, fromToUse);
+                    saveEmailNotificationLog(to, emailSubject, emailBody, "OTP_SERVICE", service, null, fromToUse, instituteId);
                     emailUsageStore.recordSent(instituteId,
                             EmailBillingClassifier.classify(instituteId, null, "OTP_SERVICE"), 1);
 
