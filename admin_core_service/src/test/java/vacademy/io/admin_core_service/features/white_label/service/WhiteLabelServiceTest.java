@@ -526,8 +526,15 @@ class WhiteLabelServiceTest {
             verify(domainRoutingAdminService).create(captor.capture());
             assertEquals("ADMIN,HOD'S,SALES-TEAM", captor.getValue().getRole());
 
-            String tooMany = "ADMIN,ASSESSMENT CREATOR,COUNSELLOR,COURSE CREATOR,CRM_ACCESS,EVALUATOR,"
-                    + "MANAGE_LEAD,TEACHER,SOCIAL MEDIA TEAM";
+            // Nine roles (110 characters) fit since V729; thirty do not.
+            service.setup(admin(), INSTITUTE_ID, setupRequest("ops.myschool.com",
+                    "ADMIN,ASSESSMENT CREATOR,COUNSELLOR,COURSE CREATOR,CRM_ACCESS,EVALUATOR,"
+                            + "MANAGE_LEAD,TEACHER,SOCIAL MEDIA TEAM", false));
+            StringBuilder many = new StringBuilder("ADMIN");
+            for (int i = 0; i < 30; i++) {
+                many.append(",CUSTOM_ROLE_").append(i);
+            }
+            String tooMany = many.toString();
             VacademyException e = assertThrows(VacademyException.class, () -> service.setup(admin(),
                     INSTITUTE_ID, setupRequest("staff.myschool.com", tooMany, false)));
             assertTrue(e.getMessage().contains("Too many roles"), e.getMessage());
