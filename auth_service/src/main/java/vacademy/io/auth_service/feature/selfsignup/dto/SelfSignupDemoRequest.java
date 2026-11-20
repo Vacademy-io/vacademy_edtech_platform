@@ -20,4 +20,10 @@ public class SelfSignupDemoRequest {
     /** Where the visitor came from, for the funnel. */
     private String source;
     private String campaign;
+    /** The visit's utm tags from the product's website, passed on to the lead. */
+    private String utmSource;
+    private String utmMedium;
+    private String utmCampaign;
+    private String utmContent;
+    private String utmTerm;
 }

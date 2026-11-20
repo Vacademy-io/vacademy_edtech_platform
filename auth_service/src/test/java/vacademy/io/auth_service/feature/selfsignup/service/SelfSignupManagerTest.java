@@ -152,6 +152,27 @@ class SelfSignupManagerTest {
         assertEquals("teacher@school.in", event.getValue().get("email"));
         assertEquals("919876543210", event.getValue().get("phone"));
         assertEquals("Sunrise School", event.getValue().get("institute_name"));
+        // No utm tags on the visit: the event carries none.
+        assertFalse(event.getValue().keySet().stream().anyMatch(k -> k.startsWith("utm_")), event.getValue().toString());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theVisitsUtmTagsReachTheEventBesideTheSource() {
+        SelfSignupRequest r = valid();
+        r.setSource("website");
+        r.setUtmSource(" instagram ");
+        r.setUtmCampaign("launch");
+        r.setUtmMedium(" ");
+        r.setUtmTerm("x".repeat(300));
+        manager.signup(r, "1.1.1.1");
+        ArgumentCaptor<java.util.Map<String, Object>> event = ArgumentCaptor.forClass(java.util.Map.class);
+        verify(alertClient).signupCompleted(eq("evalezy"), event.capture());
+        assertEquals("website", event.getValue().get("source"));
+        assertEquals("instagram", event.getValue().get("utm_source"));
+        assertEquals("launch", event.getValue().get("utm_campaign"));
+        assertFalse(event.getValue().containsKey("utm_medium"));
+        assertEquals(SelfSignupManager.MAX_UTM, ((String) event.getValue().get("utm_term")).length());
     }
 
     @Test
@@ -270,6 +291,21 @@ class SelfSignupManagerTest {
         assertEndsInDays(3, r);
         verify(rateLimiter).checkSignup("1.1.1.1");
         verify(alertClient).signupCompleted(eq("evalezy"), any());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void theDemoPassesTheVisitsUtmTagsOn() {
+        var r = demo("asha@school.in");
+        r.setUtmSource("linkedin");
+        r.setUtmCampaign("launch");
+        manager.demoSignup(r, "1.1.1.1");
+        ArgumentCaptor<java.util.Map<String, Object>> event = ArgumentCaptor.forClass(java.util.Map.class);
+        verify(alertClient).signupCompleted(eq("evalezy"), event.capture());
+        assertEquals("demo", event.getValue().get("source"));
+        assertEquals("Demo portal", event.getValue().get("method"));
+        assertEquals("linkedin", event.getValue().get("utm_source"));
+        assertEquals("launch", event.getValue().get("utm_campaign"));
     }
 
     @Test
