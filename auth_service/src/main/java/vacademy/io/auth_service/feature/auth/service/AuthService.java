@@ -551,7 +551,7 @@ public class AuthService {
         InstituteInfoDTO instituteInfoDTO = null;
         boolean isLearner = isLearnerRecipient(user, instituteId, roles);
         String instituteName = "Vacademy"; // Default fallback
-        String theme = "#E67E22";
+        String theme = "#333333"; // neutral when the institute has no theme code
         String loginUrl = "https://dash.vacademy.io";
         if (StringUtils.hasText(instituteId)) {
             instituteInfoDTO = instituteInternalService.getInstituteByInstituteId(instituteId);
@@ -633,7 +633,7 @@ public class AuthService {
         InstituteInfoDTO instituteInfoDTO = null;
         boolean isLearner = isLearnerRecipient(user, instituteId, roles);
         String instituteName = "Vacademy"; // Default fallback
-        String theme = "#E67E22";
+        String theme = "#333333"; // neutral when the institute has no theme code
         String loginUrl = "https://dash.vacademy.io";
         if (StringUtils.hasText(instituteId)) {
             instituteInfoDTO = instituteInternalService.getInstituteByInstituteId(instituteId);
@@ -961,7 +961,7 @@ public class AuthService {
         // Never guess "staff" from an empty set of added roles — see isLearnerRecipient.
         boolean isLearner = isLearnerRecipient(user, instituteId, roles);
         String instituteName = "Vacademy";
-        String theme = "#E67E22";
+        String theme = "#333333"; // neutral when the institute has no theme code
         String loginUrl = "https://dash.vacademy.io";
         if (StringUtils.hasText(instituteId)) {
             instituteInfoDTO = instituteInternalService.getInstituteByInstituteId(instituteId);
@@ -1021,7 +1021,7 @@ public class AuthService {
         // time — see isLearnerRecipient. This is the path that was emailing learners the admin portal.
         boolean isLearner = isLearnerRecipient(user, instituteId, roles);
         String instituteName = "Vacademy";
-        String theme = "#E67E22";
+        String theme = "#333333"; // neutral when the institute has no theme code
         String loginUrl = "https://dash.vacademy.io";
         if (StringUtils.hasText(instituteId)) {
             instituteInfoDTO = instituteInternalService.getInstituteByInstituteId(instituteId);

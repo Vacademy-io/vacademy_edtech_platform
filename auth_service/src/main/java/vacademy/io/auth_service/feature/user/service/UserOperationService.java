@@ -120,7 +120,8 @@ public class UserOperationService {
                 users.stream().map(User::getId).filter(id -> id != null).toList(), instituteId, institute);
 
         NotificationDTO notificationDTO = new NotificationDTO();
-        notificationDTO.setBody(NotificationEmailBody.sendUserPasswords(senderNameOf(institute)));
+        notificationDTO.setBody(NotificationEmailBody.sendUserPasswords(senderNameOf(institute),
+                institute != null ? institute.getInstituteThemeCode() : null));
         notificationDTO.setSubject("Login credentials!!");
         notificationDTO.setSource(NotificationSource.USER_CREDENTIALS.name());
         notificationDTO.setSourceId(sourceId);
@@ -425,7 +426,8 @@ public class UserOperationService {
         String loginUrl = resolveLoginUrls(List.of(user.getId()), instituteId, institute).get(user.getId());
 
         String emailBody = NotificationEmailBody.sendUpdatedUserPasswords(
-                senderNameOf(institute), user.getFullName(), user.getUsername(), user.getPassword(), loginUrl);
+                senderNameOf(institute), user.getFullName(), user.getUsername(), user.getPassword(), loginUrl,
+                institute != null ? institute.getInstituteThemeCode() : null);
 
         GenericEmailRequest genericEmailRequest = new GenericEmailRequest();
         genericEmailRequest.setTo(user.getEmail());
