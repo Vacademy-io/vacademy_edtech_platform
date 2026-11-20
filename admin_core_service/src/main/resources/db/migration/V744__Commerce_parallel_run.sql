@@ -24,6 +24,4 @@ CREATE TABLE IF NOT EXISTS commerce_parallel_run_day (
     CONSTRAINT ck_parallel_run_day_result CHECK (result IN ('CLEAN', 'DIFFERENT')),
     CONSTRAINT ck_parallel_run_day_counts CHECK (old_bill_count >= 0)
 );
-
-CREATE INDEX IF NOT EXISTS idx_parallel_run_day_location
-    ON commerce_parallel_run_day (institute_id, location_id, business_date);
+-- The unique constraint's index (institute_id, location_id, business_date) serves every read; no second index.
