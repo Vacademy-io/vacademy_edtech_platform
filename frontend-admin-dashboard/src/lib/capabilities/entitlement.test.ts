@@ -35,9 +35,9 @@ const allIds = (pick: (g: (typeof catalog.modules)[0]['features'][0]['governs'])
     Array.from(new Set(catalog.modules.flatMap((m) => m.features.flatMap((f) => pick(f.governs)))));
 
 describe('catalogue', () => {
-    it('normalizes the real catalogue (15 modules, 60 features)', () => {
+    it('normalizes the real catalogue (15 modules, 61 features)', () => {
         expect(catalog.modules).toHaveLength(15);
-        expect(catalog.modules.flatMap((m) => m.features)).toHaveLength(60);
+        expect(catalog.modules.flatMap((m) => m.features)).toHaveLength(61);
     });
 
     it('rejects malformed bodies (fail open = no catalogue)', () => {
@@ -185,6 +185,7 @@ describe('LEGACY regression — nothing is ever gated', () => {
             'commerce.stock',
             'commerce.pos',
             'commerce.tax_reports',
+            'commerce.accounts',
         ]);
         const snapshot = (features: Record<string, boolean>) => ({
             instituteId: 'inst-1',

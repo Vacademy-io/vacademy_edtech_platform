@@ -1173,6 +1173,21 @@
             ]
           },
           "setting_keys": []
+        },
+        {
+          "key": "commerce.accounts",
+          "label": "Purchases and accounts",
+          "description": "Suppliers, purchase bills, payments, expenses, cash and bank, period lock.",
+          "default_on": false,
+          "governs": {
+            "nav": [],
+            "widgets": [],
+            "quick_actions": [],
+            "assistant_groups": [],
+            "setup_steps": [],
+            "routes": []
+          },
+          "setting_keys": []
         }
       ]
     },
