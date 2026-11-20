@@ -357,6 +357,7 @@ public class PlatformProductService {
                 .plans(plans)
                 .planValidityMonths(months)
                 .extraCreditPriceInr(p.getExtraCreditPriceInr())
+                .shortLinks(p.getShortLinks())
                 .build();
     }
 

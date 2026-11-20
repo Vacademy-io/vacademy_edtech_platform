@@ -322,6 +322,18 @@ class PlatformProductServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void publicOfferCarriesTheShortLinks() {
+        ProductSettingsDTO stored = valid();
+        stored.setProductKey("evalezy");
+        stored.setShortLinks(List.of(shortLink("ig", "instagram", "launch")));
+        when(jdbcTemplate.query(anyString(), any(RowMapper.class), eq("product.evalezy"))).thenReturn(List.of(stored));
+        String json = assertDoesNotThrow(() -> new com.fasterxml.jackson.databind.ObjectMapper()
+                .writeValueAsString(service.publicOffer("evalezy")));
+        assertTrue(json.contains("\"short_links\":[{\"code\":\"ig\",\"source\":\"instagram\",\"campaign\":\"launch\"}]"), json);
+    }
+
+    @Test
     void badPlansAreRefused() {
         ProductSettingsDTO dup = valid();
         dup.setPlans(List.of(twoPlans().get(0), twoPlans().get(0)));
