@@ -9,6 +9,8 @@ import vacademy.io.admin_core_service.features.commerce.accounts.entity.Commerce
 import vacademy.io.admin_core_service.features.commerce.accounts.enums.SupplierLedgerType;
 import vacademy.io.admin_core_service.features.commerce.accounts.repository.CommerceSupplierLedgerRepository;
 import vacademy.io.admin_core_service.features.commerce.accounts.repository.CommerceSupplierRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.entity.StockLocation;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLocationRepository;
 import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.VacademyException;
@@ -45,6 +47,7 @@ class SupplierLedgerServiceTest {
 
     private CommerceSupplierLedgerRepository ledger;
     private CommerceSupplierRepository suppliers;
+    private StockLocationRepository locations;
     private SupplierLedgerService service;
     private final AtomicReference<CommerceSupplierLedgerEntry> inserted = new AtomicReference<>();
 
@@ -52,7 +55,8 @@ class SupplierLedgerServiceTest {
     void setUp() {
         ledger = mock(CommerceSupplierLedgerRepository.class);
         suppliers = mock(CommerceSupplierRepository.class);
-        service = new SupplierLedgerService(ledger, suppliers);
+        locations = mock(StockLocationRepository.class);
+        service = new SupplierLedgerService(ledger, suppliers, locations);
         when(suppliers.lockForPosting(INST, SUP)).thenReturn(Optional.of(SUP));
         when(ledger.findByInstituteIdAndIdempotencyKey(anyString(), anyString())).thenReturn(Optional.empty());
         when(ledger.sumReversalsOf(anyString(), anyString())).thenReturn(BigDecimal.ZERO);
@@ -163,6 +167,31 @@ class SupplierLedgerServiceTest {
         for (String good : new String[]{"BILL:abc-1:r2", "PAY:9f1c.x_y", "OPENING:src-1", "AB:" + "x".repeat(79)}) {
             assertDoesNotThrow(() -> service.post(post(SupplierLedgerType.BILL, "1", good)), good);
         }
+    }
+
+    @Test
+    void aLocationOfAnotherInstituteIsRefusedBeforeAnything() {
+        SupplierLedgerPost other = new SupplierLedgerPost(INST, SUP, DAY, SupplierLedgerType.BILL, BigDecimal.ONE,
+                null, null, null, "loc-of-inst-2", null, "user-1", null, "BILL:loc1");
+        VacademyException e = assertThrows(VacademyException.class, () -> service.post(other));
+        assertEquals(404, e.getStatus().value());
+        assertTrue(e.getMessage().startsWith("NOT_FOUND: no such location"), e.getMessage());
+        verify(suppliers, never()).lockForPosting(anyString(), anyString());
+        verify(ledger, never()).insertIfAbsent(anyString(), anyString(), anyString(), any(), anyString(), any(), any(),
+                any(), any(), any(), any(), any(), any(), anyString());
+
+        when(locations.findByInstituteIdAndId(INST, "loc-1")).thenReturn(Optional.of(new StockLocation()));
+        assertDoesNotThrow(() -> service.post(new SupplierLedgerPost(INST, SUP, DAY, SupplierLedgerType.BILL,
+                BigDecimal.ONE, null, null, null, "loc-1", null, "user-1", null, "BILL:loc2")));
+    }
+
+    @Test
+    void theSupplierLockDoesNotBlockForeignKeyChecks() throws Exception {
+        org.springframework.data.jpa.repository.Query q = CommerceSupplierRepository.class
+                .getMethod("lockForPosting", String.class, String.class)
+                .getAnnotation(org.springframework.data.jpa.repository.Query.class);
+        String sql = q.value().replaceAll("\\s+", " ");
+        assertTrue(sql.endsWith(" FOR NO KEY UPDATE"), sql);
     }
 
     @Test

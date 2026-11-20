@@ -22,6 +22,19 @@ public interface CommerceAccountHeadRepository extends JpaRepository<CommerceAcc
 
     boolean existsByInstituteIdAndParentId(String instituteId, String parentId);
 
+    /** The parent id of a head as committed (no lock, not loaded as an entity); empty when none or no such head. */
+    @Query(value = "SELECT parent_id FROM commerce_account_head WHERE institute_id = :instituteId AND id = :id",
+            nativeQuery = true)
+    Optional<String> findParentId(@Param("instituteId") String instituteId, @Param("id") String id);
+
+    /**
+     * Locks the institute's heads among {@code ids} FOR UPDATE in id order (rows are locked as the
+     * sorted rows are read) until the transaction ends; answers the ids locked.
+     */
+    @Query(value = "SELECT id FROM commerce_account_head WHERE institute_id = :instituteId AND id IN (:ids)"
+            + " ORDER BY id FOR UPDATE", nativeQuery = true)
+    List<String> lockInIdOrder(@Param("instituteId") String instituteId, @Param("ids") Collection<String> ids);
+
     boolean existsByInstituteIdAndParentIdAndStatus(String instituteId, String parentId, String status);
 
     /** The heads list; {@code nature} and {@code status} null = any. Ordered by nature, position, code. */

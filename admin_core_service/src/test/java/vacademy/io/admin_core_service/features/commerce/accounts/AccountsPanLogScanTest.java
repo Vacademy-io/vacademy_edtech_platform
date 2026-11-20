@@ -34,6 +34,7 @@ import vacademy.io.admin_core_service.features.commerce.customer.repository.Comm
 import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard;
 import vacademy.io.admin_core_service.features.commerce.security.repository.CommerceStaffLocationRepository;
 import vacademy.io.admin_core_service.features.commerce.stock.service.CommerceCounterService;
+import vacademy.io.admin_core_service.features.commerce.otp.CommerceRateLimiter;
 import vacademy.io.common.auth.dto.UserServiceDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -370,7 +371,10 @@ class AccountsPanLogScanTest {
         CapabilityResolver resolver = mock(CapabilityResolver.class);
         when(resolver.isFeatureGranted(anyString(), anyString())).thenReturn(true);
         CommerceAccessGuard guard = new CommerceAccessGuard(resolver, mock(CommerceStaffLocationRepository.class));
-        SupplierSensitiveService sensitive = new SupplierSensitiveService(guard, suppliers, secrets, cipher, audit, tx);
+        CommerceRateLimiter limiter = mock(CommerceRateLimiter.class);
+        when(limiter.allow(any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(true);
+        SupplierSensitiveService sensitive = new SupplierSensitiveService(guard, suppliers, secrets, cipher, audit,
+                limiter, tx);
         CommerceSupplierSecret row = new CommerceSupplierSecret();
         row.setInstituteId(INST);
         row.setSupplierId(supplierId);

@@ -15,6 +15,7 @@ import vacademy.io.admin_core_service.features.commerce.audit.CommerceAuditServi
 import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessDeniedException;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessGuard;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceFeature;
+import vacademy.io.admin_core_service.features.commerce.otp.CommerceRateLimiter;
 import vacademy.io.common.auth.model.CustomUserDetails;
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.VacademyException;
@@ -29,6 +30,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -47,6 +50,7 @@ class SupplierSensitiveServiceTest {
     private CommerceSupplierRepository suppliers;
     private CommerceSupplierSecretRepository secrets;
     private CommerceAuditService audit;
+    private CommerceRateLimiter limiter;
     private CustomUserDetails user;
     private SupplierDtos.SensitiveRequest panField;
 
@@ -56,6 +60,8 @@ class SupplierSensitiveServiceTest {
         suppliers = mock(CommerceSupplierRepository.class);
         secrets = mock(CommerceSupplierSecretRepository.class);
         audit = mock(CommerceAuditService.class);
+        limiter = mock(CommerceRateLimiter.class);
+        when(limiter.allow(anyString(), anyString(), anyString(), any(), anyInt())).thenReturn(true);
         user = mock(CustomUserDetails.class);
         when(user.getUserId()).thenReturn("user-1");
         CommerceSupplier s = new CommerceSupplier();
@@ -73,7 +79,7 @@ class SupplierSensitiveServiceTest {
     }
 
     private SupplierSensitiveService service(CommerceFieldCipher cipher) {
-        return new SupplierSensitiveService(guard, suppliers, secrets, cipher, audit,
+        return new SupplierSensitiveService(guard, suppliers, secrets, cipher, audit, limiter,
                 mock(PlatformTransactionManager.class));
     }
 
@@ -113,14 +119,16 @@ class SupplierSensitiveServiceTest {
     }
 
     @Test
-    void noKeyIs503AndNothingIsAudited() {
+    void noKeyIs503AndTheRefusalIsAuditedWithItsOutcomeOnly() {
         CommerceSupplierSecret row = secret(cipherWithTestKey());
         when(secrets.findByInstituteIdAndSupplierId(INST, "sup-1")).thenReturn(Optional.of(row));
         VacademyException e = assertThrows(VacademyException.class,
                 () -> service(new CommerceFieldCipher("", "")).reveal(user, INST, "sup-1", panField));
         assertEquals(503, e.getStatus().value());
         assertFalse(e.getMessage().contains(PAN));
-        verifyNoInteractions(audit);
+        verify(audit).record(eq(INST), eq("user-1"), isNull(), eq(AccountsAuditKinds.SUPPLIER_SENSITIVE_VIEW),
+                eq("SUPPLIER"), eq("sup-1"), isNull(), eq("{\"field\":\"pan\",\"outcome\":\"KEY_NOT_LOADED\"}"),
+                isNull());
     }
 
     @Test
@@ -132,7 +140,22 @@ class SupplierSensitiveServiceTest {
                 () -> service(cipherWithTestKey()).reveal(user, INST, "sup-1", panField));
         assertEquals(500, e.getStatus().value());
         assertTrue(e.getMessage().startsWith("STORED_VALUE_UNREADABLE: "));
-        verifyNoInteractions(audit);
+        ArgumentCaptor<String> json = ArgumentCaptor.forClass(String.class);
+        verify(audit).record(eq(INST), eq("user-1"), isNull(), eq(AccountsAuditKinds.SUPPLIER_SENSITIVE_VIEW),
+                eq("SUPPLIER"), eq("sup-1"), isNull(), json.capture(), isNull());
+        assertEquals("{\"field\":\"pan\",\"outcome\":\"UNREADABLE\"}", json.getValue());
+        assertFalse(json.getValue().contains(row.getPanEncrypted()));
+    }
+
+    @Test
+    void revealsAreLimitedPerUserPerInstituteWith429() {
+        when(limiter.allow(INST, "supplier-pan-reveal", "user-1", java.time.Duration.ofMinutes(10), 30))
+                .thenReturn(false);
+        VacademyException e = assertThrows(VacademyException.class,
+                () -> service(cipherWithTestKey()).reveal(user, INST, "sup-1", panField));
+        assertEquals(429, e.getStatus().value());
+        assertTrue(e.getMessage().startsWith("rate_limited: "), e.getMessage());
+        verifyNoInteractions(secrets, audit);
     }
 
     @Test

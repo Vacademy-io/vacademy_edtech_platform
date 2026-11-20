@@ -125,6 +125,10 @@ public class PeriodLockService implements StockPeriodGuard {
         if (!date.isBefore(clock.today(instituteId))) {
             return;
         }
+        // Feature off: dormant, so no database read and no transaction (cached feature snapshot; UNKNOWN keeps the lock).
+        if (accessGuard.featureState(instituteId, CommerceFeature.ACCOUNTS) == FeatureState.OFF) {
+            return;
+        }
         if (!TransactionSynchronizationManager.isActualTransactionActive()) {
             ownTransaction.executeWithoutResult(status -> check(instituteId, date));
             return;
@@ -254,21 +258,32 @@ public class PeriodLockService implements StockPeriodGuard {
                                         Approval approval) {
         // Transaction-scoped (safe under transaction pooling); a plain SET would outlive the transaction.
         jdbc.execute(LOCK_TIMEOUT_SQL);
+        String actor = user.getUserId();
+
+        // The unlock approval calls auth_service: it runs (in this transaction) before the row is taken FOR
+        // UPDATE, so posts never queue behind a remote call. Its direction is checked again under the lock.
+        List<LockRow> seen = lockRepository.readPlain(instituteId);
+        boolean approved = false;
+        if ("UNLOCK".equals(direction(seen.isEmpty() ? null : seen.get(0).getLockedThrough(), target))) {
+            requireUnlockAllowed(user, reason, approval);
+            approvalService.approve(instituteId, null, actor, actor, approval.getPin(), UNLOCK_APPROVAL,
+                    REFERENCE_TYPE, instituteId, null, reason);
+            approved = true;
+        }
+
         lockRepository.ensureRow(UUID.randomUUID().toString(), instituteId);
         List<LockRow> rows = lockRepository.readForUpdate(instituteId);
         if (rows.isEmpty()) {
             throw new IllegalStateException("period lock row missing after it was ensured");
         }
         LocalDate cur = rows.get(0).getLockedThrough();
-        String actor = user.getUserId();
-
-        String direction;
-        if (cur == null ? target == null : cur.equals(target)) {
-            direction = "NONE";
-        } else if (target != null && (cur == null || target.isAfter(cur))) {
-            direction = "LOCK";
-        } else {
-            direction = "UNLOCK";
+        String direction = direction(cur, target);
+        if (approved != "UNLOCK".equals(direction)) {
+            // The lock moved between the first read and the row lock: refuse (rolling back any approval) and retry.
+            if ("UNLOCK".equals(direction)) {
+                requireUnlockAllowed(user, reason, approval);
+            }
+            throw new ConflictException("PERIOD_LOCK_BUSY: the lock date changed meanwhile; try again");
         }
         if ("NONE".equals(direction)) {
             PeriodLockView view = current(instituteId);
@@ -277,27 +292,7 @@ public class PeriodLockService implements StockPeriodGuard {
             return view;
         }
 
-        PreviewView preview = null;
-        if ("UNLOCK".equals(direction)) {
-            if (!isAdmin(user) && !CommerceAccessGuard.rolesOf(user).contains(CommerceRole.STORE_MANAGER)) {
-                throw new CommerceAccessDeniedException(CommerceAccessDeniedException.ROLE_NOT_ALLOWED,
-                        "only a manager can reopen closed books");
-            }
-            if (reason == null || reason.length() < MIN_UNLOCK_REASON) {
-                throw new InvalidRequestException("VALIDATION: a reason of " + MIN_UNLOCK_REASON + " to " + MAX_REASON
-                        + " characters is required to reopen closed books");
-            }
-            if (approval == null || trimToNull(approval.getApproverUserId()) == null) {
-                throw new InvalidRequestException("VALIDATION: reopening closed books needs your PIN approval");
-            }
-            if (!approval.getApproverUserId().trim().equals(actor)) {
-                throw new InvalidRequestException("VALIDATION: unlock is approved with your own PIN");
-            }
-            approvalService.approve(instituteId, null, actor, actor, approval.getPin(), UNLOCK_APPROVAL,
-                    REFERENCE_TYPE, instituteId, null, reason);
-        } else {
-            preview = previewInside(instituteId, target);
-        }
+        PreviewView preview = "LOCK".equals(direction) ? previewInside(instituteId, target) : null;
 
         lockRepository.setLockedThrough(instituteId, target, actor);
 
@@ -322,6 +317,35 @@ public class PeriodLockService implements StockPeriodGuard {
         view.setDirection(direction);
         view.setPreview(preview);
         return view;
+    }
+
+    /** NONE, LOCK (the date moves forward) or UNLOCK (back, or to nothing). */
+    static String direction(LocalDate cur, LocalDate target) {
+        if (cur == null ? target == null : cur.equals(target)) {
+            return "NONE";
+        }
+        if (target != null && (cur == null || target.isAfter(cur))) {
+            return "LOCK";
+        }
+        return "UNLOCK";
+    }
+
+    /** Role, reason and own-approver rules of an unlock (local checks; the PIN is checked by the approval). */
+    private static void requireUnlockAllowed(CustomUserDetails user, String reason, Approval approval) {
+        if (!isAdmin(user) && !CommerceAccessGuard.rolesOf(user).contains(CommerceRole.STORE_MANAGER)) {
+            throw new CommerceAccessDeniedException(CommerceAccessDeniedException.ROLE_NOT_ALLOWED,
+                    "only a manager can reopen closed books");
+        }
+        if (reason == null || reason.length() < MIN_UNLOCK_REASON) {
+            throw new InvalidRequestException("VALIDATION: a reason of " + MIN_UNLOCK_REASON + " to " + MAX_REASON
+                    + " characters is required to reopen closed books");
+        }
+        if (approval == null || trimToNull(approval.getApproverUserId()) == null) {
+            throw new InvalidRequestException("VALIDATION: reopening closed books needs your PIN approval");
+        }
+        if (!approval.getApproverUserId().trim().equals(user.getUserId())) {
+            throw new InvalidRequestException("VALIDATION: unlock is approved with your own PIN");
+        }
     }
 
     /** The stored lock (a plain read) with {@code changed: false}, direction NONE and no preview. */

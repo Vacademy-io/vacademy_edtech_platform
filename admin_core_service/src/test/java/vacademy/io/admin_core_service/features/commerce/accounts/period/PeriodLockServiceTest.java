@@ -151,6 +151,7 @@ class PeriodLockServiceTest {
     }
 
     private void stored(LocalDate lockedThrough) {
+        when(repo.readPlain(INST)).thenReturn(List.of(row(lockedThrough)));
         when(repo.readForUpdate(INST)).thenReturn(List.of(row(lockedThrough)));
         CommercePeriodLock lock = new CommercePeriodLock();
         lock.setInstituteId(INST);
@@ -192,6 +193,15 @@ class PeriodLockServiceTest {
     }
 
     @Test
+    void featureOffMakesNoDatabaseCallAndOpensNoTransaction() {
+        when(guard.featureState(INST, CommerceFeature.ACCOUNTS)).thenReturn(FeatureState.OFF);
+        service.assertOpen(INST, OCT_31);
+        inActualTransaction(false);
+        service.assertOpen(INST, OCT_31);
+        verifyNoInteractions(repo, txManager);
+    }
+
+    @Test
     void featureOnAndNoRowEnsuresTheRowThenRereads() {
         when(repo.readForShare(INST)).thenReturn(List.of(), List.of(row(null)));
         inActualTransaction(false);
@@ -223,11 +233,14 @@ class PeriodLockServiceTest {
     }
 
     @Test
-    void dateAfterTheLockIsOpenWithoutAskingTheFeature() {
+    void dateAfterTheLockIsOpenAskingTheFeatureOnceBeforeTheRead() {
         when(repo.readForShare(INST)).thenReturn(List.of(row(OCT_31)));
         inActualTransaction(false);
         assertDoesNotThrow(() -> service.assertOpen(INST, LocalDate.of(2026, 11, 1)));
-        verify(guard, never()).featureState(anyString(), any());
+        InOrder order = inOrder(guard, repo);
+        order.verify(guard).featureState(INST, CommerceFeature.ACCOUNTS);
+        order.verify(repo).readForShare(INST);
+        verify(guard, times(1)).featureState(anyString(), any());
     }
 
     @Test
@@ -435,6 +448,49 @@ class PeriodLockServiceTest {
         order.verify(repo).setLockedThrough(INST, LocalDate.of(2026, 9, 30), "user-1");
         order.verify(audit).record(eq(INST), eq("user-1"), isNull(), eq(AccountsAuditKinds.PERIOD_UNLOCK),
                 eq("PERIOD_LOCK"), eq(INST), anyString(), anyString(), eq("late supplier bill"));
+    }
+
+    @Test
+    void unlockApprovalRunsBeforeTheRowLock() {
+        CustomUserDetails m = user("COMMERCE_STORE_MANAGER");
+        stored(OCT_31);
+        service.change(m, INST, request(LocalDate.of(2026, 9, 30), "late supplier bill", "user-1", "1234"));
+        InOrder order = inOrder(jdbc, repo, approvals);
+        order.verify(jdbc).execute("SET LOCAL lock_timeout = '5s'");
+        order.verify(repo).readPlain(INST);
+        order.verify(approvals).approve(anyString(), isNull(), anyString(), anyString(), any(), eq("PERIOD_UNLOCK"),
+                anyString(), anyString(), any(), any());
+        order.verify(repo).readForUpdate(INST);
+        order.verify(repo).setLockedThrough(INST, LocalDate.of(2026, 9, 30), "user-1");
+        verify(approvals, times(1)).approve(anyString(), any(), anyString(), anyString(), any(), anyString(),
+                anyString(), anyString(), any(), any());
+    }
+
+    @Test
+    void anUnlockWhoseLockMovedBeforeTheRowLockIs409AndWritesNothing() {
+        CustomUserDetails m = user("COMMERCE_STORE_MANAGER");
+        stored(OCT_31);
+        // Someone else reopened to the same date between the first read and the row lock.
+        when(repo.readForUpdate(INST)).thenReturn(List.of(row(LocalDate.of(2026, 9, 30))));
+        ConflictException e = assertThrows(ConflictException.class, () -> service.change(m, INST,
+                request(LocalDate.of(2026, 9, 30), "late supplier bill", "user-1", "1234")));
+        assertTrue(e.getMessage().startsWith("PERIOD_LOCK_BUSY: "), e.getMessage());
+        verify(repo, never()).setLockedThrough(anyString(), any(), any());
+        verifyNoInteractions(audit);
+    }
+
+    @Test
+    void aLockThatTurnedIntoAnUnlockUnderTheRowLockIsRefusedWithoutApproval() {
+        stored(LocalDate.of(2026, 9, 30));
+        when(repo.readForUpdate(INST)).thenReturn(List.of(row(LocalDate.of(2026, 11, 10))));
+        ConflictException busy = assertThrows(ConflictException.class, () -> service.change(
+                user("COMMERCE_STORE_MANAGER"), INST, request(OCT_31, "month end", "user-1", "1234")));
+        assertTrue(busy.getMessage().startsWith("PERIOD_LOCK_BUSY: "), busy.getMessage());
+        CommerceAccessDeniedException denied = assertThrows(CommerceAccessDeniedException.class,
+                () -> service.change(user("COMMERCE_ACCOUNTANT"), INST, request(OCT_31, "month end", null, null)));
+        assertEquals(CommerceAccessDeniedException.ROLE_NOT_ALLOWED, denied.getCode());
+        verify(repo, never()).setLockedThrough(anyString(), any(), any());
+        verifyNoInteractions(approvals, audit);
     }
 
     @Test

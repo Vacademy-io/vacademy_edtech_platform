@@ -44,6 +44,7 @@ import vacademy.io.admin_core_service.features.commerce.security.repository.Comm
 import vacademy.io.admin_core_service.features.commerce.security.repository.CommerceStaffScopeRepository;
 import vacademy.io.admin_core_service.features.commerce.stock.service.StockClock;
 import vacademy.io.admin_core_service.features.commerce.stock.service.StockLocationService;
+import vacademy.io.admin_core_service.features.commerce.otp.CommerceRateLimiter;
 import vacademy.io.common.auth.dto.UserServiceDTO;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
@@ -77,6 +78,12 @@ import static org.mockito.Mockito.when;
 class AccountsRoleMatrixTest {
 
     private static final String INST = "inst-acc";
+
+    private static CommerceRateLimiter allowingLimiter() {
+        CommerceRateLimiter limiter = mock(CommerceRateLimiter.class);
+        when(limiter.allow(any(), any(), any(), any(), org.mockito.ArgumentMatchers.anyInt())).thenReturn(true);
+        return limiter;
+    }
     private static final String OTHER = "inst-other";
     private static final LocalDate TODAY = LocalDate.of(2026, 11, 20);
     private static final String ACCESS_DENIED = CommerceAccessDeniedException.ACCESS_DENIED;
@@ -140,6 +147,7 @@ class AccountsRoleMatrixTest {
         staffService = mock(CommerceStaffService.class);
         lockRepository = mock(CommercePeriodLockRepository.class);
         LockRow locked = () -> TODAY.minusDays(30);
+        when(lockRepository.readPlain(anyString())).thenReturn(List.of(locked));
         when(lockRepository.readForUpdate(anyString())).thenReturn(List.of(locked));
         when(lockRepository.findByInstituteId(anyString())).thenReturn(Optional.empty());
         requestGuard = mock(CommerceRequestGuard.class);
@@ -153,7 +161,8 @@ class AccountsRoleMatrixTest {
 
         me = new AccountsMeController(guard, cipher, secretRepository);
         suppliers = new SupplierController(guard, supplierService,
-                new SupplierSensitiveService(guard, supplierRepository, secretRepository, cipher, auditService, tx));
+                new SupplierSensitiveService(guard, supplierRepository, secretRepository, cipher, auditService,
+                        allowingLimiter(), tx));
         statements = new SupplierStatementController(guard, statementService);
         heads = new AccountHeadController(guard, headService);
         contributor = mock(PeriodLockPreviewContributor.class);
@@ -445,7 +454,7 @@ class AccountsRoleMatrixTest {
     }
 
     @Test
-    void theLocationBypassOfWideStaffIsForAccountsOnly() {
+    void theInstituteWideRuleOfWideStaffIsForAccountsOnly() {
         grantedFeatures.add(INST + "|" + CommerceFeature.ACCOUNTS.key());
         grantedFeatures.add(INST + "|" + CommerceFeature.INVENTORY.key());
         when(staffLocations.existsByInstituteIdAndUserIdAndLocationId(anyString(), anyString(), anyString()))

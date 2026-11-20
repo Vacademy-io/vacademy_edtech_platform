@@ -24,11 +24,13 @@ import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.VacademyException;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.TreeSet;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -156,6 +158,7 @@ public class AccountHeadService {
                     throw duplicateCode(code);
                 }
                 if (parentId != null) {
+                    lockHeads(instituteId, List.of(parentId));
                     checkParent(instituteId, null, parentId, nature);
                 }
                 CommerceAccountHead head = new CommerceAccountHead();
@@ -210,6 +213,15 @@ public class AccountHeadService {
 
         ensureSeeded(instituteId, actorUserId);
         return transaction.execute(status -> {
+            // The head and its old and new parent, FOR UPDATE in id order, before any rule is read: two edits
+            // touching the same heads run one after the other and each sees the other's committed change.
+            List<String> toLock = new ArrayList<>();
+            toLock.add(headId);
+            if (parentId != null) {
+                toLock.add(parentId);
+            }
+            headRepository.findParentId(instituteId, headId).ifPresent(toLock::add);
+            lockHeads(instituteId, toLock);
             CommerceAccountHead head = headRepository.findByInstituteIdAndId(instituteId, headId)
                     .orElseThrow(AccountHeadService::notFound);
             if (typedCode != null && !typedCode.toUpperCase(Locale.ROOT).equals(head.getCode())) {
@@ -284,6 +296,19 @@ public class AccountHeadService {
     }
 
     // ------------------------------------------------------------------ rules
+
+    /** Locks the institute's heads among {@code ids} FOR UPDATE in id order (no duplicates, no nulls). */
+    private void lockHeads(String instituteId, List<String> ids) {
+        TreeSet<String> sorted = new TreeSet<>();
+        for (String id : ids) {
+            if (id != null) {
+                sorted.add(id);
+            }
+        }
+        if (!sorted.isEmpty()) {
+            headRepository.lockInIdOrder(instituteId, sorted);
+        }
+    }
 
     /** The parent is a head of the institute, has no parent itself, has the same nature; the child has no children. */
     private void checkParent(String instituteId, String headId, String parentId, HeadNature nature) {

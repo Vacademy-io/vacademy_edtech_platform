@@ -8,6 +8,7 @@ import vacademy.io.admin_core_service.features.commerce.accounts.entity.Commerce
 import vacademy.io.admin_core_service.features.commerce.accounts.enums.SupplierLedgerType;
 import vacademy.io.admin_core_service.features.commerce.accounts.repository.CommerceSupplierLedgerRepository;
 import vacademy.io.admin_core_service.features.commerce.accounts.repository.CommerceSupplierRepository;
+import vacademy.io.admin_core_service.features.commerce.stock.repository.StockLocationRepository;
 import vacademy.io.common.exceptions.ConflictException;
 import vacademy.io.common.exceptions.InvalidRequestException;
 import vacademy.io.common.exceptions.VacademyException;
@@ -29,9 +30,11 @@ import java.util.regex.Pattern;
  * violation, so the caller's transaction stays usable and a concurrent insert of the same key is
  * waited for before deciding.
  *
- * <p>Every post locks the supplier row first ({@code SELECT ... FOR UPDATE}): posts to one supplier
- * run one after another, which makes the reversal arithmetic safe. A caller that also locks
- * supplier documents must lock the supplier before them. The period lock is not checked here; the
+ * <p>Every post locks the supplier row first ({@code SELECT ... FOR NO KEY UPDATE}): posts to one
+ * supplier run one after another, which makes the reversal arithmetic safe. A caller that also locks
+ * supplier documents must lock the supplier before them. A caller that posts to several suppliers in
+ * one transaction (set-off, an opening import, a pay sheet) posts to them in supplier id order, so two
+ * such transactions never wait for each other in a circle. The period lock is not checked here; the
  * document service asks it with the document's date before posting.
  */
 @Service
@@ -44,11 +47,14 @@ public class SupplierLedgerService {
 
     private final CommerceSupplierLedgerRepository ledgerRepository;
     private final CommerceSupplierRepository supplierRepository;
+    private final StockLocationRepository locationRepository;
 
     public SupplierLedgerService(CommerceSupplierLedgerRepository ledgerRepository,
-                                 CommerceSupplierRepository supplierRepository) {
+                                 CommerceSupplierRepository supplierRepository,
+                                 StockLocationRepository locationRepository) {
         this.ledgerRepository = ledgerRepository;
         this.supplierRepository = supplierRepository;
+        this.locationRepository = locationRepository;
     }
 
     /**
@@ -56,13 +62,17 @@ public class SupplierLedgerService {
      * MANDATORY: the row commits or rolls back with the document that caused it.
      *
      * @throws InvalidRequestException 400 VALIDATION for a malformed post (sign, places, key shape, lengths)
-     * @throws VacademyException       404 NOT_FOUND when the supplier is not one of the institute's
+     * @throws VacademyException       404 NOT_FOUND when the supplier or the location is not one of the
+     *                                 institute's
      * @throws ConflictException       409 INVALID_REVERSAL or IDEMPOTENCY_KEY_REUSED
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public SupplierLedgerResult post(SupplierLedgerPost p) {
         BigDecimal amount = validate(p);
         String inst = p.instituteId();
+        if (p.locationId() != null && locationRepository.findByInstituteIdAndId(inst, p.locationId()).isEmpty()) {
+            throw new VacademyException(HttpStatus.NOT_FOUND, "NOT_FOUND: no such location");
+        }
 
         if (supplierRepository.lockForPosting(inst, p.supplierId()).isEmpty()) {
             throw new VacademyException(HttpStatus.NOT_FOUND, "NOT_FOUND: no such supplier");

@@ -358,8 +358,13 @@ public class SupplierService {
         String pan = draft.pan;
         String encrypted = cipher.encrypt(pan, CommerceFieldCipher.aad(instituteId, supplierId, FIELD_PAN));
         String last4 = pan.substring(6);
-        secretRepository.upsert(UUID.randomUUID().toString(), instituteId, supplierId, encrypted, cipher.activeKeyId(),
-                cipher.keyedHash(HASH_PURPOSE_PAN, instituteId, pan), last4, actorUserId);
+        try {
+            secretRepository.upsert(UUID.randomUUID().toString(), instituteId, supplierId, encrypted,
+                    cipher.activeKeyId(), cipher.keyedHash(HASH_PURPOSE_PAN, instituteId, pan), last4, actorUserId);
+        } catch (DataIntegrityViolationException e) {
+            // A generic answer without the cause: the driver's text would repeat the stored row.
+            throw new VacademyException(HttpStatus.INTERNAL_SERVER_ERROR, "PAN_NOT_STORED: the PAN could not be saved");
+        }
         return last4;
     }
 

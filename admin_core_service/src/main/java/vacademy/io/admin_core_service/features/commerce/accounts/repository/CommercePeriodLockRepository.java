@@ -30,6 +30,11 @@ public interface CommercePeriodLockRepository extends Repository<CommercePeriodL
             + " WHERE institute_id = :instituteId FOR SHARE", nativeQuery = true)
     List<LockRow> readForShare(@Param("instituteId") String instituteId);
 
+    /** The row as committed, without a lock (the unlock's first read, before its approval). */
+    @Query(value = "SELECT id AS \"id\", locked_through AS \"lockedThrough\" FROM commerce_period_lock"
+            + " WHERE institute_id = :instituteId", nativeQuery = true)
+    List<LockRow> readPlain(@Param("instituteId") String instituteId);
+
     /** The row under an update lock (lock and unlock); waits for every post holding it FOR SHARE. */
     @Query(value = "SELECT id AS \"id\", locked_through AS \"lockedThrough\" FROM commerce_period_lock"
             + " WHERE institute_id = :instituteId FOR UPDATE", nativeQuery = true)

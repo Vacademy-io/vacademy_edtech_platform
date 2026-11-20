@@ -72,9 +72,11 @@ public interface CommerceSupplierRepository extends JpaRepository<CommerceSuppli
 
     /**
      * Locks the supplier row until the transaction ends and answers its id; empty when the supplier
-     * is not one of the institute's. Every write to a supplier's ledger takes this lock first.
+     * is not one of the institute's. Every write to a supplier's ledger takes this lock first. NO KEY
+     * UPDATE serialises the posts of one supplier without blocking foreign-key checks on the row.
      */
-    @Query(value = "SELECT id FROM commerce_supplier WHERE institute_id = :instituteId AND id = :id FOR UPDATE",
+    @Query(value = "SELECT id FROM commerce_supplier WHERE institute_id = :instituteId AND id = :id"
+            + " FOR NO KEY UPDATE",
             nativeQuery = true)
     Optional<String> lockForPosting(@Param("instituteId") String instituteId, @Param("id") String id);
 }

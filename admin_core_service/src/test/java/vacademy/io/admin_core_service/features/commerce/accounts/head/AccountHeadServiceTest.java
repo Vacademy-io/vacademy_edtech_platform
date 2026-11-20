@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.PlatformTransactionManager;
 import vacademy.io.admin_core_service.features.commerce.accounts.AccountsAuditKinds;
@@ -40,6 +41,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -409,6 +411,68 @@ class AccountHeadServiceTest {
         HeadRequest r = edit(h);
         r.setNature("ASSET");
         assertConflict("HEAD_HAS_CHILDREN", () -> service.update(INST, ACTOR, "h1", r));
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<List<String>> lockedSets() {
+        ArgumentCaptor<java.util.Collection<String>> ids = ArgumentCaptor.forClass(java.util.Collection.class);
+        verify(heads, org.mockito.Mockito.atLeastOnce()).lockInIdOrder(eq(INST), ids.capture());
+        List<List<String>> out = new ArrayList<>();
+        for (java.util.Collection<String> c : ids.getAllValues()) {
+            out.add(new ArrayList<>(c));
+        }
+        return out;
+    }
+
+    @Test
+    void editLocksTheHeadAndItsOldAndNewParentInIdOrderBeforeAnyRuleIsRead() {
+        stored("h-a", "RENT", "EXPENSE", false);
+        stored("h-c", "OFFICE", "EXPENSE", false);
+        CommerceAccountHead h = stored("h-b", "SHOP_RENT", "EXPENSE", false);
+        h.setParentId("h-c");
+        when(heads.findParentId(INST, "h-b")).thenReturn(Optional.of("h-c"));
+        HeadRequest r = edit(h);
+        r.setParentId("h-a");
+        service.update(INST, ACTOR, "h-b", r);
+
+        assertEquals(List.of(List.of("h-a", "h-b", "h-c")), lockedSets());
+        InOrder order = inOrder(heads);
+        order.verify(heads).lockInIdOrder(eq(INST), anyCollection());
+        order.verify(heads).findByInstituteIdAndId(INST, "h-b");
+        order.verify(heads).findByInstituteIdAndId(INST, "h-a");
+        order.verify(heads).existsByInstituteIdAndParentId(INST, "h-b");
+    }
+
+    @Test
+    void twoCrossEditsLockTheSharedHeadSoTheSecondSeesTheFirst() {
+        // Edit 1: B gets parent A. Edit 2: A gets parent C. Both lock A, so they run one after the other.
+        CommerceAccountHead a = stored("h-a", "RENT", "EXPENSE", false);
+        CommerceAccountHead b = stored("h-b", "SHOP_RENT", "EXPENSE", false);
+        stored("h-c", "OFFICE", "EXPENSE", false);
+        HeadRequest first = edit(b);
+        first.setParentId("h-a");
+        service.update(INST, ACTOR, "h-b", first);
+
+        // Edit 2 reads after edit 1 committed: A now has a child, so A cannot get a parent.
+        when(heads.existsByInstituteIdAndParentId(INST, "h-a")).thenReturn(true);
+        HeadRequest second = edit(a);
+        second.setParentId("h-c");
+        assertValidation(() -> service.update(INST, ACTOR, "h-a", second));
+
+        List<List<String>> sets = lockedSets();
+        assertEquals(List.of(List.of("h-a", "h-b"), List.of("h-a", "h-c")), sets);
+    }
+
+    @Test
+    void createWithAParentLocksTheParentBeforeItsRules() {
+        stored("p-exp", "RENT", "EXPENSE", false);
+        HeadRequest ok = create("RAW", "EXPENSE");
+        ok.setParentId("p-exp");
+        service.create(INST, ACTOR, ok);
+        assertEquals(List.of(List.of("p-exp")), lockedSets());
+        InOrder order = inOrder(heads);
+        order.verify(heads).lockInIdOrder(eq(INST), anyCollection());
+        order.verify(heads).findByInstituteIdAndId(INST, "p-exp");
     }
 
     @Test

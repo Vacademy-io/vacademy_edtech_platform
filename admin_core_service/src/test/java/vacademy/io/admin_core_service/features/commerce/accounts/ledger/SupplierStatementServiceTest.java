@@ -2,6 +2,8 @@ package vacademy.io.admin_core_service.features.commerce.accounts.ledger;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import vacademy.io.admin_core_service.features.commerce.accounts.entity.CommerceSupplier;
 import vacademy.io.admin_core_service.features.commerce.accounts.entity.CommerceSupplierLedgerEntry;
@@ -27,6 +29,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,6 +44,7 @@ class SupplierStatementServiceTest {
 
     private CommerceSupplierRepository suppliers;
     private CommerceSupplierLedgerRepository ledger;
+    private JdbcTemplate jdbc;
     private SupplierStatementService service;
 
     @BeforeEach
@@ -49,7 +53,8 @@ class SupplierStatementServiceTest {
         ledger = mock(CommerceSupplierLedgerRepository.class);
         StockClock clock = mock(StockClock.class);
         when(clock.today(anyString())).thenReturn(TODAY);
-        service = new SupplierStatementService(suppliers, ledger, clock, mock(PlatformTransactionManager.class));
+        jdbc = mock(JdbcTemplate.class);
+        service = new SupplierStatementService(suppliers, ledger, clock, jdbc, mock(PlatformTransactionManager.class));
         when(suppliers.findByInstituteIdAndId(INST, SUP)).thenReturn(Optional.of(new CommerceSupplier()));
     }
 
@@ -61,6 +66,20 @@ class SupplierStatementServiceTest {
         e.setType(type);
         e.setAmount(new BigDecimal(amount));
         return e;
+    }
+
+    @Test
+    void openingAndRowsAreReadInOneRepeatableReadSnapshot() {
+        LocalDate from = LocalDate.of(2026, 10, 1);
+        LocalDate to = LocalDate.of(2026, 10, 31);
+        when(ledger.sumBefore(INST, SUP, from)).thenReturn(BigDecimal.ZERO);
+        when(ledger.rowsBetween(INST, SUP, from, to, SupplierStatementService.ROW_CAP + 1)).thenReturn(List.of());
+        service.statement(INST, SUP, from, to);
+        InOrder order = inOrder(jdbc, suppliers, ledger);
+        order.verify(jdbc).execute("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ");
+        order.verify(suppliers).findByInstituteIdAndId(INST, SUP);
+        order.verify(ledger).sumBefore(INST, SUP, from);
+        order.verify(ledger).rowsBetween(INST, SUP, from, to, SupplierStatementService.ROW_CAP + 1);
     }
 
     @Test

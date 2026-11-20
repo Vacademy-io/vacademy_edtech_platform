@@ -427,7 +427,7 @@ class CommerceAccessGuardTest {
     }
 
     @Test
-    void accountsLocationBypassOnlyForWideStaffAndOnlyAccounts() {
+    void accountsInstituteWideRuleOnlyForWideStaffAndOnlyAccounts() {
         grantAccounts();
         withScopeRows(true);
         CustomUserDetails accountant = principal(false, "COMMERCE_ACCOUNTANT");

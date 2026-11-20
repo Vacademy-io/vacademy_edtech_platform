@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import vacademy.io.admin_core_service.features.commerce.accounts.entity.CommerceSupplierLedgerEntry;
@@ -34,19 +35,23 @@ public class SupplierStatementService {
 
     public static final int ROW_CAP = 5000;
     static final int MAX_DAYS = 366;
+    static final String REPEATABLE_READ_SQL = "SET TRANSACTION ISOLATION LEVEL REPEATABLE READ";
 
     private final CommerceSupplierRepository supplierRepository;
     private final CommerceSupplierLedgerRepository ledgerRepository;
     private final StockClock clock;
+    private final JdbcTemplate jdbc;
     private final TransactionTemplate readOnly;
 
     public SupplierStatementService(CommerceSupplierRepository supplierRepository,
                                     CommerceSupplierLedgerRepository ledgerRepository,
                                     StockClock clock,
+                                    JdbcTemplate jdbc,
                                     PlatformTransactionManager transactionManager) {
         this.supplierRepository = supplierRepository;
         this.ledgerRepository = ledgerRepository;
         this.clock = clock;
+        this.jdbc = jdbc;
         this.readOnly = new TransactionTemplate(transactionManager);
         this.readOnly.setReadOnly(true);
     }
@@ -107,6 +112,9 @@ public class SupplierStatementService {
     }
 
     private StatementView build(String instituteId, String supplierId, LocalDate from, LocalDate to) {
+        // One snapshot for the opening balance and the rows. Transaction-scoped (safe under transaction pooling);
+        // it must be the first statement of the transaction.
+        jdbc.execute(REPEATABLE_READ_SQL);
         if (supplierId == null || supplierRepository.findByInstituteIdAndId(instituteId, supplierId).isEmpty()) {
             throw new VacademyException(HttpStatus.NOT_FOUND, "NOT_FOUND: no such supplier");
         }

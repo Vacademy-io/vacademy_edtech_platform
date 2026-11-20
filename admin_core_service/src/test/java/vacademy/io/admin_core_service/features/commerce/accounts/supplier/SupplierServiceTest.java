@@ -282,6 +282,20 @@ class SupplierServiceTest {
     }
 
     @Test
+    void aConstraintErrorOnThePanWriteIsAGenericAnswerWithoutTheRow() {
+        when(secrets.upsert(anyString(), anyString(), anyString(), anyString(), anyString(), anyString(), anyString(),
+                anyString())).thenThrow(new DataIntegrityViolationException("could not execute statement [ERROR: new "
+                + "row violates check constraint; Detail: Failing row contains (row-1, inst-1, sup-1, cfc1:k1:sealed, "
+                + "k1, " + "ab".repeat(32) + ")]"));
+        SupplierRequest r = request();
+        r.setPan(PAN);
+        VacademyException e = assertThrows(VacademyException.class, () -> service.create(INST, ACTOR, r));
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, e.getStatus());
+        assertEquals("PAN_NOT_STORED: the PAN could not be saved", e.getMessage());
+        assertNull(e.getCause());
+    }
+
+    @Test
     void panWithoutKeyIs503AndWritesNothing() {
         when(cipher.isConfigured()).thenReturn(false);
         SupplierRequest r = request();
