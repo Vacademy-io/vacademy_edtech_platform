@@ -366,3 +366,16 @@ def test_help_library_is_read_under_the_global_sentinel(monkeypatch):
     assert seen["institute_id"] == "__global_help__" and seen["source_type"] == "help_knowledge" and seen["closed"]
     rendered = K.render({"facts": [], "help": rows})
     assert 'source="help_library"' in rendered and 'task="Send a fee reminder"' in rendered
+
+
+def test_settings_names_used_by_the_module_exist():
+    """Every ``S.NAME`` the module reads is defined (the live model call is faked in the other tests)."""
+    import pathlib
+    import re
+
+    from app.demo_guide import settings as S
+
+    used = set()
+    for path in pathlib.Path(S.__file__).parent.glob("*.py"):
+        used |= set(re.findall(r"\bS\.([A-Za-z_][A-Za-z0-9_]*)", path.read_text()))
+    assert used and not [name for name in sorted(used) if not hasattr(S, name)]

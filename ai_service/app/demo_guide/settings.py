@@ -27,6 +27,7 @@ USE_CASE = "demo_guide"
 TOOL_KEY = "demo_guide_turn"
 # Hard fallback when ai_model_defaults has no row: the registry's non-GLM model
 # (the same default Site Assistant uses), never a literal here.
+from ..constants.model_defaults import NON_GLM_FALLBACK as DEFAULT_MODEL  # noqa: E402
 
 LANGS: Tuple[str, ...] = ("en", "hi", "kn", "fr")
 LANG_NAMES = {"en": "English", "hi": "Hindi", "kn": "Kannada", "fr": "French"}

@@ -7,13 +7,21 @@
 //           play; today it is a small local script, next it is the AI backend.
 
 const params = new URLSearchParams(location.search);
+// Address overrides (?app= ?api= ?guide=) are for local preview only. On a public host
+// they are ignored, so a crafted link cannot point this page at someone else's backend.
+const LOCAL = ['localhost', '127.0.0.1'].includes(location.hostname);
+const override = (name) => (LOCAL ? params.get(name) : null);
 const CONFIG = {
-    app: params.get('app') || window.DEMO_APP_ORIGIN || 'https://demo-app.vacademy.io',
+    app: override('app') || window.DEMO_APP_ORIGIN || 'https://demo-app.vacademy.io',
     // Local stand-in for the demo sign-in (dev-server.mjs); unused once `guide` is set.
-    api: params.get('api') || window.DEMO_API || '',
-    // Guide backend, e.g. https://backend-stage.vacademy.io/ai-service/demo-guide/v1.
-    // Empty = the small scripted guide below (local preview only).
-    guide: (params.get('guide') || window.DEMO_GUIDE_API || '').replace(/\/$/, ''),
+    api: override('api') || window.DEMO_API || '',
+    // Guide backend. On a public host it is always the live one; locally it is empty
+    // unless given, which means the small scripted guide below.
+    guide: (
+        override('guide') ||
+        window.DEMO_GUIDE_API ||
+        (LOCAL ? '' : 'https://backend-stage.vacademy.io/ai-service/demo-guide/v1')
+    ).replace(/\/$/, ''),
     tts: 'https://backend-stage.vacademy.io/ai-service/tts/v1/speak',
     product: params.get('product') || 'vacademy',
     // Film mode: no guide panel; the recorder (tools/record.py) plays tours and
