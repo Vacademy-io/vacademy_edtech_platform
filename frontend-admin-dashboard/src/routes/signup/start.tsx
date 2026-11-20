@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { z } from 'zod';
 import { parseAccessIntent, rememberAccessIntent } from '@/lib/product-access-intent';
 import { SelfSignupFlow } from './-components/SelfSignupFlow';
+import { utmContext, utmSearchSchema } from './-services/utm-search';
 
 // Google adds its own params on the way back: the flow reads and clears those itself.
 const searchSchema = z.object({
@@ -15,9 +16,8 @@ const searchSchema = z.object({
     // the website's pricing toggle. The product's setup reads it (product-access-intent.ts).
     mode: z.string().optional(),
     source: z.string().optional(),
-    utm_source: z.string().optional(),
     campaign: z.string().optional(),
-    utm_campaign: z.string().optional(),
+    ...utmSearchSchema,
 });
 
 export const Route = createFileRoute('/signup/start')({
@@ -41,6 +41,7 @@ function SignupStartPage() {
                 plan: search.plan,
                 source: search.source || search.utm_source,
                 campaign: search.campaign || search.utm_campaign,
+                ...utmContext(search),
             }}
             buy={search.buy}
         />

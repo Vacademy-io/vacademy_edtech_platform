@@ -271,6 +271,8 @@ public class SelfSignupManager {
                 request.getSource(), request.getCampaign());
         java.util.Map<String, Object> event = signupEvent(institute.getId(), instituteName, fullName,
                 email, phone, google, trialEnds, request.getSource());
+        putUtm(event, request.getUtmSource(), request.getUtmMedium(), request.getUtmCampaign(),
+                request.getUtmContent(), request.getUtmTerm());
         if (buying != null) {
             event.put("trial_ends", "No trial: buying " + buying);
         }
@@ -344,6 +346,8 @@ public class SelfSignupManager {
         java.util.Map<String, Object> event = signupEvent(institute.getId(), fullName, fullName, email, phone, false,
                 trialEnds, request.getSource());
         event.put("method", "Demo portal");
+        putUtm(event, request.getUtmSource(), request.getUtmMedium(), request.getUtmCampaign(),
+                request.getUtmContent(), request.getUtmTerm());
         alertClient.signupCompleted(product.getProductKey(), event);
         return tokens;
     }
@@ -362,6 +366,25 @@ public class SelfSignupManager {
                         .format(trialEnds.toInstant().atZone(java.time.ZoneOffset.UTC)));
         event.put("source", source);
         return event;
+    }
+
+    /** Longest utm value passed on; the lead's UTM record keeps at most 191 characters. */
+    static final int MAX_UTM = 191;
+
+    /**
+     * The visit's utm tags, trimmed, for the lead's UTM record in admin-core. Only the ones it had:
+     * a sign-up without tags sends the same event as before.
+     */
+    static void putUtm(java.util.Map<String, Object> event, String source, String medium, String campaign,
+            String content, String term) {
+        String[][] tags = { { "utm_source", source }, { "utm_medium", medium }, { "utm_campaign", campaign },
+                { "utm_content", content }, { "utm_term", term } };
+        for (String[] tag : tags) {
+            if (StringUtils.hasText(tag[1])) {
+                String value = tag[1].trim();
+                event.put(tag[0], value.length() > MAX_UTM ? value.substring(0, MAX_UTM) : value);
+            }
+        }
     }
 
     /** The plan key of a "Buy <plan>" sign-up, or null for a trial. */

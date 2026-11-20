@@ -171,10 +171,20 @@ public class ProductAlertService {
         row(rows, "Phone", event.getPhone());
         row(rows, "Signed up with", event.getMethod());
         row(rows, "Came from", event.getSource());
+        row(rows, "UTM", utmLine(event));
         row(rows, "Trial ends", event.getTrialEnds());
         return "<div style=\"font-family:Arial,sans-serif;font-size:14px;color:#111\">"
                 + "<p><strong>New " + HtmlUtils.htmlEscape(valueOr(product.getDisplayName())) + " sign-up</strong></p>"
                 + "<table cellpadding=\"6\" style=\"border-collapse:collapse\">" + rows + "</table></div>";
+    }
+
+    /** "source / medium / campaign / content / term", the parts the visit had; null when it had none. */
+    static String utmLine(SignupEventDTO event) {
+        String line = java.util.stream.Stream.of(event.getUtmSource(), event.getUtmMedium(), event.getUtmCampaign(),
+                        event.getUtmContent(), event.getUtmTerm())
+                .filter(StringUtils::hasText).map(String::trim)
+                .collect(java.util.stream.Collectors.joining(" / "));
+        return line.isEmpty() ? null : line;
     }
 
     private static void row(StringBuilder rows, String label, String value) {

@@ -8,6 +8,12 @@ export interface SignupContext {
     plan?: string;
     source?: string;
     campaign?: string;
+    /** The visit's utm tags from the product's website; the lead keeps them beside source. */
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+    utm_term?: string;
 }
 
 /** A product's sign-up screen, as set in the super-admin portal. */
@@ -140,6 +146,11 @@ export const startDemo = async (
         product: context.product,
         source: context.source,
         campaign: context.campaign,
+        utm_source: context.utm_source,
+        utm_medium: context.utm_medium,
+        utm_campaign: context.utm_campaign,
+        utm_content: context.utm_content,
+        utm_term: context.utm_term,
         ...details,
     });
     return data;
