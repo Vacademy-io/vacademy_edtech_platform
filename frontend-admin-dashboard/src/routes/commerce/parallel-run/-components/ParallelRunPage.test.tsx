@@ -135,6 +135,7 @@ describe('ParallelRunPage', () => {
         expect(screen.getByText('commerceParallelRun:status.NOT_SAVED')).toBeTruthy();
         expect(screen.getByText('commerceParallelRun:openSessions 1')).toBeTruthy();
         expect(fetchDays).toHaveBeenCalledWith('loc-1', expect.any(String), expect.any(String));
+        expect(screen.getByTestId('parallel-run-cash-rule').textContent).toBe('commerceParallelRun:cashRule');
     });
 
     it('a passed run says so', async () => {

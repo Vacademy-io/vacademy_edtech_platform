@@ -239,6 +239,9 @@ export function ParallelRunPage() {
                             {t('commerceParallelRun:tolerance', { amount: formatMoney(answer.tolerance) })}
                             {answer.asOf ? ` ${t('commerceParallelRun:asOf', { time: formatIndiaTime(answer.asOf) })}` : ''}
                         </p>
+                        <p className="text-caption text-muted-foreground" data-testid="parallel-run-cash-rule">
+                            {t('commerceParallelRun:cashRule')}
+                        </p>
                         <DayTable
                             days={answer.days}
                             canEdit={access.isManager}

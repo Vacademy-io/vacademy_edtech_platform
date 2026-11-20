@@ -132,6 +132,25 @@ class ParallelRunMathTest {
     }
 
     @Test
+    void anUnsavedDayWithCashOrReturnsButNoBillsEndsTheStreak() {
+        // Sunday: no sales, but a cash refund paid at the counter. The day list shows it "not saved".
+        Figures refundOnly = new Figures(0, BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("-1500.00"),
+                BigDecimal.ZERO, 0);
+        Figures returnOnly = new Figures(0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                new BigDecimal("300.00"), 0);
+        assertTrue(ParallelRunMath.hasActivity(refundOnly));
+        assertTrue(ParallelRunMath.hasActivity(returnOnly));
+        assertFalse(ParallelRunMath.hasActivity(Figures.zero()));
+        List<StreakDay> days = cleanDays(8);
+        days.set(4, StreakDay.of(D1.plusDays(4), refundOnly, null));
+        assertEquals(3, ParallelRunMath.streak(days), "the unsaved refund day breaks the streak");
+        days.set(4, StreakDay.of(D1.plusDays(4), returnOnly, null));
+        assertEquals(3, ParallelRunMath.streak(days));
+        days.set(4, StreakDay.of(D1.plusDays(4), Figures.zero(), null));
+        assertEquals(7, ParallelRunMath.streak(days), "a day with nothing at all is a closed day");
+    }
+
+    @Test
     void theStreakEndsAtTheLatestSavedDayAndDaysAfterItDoNotCount() {
         List<StreakDay> days = cleanDays(7);
         // Today and yesterday traded but are not saved yet: the streak still ends at the latest saved day.

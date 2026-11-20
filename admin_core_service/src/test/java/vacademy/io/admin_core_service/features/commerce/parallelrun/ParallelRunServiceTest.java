@@ -56,6 +56,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -86,6 +87,7 @@ class ParallelRunServiceTest {
     private CommerceAuditService audit;
     private PosUserNames names;
     private ParallelRunService service;
+    private PlatformTransactionManager tm;
     private final Set<String> features = new HashSet<>();
 
     @BeforeEach
@@ -130,7 +132,7 @@ class ParallelRunServiceTest {
         audit = mock(CommerceAuditService.class);
         names = mock(PosUserNames.class);
         when(names.names(any())).thenReturn(Map.of("u-1", "Test Manager"));
-        PlatformTransactionManager tm = mock(PlatformTransactionManager.class);
+        tm = mock(PlatformTransactionManager.class);
         when(tm.getTransaction(any())).thenReturn(new SimpleTransactionStatus());
         service = new ParallelRunService(guard, runner, clock, reads, days, audit, names, tm);
 
@@ -215,6 +217,52 @@ class ParallelRunServiceTest {
     }
 
     @Test
+    void aSaveReadsTheFiguresOnThePrimaryInsideItsWriteTransaction() {
+        platformOn(DAY, dayFigures(0));
+        service.save(MANAGER, INST, LOC, DAY, body(2, "800", "38.10", "400"));
+
+        // No replica read and no report slot: the figures come from the write transaction.
+        verify(runner, never()).screen(any());
+        verify(runner, never()).screenRequest(any());
+        org.mockito.InOrder order = inOrder(tm, reads, days);
+        order.verify(tm).getTransaction(any());
+        order.verify(reads).limitStatementTime();
+        order.verify(reads).locationIds(INST);
+        order.verify(reads).figures(INST, LOC, DAY, DAY);
+        order.verify(days).saveAndFlush(any());
+        order.verify(tm).commit(any());
+    }
+
+    @Test
+    void anUnsavedDayWithOnlyACashRefundEndsTheStreak() {
+        LocalDate from = TODAY.minusDays(9);
+        Map<LocalDate, Figures> live = new LinkedHashMap<>();
+        List<CommerceParallelRunDay> saved = new ArrayList<>();
+        for (LocalDate d = from; !d.isAfter(TODAY); d = d.plusDays(1)) {
+            live.put(d, dayFigures(0));
+        }
+        for (int i = 1; i <= 8; i++) {
+            if (i != 4) {
+                saved.add(savedDay(TODAY.minusDays(i), "CLEAN", dayFigures(0)));
+            }
+        }
+        // Day -4: no bills, but a cash refund of 1,500 at the counter; nothing saved.
+        live.put(TODAY.minusDays(4), new Figures(0, m("0"), m("0"), m("-1500.00"), m("0"), 0));
+        when(days.findByInstituteIdAndLocationIdAndBusinessDateBetweenOrderByBusinessDateAsc(eq(INST), eq(LOC),
+                any(), any())).thenReturn(saved);
+        when(days.findFirstByInstituteIdAndLocationIdOrderByBusinessDateDesc(INST, LOC))
+                .thenReturn(Optional.of(saved.get(0)));
+        when(reads.figures(eq(INST), eq(LOC), any(), any())).thenReturn(live);
+
+        DaysAnswer answer = service.days(MANAGER, INST, LOC, from, TODAY);
+        DayView refundDay = answer.days().stream().filter(v -> v.date().equals(TODAY.minusDays(4).toString()))
+                .findFirst().orElseThrow();
+        assertEquals(ParallelRunService.STATUS_NOT_SAVED, refundDay.status());
+        assertEquals(3, answer.streak(), "the streak stops at the unsaved day, as the list shows it");
+        assertFalse(answer.passed());
+    }
+
+    @Test
     void aFutureDateIsRefused() {
         InvalidRequestException e = assertThrows(InvalidRequestException.class,
                 () -> service.save(MANAGER, INST, LOC, TODAY.plusDays(1), body(2, "800", "38.10", "400")));
@@ -230,6 +278,7 @@ class ParallelRunServiceTest {
                 () -> service.save(MANAGER, INST, LOC, DAY, body(2, "800", "38.10", "400")));
         assertEquals("SESSION_OPEN", code(e));
         verify(days, never()).saveAndFlush(any());
+        verify(tm).rollback(any());
     }
 
     @Test

@@ -19,8 +19,9 @@ import java.util.List;
  *       figure was given); otherwise DIFFERENT.</li>
  *   <li>Differences are "old system minus platform".</li>
  *   <li>The streak counts consecutive clean days backwards from the latest saved day. A saved day
- *       that is not clean ends it; a day with platform bills and no saved row ends it; a day with
- *       no bills and no saved row (the store was closed) is skipped.</li>
+ *       that is not clean ends it; a day with platform activity (bills, cash, returns or an open
+ *       session) and no saved row ends it; a day with no activity and no saved row (the store was
+ *       closed) is skipped. This is the same rule the day list uses for "not saved".</li>
  * </ul>
  */
 public final class ParallelRunMath {
@@ -119,8 +120,26 @@ public final class ParallelRunMath {
      * @param platformBills the platform's bills that day
      * @param clean         null when no row is saved for the day; else whether the saved day counts
      *                      as clean
+     * @param activity      the platform had anything to compare that day (bills, cash, returns or
+     *                      an open session)
      */
-    public record StreakDay(LocalDate date, long platformBills, Boolean clean) {
+    public record StreakDay(LocalDate date, long platformBills, Boolean clean, boolean activity) {
+
+        /** A day whose only activity is its bills. */
+        public StreakDay(LocalDate date, long platformBills, Boolean clean) {
+            this(date, platformBills, clean, platformBills > 0);
+        }
+
+        /** The day as the platform read it. */
+        public static StreakDay of(LocalDate date, Figures live, Boolean clean) {
+            return new StreakDay(date, live.bills(), clean, hasActivity(live));
+        }
+    }
+
+    /** Bills, cash, returns or an open session: the day has something to compare. */
+    public static boolean hasActivity(Figures live) {
+        return live.bills() > 0 || live.openSessions() > 0 || live.cash().signum() != 0
+                || live.returns().signum() != 0;
     }
 
     /**
@@ -141,7 +160,7 @@ public final class ParallelRunMath {
         for (int i = latestSaved; i >= 0; i--) {
             StreakDay day = sorted.get(i);
             if (day.clean() == null) {
-                if (day.platformBills() > 0) {
+                if (day.activity()) {
                     break;
                 }
                 continue;

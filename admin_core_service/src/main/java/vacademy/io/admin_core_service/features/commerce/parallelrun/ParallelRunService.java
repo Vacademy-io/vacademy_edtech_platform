@@ -78,7 +78,8 @@ import static vacademy.io.admin_core_service.features.commerce.report.export.Rep
  *
  * <p>Platform figures are read through {@link ParallelRunReadRepository} inside
  * {@link ReportRunner} (replica, statement timeout, at most the reports' connections per pod).
- * Saved rows are written in their own short transaction on the primary. Business dates are India
+ * A save reads the day's figures on the primary inside its own short write transaction (statement
+ * time limited with {@code SET LOCAL}), so the stored figures are never behind the bills. Business dates are India
  * dates from {@link StockClock}; stored times are UTC wall times, set here explicitly (never the
  * JVM's default zone).
  */
@@ -278,7 +279,7 @@ public class ParallelRunService {
             for (LocalDate day = s.windowStart(); !day.isAfter(s.latestSaved()); day = day.plusDays(1)) {
                 Figures live = s.figures().getOrDefault(day, Figures.zero());
                 CommerceParallelRunDay saved = s.saved().get(day);
-                streakDays.add(new StreakDay(day, live.bills(), saved == null ? null : countsClean(saved, live)));
+                streakDays.add(StreakDay.of(day, live, saved == null ? null : countsClean(saved, live)));
             }
             streak = ParallelRunMath.streak(streakDays);
         }
@@ -296,8 +297,7 @@ public class ParallelRunService {
     static DayView view(LocalDate day, Figures live, CommerceParallelRunDay saved, Map<String, String> names) {
         PlatformView platform = platformView(live);
         if (saved == null) {
-            String status = live.bills() > 0 || live.openSessions() > 0
-                    || live.cash().signum() != 0 || live.returns().signum() != 0 ? STATUS_NOT_SAVED : STATUS_NO_SALES;
+            String status = ParallelRunMath.hasActivity(live) ? STATUS_NOT_SAVED : STATUS_NO_SALES;
             return new DayView(day.toString(), status, platform, null, null, null, null, false, false, null, null,
                     null, null, null);
         }
@@ -348,29 +348,36 @@ public class ParallelRunService {
             throw new InvalidRequestException("VALIDATION: note must be at most " + MAX_NOTE + " characters");
         }
 
-        Figures platform = runner.screen(() -> {
-            requireLocationOfInstitute(instituteId, location);
-            return reads.figures(instituteId, location, date, date).getOrDefault(date, Figures.zero());
-        });
-        if (platform.openSessions() > 0) {
-            throw new ConflictException("SESSION_OPEN: a counter session at this location is still open for "
-                    + date + "; close it before saving the day");
-        }
-        ParallelRunResult result = ParallelRunMath.result(old, platform);
-        if (result == ParallelRunResult.DIFFERENT && note == null) {
-            throw new InvalidRequestException("NOTE_REQUIRED: the figures differ; write a note on why");
-        }
-
         String actor = user.getUserId();
-        CommerceParallelRunDay saved;
+        Saved saved;
         try {
-            saved = writeTx.execute(status -> write(instituteId, location, date, request.getVersion(), old,
-                    platform, result, note, actor));
+            // One transaction on the primary: the figures and the open-session check are read where
+            // the bills are written (no replica lag, no report slot), then the day is written.
+            saved = writeTx.execute(status -> {
+                reads.limitStatementTime();
+                requireLocationOfInstitute(instituteId, location);
+                Figures platform = reads.figures(instituteId, location, date, date)
+                        .getOrDefault(date, Figures.zero());
+                if (platform.openSessions() > 0) {
+                    throw new ConflictException("SESSION_OPEN: a counter session at this location is still open "
+                            + "for " + date + "; close it before saving the day");
+                }
+                ParallelRunResult result = ParallelRunMath.result(old, platform);
+                if (result == ParallelRunResult.DIFFERENT && note == null) {
+                    throw new InvalidRequestException("NOTE_REQUIRED: the figures differ; write a note on why");
+                }
+                return new Saved(platform, write(instituteId, location, date, request.getVersion(), old, platform,
+                        result, note, actor));
+            });
         } catch (ObjectOptimisticLockingFailureException | OptimisticLockException
                  | DataIntegrityViolationException e) {
             throw dayChanged();
         }
-        return view(date, platform, saved, userNames.names(List.of(actor)));
+        return view(date, saved.platform(), saved.day(), userNames.names(List.of(actor)));
+    }
+
+    /** What a save wrote, and the platform figures it was judged on. */
+    private record Saved(Figures platform, CommerceParallelRunDay day) {
     }
 
     private CommerceParallelRunDay write(String instituteId, String location, LocalDate date, Integer version,

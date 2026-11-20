@@ -13,6 +13,7 @@
         "none": "No day has been saved yet."
     },
     "tolerance": "A day is clean when the bill counts match and each amount differs by at most {{amount}}.",
+    "cashRule": "Cash is the counter cash taken at this store, after cash refunds. A paper bill's cash counts on the bill's date.",
     "asOf": "Figures as of {{time}}.",
     "empty": "No days in this month yet.",
     "openSessions": "Counter sessions still open: {{count}}",
