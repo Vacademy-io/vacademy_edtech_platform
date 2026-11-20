@@ -57,7 +57,7 @@ public class OpeningStockService {
             throw new InvalidRequestException("LOCATION_NOT_FOUND: location_id does not belong to this institute");
         }
 
-        Items items = readRepository.items(instituteId);
+        Items items = readRepository.items(instituteId, location);
         Receipts receipts = readRepository.receipts(instituteId, location);
         List<LaterCount> later = List.of();
         Recount recount = null;
@@ -83,6 +83,7 @@ public class OpeningStockService {
         itemView.put("without_cost", items.withoutCost());
         itemView.put("without_cost_skus", items.withoutCostSkus());
         itemView.put("untracked", items.untracked());
+        itemView.put("institute_without_cost", items.instituteWithoutCost());
         out.put("items", itemView);
 
         Map<String, Object> receiptView = new LinkedHashMap<>();

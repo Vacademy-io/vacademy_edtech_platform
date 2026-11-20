@@ -654,6 +654,7 @@ export const OPENING_BLOCKERS = [
     'UNCOSTED_OPENING_RECEIPT',
     'SAMPLE_TOO_SMALL',
     'AGREEMENT_BELOW_98',
+    'COUNT_NOT_POSTED',
 ] as const;
 export type OpeningBlocker = (typeof OPENING_BLOCKERS)[number];
 
@@ -687,7 +688,15 @@ export interface OpeningReadiness {
     status: OpeningStatus;
     ready: boolean;
     blockers: OpeningBlocker[];
-    items: { tracked: number; with_cost: number; without_cost: number; without_cost_skus: string[]; untracked: number };
+    /** The location's goods; `institute_without_cost` counts the whole shop, for information. */
+    items: {
+        tracked: number;
+        with_cost: number;
+        without_cost: number;
+        without_cost_skus: string[];
+        untracked: number;
+        institute_without_cost?: number;
+    };
     receipts: {
         count: number;
         lines: number;

@@ -59,14 +59,45 @@ class OpeningReadinessMathTest {
     }
 
     @Test
-    void aPassingRecountWithEnoughSampleIsPassedAndReady() {
+    void aPassingRecountWithEnoughSampleOfThePostedCountIsPassedAndReady() {
         Readiness readiness = OpeningReadinessMath.decide(COSTED, ONE_RECEIPT,
-                List.of(count("c-1", "COUNT", "OPEN"), count("rc-1", "RECOUNT", "POSTED")),
+                List.of(count("c-1", "COUNT", "POSTED"), count("rc-1", "RECOUNT", "POSTED")),
                 recount(20, 2, 2, "100.0", true));
         assertEquals(Status.PASSED, readiness.status());
         assertTrue(readiness.ready());
         assertEquals(List.of(), readiness.blockers());
         assertEquals(new BigDecimal("10.0"), readiness.recount().samplePercent());
+    }
+
+    // ── X7: the recount must check the latest main count, and that count must be posted ─────
+
+    @Test
+    void aPassingRecountOfACountStillOpenIsNotReady() {
+        Readiness readiness = OpeningReadinessMath.decide(COSTED, ONE_RECEIPT,
+                List.of(count("c-1", "COUNT", "OPEN"), count("rc-1", "RECOUNT", "POSTED")),
+                recount(20, 2, 2, "100.0", true));
+        assertEquals(Status.COUNTING, readiness.status());
+        assertFalse(readiness.ready());
+        assertEquals(List.of(OpeningReadinessMath.COUNT_NOT_POSTED), readiness.blockers());
+        assertTrue(readiness.recount().passes(), "the recount itself passed");
+        // The status read with the recount says the same without the later list.
+        Recount open = new Recount("rc-1", "CNT-000002", "c-1", "CNT-000001", 20, 2, 2, new BigDecimal("100.0"),
+                true, "OPEN");
+        assertEquals(Status.COUNTING, OpeningReadinessMath.decide(COSTED, ONE_RECEIPT, List.of(), open).status());
+    }
+
+    @Test
+    void aLaterPostedCountWithoutItsOwnRecountIsCounting() {
+        // COUNT #1 (shelf A) was rechecked and posted; COUNT #2 (shelf B) was posted with no recount.
+        LaterCount first = new LaterCount("c-1", "COUNT", "POSTED", RECEIVED.plusHours(1));
+        LaterCount recounted = new LaterCount("rc-1", "RECOUNT", "POSTED", RECEIVED.plusHours(2));
+        LaterCount second = new LaterCount("c-2", "COUNT", "POSTED", RECEIVED.plusHours(3));
+        Readiness readiness = OpeningReadinessMath.decide(COSTED, ONE_RECEIPT, List.of(second, recounted, first),
+                new Recount("rc-1", "CNT-000002", "c-1", "CNT-000001", 20, 2, 2, new BigDecimal("100.0"), true,
+                        "POSTED"));
+        assertEquals(Status.COUNTING, readiness.status());
+        assertFalse(readiness.ready());
+        assertNull(readiness.recount());
     }
 
     @Test

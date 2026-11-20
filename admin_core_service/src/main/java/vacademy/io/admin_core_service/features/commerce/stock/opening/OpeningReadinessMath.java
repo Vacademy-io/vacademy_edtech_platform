@@ -14,7 +14,9 @@ import java.util.List;
  * at 98 % or more. Pure: the service reads the facts, this decides.
  *
  * <p>Only counts that started after the last opening receipt posted at the location count: a
- * receipt after a passed recount sends the location back to receiving.
+ * receipt after a passed recount sends the location back to receiving. The passing recount must
+ * check the latest main count at the location, and that count must be posted: a later count
+ * with no recount of its own is counting again, and a count still open is not ready.
  */
 public final class OpeningReadinessMath {
 
@@ -27,18 +29,30 @@ public final class OpeningReadinessMath {
     public static final String UNCOSTED_OPENING_RECEIPT = "UNCOSTED_OPENING_RECEIPT";
     public static final String SAMPLE_TOO_SMALL = "SAMPLE_TOO_SMALL";
     public static final String AGREEMENT_BELOW_98 = "AGREEMENT_BELOW_98";
+    /** The recount passed but the count it checked is still open, so its figures are not stock yet. */
+    public static final String COUNT_NOT_POSTED = "COUNT_NOT_POSTED";
 
     private OpeningReadinessMath() {
     }
 
-    /** Variants of the institute: tracked (not archived), of those with a standard cost, untracked. */
-    public record Items(long tracked, long withCost, List<String> withoutCostSkus, long untracked) {
+    /**
+     * The location's goods (tracked, not archived, with stock there or on a posted opening receipt
+     * there), of those with a standard cost above zero, the institute's untracked variants, and,
+     * as information only, the institute's tracked variants without a cost.
+     */
+    public record Items(long tracked, long withCost, List<String> withoutCostSkus, long untracked,
+                        long instituteWithoutCost) {
+
+        public Items(long tracked, long withCost, List<String> withoutCostSkus, long untracked) {
+            this(tracked, withCost, withoutCostSkus, untracked, Math.max(0, tracked - withCost));
+        }
+
         public long withoutCost() {
             return Math.max(0, tracked - withCost);
         }
     }
 
-    /** One opening receipt none of whose lines carries a cost. */
+    /** One posted opening receipt with lines that carry no cost: how many lines and units. */
     public record UncostedReceipt(String id, String receiptNumber, String receivedDate, long lines, long units) {
     }
 
@@ -63,7 +77,15 @@ public final class OpeningReadinessMath {
      * has no verdict; the percent rule then decides.
      */
     public record Recount(String recountId, String recountNumber, String mainCountId, String mainCountNumber,
-                          long mainLines, int compared, int agreeing, BigDecimal percent, Boolean storedPasses) {
+                          long mainLines, int compared, int agreeing, BigDecimal percent, Boolean storedPasses,
+                          String mainCountStatus) {
+
+        /** Main count status unknown: the later counts tell whether it is still open. */
+        public Recount(String recountId, String recountNumber, String mainCountId, String mainCountNumber,
+                       long mainLines, int compared, int agreeing, BigDecimal percent, Boolean storedPasses) {
+            this(recountId, recountNumber, mainCountId, mainCountNumber, mainLines, compared, agreeing, percent,
+                    storedPasses, null);
+        }
     }
 
     /** The recount as the readiness answer shows it. */
@@ -97,6 +119,17 @@ public final class OpeningReadinessMath {
         if (newRound) {
             return new Readiness(Status.COUNTING, blockers, verdict, false);
         }
+        // A main count started after the one the recount checked has no recount of its own.
+        LaterCount latestMain = null;
+        for (LaterCount c : later) {
+            if ("COUNT".equals(c.kind()) && (latestMain == null || (c.startedAt() != null
+                    && (latestMain.startedAt() == null || c.startedAt().isAfter(latestMain.startedAt()))))) {
+                latestMain = c;
+            }
+        }
+        if (latestMain != null && !latestMain.id().equals(recount.mainCountId())) {
+            return new Readiness(Status.COUNTING, blockers, null, false);
+        }
         if (!verdict.passes()) {
             if (!verdict.sampleOk()) {
                 blockers.add(SAMPLE_TOO_SMALL);
@@ -105,6 +138,12 @@ public final class OpeningReadinessMath {
                 blockers.add(AGREEMENT_BELOW_98);
             }
             return new Readiness(Status.RECOUNT_FAILED, blockers, verdict, false);
+        }
+        boolean mainOpen = recount.mainCountStatus() != null ? "OPEN".equals(recount.mainCountStatus())
+                : later.stream().anyMatch(c -> c.open() && c.id().equals(recount.mainCountId()));
+        if (mainOpen) {
+            blockers.add(COUNT_NOT_POSTED);
+            return new Readiness(Status.COUNTING, blockers, verdict, false);
         }
         return new Readiness(Status.PASSED, blockers, verdict, blockers.isEmpty());
     }

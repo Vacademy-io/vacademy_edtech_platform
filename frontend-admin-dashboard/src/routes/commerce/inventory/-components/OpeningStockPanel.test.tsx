@@ -154,6 +154,28 @@ describe('OpeningStockPanel', () => {
         expect(list.textContent).toContain('blockers.SAMPLE_TOO_SMALL compared=2 needed=2');
     });
 
+    it('says when the recount passed but its count is not posted, and counts other items of the shop apart', async () => {
+        fetchReadiness.mockResolvedValue(
+            readiness('COUNTING', {
+                blockers: ['COUNT_NOT_POSTED'],
+                items: {
+                    tracked: 12,
+                    with_cost: 12,
+                    without_cost: 0,
+                    without_cost_skus: [],
+                    untracked: 0,
+                    institute_without_cost: 5,
+                },
+            })
+        );
+        renderPanel();
+        const list = await screen.findByTestId('opening-blockers');
+        expect(list.textContent).toContain('blockers.COUNT_NOT_POSTED');
+        expect(screen.getByTestId('opening-other-without-cost').textContent).toContain('otherWithoutCost count=5');
+        expect(api.normalizeOpeningReadiness({ blockers: ['COUNT_NOT_POSTED'], items: { institute_without_cost: 5 } })
+            .items.institute_without_cost).toBe(5);
+    });
+
     it('links to Receive, Labels and Counts', async () => {
         fetchReadiness.mockResolvedValue(readiness('NOT_STARTED', { receipts: { count: 0, lines: 0, units: 0, units_costed: 0, value: null, uncosted_receipts: [] } }));
         const onGo = renderPanel();

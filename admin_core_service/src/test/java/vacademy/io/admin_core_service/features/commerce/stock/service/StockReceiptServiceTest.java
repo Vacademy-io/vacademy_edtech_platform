@@ -445,14 +445,41 @@ class StockReceiptServiceTest {
     }
 
     @Test
-    void openingPostsAsBeforeWhenTheFeatureCannotBeRead() {
+    void openingIsRefusedWith503WhenTheFeatureCannotBeReadAndOtherSourcesPost() {
         when(capabilities.isFeatureGranted(INST, MIGRATION)).thenThrow(new IllegalStateException("down"));
         item("ps-a", "QUANTITY", null);
 
-        StockReceipt receipt = service.create(INST, "staff-1", false, request("OPENING", "ps-a", 5));
+        VacademyException refused = assertThrows(VacademyException.class,
+                () -> service.create(INST, "staff-1", false, request("OPENING", "ps-a", 5)));
 
-        assertEquals("GRN-000001", receipt.getReceiptNumber());
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, refused.getStatus());
+        assertTrue(refused.getMessage().startsWith("FEATURE_STATE_UNKNOWN:"), refused.getMessage());
+        verifyNoInteractions(counters, ledger);
+        verify(receipts, never()).saveAndFlush(any(StockReceipt.class));
+
+        // Another source never reads the feature, so it posts as before.
+        StockReceipt other = service.create(INST, "staff-1", false, request("OTHER", "ps-a", 5));
+        assertEquals("GRN-000001", other.getReceiptNumber());
         posted(1);
+    }
+
+    @Test
+    void openingWithTheSwitchOverOnTreatsACostOfZeroAsNoCost() {
+        when(capabilities.isFeatureGranted(INST, MIGRATION)).thenReturn(true);
+        item("ps-a", "QUANTITY", "0");
+        item("ps-b", "QUANTITY", "80");
+        item("ps-c", "QUANTITY", null);
+        ReceiptRequest request = request("OPENING", "ps-a", 5, "ps-b", 3, "ps-c", 2);
+        request.getLines().get(1).setUnitCost(BigDecimal.ZERO); // typed 0 wins over the standard 80
+        request.getLines().get(2).setUnitCost(new BigDecimal("15"));
+
+        VacademyException refused = assertThrows(VacademyException.class,
+                () -> service.create(INST, "manager-1", true, request));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, refused.getStatus());
+        assertTrue(refused.getMessage().startsWith("OPENING_COST_MISSING: 2 item(s) have no cost yet "
+                + "(SKU-ps-a, SKU-ps-b)"), refused.getMessage());
+        verifyNoInteractions(counters, ledger);
     }
 
     @Test

@@ -971,6 +971,7 @@ export function normalizeOpeningReadiness(data: unknown): OpeningReadiness {
                 .map(str)
                 .filter((s): s is string => !!s),
             untracked: int(items.untracked),
+            institute_without_cost: int(items.institute_without_cost),
         },
         receipts: {
             count: int(receipts.count),

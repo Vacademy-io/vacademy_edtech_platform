@@ -65,14 +65,14 @@ class OpeningStockServiceTest {
         store.setId(LOC);
         when(locations.findByInstituteIdAndId(INST, LOC)).thenReturn(Optional.of(store));
 
-        when(reads.items(INST)).thenReturn(new Items(20, 20, List.of(), 0));
+        when(reads.items(INST, LOC)).thenReturn(new Items(20, 20, List.of(), 0, 3));
         when(reads.receipts(INST, LOC)).thenReturn(new Receipts(1, 20, 40, 40, new BigDecimal("4000.00"),
                 RECEIVED, List.of()));
         when(reads.countsAfter(INST, LOC, RECEIVED)).thenReturn(List.of(
-                new LaterCount("c-1", "COUNT", "OPEN", RECEIVED.plusHours(1)),
+                new LaterCount("c-1", "COUNT", "POSTED", RECEIVED.plusHours(1)),
                 new LaterCount("rc-1", "RECOUNT", "POSTED", RECEIVED.plusHours(2))));
         when(reads.latestRecount(INST, LOC, RECEIVED)).thenReturn(new Recount("rc-1", "CNT-000002", "c-1",
-                "CNT-000001", 20, 2, 2, new BigDecimal("100.0"), true));
+                "CNT-000001", 20, 2, 2, new BigDecimal("100.0"), true, "POSTED"));
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.addHeader("clientId", INST);
@@ -105,6 +105,9 @@ class OpeningStockServiceTest {
         Map<String, Object> recount = (Map<String, Object>) answer.get("recount");
         assertEquals(new BigDecimal("10.0"), recount.get("sample_percent"));
         assertEquals(true, recount.get("passes"));
+        Map<String, Object> items = (Map<String, Object>) answer.get("items");
+        assertEquals(0L, items.get("without_cost"), "the location's goods are all costed");
+        assertEquals(3L, items.get("institute_without_cost"), "other items of the shop, for information");
     }
 
     @Test
