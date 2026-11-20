@@ -730,10 +730,11 @@ class CommerceSwitchoverDatabaseProofIT {
         assertEquals(auditBefore + 1, audits("ITEM_COSTS_IMPORT"), "A2: one audit row");
         note("A2 commit: changed 4, STANDARD_SET x4, audit 1; shirt 1000.0000, mug 89.2768, scarf cost_price null");
 
-        // A3: the same file again changes nothing.
+        // A3: the same file again changes nothing. The token covers today's costs, so it is a new one (X3).
         ValidateResponse again = validate(accountant, file);
-        assertEquals(checked.token(), again.token(), "same file, same plan, same token");
+        assertFalse(checked.token().equals(again.token()), "X3: the costs changed, so the token did");
         assertEquals(4, again.unchanged());
+        assertEquals("IMPORT_CHANGED", code(() -> commit(accountant, file, checked.token())), "X3: stale token");
         CommitResponse repeat = commit(accountant, file, again.token());
         assertEquals(0, repeat.changed());
         assertEquals(4, repeat.unchanged() + repeat.alreadyDone());
@@ -1223,7 +1224,7 @@ class CommerceSwitchoverDatabaseProofIT {
         StaffOrderRequest request = StaffOrderRequest.builder().clientRequestId(key())
                 .customer(StaffOrderRequest.Customer.builder().phone("9876500001").name("Phone Buyer").build())
                 .shippingAddress(CheckoutRequest.Address.builder().line1("2 Test Lane").city("Test City")
-                        .pincode("100001").build())
+                        .pincode("200001").build())
                 .lines(List.of(StaffOrderRequest.Line.builder().variantId(lamp).quantity(1).build()))
                 .tenders(List.of(StaffOrderRequest.Tender.builder().mode("CASH").amount(new BigDecimal("100.00"))
                         .build()))
@@ -1295,7 +1296,7 @@ class CommerceSwitchoverDatabaseProofIT {
         assertEquals(3, count("SELECT count(*) FROM stock_cost_adjustment WHERE institute_id = ? AND package_session_id "
                 + "= ? AND reason = 'STANDARD_SET'", inst, cloth));
         assertEquals(1, count("SELECT count(*) FROM commerce_audit WHERE institute_id = ? AND kind = "
-                + "'ITEM_COSTS_IMPORT' AND new_value_json LIKE ?", inst, "%" + again.token().substring(0, 16) + "%"));
+                + "'ITEM_COSTS_IMPORT' AND new_value_json::text LIKE ?", inst, "%" + again.token().substring(0, 16) + "%"));
         note("X3 X -> Y -> X: standard cost 12.0000 again, STANDARD_SET x3");
 
         // X2: an institute that is not in REGULAR tax mode keeps the tax in the cost.
