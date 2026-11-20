@@ -2,16 +2,13 @@
     "card": {
         "title": "Breaks and holds",
         "subtitle": "Stop reminders for a while, or pause an enrolment.",
-        "hold": "Hold reminders",
-        "pause": "Pause",
-        "empty": "No break right now. Use a hold when a learner asks not to be reminded for a while, and a pause when they stop for a while.",
+        "empty": "No breaks right now.",
         "noCourses": "This learner has no current course, so there is nothing to hold or pause.",
         "error": "Could not load breaks.",
         "retry": "Try again",
         "history_one": "Past breaks ({{count}})",
         "history_other": "Past breaks ({{count}})",
         "allCourses": "All courses",
-        "untilResumed": "until resumed",
         "dayOf": "Day {{day}} of {{total}}",
         "dayN": "Day {{day}}",
         "startsOn": "Starts {{date}}",
@@ -19,11 +16,15 @@
         "change": "Change dates",
         "resume": "Resume now",
         "endHold": "End hold",
-        "cancel": "Cancel",
+        "cancel": "Cancel break",
         "pauseName": "Pause",
         "holdName": "Reminder hold",
         "datesMoved_one": "dates moved {{count}} day",
-        "datesMoved_other": "dates moved {{count}} days"
+        "datesMoved_other": "dates moved {{count}} days",
+        "add": "Add break",
+        "allTaken": "Every course already has a break.",
+        "offNotice": "Breaks and holds are switched off for new breaks. This one continues until it ends, and you can still end it here.",
+        "noEndDate": "no end date"
     },
     "status": {
         "onHold": "On hold",
@@ -45,35 +46,34 @@
         "HEALTH": "Health",
         "FAMILY": "Family",
         "PAYMENT_PROMISED": "Payment promised",
-        "FINANCIAL": "Money trouble",
+        "FINANCIAL": "Can’t pay right now",
         "OTHER": "Other"
     },
     "form": {
-        "title": "Give a break",
-        "titleFor": "Give {{name}} a break",
+        "title": "Add a break",
+        "titleFor": "Add a break for {{name}}",
         "kindLabel": "Type of break",
-        "holdTitle": "Hold reminders",
-        "holdHint": "Stays enrolled and keeps paying. We just stop reminding them.",
-        "pauseTitle": "Pause enrolment",
-        "pauseHint": "Stops for a while. No charges or expiry; dates move forward when they return.",
+        "holdTitle": "Reminder hold",
+        "holdHint": "Stays enrolled and keeps paying. Only reminders stop.",
+        "pauseTitle": "Pause",
+        "pauseHint": "Stops for a while: no charges or expiry, and the dates move forward on return.",
         "course": "Course",
         "allCourses": "All courses",
         "firstDay": "First day",
         "lastDay": "Last day",
         "quickDays_one": "{{count}} day",
         "quickDays_other": "{{count}} days",
-        "untilResumed": "Until I resume it",
         "lengthDays_one": "{{count}} day",
         "lengthDays_other": "{{count}} days",
         "whatStops": "What stops",
         "stopClass": "Class reminders",
-        "stopClassHint": "No class links or reminders. They can still join a class.",
+        "stopClassHint": "No class reminders by message. They can still join classes from the app.",
         "stopFee": "Fee and renewal reminders",
         "stopFeeHint": "No payment, due-date or renewal reminders.",
         "removeAccess": "Switch the course off while paused",
-        "removeAccessHint": "Off: they keep seeing the course and recordings. On: the course disappears until they return.",
+        "removeAccessHint": "Hides the course and its recordings until they return.",
         "reason": "Reason",
-        "note": "Note",
+        "note": "Note (optional)",
         "notePlaceholder": "Anything the team should know (optional)",
         "cancel": "Cancel",
         "saving": "Saving…",
@@ -82,19 +82,21 @@
         "submitSchedule": "Schedule break",
         "errors": {
             "pauseNeedsCourse": "Choose the course to pause.",
-            "endRequired": "Choose the last day, or pick “Until I resume it”.",
+            "endRequired": "Choose the last day, or pick “No end date”.",
             "endBeforeStart": "The last day must be on or after the first day.",
             "nothingToStop": "Choose at least one kind of reminder to stop.",
-            "newDateRequired": "Choose the new end date."
-        }
+            "newDateRequired": "Choose the new end date.",
+            "startRequired": "Choose the first day.",
+            "endBeforeMin": "The last day cannot be before {{date}}."
+        },
+        "noEndDate": "No end date",
+        "addReason": "Add a reason (optional)",
+        "quickLabel": "Quick lengths",
+        "previewFailed": "Could not work out what will happen.",
+        "retry": "Try again"
     },
     "preview": {
         "title": "What will happen",
-        "startsToday": "Starts today,",
-        "startsOn": "Starts {{date}},",
-        "lastDay_one": "last day {{date}} ({{count}} day).",
-        "lastDay_other": "last day {{date}} ({{count}} days).",
-        "untilResumed": "runs until you resume it.",
         "pausedFor_one": "Paused for {{count}} day.",
         "pausedFor_other": "Paused for {{count}} days.",
         "heldFor_one": "On hold for {{count}} day.",
@@ -112,7 +114,15 @@
         "nextPaymentMoves": "Next payment moves:",
         "instalmentsMove_one": "{{count}} unpaid instalment moves by the same days.",
         "instalmentsMove_other": "{{count}} unpaid instalments move by the same days.",
-        "datesUnchanged": "Membership dates stay as they are."
+        "datesUnchanged": "Membership dates stay as they are.",
+        "when": {
+            "todayUntil_one": "Starts today; last day {{date}} ({{count}} day).",
+            "todayUntil_other": "Starts today; last day {{date}} ({{count}} days).",
+            "todayOpen": "Starts today, with no end date.",
+            "laterUntil_one": "Starts {{start}}; last day {{date}} ({{count}} day).",
+            "laterUntil_other": "Starts {{start}}; last day {{date}} ({{count}} days).",
+            "laterOpen": "Starts {{start}}, with no end date."
+        }
     },
     "warnings": {
         "NO_MEMBERSHIP": "This course has no membership, so only access and reminders are paused.",
@@ -136,9 +146,9 @@
     },
     "resume": {
         "titlePause": "Resume enrolment",
-        "titleHold": "End the hold",
+        "titleHold": "End reminder hold",
         "submitPause": "Resume now",
-        "submitHold": "End hold now",
+        "submitHold": "End hold",
         "datesLabel": "Membership dates",
         "modes": {
             "SHIFT_BY_PAUSED_DAYS": {
@@ -152,17 +162,17 @@
             },
             "NEW_DATE": {
                 "title": "Set a new end date",
-                "hint": "The membership and its next payment run until a date you choose."
+                "hint": "The membership runs until the date you choose, and the next payment moves to that date."
             }
         },
         "newEndDate": "New end date",
         "moveInstalments_one": "Also move the {{count}} unpaid instalment",
         "moveInstalments_other": "Also move the {{count}} unpaid instalments",
-        "note": "Note",
-        "notePlaceholder": "Why now, what was agreed (optional)"
+        "notePlaceholder": "Why now, what was agreed (optional)",
+        "newDatePick": "Choose a date to see what changes."
     },
     "change": {
-        "title": "Change dates",
+        "title": "Change last day",
         "submit": "Save",
         "started": "Started on {{date}}."
     },

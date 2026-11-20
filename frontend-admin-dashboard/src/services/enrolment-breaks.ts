@@ -117,7 +117,7 @@ export interface EndBreakRequest {
 export const ENROLMENT_BREAKS_QUERY_KEY = 'enrolment-breaks';
 
 /** Everything the learner panel shows; refetch after any change. */
-export const useLearnerBreaks = (userId: string, instituteId: string, enabled = true) =>
+export const useLearnerBreaks = (userId: string, instituteId: string, enabled: boolean) =>
     useQuery({
         queryKey: [ENROLMENT_BREAKS_QUERY_KEY, 'learner', userId, instituteId],
         queryFn: async (): Promise<LearnerBreaks> => {
@@ -201,20 +201,28 @@ const SAVE_SETTING_URL = GET_INSITITUTE_SETTINGS.replace('/get', '/save-setting'
 
 export interface EnrolmentBreakSettings {
     enabled: boolean;
+    /** Not saved: true when the institute has ever saved this setting (on or off). */
+    configured?: boolean;
 }
 
 export const ENROLMENT_BREAK_SETTINGS_DEFAULTS: EnrolmentBreakSettings = { enabled: false };
 
-export const fetchEnrolmentBreakSettings = async (): Promise<EnrolmentBreakSettings> => {
+/** Throws on failure: the Settings page must show an error, not a false "off". */
+export const fetchEnrolmentBreakSettingsStrict = async (): Promise<EnrolmentBreakSettings> => {
     const instituteId = getCurrentInstituteId();
     if (!instituteId) return ENROLMENT_BREAK_SETTINGS_DEFAULTS;
+    const res = await authenticatedAxiosInstance.get(GET_INSITITUTE_SETTINGS, {
+        params: { instituteId, settingKey: ENROLMENT_BREAK_SETTING_KEY },
+    });
+    // GET returns the SettingDto ({key, name, data}); the content is at .data.
+    const data = res.data?.data as Partial<EnrolmentBreakSettings> | undefined;
+    return { ...ENROLMENT_BREAK_SETTINGS_DEFAULTS, ...(data ?? {}), configured: Boolean(data) };
+};
+
+/** For the gate only: any failure reads as "off", so a broken lookup never shows the feature. */
+export const fetchEnrolmentBreakSettings = async (): Promise<EnrolmentBreakSettings> => {
     try {
-        const res = await authenticatedAxiosInstance.get(GET_INSITITUTE_SETTINGS, {
-            params: { instituteId, settingKey: ENROLMENT_BREAK_SETTING_KEY },
-        });
-        // GET returns the SettingDto ({key, name, data}); the content is at .data.
-        const data = res.data?.data as Partial<EnrolmentBreakSettings> | undefined;
-        return { ...ENROLMENT_BREAK_SETTINGS_DEFAULTS, ...(data ?? {}) };
+        return await fetchEnrolmentBreakSettingsStrict();
     } catch {
         return ENROLMENT_BREAK_SETTINGS_DEFAULTS;
     }
@@ -224,7 +232,7 @@ export const saveEnrolmentBreakSettings = async (data: EnrolmentBreakSettings): 
     const instituteId = getCurrentInstituteId();
     await authenticatedAxiosInstance.post(
         SAVE_SETTING_URL,
-        { setting_name: 'Breaks and holds', setting_data: data },
+        { setting_name: 'Breaks and holds', setting_data: { enabled: data.enabled } },
         { params: { instituteId, settingKey: ENROLMENT_BREAK_SETTING_KEY } }
     );
 };
@@ -232,12 +240,14 @@ export const saveEnrolmentBreakSettings = async (data: EnrolmentBreakSettings): 
 /** The gate: every breaks-and-holds UI renders nothing unless this says enabled. */
 export const useEnrolmentBreakSettings = () => {
     const query = useQuery({
-        queryKey: [ENROLMENT_BREAK_SETTINGS_QUERY_KEY],
+        queryKey: [ENROLMENT_BREAK_SETTINGS_QUERY_KEY, 'gate'],
         queryFn: fetchEnrolmentBreakSettings,
         staleTime: 5 * 60_000,
     });
     return {
         enabled: Boolean(query.data?.enabled),
+        /** Ever saved (on or off): only then can breaks exist, so only then is the card loaded. */
+        configured: Boolean(query.data?.configured),
         isLoading: query.isLoading,
     };
 };

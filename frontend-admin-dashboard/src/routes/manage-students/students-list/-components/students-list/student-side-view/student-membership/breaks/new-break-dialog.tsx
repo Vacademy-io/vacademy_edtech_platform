@@ -2,10 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
-import { BellSlash, PauseCircle } from '@phosphor-icons/react';
+import { BellSlash, CaretDown, CaretRight, PauseCircle } from '@phosphor-icons/react';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
 import { MyInput } from '@/components/design-system/input';
@@ -32,53 +33,71 @@ import {
     type BreakKind,
     type BreakRequest,
 } from '@/services/enrolment-breaks';
-import { BreakEffectsPanel } from './break-effects-panel';
-import { BREAK_REASONS, QUICK_LENGTHS, addDaysTo, lengthInDays } from './break-utils';
+import { BreakEffectsPanel, useFirstBlocker } from './break-effects-panel';
+import { BREAK_REASONS, QUICK_LENGTHS, addDaysTo, chipClasses, lengthInDays } from './break-utils';
 
 const ALL_COURSES = 'ALL';
 
-const schema = z
-    .object({
-        kind: z.enum(['HOLD', 'PAUSE']),
-        course: z.string(),
-        startsOn: z.string().min(1),
-        openEnded: z.boolean(),
-        endsOn: z.string(),
-        stopClass: z.boolean(),
-        stopFee: z.boolean(),
-        removeAccess: z.boolean(),
-        reason: z.string(),
-        note: z.string().max(1000),
-    })
-    .superRefine((v, ctx) => {
-        if (v.kind === 'PAUSE' && (!v.course || v.course === ALL_COURSES)) {
-            ctx.addIssue({ code: 'custom', path: ['course'], message: 'pauseNeedsCourse' });
-        }
-        if (!v.openEnded && !v.endsOn) {
-            ctx.addIssue({ code: 'custom', path: ['endsOn'], message: 'endRequired' });
-        }
-        if (!v.openEnded && v.endsOn && v.endsOn < v.startsOn) {
-            ctx.addIssue({ code: 'custom', path: ['endsOn'], message: 'endBeforeStart' });
-        }
-        if (v.kind === 'HOLD' && !v.stopClass && !v.stopFee) {
-            ctx.addIssue({ code: 'custom', path: ['stopFee'], message: 'nothingToStop' });
-        }
-    });
+const buildSchema = (t: TFunction) =>
+    z
+        .object({
+            kind: z.enum(['HOLD', 'PAUSE']),
+            course: z.string(),
+            startsOn: z.string().min(1, t('form.errors.startRequired')),
+            openEnded: z.boolean(),
+            endsOn: z.string(),
+            stopClass: z.boolean(),
+            stopFee: z.boolean(),
+            removeAccess: z.boolean(),
+            reason: z.string(),
+            note: z.string().max(1000),
+        })
+        .superRefine((v, ctx) => {
+            if (v.kind === 'PAUSE' && (!v.course || v.course === ALL_COURSES)) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['course'],
+                    message: t('form.errors.pauseNeedsCourse'),
+                });
+            }
+            if (!v.openEnded && !v.endsOn) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['endsOn'],
+                    message: t('form.errors.endRequired'),
+                });
+            }
+            if (!v.openEnded && v.endsOn && v.endsOn < v.startsOn) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['endsOn'],
+                    message: t('form.errors.endBeforeStart'),
+                });
+            }
+            if (v.kind === 'HOLD' && !v.stopClass && !v.stopFee) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['stopFee'],
+                    message: t('form.errors.nothingToStop'),
+                });
+            }
+        });
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<ReturnType<typeof buildSchema>>;
 
 interface NewBreakDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    initialKind: BreakKind;
+    onClose: () => void;
     userId: string;
     instituteId: string;
     learnerName?: string;
     today: string;
+    /** Courses a new break can still go on (those without a live break). */
     courses: BreakCourse[];
+    /** False when any course already has a live break: "All courses" is then not offered. */
+    allowAllCourses: boolean;
 }
 
-/** Debounces a value so the preview is asked for once the admin stops typing. */
+/** Debounces a primitive so the preview is asked for once the admin stops changing things. */
 const useDebounced = <T,>(value: T, ms: number): T => {
     const [v, setV] = useState(value);
     useEffect(() => {
@@ -89,30 +108,32 @@ const useDebounced = <T,>(value: T, ms: number): T => {
 };
 
 /**
- * Give a learner a break: a hold (reminders stop, nothing else changes) or a pause
- * (billing and expiry stop, access optionally off, dates move on return). The live
- * "What will happen" panel shows the server's own date maths before anything is saved.
+ * Add a break: a reminder hold (only reminders stop) or a pause (billing and expiry stop,
+ * access optionally off, dates move on return). Mounted only while open, so every open
+ * starts fresh. The "What will happen" panel shows the server's own date maths first.
  */
 export const NewBreakDialog = ({
-    open,
-    onOpenChange,
-    initialKind,
+    onClose,
     userId,
     instituteId,
     learnerName,
     today,
     courses,
+    allowAllCourses,
 }: NewBreakDialogProps) => {
     const { t } = useTranslation('manageStudentsBreaks');
     const queryClient = useQueryClient();
+    const schema = useMemo(() => buildSchema(t), [t]);
+    const [showReason, setShowReason] = useState(false);
 
-    const defaults = useMemo<FormValues>(
-        () => ({
-            kind: initialKind,
+    const form = useForm<FormValues>({
+        resolver: zodResolver(schema),
+        defaultValues: {
+            kind: 'HOLD',
             course:
-                initialKind === 'PAUSE' || courses.length === 1
-                    ? courses[0]?.package_session_id ?? ''
-                    : ALL_COURSES,
+                allowAllCourses && courses.length > 1
+                    ? ALL_COURSES
+                    : courses[0]?.package_session_id ?? '',
             startsOn: today,
             openEnded: false,
             endsOn: addDaysTo(today, 13),
@@ -121,16 +142,8 @@ export const NewBreakDialog = ({
             removeAccess: true,
             reason: '',
             note: '',
-        }),
-        [initialKind, courses, today]
-    );
-
-    const form = useForm<FormValues>({ resolver: zodResolver(schema), defaultValues: defaults });
-
-    // Fresh form for every open, so nothing carries over to another learner.
-    useEffect(() => {
-        if (open) form.reset(defaults);
-    }, [open, defaults, form]);
+        },
+    });
 
     const values = form.watch();
     const isPause = values.kind === 'PAUSE';
@@ -147,15 +160,19 @@ export const NewBreakDialog = ({
         reason: values.reason || null,
         note: values.note.trim() || null,
     };
-    // Debounce a string, not the object: a fresh object every render would never settle.
-    const debouncedKey = useDebounced(JSON.stringify(request), 300);
 
+    // Only what changes the outcome drives the preview (not the reason or the note), as a
+    // string so the debounce settles, and the last preview stays on screen while it refreshes.
+    const effectKey = JSON.stringify({ ...request, reason: null, note: null });
+    const debouncedKey = useDebounced(effectKey, 300);
     const previewQuery = useQuery({
         queryKey: [ENROLMENT_BREAKS_QUERY_KEY, 'preview', instituteId, debouncedKey],
         queryFn: () => previewBreak(instituteId, JSON.parse(debouncedKey) as BreakRequest),
-        enabled: open && Boolean(request.starts_on),
+        enabled: Boolean(values.startsOn),
+        placeholderData: keepPreviousData,
         staleTime: 10_000,
     });
+    const firstBlocker = useFirstBlocker(previewQuery.data);
 
     const mutation = useMutation({
         mutationFn: () => createBreak(instituteId, request),
@@ -174,7 +191,7 @@ export const NewBreakDialog = ({
             ['user-plans', 'students', 'GET_LEARNER_PACKAGES', 'cpo-side-view'].forEach((key) =>
                 queryClient.invalidateQueries({ queryKey: [key] })
             );
-            onOpenChange(false);
+            onClose();
         },
         onError: (err: { response?: { data?: { message?: string } }; message?: string }) => {
             toast.error(err?.response?.data?.message || err?.message || t('toast.failed'));
@@ -182,7 +199,9 @@ export const NewBreakDialog = ({
     });
 
     const courseOptions = [
-        ...(isPause ? [] : [{ _id: ALL_COURSES, value: ALL_COURSES, label: t('form.allCourses') }]),
+        ...(isPause || !allowAllCourses
+            ? []
+            : [{ _id: ALL_COURSES, value: ALL_COURSES, label: t('form.allCourses') }]),
         ...courses.map((c) => ({
             _id: c.package_session_id,
             value: c.package_session_id,
@@ -190,8 +209,10 @@ export const NewBreakDialog = ({
         })),
     ];
 
+    const settled = debouncedKey === effectKey && !previewQuery.isFetching;
     const blocked = (previewQuery.data?.blockers.length ?? 0) > 0;
     const length = values.openEnded ? null : lengthInDays(values.startsOn, values.endsOn);
+    const scheduled = values.startsOn > today;
 
     const setKind = (kind: BreakKind) => {
         form.setValue('kind', kind);
@@ -200,33 +221,46 @@ export const NewBreakDialog = ({
         }
     };
 
-    const fieldError = (key?: string) => (key ? t(`form.errors.${key}`) : undefined);
+    /** A new first day keeps the length the admin chose: the last day moves with it. */
+    const changeStart = (next: string) => {
+        const len = lengthInDays(values.startsOn, values.endsOn);
+        form.setValue('startsOn', next, { shouldValidate: true });
+        if (!values.openEnded && len && len > 0 && next) {
+            form.setValue('endsOn', addDaysTo(next, len - 1), { shouldValidate: true });
+        }
+    };
+
+    const footerNote = previewQuery.isError
+        ? t('form.previewFailed')
+        : settled && firstBlocker
+          ? firstBlocker
+          : null;
 
     return (
         <MyDialog
-            open={open}
-            onOpenChange={onOpenChange}
+            open
+            onOpenChange={(open) => !open && onClose()}
             heading={learnerName ? t('form.titleFor', { name: learnerName }) : t('form.title')}
             dialogWidth="max-w-xl"
+            footerLeft={
+                footerNote ? (
+                    <p className="text-caption text-danger-600">{footerNote}</p>
+                ) : undefined
+            }
             footer={
                 <>
-                    <MyButton
-                        type="button"
-                        buttonType="secondary"
-                        scale="medium"
-                        onClick={() => onOpenChange(false)}
-                    >
+                    <MyButton type="button" buttonType="secondary" scale="medium" onClick={onClose}>
                         {t('form.cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
                         buttonType="primary"
                         scale="medium"
-                        disable={blocked || previewQuery.isFetching || mutation.isPending}
+                        disable={blocked || previewQuery.isError || !settled || mutation.isPending}
                         onAsyncClick={form.handleSubmit(() => mutation.mutateAsync())}
                         loadingText={t('form.saving')}
                     >
-                        {previewQuery.data && !previewQuery.data.starts_today
+                        {scheduled
                             ? t('form.submitSchedule')
                             : isPause
                               ? t('form.submitPause')
@@ -283,21 +317,42 @@ export const NewBreakDialog = ({
                         })}
                     </RadioGroup>
 
-                    {/* 2. Which course */}
-                    <SelectField
-                        control={form.control}
-                        name="course"
-                        label={t('form.course')}
-                        required={isPause}
-                        options={courseOptions}
-                        className="w-full sm:w-full"
-                        labelStyle="w-full"
-                    />
-                    {form.formState.errors.course && (
-                        <p className="-mt-3 text-caption text-danger-600">
-                            {fieldError(form.formState.errors.course.message)}
-                        </p>
-                    )}
+                    {/* 2. Which course (and, for a pause, whether it is switched off) */}
+                    <div className="space-y-3">
+                        <SelectField
+                            control={form.control}
+                            name="course"
+                            label={t('form.course')}
+                            required={isPause}
+                            options={courseOptions}
+                            className="w-full sm:w-full"
+                            labelStyle="w-full"
+                        />
+                        {isPause && (
+                            <FormField
+                                control={form.control}
+                                name="removeAccess"
+                                render={({ field }) => (
+                                    <FormItem className="flex items-start justify-between gap-3 space-y-0 rounded-md border border-neutral-200 p-3">
+                                        <div className="space-y-0.5">
+                                            <FormLabel className="font-normal">
+                                                {t('form.removeAccess')}
+                                            </FormLabel>
+                                            <FormDescription className="text-caption">
+                                                {t('form.removeAccessHint')}
+                                            </FormDescription>
+                                        </div>
+                                        <FormControl>
+                                            <Switch
+                                                checked={field.value}
+                                                onCheckedChange={field.onChange}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        )}
+                    </div>
 
                     {/* 3. When */}
                     <div className="space-y-2">
@@ -313,19 +368,20 @@ export const NewBreakDialog = ({
                                                 inputType="date"
                                                 input={field.value}
                                                 onChangeFunction={(e) =>
-                                                    field.onChange(e.target.value)
+                                                    changeStart(e.target.value)
                                                 }
                                                 min={today}
                                                 className="w-full sm:w-full"
                                             />
                                         </FormControl>
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
                             <FormField
                                 control={form.control}
                                 name="endsOn"
-                                render={({ field, fieldState }) => (
+                                render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>{t('form.lastDay')}</FormLabel>
                                         <FormControl>
@@ -341,16 +397,15 @@ export const NewBreakDialog = ({
                                                 className="w-full sm:w-full"
                                             />
                                         </FormControl>
-                                        {fieldState.error && (
-                                            <p className="text-caption text-danger-600">
-                                                {fieldError(fieldState.error.message)}
-                                            </p>
-                                        )}
+                                        <FormMessage />
                                     </FormItem>
                                 )}
                             />
                         </div>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div
+                            className="flex flex-wrap items-center gap-2"
+                            aria-label={t('form.quickLabel')}
+                        >
                             {QUICK_LENGTHS.map((days) => {
                                 const target = addDaysTo(values.startsOn, days - 1);
                                 const active = !values.openEnded && values.endsOn === target;
@@ -358,18 +413,14 @@ export const NewBreakDialog = ({
                                     <button
                                         key={days}
                                         type="button"
+                                        aria-pressed={active}
                                         onClick={() => {
                                             form.setValue('openEnded', false);
                                             form.setValue('endsOn', target, {
                                                 shouldValidate: true,
                                             });
                                         }}
-                                        className={cn(
-                                            'rounded-full px-3 py-1 text-caption ring-1 transition-colors',
-                                            active
-                                                ? 'bg-primary-50 text-primary-700 ring-primary-300'
-                                                : 'text-neutral-600 ring-neutral-200 hover:bg-neutral-50'
-                                        )}
+                                        className={chipClasses(active)}
                                     >
                                         {t('form.quickDays', { count: days })}
                                     </button>
@@ -377,15 +428,15 @@ export const NewBreakDialog = ({
                             })}
                             <button
                                 type="button"
-                                onClick={() => form.setValue('openEnded', !values.openEnded)}
-                                className={cn(
-                                    'rounded-full px-3 py-1 text-caption ring-1 transition-colors',
-                                    values.openEnded
-                                        ? 'bg-primary-50 text-primary-700 ring-primary-300'
-                                        : 'text-neutral-600 ring-neutral-200 hover:bg-neutral-50'
-                                )}
+                                aria-pressed={values.openEnded}
+                                onClick={() =>
+                                    form.setValue('openEnded', !values.openEnded, {
+                                        shouldValidate: true,
+                                    })
+                                }
+                                className={chipClasses(values.openEnded)}
                             >
-                                {t('form.untilResumed')}
+                                {t('form.noEndDate')}
                             </button>
                             {length !== null && length > 0 && (
                                 <span className="text-caption text-neutral-500">
@@ -397,7 +448,7 @@ export const NewBreakDialog = ({
 
                     {/* 4. What stops */}
                     <fieldset className="space-y-3">
-                        <legend className="mb-2 text-body font-medium text-neutral-800">
+                        <legend className="mb-2 text-body font-semibold text-neutral-800">
                             {t('form.whatStops')}
                         </legend>
                         <FormField
@@ -425,7 +476,7 @@ export const NewBreakDialog = ({
                         <FormField
                             control={form.control}
                             name="stopFee"
-                            render={({ field, fieldState }) => (
+                            render={({ field }) => (
                                 <FormItem className="flex items-start gap-3 space-y-0">
                                     <FormControl>
                                         <Checkbox
@@ -440,95 +491,75 @@ export const NewBreakDialog = ({
                                         <FormDescription className="text-caption">
                                             {t('form.stopFeeHint')}
                                         </FormDescription>
-                                        {fieldState.error && (
-                                            <p className="text-caption text-danger-600">
-                                                {fieldError(fieldState.error.message)}
-                                            </p>
-                                        )}
+                                        <FormMessage />
                                     </div>
                                 </FormItem>
                             )}
                         />
-                        {isPause && (
-                            <FormField
-                                control={form.control}
-                                name="removeAccess"
-                                render={({ field }) => (
-                                    <FormItem className="flex items-start justify-between gap-3 space-y-0 rounded-md border border-neutral-200 p-3">
-                                        <div className="space-y-0.5">
-                                            <FormLabel className="font-normal">
-                                                {t('form.removeAccess')}
-                                            </FormLabel>
-                                            <FormDescription className="text-caption">
-                                                {t('form.removeAccessHint')}
-                                            </FormDescription>
-                                        </div>
-                                        <FormControl>
-                                            <Switch
-                                                checked={field.value}
-                                                onCheckedChange={field.onChange}
-                                            />
-                                        </FormControl>
-                                    </FormItem>
-                                )}
-                            />
-                        )}
                     </fieldset>
 
-                    {/* 5. Why */}
+                    {/* 5. Why (optional) */}
                     <div className="space-y-2">
-                        <span className="text-body font-medium text-neutral-800">
-                            {t('form.reason')}
-                        </span>
-                        <div
-                            className="flex flex-wrap gap-2"
-                            role="radiogroup"
-                            aria-label={t('form.reason')}
+                        <button
+                            type="button"
+                            onClick={() => setShowReason((v) => !v)}
+                            aria-expanded={showReason}
+                            className="flex items-center gap-1 rounded-sm text-body font-semibold text-neutral-700 hover:text-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300"
                         >
-                            {BREAK_REASONS.map((code) => {
-                                const active = values.reason === code;
-                                return (
-                                    <button
-                                        key={code}
-                                        type="button"
-                                        role="radio"
-                                        aria-checked={active}
-                                        onClick={() => form.setValue('reason', active ? '' : code)}
-                                        className={cn(
-                                            'rounded-full px-3 py-1 text-caption ring-1 transition-colors',
-                                            active
-                                                ? 'bg-primary-50 text-primary-700 ring-primary-300'
-                                                : 'text-neutral-600 ring-neutral-200 hover:bg-neutral-50'
-                                        )}
-                                    >
-                                        {t(`reasons.${code}`)}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <FormField
-                            control={form.control}
-                            name="note"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="sr-only">{t('form.note')}</FormLabel>
-                                    <FormControl>
-                                        <Textarea
-                                            rows={2}
-                                            placeholder={t('form.notePlaceholder')}
-                                            {...field}
-                                        />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
+                            {showReason ? (
+                                <CaretDown className="size-3.5" />
+                            ) : (
+                                <CaretRight className="size-3.5 rtl:rotate-180" />
                             )}
-                        />
+                            {t('form.addReason')}
+                        </button>
+                        {showReason && (
+                            <div className="space-y-3 ps-5">
+                                <div className="flex flex-wrap gap-2" aria-label={t('form.reason')}>
+                                    {BREAK_REASONS.map((code) => {
+                                        const active = values.reason === code;
+                                        return (
+                                            <button
+                                                key={code}
+                                                type="button"
+                                                aria-pressed={active}
+                                                onClick={() =>
+                                                    form.setValue('reason', active ? '' : code)
+                                                }
+                                                className={chipClasses(active)}
+                                            >
+                                                {t(`reasons.${code}`)}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                                <FormField
+                                    control={form.control}
+                                    name="note"
+                                    render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>{t('form.note')}</FormLabel>
+                                            <FormControl>
+                                                <Textarea
+                                                    rows={2}
+                                                    placeholder={t('form.notePlaceholder')}
+                                                    {...field}
+                                                />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {/* 6. What will happen */}
                     <BreakEffectsPanel
                         preview={previewQuery.data}
                         isLoading={previewQuery.isLoading}
+                        isError={previewQuery.isError}
+                        onRetry={() => previewQuery.refetch()}
                         mode="create"
                     />
                 </form>

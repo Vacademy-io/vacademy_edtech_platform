@@ -1,18 +1,16 @@
 {
     "title": "Breaks and holds",
-    "description": "Let staff stop reminders for a learner for a while, or pause an enrolment, from the learner’s Membership tab.",
-    "enabledLabel": "On: staff can give breaks",
-    "disabledLabel": "Off: no breaks anywhere",
+    "description": "Let staff stop a learner’s reminders for a while, or pause an enrolment, from the learner’s Membership tab.",
     "loadFailed": "Could not load this setting.",
     "retry": "Try again",
     "hold": {
-        "title": "Hold reminders",
+        "title": "Reminder hold",
         "point1": "For a short absence, or a payment promised for later.",
         "point2": "Class and/or fee reminders stop until the last day.",
         "point3": "The learner stays enrolled, keeps paying and can still join classes."
     },
     "pause": {
-        "title": "Pause enrolment",
+        "title": "Pause",
         "point1": "For a long break when the learner does not pay meanwhile.",
         "point2": "No charges, renewals or expiry; the course can be switched off.",
         "point3": "On return, the membership dates move forward by the days paused."
@@ -21,5 +19,7 @@
     "save": "Save",
     "saving": "Saving…",
     "saved": "Breaks and holds setting saved.",
-    "saveFailed": "Could not save the setting."
+    "saveFailed": "Could not save the setting.",
+    "toggleLabel": "Allow breaks and holds",
+    "offNote": "Switching this off stops new breaks. Breaks already running continue until they end."
 }

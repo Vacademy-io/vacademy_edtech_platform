@@ -11,13 +11,16 @@ import {
     XCircle,
 } from '@phosphor-icons/react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { MyButton } from '@/components/design-system/button';
 import type { BreakPreview } from '@/services/enrolment-breaks';
 import { formatDay, formatInstant } from './break-utils';
 
 interface BreakEffectsPanelProps {
     preview?: BreakPreview;
     isLoading: boolean;
-    /** 'create' explains a new break; 'resume' explains what the resume changes. */
+    isError: boolean;
+    onRetry: () => void;
+    /** 'create' explains a new break; 'resume' explains what ending it changes. */
     mode: 'create' | 'resume';
 }
 
@@ -31,17 +34,44 @@ const Line = ({ icon, children }: { icon: React.ReactNode; children: React.React
 const DateMove = ({ from, to }: { from: string | null; to: string | null }) => (
     <span className="inline-flex flex-wrap items-center gap-1 font-semibold text-neutral-800">
         {formatInstant(from) || '—'}
-        <ArrowRight className="size-3 text-neutral-400" aria-hidden />
+        <ArrowRight className="size-3 text-neutral-400 rtl:rotate-180" aria-hidden />
         {formatInstant(to) || '—'}
     </span>
 );
+
+/** The first blocker, worded, for the dialog footer next to the disabled Save. */
+export const useFirstBlocker = (preview?: BreakPreview): string | null => {
+    const { t } = useTranslation('manageStudentsBreaks');
+    const code = preview?.blockers[0];
+    return code ? t(`blockers.${code}`, { defaultValue: code }) : null;
+};
 
 /**
  * "What will happen", worded from the server's preview so the admin sees the exact dates
  * before saving. Blockers (red) explain why Save is off; warnings (amber) never block.
  */
-export const BreakEffectsPanel = ({ preview, isLoading, mode }: BreakEffectsPanelProps) => {
+export const BreakEffectsPanel = ({
+    preview,
+    isLoading,
+    isError,
+    onRetry,
+    mode,
+}: BreakEffectsPanelProps) => {
     const { t } = useTranslation('manageStudentsBreaks');
+
+    if (isError && !preview) {
+        return (
+            <div
+                role="alert"
+                className="flex items-center justify-between gap-2 rounded-md bg-danger-50 p-3 text-caption text-danger-700 ring-1 ring-danger-200"
+            >
+                <span>{t('form.previewFailed')}</span>
+                <MyButton type="button" buttonType="text" scale="small" onClick={onRetry}>
+                    {t('form.retry')}
+                </MyButton>
+            </div>
+        );
+    }
 
     if (isLoading && !preview) {
         return (
@@ -66,6 +96,26 @@ export const BreakEffectsPanel = ({ preview, isLoading, mode }: BreakEffectsPane
         preview.next_charge_after &&
         preview.next_charge_now !== preview.next_charge_after;
 
+    let when: string | null = null;
+    if (mode === 'create') {
+        if (preview.starts_today) {
+            when = preview.ends_on
+                ? t('preview.when.todayUntil', {
+                      date: formatDay(preview.ends_on),
+                      count: preview.days ?? 0,
+                  })
+                : t('preview.when.todayOpen');
+        } else {
+            when = preview.ends_on
+                ? t('preview.when.laterUntil', {
+                      start: formatDay(preview.starts_on),
+                      date: formatDay(preview.ends_on),
+                      count: preview.days ?? 0,
+                  })
+                : t('preview.when.laterOpen', { start: formatDay(preview.starts_on) });
+        }
+    }
+
     return (
         <div className="space-y-3" aria-live="polite">
             <div className="rounded-lg border border-neutral-200 bg-neutral-50 p-3">
@@ -73,21 +123,7 @@ export const BreakEffectsPanel = ({ preview, isLoading, mode }: BreakEffectsPane
                     {t('preview.title')}
                 </h4>
                 <ul className="space-y-1.5 text-body text-neutral-700">
-                    {mode === 'create' && (
-                        <Line icon={<CalendarBlank className="size-4" />}>
-                            {preview.starts_today
-                                ? t('preview.startsToday')
-                                : t('preview.startsOn', {
-                                      date: formatDay(preview.starts_on),
-                                  })}{' '}
-                            {preview.ends_on
-                                ? t('preview.lastDay', {
-                                      date: formatDay(preview.ends_on),
-                                      count: preview.days ?? 0,
-                                  })
-                                : t('preview.untilResumed')}
-                        </Line>
-                    )}
+                    {when && <Line icon={<CalendarBlank className="size-4" />}>{when}</Line>}
                     {mode === 'resume' && preview.paused_days !== null && (
                         <Line icon={<CalendarBlank className="size-4" />}>
                             {t(pause ? 'preview.pausedFor' : 'preview.heldFor', {

@@ -2,9 +2,7 @@
     "card": {
         "title": "Pauses et suspensions",
         "subtitle": "Arrêter les rappels un temps, ou mettre une inscription en pause.",
-        "hold": "Suspendre les rappels",
-        "pause": "Pause",
-        "empty": "Aucune pause en cours. Suspendez les rappels quand un apprenant ne veut plus être relancé un temps, et mettez en pause quand il s’arrête un temps.",
+        "empty": "Aucune pause en cours.",
         "noCourses": "Cet apprenant n’a aucun cours en cours : rien à suspendre ni à mettre en pause.",
         "error": "Impossible de charger les pauses.",
         "retry": "Réessayer",
@@ -12,7 +10,6 @@
         "history_many": "Pauses passées ({{count}})",
         "history_other": "Pauses passées ({{count}})",
         "allCourses": "Tous les cours",
-        "untilResumed": "jusqu’à la reprise",
         "dayOf": "Jour {{day}} sur {{total}}",
         "dayN": "Jour {{day}}",
         "startsOn": "Commence le {{date}}",
@@ -20,12 +17,16 @@
         "change": "Modifier les dates",
         "resume": "Reprendre maintenant",
         "endHold": "Lever la suspension",
-        "cancel": "Annuler",
+        "cancel": "Annuler la pause",
         "pauseName": "Pause",
         "holdName": "Suspension des rappels",
         "datesMoved_one": "dates décalées de {{count}} jour",
         "datesMoved_many": "dates décalées de {{count}} jours",
-        "datesMoved_other": "dates décalées de {{count}} jours"
+        "datesMoved_other": "dates décalées de {{count}} jours",
+        "add": "Ajouter une pause",
+        "allTaken": "Chaque cours a déjà une pause.",
+        "offNotice": "Les nouvelles pauses sont désactivées. Celle-ci continue jusqu’à sa fin, et vous pouvez toujours la terminer ici.",
+        "noEndDate": "sans date de fin"
     },
     "status": {
         "onHold": "Rappels suspendus",
@@ -47,17 +48,17 @@
         "HEALTH": "Santé",
         "FAMILY": "Famille",
         "PAYMENT_PROMISED": "Paiement promis",
-        "FINANCIAL": "Difficultés financières",
+        "FINANCIAL": "Ne peut pas payer pour l’instant",
         "OTHER": "Autre"
     },
     "form": {
-        "title": "Accorder une pause",
-        "titleFor": "Accorder une pause à {{name}}",
+        "title": "Ajouter une pause",
+        "titleFor": "Ajouter une pause pour {{name}}",
         "kindLabel": "Type de pause",
-        "holdTitle": "Suspendre les rappels",
-        "holdHint": "Reste inscrit et continue de payer. On arrête seulement les rappels.",
-        "pauseTitle": "Mettre l’inscription en pause",
-        "pauseHint": "S’arrête un temps. Ni prélèvement ni expiration ; les dates sont décalées au retour.",
+        "holdTitle": "Suspension des rappels",
+        "holdHint": "Reste inscrit et continue de payer. Seuls les rappels s’arrêtent.",
+        "pauseTitle": "Pause",
+        "pauseHint": "S’arrête un temps : ni prélèvement ni expiration, et les dates sont décalées au retour.",
         "course": "Cours",
         "allCourses": "Tous les cours",
         "firstDay": "Premier jour",
@@ -65,19 +66,18 @@
         "quickDays_one": "{{count}} jour",
         "quickDays_many": "{{count}} jours",
         "quickDays_other": "{{count}} jours",
-        "untilResumed": "Jusqu’à ce que je reprenne",
         "lengthDays_one": "{{count}} jour",
         "lengthDays_many": "{{count}} jours",
         "lengthDays_other": "{{count}} jours",
         "whatStops": "Ce qui s’arrête",
         "stopClass": "Rappels de cours",
-        "stopClassHint": "Ni liens ni rappels de cours. L’apprenant peut toujours rejoindre un cours.",
+        "stopClassHint": "Aucun rappel de cours par message. L’apprenant peut toujours rejoindre les cours depuis l’application.",
         "stopFee": "Rappels de paiement et de renouvellement",
         "stopFeeHint": "Aucun rappel de paiement, d’échéance ou de renouvellement.",
         "removeAccess": "Couper le cours pendant la pause",
-        "removeAccessHint": "Désactivé : l’apprenant voit toujours le cours et les enregistrements. Activé : le cours disparaît jusqu’à son retour.",
+        "removeAccessHint": "Masque le cours et ses enregistrements jusqu’au retour.",
         "reason": "Motif",
-        "note": "Note",
+        "note": "Note (facultatif)",
         "notePlaceholder": "Ce que l’équipe doit savoir (facultatif)",
         "cancel": "Annuler",
         "saving": "Enregistrement…",
@@ -86,20 +86,21 @@
         "submitSchedule": "Programmer la pause",
         "errors": {
             "pauseNeedsCourse": "Choisissez le cours à mettre en pause.",
-            "endRequired": "Choisissez le dernier jour, ou « Jusqu’à ce que je reprenne ».",
+            "endRequired": "Choisissez le dernier jour, ou « Sans date de fin ».",
             "endBeforeStart": "Le dernier jour doit être le premier jour ou après.",
             "nothingToStop": "Choisissez au moins un type de rappel à arrêter.",
-            "newDateRequired": "Choisissez la nouvelle date de fin."
-        }
+            "newDateRequired": "Choisissez la nouvelle date de fin.",
+            "startRequired": "Choisissez le premier jour.",
+            "endBeforeMin": "Le dernier jour ne peut pas être avant le {{date}}."
+        },
+        "noEndDate": "Sans date de fin",
+        "addReason": "Ajouter un motif (facultatif)",
+        "quickLabel": "Durées rapides",
+        "previewFailed": "Impossible de calculer ce qui va se passer.",
+        "retry": "Réessayer"
     },
     "preview": {
         "title": "Ce qui va se passer",
-        "startsToday": "Commence aujourd’hui,",
-        "startsOn": "Commence le {{date}},",
-        "lastDay_one": "dernier jour le {{date}} ({{count}} jour).",
-        "lastDay_many": "dernier jour le {{date}} ({{count}} jours).",
-        "lastDay_other": "dernier jour le {{date}} ({{count}} jours).",
-        "untilResumed": "jusqu’à ce que vous repreniez.",
         "pausedFor_one": "En pause depuis {{count}} jour.",
         "pausedFor_many": "En pause depuis {{count}} jours.",
         "pausedFor_other": "En pause depuis {{count}} jours.",
@@ -120,7 +121,17 @@
         "instalmentsMove_one": "{{count}} échéance impayée est décalée d’autant.",
         "instalmentsMove_many": "{{count}} échéances impayées sont décalées d’autant.",
         "instalmentsMove_other": "{{count}} échéances impayées sont décalées d’autant.",
-        "datesUnchanged": "Les dates de l’abonnement restent inchangées."
+        "datesUnchanged": "Les dates de l’abonnement restent inchangées.",
+        "when": {
+            "todayUntil_one": "Commence aujourd’hui ; dernier jour le {{date}} ({{count}} jour).",
+            "todayUntil_many": "Commence aujourd’hui ; dernier jour le {{date}} ({{count}} jours).",
+            "todayUntil_other": "Commence aujourd’hui ; dernier jour le {{date}} ({{count}} jours).",
+            "todayOpen": "Commence aujourd’hui, sans date de fin.",
+            "laterUntil_one": "Commence le {{start}} ; dernier jour le {{date}} ({{count}} jour).",
+            "laterUntil_many": "Commence le {{start}} ; dernier jour le {{date}} ({{count}} jours).",
+            "laterUntil_other": "Commence le {{start}} ; dernier jour le {{date}} ({{count}} jours).",
+            "laterOpen": "Commence le {{start}}, sans date de fin."
+        }
     },
     "warnings": {
         "NO_MEMBERSHIP": "Ce cours n’a pas d’abonnement : seuls l’accès et les rappels sont mis en pause.",
@@ -144,9 +155,9 @@
     },
     "resume": {
         "titlePause": "Reprendre l’inscription",
-        "titleHold": "Lever la suspension",
+        "titleHold": "Lever la suspension des rappels",
         "submitPause": "Reprendre maintenant",
-        "submitHold": "Lever maintenant",
+        "submitHold": "Lever la suspension",
         "datesLabel": "Dates de l’abonnement",
         "modes": {
             "SHIFT_BY_PAUSED_DAYS": {
@@ -161,18 +172,18 @@
             },
             "NEW_DATE": {
                 "title": "Fixer une nouvelle date de fin",
-                "hint": "L’abonnement et son prochain paiement courent jusqu’à la date choisie."
+                "hint": "L’abonnement court jusqu’à la date choisie, et le prochain paiement passe à cette date."
             }
         },
         "newEndDate": "Nouvelle date de fin",
         "moveInstalments_one": "Décaler aussi l’échéance impayée ({{count}})",
         "moveInstalments_many": "Décaler aussi les {{count}} échéances impayées",
         "moveInstalments_other": "Décaler aussi les {{count}} échéances impayées",
-        "note": "Note",
-        "notePlaceholder": "Pourquoi maintenant, ce qui a été convenu (facultatif)"
+        "notePlaceholder": "Pourquoi maintenant, ce qui a été convenu (facultatif)",
+        "newDatePick": "Choisissez une date pour voir ce qui change."
     },
     "change": {
-        "title": "Modifier les dates",
+        "title": "Modifier le dernier jour",
         "submit": "Enregistrer",
         "started": "Commencée le {{date}}."
     },

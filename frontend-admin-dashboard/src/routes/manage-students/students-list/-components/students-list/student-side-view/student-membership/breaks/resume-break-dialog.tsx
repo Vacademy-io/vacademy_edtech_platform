@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import { MyDialog } from '@/components/design-system/dialog';
 import { MyButton } from '@/components/design-system/button';
@@ -29,28 +30,32 @@ import {
     type EnrolmentBreak,
     type ResumeMode,
 } from '@/services/enrolment-breaks';
-import { BreakEffectsPanel } from './break-effects-panel';
+import { BreakEffectsPanel, useFirstBlocker } from './break-effects-panel';
 import { addDaysTo } from './break-utils';
 
-const schema = z
-    .object({
-        mode: z.enum(['SHIFT_BY_PAUSED_DAYS', 'KEEP_DATES', 'NEW_DATE']),
-        newEndDate: z.string(),
-        moveInstalments: z.boolean(),
-        note: z.string().max(1000),
-    })
-    .superRefine((v, ctx) => {
-        if (v.mode === 'NEW_DATE' && !v.newEndDate) {
-            ctx.addIssue({ code: 'custom', path: ['newEndDate'], message: 'newDateRequired' });
-        }
-    });
+const buildSchema = (t: TFunction) =>
+    z
+        .object({
+            mode: z.enum(['SHIFT_BY_PAUSED_DAYS', 'KEEP_DATES', 'NEW_DATE']),
+            newEndDate: z.string(),
+            moveInstalments: z.boolean(),
+            note: z.string().max(1000),
+        })
+        .superRefine((v, ctx) => {
+            if (v.mode === 'NEW_DATE' && !v.newEndDate) {
+                ctx.addIssue({
+                    code: 'custom',
+                    path: ['newEndDate'],
+                    message: t('form.errors.newDateRequired'),
+                });
+            }
+        });
 
-type FormValues = z.infer<typeof schema>;
+type FormValues = z.infer<ReturnType<typeof buildSchema>>;
 
 interface ResumeBreakDialogProps {
-    open: boolean;
-    onOpenChange: (open: boolean) => void;
-    brk: EnrolmentBreak | null;
+    onClose: () => void;
+    brk: EnrolmentBreak;
     instituteId: string;
     today: string;
 }
@@ -58,20 +63,16 @@ interface ResumeBreakDialogProps {
 const MODES: ResumeMode[] = ['SHIFT_BY_PAUSED_DAYS', 'KEEP_DATES', 'NEW_DATE'];
 
 /**
- * Ends a running break today. A hold just restarts reminders. A pause turns access back
- * on and, by default, moves the membership dates forward by the days paused; the admin can
- * keep the dates or set a new end date instead, and sees the result before confirming.
+ * Ends a running break today. A reminder hold just restarts reminders. A pause turns
+ * access back on and, by default, moves the membership dates forward by the days paused;
+ * the admin can keep the dates or set a new end date, and sees the result first.
+ * Mounted only while open.
  */
-export const ResumeBreakDialog = ({
-    open,
-    onOpenChange,
-    brk,
-    instituteId,
-    today,
-}: ResumeBreakDialogProps) => {
+export const ResumeBreakDialog = ({ onClose, brk, instituteId, today }: ResumeBreakDialogProps) => {
     const { t } = useTranslation('manageStudentsBreaks');
     const queryClient = useQueryClient();
-    const isPause = brk?.kind === 'PAUSE';
+    const isPause = brk.kind === 'PAUSE';
+    const schema = useMemo(() => buildSchema(t), [t]);
     const [instalmentCount, setInstalmentCount] = useState(0);
 
     const form = useForm<FormValues>({
@@ -84,18 +85,6 @@ export const ResumeBreakDialog = ({
         },
     });
 
-    useEffect(() => {
-        if (open) {
-            form.reset({
-                mode: 'SHIFT_BY_PAUSED_DAYS',
-                newEndDate: '',
-                moveInstalments: true,
-                note: '',
-            });
-            setInstalmentCount(0);
-        }
-    }, [open, brk?.id, form]);
-
     const values = form.watch();
     const request: EndBreakRequest = {
         resume_mode: isPause ? values.mode : 'KEEP_DATES',
@@ -103,14 +92,19 @@ export const ResumeBreakDialog = ({
         move_unpaid_instalments: values.moveInstalments,
         note: values.note.trim() || null,
     };
-    const requestKey = JSON.stringify(request);
+    // The note never changes the outcome, so it is not part of the preview.
+    const effectKey = JSON.stringify({ ...request, note: null });
+    const waitingForDate = isPause && values.mode === 'NEW_DATE' && !values.newEndDate;
 
     const previewQuery = useQuery({
-        queryKey: [ENROLMENT_BREAKS_QUERY_KEY, 'end-preview', instituteId, brk?.id, requestKey],
-        queryFn: () => previewEndBreak(instituteId, brk!.id, JSON.parse(requestKey)),
-        enabled: open && Boolean(brk?.id),
+        queryKey: [ENROLMENT_BREAKS_QUERY_KEY, 'end-preview', instituteId, brk.id, effectKey],
+        queryFn: () =>
+            previewEndBreak(instituteId, brk.id, JSON.parse(effectKey) as EndBreakRequest),
+        enabled: !waitingForDate,
+        placeholderData: keepPreviousData,
         staleTime: 10_000,
     });
+    const firstBlocker = useFirstBlocker(previewQuery.data);
 
     // Remember how many unpaid instalments exist, so the checkbox stays visible when cleared.
     useEffect(() => {
@@ -119,43 +113,63 @@ export const ResumeBreakDialog = ({
     }, [previewQuery.data, instalmentCount]);
 
     const mutation = useMutation({
-        mutationFn: () => endBreak(instituteId, brk!.id, request),
+        mutationFn: () => endBreak(instituteId, brk.id, request),
         onSuccess: () => {
             toast.success(t(isPause ? 'toast.resumed' : 'toast.holdEnded'));
             queryClient.invalidateQueries({ queryKey: [ENROLMENT_BREAKS_QUERY_KEY] });
             ['user-plans', 'students', 'GET_LEARNER_PACKAGES', 'cpo-side-view'].forEach((key) =>
                 queryClient.invalidateQueries({ queryKey: [key] })
             );
-            onOpenChange(false);
+            onClose();
         },
         onError: (err: { response?: { data?: { message?: string } }; message?: string }) => {
             toast.error(err?.response?.data?.message || err?.message || t('toast.failed'));
         },
     });
 
-    const blocked = (previewQuery.data?.blockers.length ?? 0) > 0;
+    const blocked = !waitingForDate && (previewQuery.data?.blockers.length ?? 0) > 0;
+    const footerNote = waitingForDate
+        ? t('resume.newDatePick')
+        : previewQuery.isError
+          ? t('form.previewFailed')
+          : !previewQuery.isFetching && firstBlocker
+            ? firstBlocker
+            : null;
 
     return (
         <MyDialog
-            open={open}
-            onOpenChange={onOpenChange}
+            open
+            onOpenChange={(open) => !open && onClose()}
             heading={t(isPause ? 'resume.titlePause' : 'resume.titleHold')}
             dialogWidth="max-w-lg"
+            footerLeft={
+                footerNote ? (
+                    <p
+                        className={cn(
+                            'text-caption',
+                            waitingForDate ? 'text-neutral-500' : 'text-danger-600'
+                        )}
+                    >
+                        {footerNote}
+                    </p>
+                ) : undefined
+            }
             footer={
                 <>
-                    <MyButton
-                        type="button"
-                        buttonType="secondary"
-                        scale="medium"
-                        onClick={() => onOpenChange(false)}
-                    >
+                    <MyButton type="button" buttonType="secondary" scale="medium" onClick={onClose}>
                         {t('form.cancel')}
                     </MyButton>
                     <MyButton
                         type="button"
                         buttonType="primary"
                         scale="medium"
-                        disable={!brk || blocked || previewQuery.isFetching}
+                        disable={
+                            waitingForDate ||
+                            blocked ||
+                            previewQuery.isError ||
+                            previewQuery.isFetching ||
+                            mutation.isPending
+                        }
                         onAsyncClick={form.handleSubmit(() => mutation.mutateAsync())}
                         loadingText={t('form.saving')}
                     >
@@ -196,12 +210,12 @@ export const ResumeBreakDialog = ({
                                                         className="mt-1"
                                                     />
                                                     <span className="space-y-0.5">
-                                                        <span className="block text-body font-medium text-neutral-800">
+                                                        <span className="block text-body font-semibold text-neutral-800">
                                                             {t(`resume.modes.${mode}.title`, {
                                                                 count:
                                                                     previewQuery.data
                                                                         ?.paused_days ??
-                                                                    brk?.days_so_far ??
+                                                                    brk.days_so_far ??
                                                                     0,
                                                             })}
                                                         </span>
@@ -222,7 +236,7 @@ export const ResumeBreakDialog = ({
                         <FormField
                             control={form.control}
                             name="newEndDate"
-                            render={({ field, fieldState }) => (
+                            render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>{t('resume.newEndDate')}</FormLabel>
                                     <FormControl>
@@ -234,11 +248,7 @@ export const ResumeBreakDialog = ({
                                             className="w-full sm:w-full"
                                         />
                                     </FormControl>
-                                    {fieldState.error && (
-                                        <p className="text-caption text-danger-600">
-                                            {t(`form.errors.${fieldState.error.message}`)}
-                                        </p>
-                                    )}
+                                    <FormMessage />
                                 </FormItem>
                             )}
                         />
@@ -264,7 +274,7 @@ export const ResumeBreakDialog = ({
                         name="note"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>{t('resume.note')}</FormLabel>
+                                <FormLabel>{t('form.note')}</FormLabel>
                                 <FormControl>
                                     <Textarea
                                         rows={2}
@@ -277,11 +287,15 @@ export const ResumeBreakDialog = ({
                         )}
                     />
 
-                    <BreakEffectsPanel
-                        preview={previewQuery.data}
-                        isLoading={previewQuery.isLoading}
-                        mode="resume"
-                    />
+                    {!waitingForDate && (
+                        <BreakEffectsPanel
+                            preview={previewQuery.data}
+                            isLoading={previewQuery.isLoading}
+                            isError={previewQuery.isError}
+                            onRetry={() => previewQuery.refetch()}
+                            mode="resume"
+                        />
+                    )}
                 </form>
             </Form>
         </MyDialog>

@@ -16,7 +16,7 @@ import {
     ENROLMENT_BREAK_SETTINGS_DEFAULTS,
     ENROLMENT_BREAK_SETTINGS_QUERY_KEY,
     ENROLMENT_BREAKS_QUERY_KEY,
-    fetchEnrolmentBreakSettings,
+    fetchEnrolmentBreakSettingsStrict,
     saveEnrolmentBreakSettings,
     type EnrolmentBreakSettings as Settings,
 } from '@/services/enrolment-breaks';
@@ -50,8 +50,8 @@ export default function EnrolmentBreakSettings() {
     const [hasChanges, setHasChanges] = useState(false);
 
     const { data, isLoading, isError, refetch } = useQuery({
-        queryKey: [ENROLMENT_BREAK_SETTINGS_QUERY_KEY],
-        queryFn: fetchEnrolmentBreakSettings,
+        queryKey: [ENROLMENT_BREAK_SETTINGS_QUERY_KEY, 'page'],
+        queryFn: fetchEnrolmentBreakSettingsStrict,
     });
 
     useEffect(() => {
@@ -105,7 +105,7 @@ export default function EnrolmentBreakSettings() {
                                 }}
                             />
                             <Label htmlFor="enrolment-breaks-enabled" className="cursor-pointer">
-                                {settings.enabled ? t('enabledLabel') : t('disabledLabel')}
+                                {t('toggleLabel')}
                             </Label>
                         </div>
                     )}
@@ -122,6 +122,8 @@ export default function EnrolmentBreakSettings() {
                             points={[t('pause.point1'), t('pause.point2'), t('pause.point3')]}
                         />
                     </div>
+
+                    <p className="text-caption text-neutral-500">{t('offNote')}</p>
 
                     <p className="flex items-start gap-2 text-caption text-neutral-500">
                         <ClockCounterClockwise className="mt-0.5 size-4 shrink-0" />

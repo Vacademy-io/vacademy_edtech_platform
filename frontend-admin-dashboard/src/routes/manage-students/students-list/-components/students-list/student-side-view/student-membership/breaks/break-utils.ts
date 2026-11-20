@@ -70,3 +70,16 @@ export const lengthInDays = (startsOn: string, endsOn: string | null): number | 
     if (!a || !b) return null;
     return Math.round((b.getTime() - a.getTime()) / 86_400_000) + 1;
 };
+
+/** Toggle chip (quick lengths, reasons): selected state, hover and a visible keyboard focus ring. */
+export const chipClasses = (active: boolean): string =>
+    [
+        'rounded-full px-3 py-1 text-caption ring-1 transition-colors',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-300',
+        active
+            ? 'bg-primary-50 text-primary-600 ring-primary-300'
+            : 'text-neutral-600 ring-neutral-200 hover:bg-neutral-50',
+    ].join(' ');
+
+/** Today in the viewer's own calendar (fallback only; the server sends the institute's today). */
+export const localToday = (): string => toDayString(new Date());
