@@ -48,7 +48,7 @@ public class LiveClassEmailBody {
                             </p>
                             <p style="font-size:15px; line-height:1.6; margin-top:20px;">
                               Best regards,<br/>
-                              <strong>Your Team</strong>
+                              <strong>{{INSTITUTE_NAME}}</strong>
                             </p>
                           </td>
                         </tr>
@@ -110,7 +110,7 @@ public class LiveClassEmailBody {
                             </p>
                             <p style="font-size:15px; line-height:1.6; margin-top:20px;">
                               Best regards,<br/>
-                              <strong>Your Team</strong>
+                              <strong>{{INSTITUTE_NAME}}</strong>
                             </p>
                           </td>
                         </tr>
@@ -170,7 +170,7 @@ public class LiveClassEmailBody {
                             
                             <p style="font-size:15px; line-height:1.6; margin-top:20px;">
                               Thank you for your understanding,<br/>
-                              <strong>Your Team</strong>
+                              <strong>{{INSTITUTE_NAME}}</strong>
                             </p>
                           </td>
                         </tr>
