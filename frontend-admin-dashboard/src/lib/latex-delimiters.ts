@@ -19,9 +19,16 @@ const SHORT_MATH_FRAGMENT = /^(?=.{1,30}$).*[a-zA-Z].*$/s;
 // A coordinate pair or a bare arithmetic expression — `$(2,0)$`, `$2+2$` — is
 // maths too, letters or not; a price never comes bracketed or with an operator.
 const NUMERIC_EXPRESSION = /^[([].*[)\]]$|[=+×÷<>≤≥]/;
+// A plain number written tight inside its own pair — `$526$`, `$-1080$`,
+// `$1/2$`, `$0.002$` — is how AI-written options wrap answers. It must start
+// and end on a digit, so a price range such as "$5-$10" or "$5,$10" never fits.
+const PURE_NUMBER = /^[-−]?\d(?:[\d.,/]*\d)?(?:\.\.\.)?$/;
 
 const looksLikeMath = (body: string) =>
-    LATEX_SIGNAL.test(body) || SHORT_MATH_FRAGMENT.test(body) || NUMERIC_EXPRESSION.test(body);
+    PURE_NUMBER.test(body) ||
+    LATEX_SIGNAL.test(body) ||
+    SHORT_MATH_FRAGMENT.test(body) ||
+    NUMERIC_EXPRESSION.test(body);
 
 // Only these constructs are worth centring as display math; short chemistry /
 // symbol fragments read better inline even when authored with `$$`.
