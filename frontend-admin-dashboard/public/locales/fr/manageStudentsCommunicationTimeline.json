@@ -61,6 +61,7 @@
         "blocked": {
             "noTemplate": "Seuls les messages modèles peuvent être renvoyés — celui-ci a été saisi dans la boîte de réception",
             "noBody": "Le corps du message d'origine n'a pas été conservé : il n'y a rien à renvoyer",
+            "campaignRecord": "Cette ligne n'enregistre que la campagne, pas l'e-mail envoyé : il n'y a rien à renvoyer",
             "unsupportedChannel": "Ce canal ne peut pas être renvoyé depuis ici"
         },
         "title": "Renvoyer ce message {{channel}} ?",

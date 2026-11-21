@@ -71,6 +71,9 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
      */
     List<NotificationLog> findBySourceIdAndNotificationType(String sourceId, String notificationType);
 
+    /** Rows a send stamped with this correlation id, such as the real sends of one announcement. */
+    List<NotificationLog> findByCorrelationIdAndNotificationType(String correlationId, String notificationType);
+
     /**
      * Find all EMAIL_EVENT logs whose source field matches one of the original email log IDs
      * This gets all SES events (delivery, open, click, bounce) for emails sent for this announcement
@@ -501,6 +504,12 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
 
     // ==================== COMMUNICATION TIMELINE METHODS ====================
 
+    // Every timeline query below hides the campaign tracking row: the EMAIL row an announcement
+    // writes beside the real send, holding only the campaign title. It stays in the table for the
+    // campaign record. The real send is the
+    // row with the content and the SES events. A tracking row that records a FAILED send stays,
+    // because no real send exists for it and it carries the reason.
+
     /**
      * Find all non-event logs for a user filtered by notification types, paginated and sorted by date DESC.
      * Used by the unified communication timeline to fetch EMAIL, WHATSAPP_MESSAGE_OUTGOING, WHATSAPP_MESSAGE_INCOMING.
@@ -509,6 +518,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                 SELECT nl FROM NotificationLog nl
                 WHERE nl.userId = :userId
                 AND nl.notificationType IN :types
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
                 ORDER BY nl.notificationDate DESC
             """)
     Page<NotificationLog> findByUserIdAndNotificationTypeInOrderByNotificationDateDesc(
@@ -523,6 +533,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                 SELECT nl FROM NotificationLog nl
                 WHERE nl.userId = :userId
                 AND nl.notificationType IN :types
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
                 AND (:fromDate IS NULL OR nl.notificationDate >= :fromDate)
                 AND (:toDate IS NULL OR nl.notificationDate <= :toDate)
                 ORDER BY nl.notificationDate DESC
@@ -537,14 +548,24 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     // ==================== CHANNEL-ID BASED COMMUNICATION TIMELINE ====================
 
     /** Single channel: channelId (email or phone) + type set, paginated DESC. */
+    @Query("""
+                SELECT nl FROM NotificationLog nl
+                WHERE nl.channelId = :channelId
+                AND nl.notificationType IN :types
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
+                ORDER BY nl.notificationDate DESC
+            """)
     Page<NotificationLog> findByChannelIdAndNotificationTypeInOrderByNotificationDateDesc(
-            String channelId, List<String> notificationTypes, Pageable pageable);
+            @Param("channelId") String channelId,
+            @Param("types") List<String> notificationTypes,
+            Pageable pageable);
 
     /** Single channel with date range. */
     @Query("""
                 SELECT nl FROM NotificationLog nl
                 WHERE nl.channelId = :channelId
                 AND nl.notificationType IN :types
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
                 AND (:fromDate IS NULL OR nl.notificationDate >= :fromDate)
                 AND (:toDate IS NULL OR nl.notificationDate <= :toDate)
                 ORDER BY nl.notificationDate DESC
@@ -559,8 +580,11 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     /** Combined email + phone query — email matched to emailTypes, phone matched to phoneTypes. */
     @Query("""
                 SELECT nl FROM NotificationLog nl
-                WHERE (nl.channelId = :email AND nl.notificationType IN :emailTypes)
-                   OR (nl.channelId = :phone AND nl.notificationType IN :phoneTypes)
+                WHERE (
+                    (nl.channelId = :email AND nl.notificationType IN :emailTypes)
+                    OR (nl.channelId = :phone AND nl.notificationType IN :phoneTypes)
+                )
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
                 ORDER BY nl.notificationDate DESC
             """)
     Page<NotificationLog> findByEmailAndPhoneChannels(
@@ -577,6 +601,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                     (nl.channelId = :email AND nl.notificationType IN :emailTypes)
                     OR (nl.channelId = :phone AND nl.notificationType IN :phoneTypes)
                 )
+                AND (nl.notificationType <> 'EMAIL' OR COALESCE(nl.source, '') <> 'announcement-service' OR nl.deliveryStatus = 'FAILED')
                 AND (:fromDate IS NULL OR nl.notificationDate >= :fromDate)
                 AND (:toDate IS NULL OR nl.notificationDate <= :toDate)
                 ORDER BY nl.notificationDate DESC
@@ -1548,6 +1573,14 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
     // The event name is the first line of the body (Email Event: DELIVERY and so on); left(body, 30)
     // matches the idx_nl_email_event_window expression. The LATERAL keeps the event lookup an
     // index probe per email on idx_nl_source_type instead of a merge join over every event.
+    //
+    // A campaign email is found by either of two links. The real send carries the announcement id
+    // in correlation_id (stamped by UnifiedSendService), and that row is the one SES events attach
+    // to. AnnouncementDeliveryService also writes a tracking row per recipient with the announcement
+    // id in source_id. A tracking row is counted only when it records a FAILED send (no real send
+    // exists) or has no stamped real send to the same address (every send from before the
+    // stamping). So UNION ALL counts each email once, and each probe is indexed
+    // (idx_nl_source_id_type, idx_nl_correlation_type).
 
     interface AnnouncementEmailFunnelRow {
         Number getLogged();
@@ -1578,7 +1611,17 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                 SELECT COALESCE(l.delivery_status = 'FAILED', false) AS failed_to_send,
                        ev.accepted, ev.delivered, ev.opened, ev.clicked,
                        ev.bounced, ev.rejected, ev.complained
-                FROM notification_log l
+                FROM (
+                    SELECT t.* FROM notification_log t
+                    WHERE t.source_id = :announcementId AND t.notification_type = 'EMAIL'
+                      AND (t.delivery_status = 'FAILED' OR NOT EXISTS (
+                          SELECT 1 FROM notification_log c
+                          WHERE c.correlation_id = :announcementId AND c.notification_type = 'EMAIL'
+                            AND c.channel_id = t.channel_id))
+                    UNION ALL
+                    SELECT * FROM notification_log
+                    WHERE correlation_id = :announcementId AND notification_type = 'EMAIL'
+                ) l
                 CROSS JOIN LATERAL (
                     SELECT BOOL_OR(x.t = 'SEND') AS accepted,
                            BOOL_OR(x.t IN ('DELIVERY', 'OPEN', 'CLICK')) AS delivered,
@@ -1594,8 +1637,6 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                           AND ev0.notification_type = 'EMAIL_EVENT'
                     ) x
                 ) ev
-                WHERE l.source_id = :announcementId
-                  AND l.notification_type = 'EMAIL'
             ) e
             """, nativeQuery = true)
     AnnouncementEmailFunnelRow summarizeAnnouncementEmails(@Param("announcementId") String announcementId);
@@ -1628,7 +1669,17 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                    ev.bounced AS "bounced",
                    ev.rejected AS "rejected",
                    ev.complained AS "complained"
-            FROM notification_log l
+            FROM (
+                SELECT t.* FROM notification_log t
+                WHERE t.source_id = :announcementId AND t.notification_type = 'EMAIL'
+                  AND (t.delivery_status = 'FAILED' OR NOT EXISTS (
+                      SELECT 1 FROM notification_log c
+                      WHERE c.correlation_id = :announcementId AND c.notification_type = 'EMAIL'
+                        AND c.channel_id = t.channel_id))
+                UNION ALL
+                SELECT * FROM notification_log
+                WHERE correlation_id = :announcementId AND notification_type = 'EMAIL'
+            ) l
             CROSS JOIN LATERAL (
                 SELECT BOOL_OR(x.t IN ('DELIVERY', 'OPEN', 'CLICK')) AS delivered,
                        MIN(x.event_at) FILTER (WHERE x.t IN ('OPEN', 'CLICK')) AS opened_at,
@@ -1644,9 +1695,7 @@ public interface NotificationLogRepository extends JpaRepository<NotificationLog
                       AND ev0.notification_type = 'EMAIL_EVENT'
                 ) x
             ) ev
-            WHERE l.source_id = :announcementId
-              AND l.notification_type = 'EMAIL'
-              AND l.user_id = ANY(CAST(:userIds AS text[]))
+            WHERE l.user_id = ANY(CAST(:userIds AS text[]))
             ORDER BY l.user_id, l.notification_date DESC
             """, nativeQuery = true)
     java.util.List<AnnouncementRecipientEmailRow> findAnnouncementEmailsForUsers(
