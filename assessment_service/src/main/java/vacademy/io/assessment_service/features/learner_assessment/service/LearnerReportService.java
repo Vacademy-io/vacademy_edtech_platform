@@ -229,18 +229,31 @@ public class LearnerReportService {
         List<String> releaseStatus = filter.getReleaseResultStatus() != null ? filter.getReleaseResultStatus() : List.of("RELEASED");
         List<String> assessmentTypes = filter.getAssessmentType();
 
+        boolean oldestFirst = isOldestFirst(filter);
+
         Page<StudentReportDto> reports;
         if (StringUtils.hasText(filter.getName())) {
             reports = studentAttemptRepository.findAssessmentForUserWithFilterAndSearch(
                     true, filter.getName(), user.getUserId(), instituteId, statusList, releaseStatus, assessmentTypes,
-                    false, List.of(""), pageable);
+                    false, List.of(""), oldestFirst, pageable);
         } else {
             reports = studentAttemptRepository.findAssessmentForUserWithFilter(
                     true, user.getUserId(), instituteId, statusList, releaseStatus, assessmentTypes,
-                    false, List.of(""), pageable);
+                    false, List.of(""), oldestFirst, pageable);
         }
 
         return ResponseEntity.ok(reports);
+    }
+
+    /**
+     * The learner list is newest first; {@code sort_columns: {"attempt_date": "ASC"}} asks for
+     * oldest first. Any other sort value keeps the default.
+     */
+    static boolean isOldestFirst(StudentReportFilter filter) {
+        Map<String, String> sort = filter == null ? null : filter.getSortColumns();
+        if (sort == null) return false;
+        String direction = sort.containsKey("attempt_date") ? sort.get("attempt_date") : sort.get("attemptDate");
+        return "ASC".equalsIgnoreCase(direction);
     }
 
     /**
