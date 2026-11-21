@@ -235,8 +235,11 @@ export default defineConfig(({ mode }) => {
         build: {
             rollupOptions: {
                 external: (id) => {
-                    // Handle problematic dependencies
-                    if (id.includes('woff2-wasm')) return true;
+                    // Never externalize Excalidraw's woff2-wasm: an external import
+                    // ships as a raw `../src/.../woff2-wasm` path that the CDN answers
+                    // with index.html, so the font-subset chunk fails to load, every
+                    // slide thumbnail/export fires vite:preloadError and
+                    // chunk-reload.ts reloads the volt editor in a loop.
                     // Don't externalize pyodide - it needs to be bundled
                     if (id.includes('pyodide')) return false;
                     return false;
