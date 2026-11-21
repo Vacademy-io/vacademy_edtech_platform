@@ -81,6 +81,8 @@ import {
 // Define public routes that don't require authentication
 const PUBLIC_ROUTES = [
   "/try", // Public demo tutor lesson (tutezy.ai)
+  "/studio", // Tutezy Studio: a lesson from any topic (stall kiosk)
+  "/didac", // DIDAC India 2026 alias of /studio
   "/login",
   "/signup",
   "/register",

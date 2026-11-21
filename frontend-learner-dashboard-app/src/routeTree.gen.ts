@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as VerifyIndexRouteImport } from './routes/verify/index'
 import { Route as UserProfileIndexRouteImport } from './routes/user-profile/index'
 import { Route as TryIndexRouteImport } from './routes/try/index'
+import { Route as DidacIndexRouteImport } from './routes/didac/index'
+import { Route as StudioIndexRouteImport } from './routes/studio/index'
 import { Route as TermsAndConditionsIndexRouteImport } from './routes/terms-and-conditions/index'
 import { Route as SubOrgRegistrationIndexRouteImport } from './routes/sub-org-registration/index'
 import { Route as SubOrgLearnersIndexRouteImport } from './routes/sub-org-learners/index'
@@ -152,6 +154,16 @@ const UserProfileIndexRoute = UserProfileIndexRouteImport.update({
 const TryIndexRoute = TryIndexRouteImport.update({
   id: '/try/',
   path: '/try/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DidacIndexRoute = DidacIndexRouteImport.update({
+  id: '/didac/',
+  path: '/didac/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudioIndexRoute = StudioIndexRouteImport.update({
+  id: '/studio/',
+  path: '/studio/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsAndConditionsIndexRoute = TermsAndConditionsIndexRouteImport.update({
@@ -858,6 +870,8 @@ export interface FileRoutesByFullPath {
   '/sub-org-registration': typeof SubOrgRegistrationIndexRoute
   '/terms-and-conditions': typeof TermsAndConditionsIndexRoute
   '/try': typeof TryIndexRoute
+  '/didac': typeof DidacIndexRoute
+  '/studio': typeof StudioIndexRoute
   '/user-profile': typeof UserProfileIndexRoute
   '/verify': typeof VerifyIndexRoute
   '/$tagName/$pageSlug/$postSlug': typeof TagNamePageSlugPostSlugRoute
@@ -983,6 +997,8 @@ export interface FileRoutesByTo {
   '/sub-org-registration': typeof SubOrgRegistrationIndexRoute
   '/terms-and-conditions': typeof TermsAndConditionsIndexRoute
   '/try': typeof TryIndexRoute
+  '/didac': typeof DidacIndexRoute
+  '/studio': typeof StudioIndexRoute
   '/user-profile': typeof UserProfileIndexRoute
   '/verify': typeof VerifyIndexRoute
   '/$tagName/$pageSlug/$postSlug': typeof TagNamePageSlugPostSlugRoute
@@ -1109,6 +1125,8 @@ export interface FileRoutesById {
   '/sub-org-registration/': typeof SubOrgRegistrationIndexRoute
   '/terms-and-conditions/': typeof TermsAndConditionsIndexRoute
   '/try/': typeof TryIndexRoute
+  '/didac/': typeof DidacIndexRoute
+  '/studio/': typeof StudioIndexRoute
   '/user-profile/': typeof UserProfileIndexRoute
   '/verify/': typeof VerifyIndexRoute
   '/$tagName/$pageSlug_/$postSlug': typeof TagNamePageSlugPostSlugRoute
@@ -1237,6 +1255,8 @@ export interface FileRouteTypes {
     | '/sub-org-registration'
     | '/terms-and-conditions'
     | '/try'
+    | '/didac'
+    | '/studio'
     | '/user-profile'
     | '/verify'
     | '/$tagName/$pageSlug/$postSlug'
@@ -1362,6 +1382,8 @@ export interface FileRouteTypes {
     | '/sub-org-registration'
     | '/terms-and-conditions'
     | '/try'
+    | '/didac'
+    | '/studio'
     | '/user-profile'
     | '/verify'
     | '/$tagName/$pageSlug/$postSlug'
@@ -1487,6 +1509,8 @@ export interface FileRouteTypes {
     | '/sub-org-registration/'
     | '/terms-and-conditions/'
     | '/try/'
+    | '/didac/'
+    | '/studio/'
     | '/user-profile/'
     | '/verify/'
     | '/$tagName/$pageSlug_/$postSlug'
@@ -1614,6 +1638,8 @@ export interface RootRouteChildren {
   SubOrgRegistrationIndexRoute: typeof SubOrgRegistrationIndexRoute
   TermsAndConditionsIndexRoute: typeof TermsAndConditionsIndexRoute
   TryIndexRoute: typeof TryIndexRoute
+  DidacIndexRoute: typeof DidacIndexRoute
+  StudioIndexRoute: typeof StudioIndexRoute
   UserProfileIndexRoute: typeof UserProfileIndexRoute
   VerifyIndexRoute: typeof VerifyIndexRoute
   TagNamePageSlugPostSlugRoute: typeof TagNamePageSlugPostSlugRoute
@@ -1713,6 +1739,20 @@ declare module '@tanstack/react-router' {
       path: '/try'
       fullPath: '/try'
       preLoaderRoute: typeof TryIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/didac/': {
+      id: '/didac/'
+      path: '/didac'
+      fullPath: '/didac'
+      preLoaderRoute: typeof DidacIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/studio/': {
+      id: '/studio/'
+      path: '/studio'
+      fullPath: '/studio'
+      preLoaderRoute: typeof StudioIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms-and-conditions/': {
@@ -2646,6 +2686,8 @@ const rootRouteChildren: RootRouteChildren = {
   SubOrgRegistrationIndexRoute: SubOrgRegistrationIndexRoute,
   TermsAndConditionsIndexRoute: TermsAndConditionsIndexRoute,
   TryIndexRoute: TryIndexRoute,
+  DidacIndexRoute: DidacIndexRoute,
+  StudioIndexRoute: StudioIndexRoute,
   UserProfileIndexRoute: UserProfileIndexRoute,
   VerifyIndexRoute: VerifyIndexRoute,
   TagNamePageSlugPostSlugRoute: TagNamePageSlugPostSlugRoute,

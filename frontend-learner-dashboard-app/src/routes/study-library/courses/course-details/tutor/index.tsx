@@ -1010,7 +1010,13 @@ function TutorPage() {
     socket.sendEndSession();
     setTimeout(() => {
       if (isDemo) {
+        const g = guestRef.current;
         writeTutorGuest(null);
+        if (g?.returnTo) {
+          // Studio lesson: back to the stall screen's closing page for this lesson.
+          navigate({ to: g.returnTo, search: { done: g.topicKey, t: g.title, s: g.builtInSeconds ? String(g.builtInSeconds) : undefined } as never });
+          return;
+        }
         navigate({ to: "/try", search: { done: "1" } as never });
         return;
       }
@@ -1040,6 +1046,28 @@ function TutorPage() {
   }
 
   const title = slideTitle || courseSlides.find((s) => s.slide_id === (state?.slide_id ?? boot?.slide_id))?.title || "Lesson";
+  // Studio (stall kiosk): nobody is there to press Done. When the lesson is
+  // over — finished, timed out or ended — the screen moves on by itself.
+  const studioReturn = isDemo && !!guestRef.current?.returnTo;
+  const studioOver = studioReturn && (phase === "done" || (!!disconnected && disconnected.reason !== "lost"));
+  useEffect(() => {
+    if (!studioOver) return;
+    // Let the teacher finish her last line: leave after four quiet seconds.
+    let quiet = 0;
+    const t = window.setInterval(() => {
+      if (drainingRef.current || queueRef.current.length) {
+        quiet = 0;
+        return;
+      }
+      quiet += 1;
+      if (quiet >= 4) {
+        window.clearInterval(t);
+        endAndLeave();
+      }
+    }, 1000);
+    return () => window.clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [studioOver]);
   const progress = state?.progress ?? boot?.progress ?? { done: 0, total: 1, percent: 0 };
   const lessonOver = phase === "done" && !audioBusy();
 
@@ -1114,7 +1142,11 @@ function TutorPage() {
             {guestRef.current?.minutes ? `A ${guestRef.current.minutes}-minute taste.` : "A short taste."} Your students would get the whole chapter, in your teacher&apos;s voice.
           </span>
           {demoClock && <span className="hidden rounded-full bg-warning-50 px-2 py-0.5 text-xs font-semibold tabular-nums text-warning-700 lg:inline">{demoClock} left</span>}
-          <a href="https://tutezy.ai/#demo" className="ms-auto shrink-0 rounded-full bg-primary-500 px-3 py-1 text-xs font-semibold text-white">Book a demo</a>
+          {studioReturn ? (
+            <button type="button" onClick={endAndLeave} className="ms-auto shrink-0 rounded-full bg-primary-500 px-3 py-1 text-xs font-semibold text-white">Finish</button>
+          ) : (
+            <a href="https://tutezy.ai/#demo" className="ms-auto shrink-0 rounded-full bg-primary-500 px-3 py-1 text-xs font-semibold text-white">Book a demo</a>
+          )}
         </div>
       )}
       <div className="flex h-full min-h-0 flex-col gap-2 lg:flex-row lg:gap-3">
@@ -1157,7 +1189,7 @@ function TutorPage() {
             <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-neutral-800">
               <span className="font-semibold">{disconnected.reason === "limit" ? "That was your free lesson." : "The lesson ended."}</span>
               <span>Every student of yours could learn like this, on your own content.</span>
-              <a href="https://tutezy.ai/#demo" className="rounded-full bg-primary-500 px-3 py-1 text-xs font-medium text-white">Book a demo</a>
+              {!studioReturn && <a href="https://tutezy.ai/#demo" className="rounded-full bg-primary-500 px-3 py-1 text-xs font-medium text-white">Book a demo</a>}
               <button type="button" onClick={endAndLeave} className="rounded-full border border-neutral-300 bg-white px-3 py-1 text-xs text-neutral-700">Done</button>
             </div>
           )}
@@ -1252,7 +1284,8 @@ function TutorPage() {
               showNotice(`The teacher will continue in ${TUTOR_LANGUAGE_NAME[l]} from the next line.`);
             }}
             stats={stats}
-            activeness={
+            // Stall screen: no camera ask in front of a queue of visitors.
+            activeness={studioReturn ? undefined :
               <ActivenessCard
                 status={activeness.status}
                 score={activeness.score}
