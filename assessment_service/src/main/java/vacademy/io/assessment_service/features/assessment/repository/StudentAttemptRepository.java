@@ -348,7 +348,8 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                     AND abr.batch_id IN (:batchIds)
                 )
             )
-            ORDER BY sa.created_at DESC NULLS LAST, a.created_at DESC, a.id
+            ORDER BY CASE WHEN :oldestFirst = TRUE THEN sa.created_at END ASC NULLS LAST,
+                sa.created_at DESC NULLS LAST, a.created_at DESC, a.id
             """, countQuery = """
             SELECT COUNT(*)
             FROM public.assessment a
@@ -395,6 +396,7 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                                                            @Param("assessmentType") List<String> assessmentTypes,
                                                            @Param("scopeToBatches") boolean scopeToBatches,
                                                            @Param("batchIds") List<String> batchIds,
+                                                           @Param("oldestFirst") boolean oldestFirst,
                                                            Pageable pageable);
 
     /**
@@ -524,7 +526,8 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                     AND abr.batch_id IN (:batchIds)
                 )
             )
-            ORDER BY sa.created_at DESC NULLS LAST, a.created_at DESC, a.id
+            ORDER BY CASE WHEN :oldestFirst = TRUE THEN sa.created_at END ASC NULLS LAST,
+                sa.created_at DESC NULLS LAST, a.created_at DESC, a.id
             """, countQuery = """
             SELECT COUNT(*)
             FROM public.assessment a
@@ -578,6 +581,7 @@ public interface StudentAttemptRepository extends CrudRepository<StudentAttempt,
                                                                     @Param("assessmentType") List<String> assessmentTypes,
                                                                     @Param("scopeToBatches") boolean scopeToBatches,
                                                                     @Param("batchIds") List<String> batchIds,
+                                                                    @Param("oldestFirst") boolean oldestFirst,
                                                                     Pageable pageable);
 
     @Query(value = """
