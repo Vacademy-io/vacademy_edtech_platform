@@ -220,7 +220,14 @@ public class CommunicationTimelineService {
         // is a truncation of that HTML and is no substitute — anything resending this message needs
         // the subject that actually went out.
         Map<String, Object> payload = parseEmailPayload(nl);
-        builder.subject(payloadString(payload, "subject"));
+        // Rows written before the subject was stored have none in the payload. Their SES events
+        // record the subject exactly as it went out, so use that rather than leaving the UI to
+        // scrape one out of the HTML (which produced subjects like "96 Dear ..." on resends).
+        String subject = payloadString(payload, "subject");
+        if (subject == null) {
+            subject = subjectFromEvents(allEmailEvents.getOrDefault(nl.getId(), List.of()));
+        }
+        builder.subject(subject);
         // The template the email was built from and who sent it (an admin resend), when the send
         // recorded them. Rows written before they were stored carry neither.
         builder.templateName(payloadString(payload, "templateName"));
@@ -315,6 +322,26 @@ public class CommunicationTimelineService {
             return Map.of();
         }
     }
+
+    /**
+     * The subject line an SES event recorded for this email ("Subject: ..." on its own line in
+     * the event body), or null when no event carries one.
+     */
+    static String subjectFromEvents(List<NotificationLog> events) {
+        for (NotificationLog event : events) {
+            String body = event.getBody();
+            if (body == null) continue;
+            int at = body.indexOf(SES_SUBJECT_PREFIX);
+            if (at < 0) continue;
+            int start = at + SES_SUBJECT_PREFIX.length();
+            int end = body.indexOf('\n', start);
+            String line = (end < 0 ? body.substring(start) : body.substring(start, end)).trim();
+            if (!line.isEmpty()) return line;
+        }
+        return null;
+    }
+
+    private static final String SES_SUBJECT_PREFIX = "\nSubject: ";
 
     private static String payloadString(Map<String, Object> payload, String key) {
         Object value = payload.get(key);
