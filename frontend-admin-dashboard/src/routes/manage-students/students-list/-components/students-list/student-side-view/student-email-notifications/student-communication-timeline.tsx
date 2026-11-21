@@ -61,6 +61,7 @@ import {
 } from '../profile-ui';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
+import { decodeEntities, htmlToPreviewText } from './email-preview-text';
 
 // Timestamps render in the viewer's zone, so label it (IST, GST, GMT+3…) —
 // otherwise a Gulf admin can't tell whether "7:55 PM" is their time or IST.
@@ -89,38 +90,6 @@ const HTML_LIKE = /^\s*<!?(?:DOCTYPE|html|head|body|div|p|span|table|tr|td|h\d|b
 
 const looksLikeHtml = (text?: string | null): boolean =>
     !!text && (HTML_LIKE.test(text) || /<[a-z][^>]*>/i.test(text));
-
-// Decode the small set of named entities that show up in real emails. We
-// intentionally avoid setting innerHTML on a temporary node here — that runs
-// linked images and would broaden the XSS surface; a regex pass is enough for
-// preview text.
-const decodeEntities = (text: string): string =>
-    text
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/&amp;/gi, '&')
-        .replace(/&lt;/gi, '<')
-        .replace(/&gt;/gi, '>')
-        .replace(/&quot;/gi, '"')
-        .replace(/&#39;|&apos;/gi, "'")
-        .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)));
-
-// Plain-text version of an HTML string, suitable for one-line previews.
-const htmlToPreviewText = (html: string, maxLen = 140): string => {
-    const stripped = html
-        // drop <style>/<script> blocks entirely so their CSS/JS doesn't
-        // leak into the preview
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ')
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ')
-        // strip every remaining complete tag
-        .replace(/<[^>]+>/g, ' ')
-        // strip a dangling/unclosed tag — backend previews are often HTML cut
-        // mid-tag (e.g. "<table align='center' width='600' style='...mar"), which
-        // has no closing ">" so the rule above can't remove it.
-        .replace(/<[^>]*$/g, ' ');
-    const text = decodeEntities(stripped).replace(/\s+/g, ' ').trim();
-    if (!text) return '';
-    return text.length > maxLen ? `${text.slice(0, maxLen).trimEnd()}…` : text;
-};
 
 // Best-effort subject extraction: prefer the document's <title>, fall back to
 // the first heading, and finally to a truncated text preview.
