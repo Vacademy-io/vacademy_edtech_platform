@@ -78,6 +78,24 @@ describe('resendBlockedReason', () => {
         expect(resendBlockedReason(item({ channel: 'EMAIL', fullBody: undefined }))).toBe('noBody');
     });
 
+    // The tracking row an announcement writes holds the campaign title as its body; resending it
+    // mailed that title as the whole email.
+    it('blocks a campaign tracking row even though it has a body', () => {
+        expect(
+            resendBlockedReason(
+                item({ channel: 'EMAIL', source: 'announcement-service', fullBody: 'Campaign title' })
+            )
+        ).toBe('campaignRecord');
+    });
+
+    it('still allows the real campaign send', () => {
+        expect(
+            resendBlockedReason(
+                item({ channel: 'EMAIL', source: 'unified-send', fullBody: '<p>Hello</p>' })
+            )
+        ).toBeNull();
+    });
+
     it('blocks channels the send path cannot replay from a log row', () => {
         expect(resendBlockedReason(item({ channel: 'PUSH' }))).toBe('unsupportedChannel');
         expect(resendBlockedReason(item({ channel: 'SMS' }))).toBe('unsupportedChannel');
@@ -283,7 +301,7 @@ describe('resend copy', () => {
 
     // Every non-inbound reason reaches the disabled chip's tooltip, so each needs copy.
     it('explains every reason a row cannot be resent', () => {
-        for (const reason of ['noTemplate', 'noBody', 'unsupportedChannel']) {
+        for (const reason of ['noTemplate', 'noBody', 'campaignRecord', 'unsupportedChannel']) {
             expect(lookup(`resend.blocked.${reason}`)).toBeTruthy();
         }
     });
