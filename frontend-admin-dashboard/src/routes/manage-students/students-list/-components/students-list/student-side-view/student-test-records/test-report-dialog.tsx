@@ -36,7 +36,8 @@ interface TestReportDialogProps {
     onClose: () => void;
     testReport: AssessmentTestReport;
     studentReport: AssessmentReportStudentInterface;
-    assessmentDetails: Steps;
+    /** Null while loading, or when the details request failed. */
+    assessmentDetails: Steps | null;
 }
 
 export const TestReportDialog = ({
@@ -58,7 +59,7 @@ export const TestReportDialog = ({
             search: {},
         });
     };
-    const sectionsInfo = assessmentDetails[1]?.saved_data.sections?.map((section) => ({
+    const sectionsInfo = assessmentDetails?.[1]?.saved_data.sections?.map((section) => ({
         name: section.name,
         id: section.id,
     }));
@@ -66,7 +67,7 @@ export const TestReportDialog = ({
     const [selectedSection, setSelectedSection] = useState(sectionsInfo ? sectionsInfo[0]?.id : '');
     // Out of = the paper's section totals (was a hardcoded "/20"); the same sum the
     // total-marks endpoint returns, from the paper already loaded here. Hidden when unknown.
-    const paperTotalMarks = (assessmentDetails[1]?.saved_data.sections ?? []).reduce(
+    const paperTotalMarks = (assessmentDetails?.[1]?.saved_data.sections ?? []).reduce(
         (sum, section) => sum + (Number(section.total_marks) || 0),
         0
     );
