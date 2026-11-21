@@ -839,7 +839,12 @@ export const StudentSidebar = ({
                             !isEnrollRequestStudentList && <StudentEnrollDeroll />}
                         {category === 'enquiry' &&
                             tabSettings?.enquiryTab &&
-                            !isEnrollRequestStudentList && <StudentEnquiry enquiryId={enquiryId} />}
+                            !isEnrollRequestStudentList && (
+                                <StudentEnquiry
+                                    enquiryId={enquiryId}
+                                    userId={selectedStudent?.user_id}
+                                />
+                            )}
                         {category === 'application' &&
                             tabSettings?.applicationTab &&
                             !isEnrollRequestStudentList && (
