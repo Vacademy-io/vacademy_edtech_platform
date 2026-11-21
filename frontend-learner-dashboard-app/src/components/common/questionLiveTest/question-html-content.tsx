@@ -39,13 +39,19 @@ const decodeHtml = (input: string): string => {
 //
 // The opening `$` must be followed by a non-space, the closing `$` must follow
 // a non-space and must not be followed by a digit (so "of$1,000" never closes),
-// and the body must carry a LaTeX marker, be a short word-bearing fragment, or
-// be a bracketed / operator expression. A bare amount never qualifies.
+// and the body must carry a LaTeX marker, be a short word-bearing fragment, be
+// a bracketed / operator expression, or be a number written tight inside its
+// own pair. Money text never closes like that: "$5-$10", "$5,$10" and
+// "$5/$10" end on a non-digit or have a digit after the closing `$`.
 const LATEX_SIGNAL = /[\\^_{}]/;
 const SHORT_MATH_FRAGMENT = /^(?=.{1,30}$).*[a-zA-Z].*$/s;
 const NUMERIC_EXPRESSION = /^[([].*[)\]]$|[=+×÷<>≤≥]/;
+// `$526$`, `$-1080$`, `$1/2$`, `$0.002$`, `$0,1,2,3,4$`, `$0.000666...$`:
+// AI-written options and answers wrap plain numbers like this.
+const PURE_NUMBER = /^[-−]?\d(?:[\d.,/]*\d)?(?:\.\.\.)?$/;
 
 const looksLikeMath = (body: string) =>
+  PURE_NUMBER.test(body) ||
   LATEX_SIGNAL.test(body) ||
   SHORT_MATH_FRAGMENT.test(body) ||
   NUMERIC_EXPRESSION.test(body);
