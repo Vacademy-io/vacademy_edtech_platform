@@ -1,0 +1,42 @@
+{
+    "saved": "Payment reminder settings saved.",
+    "saveFailed": "Could not save the settings.",
+    "loadFailed": "Could not load these settings.",
+    "retry": "Try again",
+    "save": "Save",
+    "saving": "Saving…",
+    "reminders": {
+        "title": "Payment reminders",
+        "description": "Remind members before and after each payment is due. Reminders are sent by your workflow, so you choose the WhatsApp or email template.",
+        "toggle": "Send payment reminders",
+        "daysBefore": "Days before the due date",
+        "daysBeforeHint": "One or more, separated by commas, e.g. 7 or 7, 3",
+        "onDueDate": "Also on the due date",
+        "every": "Then every N days after",
+        "everyHint": "0 = no reminders after the due date",
+        "stopAfter": "Stop after N days overdue",
+        "stopAfterHint": "Leave empty to keep reminding until paid",
+        "redList": "Red list after N days unpaid",
+        "redListHint": "Fires a one-off staff alert; leave empty for none",
+        "sendHour": "Send at (hour, 0–23)",
+        "sendHourHint": "In the institute's time zone",
+        "includeAutopay": "Also remind members on autopay",
+        "workflowNote": "To send them, create a workflow on the event \"Membership Payment Reminder\" with your template. It carries the learner's name, amount, currency, due date, days overdue and a pay link. Use \"Membership Payment Red List\" for staff alerts. Learners on a break or pause are skipped."
+    },
+    "summary": {
+        "title": "What members get",
+        "due": "on the due date",
+        "after": "every {{every}} days after until paid",
+        "afterUntil": "every {{every}} days after, for up to {{until}} days",
+        "none": "No reminders with these settings.",
+        "before_one": "1 day before",
+        "before_other": "{{count}} days before",
+        "redList_one": "Red list after {{count}} day unpaid.",
+        "redList_other": "Red list after {{count}} days unpaid."
+    },
+    "calendar": {
+        "title": "Calendar-month billing",
+        "description": "Monthly, 3, 6 and 12-month plans renew on each member's own due day every month, and paying a few days late does not move it. Off: plans count in days (30, 90, 180, 365) and a late payment starts the next period on the payment day.",
+        "toggle": "Bill by calendar month on each member's due day"
+    }
+}

@@ -1307,6 +1307,8 @@ export const USER_PLAN_REMARKS = (userPlanId: string) =>
     `${BASE_URL}/admin-core-service/v1/user-plan/${userPlanId}/remarks`;
 export const CHANGE_USER_PLAN_END_DATE = (userPlanId: string) =>
     `${BASE_URL}/admin-core-service/v1/user-plan/${userPlanId}/end-date`;
+export const CHANGE_MEMBER_PRICE = (userPlanId: string) =>
+    `${BASE_URL}/admin-core-service/v1/user-plan/${userPlanId}/member-price`;
 // Breaks and holds (docs/ENROLMENT_BREAKS.md): hold reminders or pause an enrolment.
 export const ENROLMENT_BREAKS_BASE = `${BASE_URL}/admin-core-service/v1/enrolment-breaks`;
 export const ENROLMENT_BREAKS_FOR_LEARNER = (userId: string) =>

@@ -327,6 +327,12 @@ public class WorkflowAiCatalogController {
         t.add(trigger("PAYMENT_FAILED", "ENROLL_INVITE", "enrollInviteId (or null=all)",
                 keysOf("PAYMENT_FAILED"),
                 "The main (first-payment) emitter sets NO 'user' — only userId. 'user' and 'renewal' appear on the renewal-charge emitter. Idempotency person = #ctx['userId'] (or #ctx['userPlanId'])."));
+        t.add(trigger("MEMBERSHIP_PAYMENT_DUE", "USER_PLAN", "null (institute-wide, hourly scan at the institute's send hour)",
+                keysOf("MEMBERSHIP_PAYMENT_DUE"),
+                "One event per reminder step of a membership (schedule from Settings → Payment reminders). stage is BEFORE, DUE or OVERDUE; payLink opens the learner's subscriptions page to pay. learnerName/learnerEmail/learnerMobile are flat keys (no 'user' object). Each step is emitted once; use EVENT_BASED idempotency."));
+        t.add(trigger("MEMBERSHIP_PAYMENT_RED_LIST", "USER_PLAN", "null (institute-wide)",
+                keysOf("MEMBERSHIP_PAYMENT_RED_LIST"),
+                "Emitted once when a membership is unpaid for the red-list days; meant for a staff alert (send to an admin address), not the learner. Same keys as MEMBERSHIP_PAYMENT_DUE."));
         t.add(trigger("MEMBERSHIP_EXPIRY", "USER_PLAN", "null (institute-wide, daily 09:00 cron)",
                 keysOf("MEMBERSHIP_EXPIRY"),
                 "Emitted by a daily scheduler, once per expiring plan; ids only (no 'user' object) — QUERY for the learner if a name/email is needed. Use EVENT_BASED idempotency."));

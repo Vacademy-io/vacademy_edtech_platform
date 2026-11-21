@@ -241,6 +241,8 @@ public class WorkflowCatalogController {
         eventMeta.put("INVITE_FORM_FILL", new String[]{"Invite Form Filled", "Fires when a learner completes an invite enrollment form", "Invites", "ENROLL_INVITE"});
         // CRM
         eventMeta.put("MEMBERSHIP_EXPIRY", new String[]{"Membership Expiry", "Fires when a user's membership/subscription is about to expire", "CRM", "USER_PLAN"});
+        eventMeta.put("MEMBERSHIP_PAYMENT_DUE", new String[]{"Membership Payment Reminder", "Fires on each step of the payment reminder schedule (Settings → Payment reminders): before, on and after a membership's due date. Carries amount, currency, dueDate, daysOverdue, stage and payLink", "CRM", "USER_PLAN"});
+        eventMeta.put("MEMBERSHIP_PAYMENT_RED_LIST", new String[]{"Membership Payment Red List", "Fires once when a membership has stayed unpaid for the red-list days set in Payment reminders; use it to alert staff", "CRM", "USER_PLAN"});
         eventMeta.put("ENROLLMENT_REPORTS", new String[]{"Enrollment Reports", "Fires periodically for generating enrollment reports", "CRM", "INSTITUTE"});
         // Lead TAT / Follow-up SLA (emit-only; the workflow you bind here decides the channel/template/recipients)
         eventMeta.put("LEAD_ASSIGNED_TO_COUNSELOR", new String[]{"Lead Assigned to Counselor", "Fires when a lead is assigned or reassigned to a counselor", "CRM", "AUDIENCE"});

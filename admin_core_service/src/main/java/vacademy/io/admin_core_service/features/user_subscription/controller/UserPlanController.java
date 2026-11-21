@@ -349,6 +349,25 @@ public class UserPlanController {
         return ResponseEntity.ok(adminManualRenewalService.changeEndDate(userPlanId, instituteId, request, userDetails));
     }
 
+    /**
+     * Admin sets the price this member pays each period (a legacy or negotiated rate), or sends
+     * null to go back to the plan's list price. Applies from the next charge. Remark required.
+     */
+    @PostMapping("/{userPlanId}/member-price")
+    @Auditable(
+            entityType = "PAYMENT",
+            action = "UPDATE",
+            entityIdExpr = "#userPlanId",
+            descriptionExpr = "'changed the member price of plan ' + #userPlanId + ' to ' + #request?.price")
+    public ResponseEntity<vacademy.io.admin_core_service.features.user_subscription.dto.MemberPriceResultDTO> changeMemberPrice(
+            @PathVariable String userPlanId,
+            @RequestParam String instituteId,
+            @RequestBody vacademy.io.admin_core_service.features.user_subscription.dto.ChangeMemberPriceRequestDTO request,
+            @RequestAttribute("user") CustomUserDetails userDetails) {
+        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        return ResponseEntity.ok(adminManualRenewalService.changeMemberPrice(userPlanId, instituteId, request, userDetails));
+    }
+
     /** Renewal records and admin remarks on this membership, newest first. */
     @GetMapping("/{userPlanId}/remarks")
     public ResponseEntity<Page<vacademy.io.admin_core_service.features.timeline.dto.TimelineEventDTO>> listPlanRemarks(

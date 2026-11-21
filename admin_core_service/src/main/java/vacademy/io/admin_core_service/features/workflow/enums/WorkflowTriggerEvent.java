@@ -59,6 +59,10 @@ public enum WorkflowTriggerEvent {
 
     // CRM
     MEMBERSHIP_EXPIRY,
+    /** A membership's payment reminder step (FEE_REMINDER_SETTING): before, on or after its due date. */
+    MEMBERSHIP_PAYMENT_DUE,
+    /** A membership has stayed unpaid for the institute's red-list days. Staff alert. */
+    MEMBERSHIP_PAYMENT_RED_LIST,
     ENROLLMENT_REPORTS,
 
     // Lead TAT / Follow-up SLA (emit-only; delivery handled by the workflow engine)

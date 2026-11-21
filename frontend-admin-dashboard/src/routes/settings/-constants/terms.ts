@@ -145,6 +145,7 @@ export const enum SettingsTabs {
     LeadSettings = 'leadSettings',
     GuardianSettings = 'guardianSettings',
     EnrolmentBreaks = 'enrolmentBreaks',
+    PaymentReminders = 'paymentReminders',
     LearnerCredentials = 'learnerCredentials',
     GtmSettings = 'gtmSettings',
     UtmSettings = 'utmSettings',

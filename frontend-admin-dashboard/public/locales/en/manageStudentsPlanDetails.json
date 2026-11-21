@@ -137,5 +137,26 @@
         "cancel": "Cancel",
         "success": "Membership now ends on {{date}}",
         "failed": "Could not change the end date"
+    },
+    "memberPrice": {
+        "button": "Price",
+        "badge": "Own price for this member (list price {{list}})",
+        "title": "Change member price",
+        "explainer": "The plan's list price is {{list}}; this member pays {{current}}. A new price applies from the next charge or renewal. Nothing already paid changes.",
+        "autopayNote": "Autopay is on, so the next automatic charge uses the new price.",
+        "useListPrice": "Use the list price ({{list}})",
+        "newPrice": "New price per period ({{currency}})",
+        "remarks": "Remark",
+        "remarksPlaceholder": "Why this member pays a different price, e.g. joined in 2024 at the old rate",
+        "cancel": "Cancel",
+        "submit": "Save price",
+        "saving": "Saving…",
+        "success": "Price set to {{price}}.",
+        "successList": "Member now pays the list price.",
+        "failed": "Could not change the price.",
+        "errors": {
+            "price": "Enter a price of 0 or more.",
+            "remarks": "Add a remark explaining the price."
+        }
     }
 }
