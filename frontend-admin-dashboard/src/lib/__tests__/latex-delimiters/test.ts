@@ -49,7 +49,21 @@ describe('renderLatexDelimiters', () => {
         expect(renderLatexDelimiters('<p>So $2+2$ is four.</p>')).toContain('data-latex="2+2"');
     });
 
+    it('converts a plain number wrapped in its own pair', () => {
+        // AI-written options: "$526$", "$-1080$" showed with their dollar signs.
+        expect(latexOf(renderLatexDelimiters('<p>$526$</p>'))).toEqual(['math-inline:526']);
+        expect(latexOf(renderLatexDelimiters('<p>$-1080$</p>'))).toEqual(['math-inline:-1080']);
+        expect(latexOf(renderLatexDelimiters('<p>$1/2$</p>'))).toEqual(['math-inline:1/2']);
+        expect(latexOf(renderLatexDelimiters('<p>$0.000666...$</p>'))).toEqual([
+            'math-inline:0.000666...',
+        ]);
+    });
+
     it('leaves prices and plain prose alone', () => {
+        const comma = '<p>Pay with a $5,$10 or $20 bill.</p>';
+        expect(renderLatexDelimiters(comma)).toBe(comma);
+        const slash = '<p>Tickets cost $5/$10.</p>';
+        expect(renderLatexDelimiters(slash)).toBe(slash);
         const money = '<p>Plans cost $5 and $10 per month.</p>';
         expect(renderLatexDelimiters(money)).toBe(money);
         const range = '<p>Budget $5-$10 per learner.</p>';
