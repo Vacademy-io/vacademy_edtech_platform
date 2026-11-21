@@ -61,6 +61,7 @@ import { StudentSubOrg } from './student-sub-org/student-sub-org';
 import { StudentReports } from './student-reports/student-reports';
 import { StudentEnrollDeroll } from './student-enroll-deroll/student-enroll-deroll';
 import { StudentPaymentHistory } from './student-payment-history/student-payment-history';
+import { SelectedLearnerBreaksCard } from './student-membership/breaks/selected-learner-breaks-card';
 import { StudentEnquiry } from './student-enquiry/student-enquiry';
 import { StudentApplication } from './student-application/student-application';
 import { StudentLeadProfile } from './student-lead-profile/student-lead-profile';
@@ -250,7 +251,13 @@ export const StudentProfileOverlay = () => {
             case 'membership':
                 return <StudentMembership isSubmissionTab={isSubmissionTab} />;
             case 'paymentHistory':
-                return <StudentPaymentHistory />;
+                return (
+                    <>
+                        {/* Breaks live in Membership; shown here when that tab is hidden. */}
+                        {!tabSettings?.membershipTab && <SelectedLearnerBreaksCard />}
+                        <StudentPaymentHistory />
+                    </>
+                );
             case 'userTagging':
                 return <StudentUserTagging isSubmissionTab={isSubmissionTab} />;
             case 'files':
@@ -262,7 +269,7 @@ export const StudentProfileOverlay = () => {
             case 'enrollDeroll':
                 return <StudentEnrollDeroll />;
             case 'enquiry':
-                return <StudentEnquiry />;
+                return <StudentEnquiry userId={selectedStudent.user_id || selectedStudent.id} />;
             case 'application':
                 return <StudentApplication />;
             case 'lead':

@@ -172,7 +172,7 @@ public class UserPlanController {
             @RequestParam("instituteId") String instituteId,
             @RequestBody(required = false) VoidPaymentRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.voidPayment", userDetails, instituteId);
         return ResponseEntity.ok(paymentVoidService.voidPayment(
                 paymentLogId,
                 instituteId,
@@ -200,7 +200,7 @@ public class UserPlanController {
     public ResponseEntity<java.util.Map<String, Object>> canDeletePayments(
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.canDeletePayments", userDetails, instituteId);
         boolean allowed = paymentDeletionService.canDelete(
                 userDetails != null ? userDetails.getUserId() : null, instituteId);
         return ResponseEntity.ok(java.util.Map.of("allowed", allowed));
@@ -211,7 +211,7 @@ public class UserPlanController {
             @PathVariable String paymentLogId,
             @RequestParam("instituteId") String instituteId,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.deletePayment", userDetails, instituteId);
         return ResponseEntity.ok(paymentDeletionService.deletePayment(
                 paymentLogId, instituteId, userDetails != null ? userDetails.getUserId() : null));
     }
@@ -306,7 +306,7 @@ public class UserPlanController {
             @PathVariable String userPlanId,
             @RequestParam String instituteId,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.previewManualRenewal", userDetails, instituteId);
         return ResponseEntity.ok(adminManualRenewalService.preview(userPlanId, instituteId));
     }
 
@@ -325,7 +325,7 @@ public class UserPlanController {
             @RequestParam String instituteId,
             @RequestBody ManualRenewalRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.recordManualRenewal", userDetails, instituteId);
         return ResponseEntity.ok(adminManualRenewalService.renew(userPlanId, instituteId, request, userDetails));
     }
 
@@ -345,8 +345,27 @@ public class UserPlanController {
             @RequestParam String instituteId,
             @RequestBody ChangePlanEndDateRequestDTO request,
             @RequestAttribute("user") CustomUserDetails userDetails) {
-        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        instituteAccessValidator.guardStaff("userPlans.changePlanEndDate", userDetails, instituteId);
         return ResponseEntity.ok(adminManualRenewalService.changeEndDate(userPlanId, instituteId, request, userDetails));
+    }
+
+    /**
+     * Admin sets the price this member pays each period (a legacy or negotiated rate), or sends
+     * null to go back to the plan's list price. Applies from the next charge. Remark required.
+     */
+    @PostMapping("/{userPlanId}/member-price")
+    @Auditable(
+            entityType = "PAYMENT",
+            action = "UPDATE",
+            entityIdExpr = "#userPlanId",
+            descriptionExpr = "'changed the member price of plan ' + #userPlanId + ' to ' + #request?.price")
+    public ResponseEntity<vacademy.io.admin_core_service.features.user_subscription.dto.MemberPriceResultDTO> changeMemberPrice(
+            @PathVariable String userPlanId,
+            @RequestParam String instituteId,
+            @RequestBody vacademy.io.admin_core_service.features.user_subscription.dto.ChangeMemberPriceRequestDTO request,
+            @RequestAttribute("user") CustomUserDetails userDetails) {
+        instituteAccessValidator.validateUserAccess(userDetails, instituteId);
+        return ResponseEntity.ok(adminManualRenewalService.changeMemberPrice(userPlanId, instituteId, request, userDetails));
     }
 
     /** Renewal records and admin remarks on this membership, newest first. */

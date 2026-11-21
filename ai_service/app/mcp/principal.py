@@ -20,6 +20,9 @@ from typing import Optional
 import httpx
 
 from ..config import Settings
+from fastapi import HTTPException, status
+
+from ..core import demo_read_only
 from ..core.security import AuthServiceUnavailable, resolve_pinned_principal
 from ..schemas.auth import PinnedPrincipal
 
@@ -37,6 +40,11 @@ async def build_pinned_principal(
     handlers translate that into a protocol error. Raises AuthServiceUnavailable
     when auth-service could not answer.
     """
+    # The read-only demo user gets no MCP access at all: a grant replays the stored
+    # token on tool calls that can write, with no HTTP request of its own to judge.
+    if demo_read_only.token_holds_role(platform_token):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN,
+                            detail="This is a demo. Changes are not saved.")
     return await resolve_pinned_principal(
         token=platform_token,
         client_id=institute_id,

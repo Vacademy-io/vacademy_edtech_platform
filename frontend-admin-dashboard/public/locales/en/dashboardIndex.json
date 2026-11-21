@@ -89,16 +89,16 @@
                 "prompt": "How much in fees is pending across the institute?"
             },
             "learner": {
-                "label": "Find a learner",
-                "prompt": "Help me find a learner by name."
+                "label": "New learners this week",
+                "prompt": "Which learners enrolled in the last 7 days?"
             },
             "assessments": {
                 "label": "Pending evaluations",
                 "prompt": "Which assessment submissions are still pending evaluation?"
             },
             "announcement": {
-                "label": "Draft an announcement",
-                "prompt": "Help me draft an announcement for a batch."
+                "label": "Recent announcements",
+                "prompt": "Show the last 5 announcements we sent."
             },
             "schedule": {
                 "label": "Today’s classes",
@@ -109,8 +109,8 @@
                 "prompt": "Help me check a learner’s overdue fees."
             },
             "batch": {
-                "label": "View a batch roster",
-                "prompt": "Help me find the learners in a batch."
+                "label": "Joins by batch",
+                "prompt": "How many learners joined each batch in the last 30 days?"
             },
             "help": {
                 "label": "Help with a task",
@@ -194,14 +194,14 @@
                 "createCourse": "How do I create a course?",
                 "inviteMember": "How do I invite a team member?",
                 "addToBatch": "Where do I add a learner to a batch?",
-                "findLearner": "Find a learner by name",
+                "findLearner": "Which learners enrolled in the last 7 days?",
                 "studentAttendance": "What’s this student’s attendance this month?",
                 "overdueFees": "Does this learner have overdue fees?",
                 "liveNow": "What classes are live right now?",
                 "pendingFees": "How much fees is pending across the institute?",
                 "extendAccess": "Extend a learner’s access expiry",
                 "pendingEvaluation": "Which submissions are still pending evaluation?",
-                "sendAnnouncement": "Send an announcement to a batch"
+                "sendAnnouncement": "Show the last 5 announcements we sent"
             }
         },
         "panel": {

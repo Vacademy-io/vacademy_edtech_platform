@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import vacademy.io.notification_service.features.chatbot_flow.service.WhatsAppMessageOriginResolver;
+import vacademy.io.notification_service.features.chatbot_flow.dto.MessageOriginDTO;
+import vacademy.io.notification_service.features.notification_log.MessageOriginPayload;
 import vacademy.io.notification_service.features.chatbot_flow.service.WhatsAppTemplateRenderer;
 import vacademy.io.notification_service.features.communication_timeline.dto.CommunicationTimelineRequest;
 import vacademy.io.notification_service.features.communication_timeline.dto.UnifiedCommunicationDTO;
@@ -217,7 +219,26 @@ public class CommunicationTimelineService {
         // HTML, so EmailService parks the subject in message_payload ({"subject": ...}). Title above
         // is a truncation of that HTML and is no substitute — anything resending this message needs
         // the subject that actually went out.
-        builder.subject(extractEmailSubject(nl));
+        Map<String, Object> payload = parseEmailPayload(nl);
+        // Rows written before the subject was stored have none in the payload. Their SES events
+        // record the subject exactly as it went out, so use that rather than leaving the UI to
+        // scrape one out of the HTML (which produced subjects like "96 Dear ..." on resends).
+        String subject = payloadString(payload, "subject");
+        if (subject == null) {
+            subject = subjectFromEvents(allEmailEvents.getOrDefault(nl.getId(), List.of()));
+        }
+        builder.subject(subject);
+        // The template the email was built from and who sent it (an admin resend), when the send
+        // recorded them. Rows written before they were stored carry neither.
+        builder.templateName(payloadString(payload, "templateName"));
+        String originType = payloadString(payload, MessageOriginPayload.TYPE_KEY);
+        if (originType != null) {
+            builder.origin(MessageOriginDTO.builder()
+                    .type(originType)
+                    .id(payloadString(payload, MessageOriginPayload.ID_KEY))
+                    .name(payloadString(payload, MessageOriginPayload.NAME_KEY))
+                    .build());
+        }
 
         // Email status, in order of authority:
         //   1. an SES tracking event   — the provider's own outcome, always freshest
@@ -284,24 +305,47 @@ public class CommunicationTimelineService {
      * Returns null when there is no recorded failure, so callers can fall through.
      */
     /**
-     * Subject of an outbound EMAIL row, read from {@code message_payload} ({@code {"subject": ...}}
-     * — the key EmailService writes). Null when the payload is absent or carries no subject, which
-     * is every row written before the subject was stored there; callers fall back to the title.
+     * The {@code message_payload} of an outbound EMAIL row: {@code subject}, and when the send
+     * recorded them {@code templateName} and {@code originType / originId / originName} (keys
+     * EmailService writes). Empty when the payload is absent or unreadable, as on rows written
+     * before the subject was stored; callers fall back to the title.
      */
-    private String extractEmailSubject(NotificationLog nl) {
+    private Map<String, Object> parseEmailPayload(NotificationLog nl) {
         String payload = nl.getMessagePayload();
         if (!StringUtils.hasText(payload)) {
-            return null;
+            return Map.of();
         }
         try {
-            Map<String, Object> parsed = objectMapper.readValue(
-                    payload, new TypeReference<Map<String, Object>>() {});
-            Object subject = parsed.get("subject");
-            return (subject instanceof String s && StringUtils.hasText(s)) ? s : null;
+            return objectMapper.readValue(payload, new TypeReference<Map<String, Object>>() {});
         } catch (Exception e) {
             log.debug("Could not parse EMAIL messagePayload for log {}: {}", nl.getId(), e.getMessage());
-            return null;
+            return Map.of();
         }
+    }
+
+    /**
+     * The subject line an SES event recorded for this email ("Subject: ..." on its own line in
+     * the event body), or null when no event carries one.
+     */
+    static String subjectFromEvents(List<NotificationLog> events) {
+        for (NotificationLog event : events) {
+            String body = event.getBody();
+            if (body == null) continue;
+            int at = body.indexOf(SES_SUBJECT_PREFIX);
+            if (at < 0) continue;
+            int start = at + SES_SUBJECT_PREFIX.length();
+            int end = body.indexOf('\n', start);
+            String line = (end < 0 ? body.substring(start) : body.substring(start, end)).trim();
+            if (!line.isEmpty()) return line;
+        }
+        return null;
+    }
+
+    private static final String SES_SUBJECT_PREFIX = "\nSubject: ";
+
+    private static String payloadString(Map<String, Object> payload, String key) {
+        Object value = payload.get(key);
+        return (value instanceof String s && StringUtils.hasText(s)) ? s : null;
     }
 
     private String storedFailureStatus(NotificationLog nl) {

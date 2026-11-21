@@ -82,6 +82,13 @@ public class TriggerContextKeyRegistry {
         // PackageSessionScheduler ~L165. No `user`.
         AUDITED.put(WorkflowTriggerEvent.MEMBERSHIP_EXPIRY.name(), Set.of(
                 "userPlanId", "userId", "paymentPlanId", "enrollInviteId", "endDate", "daysToExpiry"));
+        // FeeReminderService.runInstitute. Flat learner keys; payLink only when the learner portal and username are known.
+        for (WorkflowTriggerEvent event : List.of(WorkflowTriggerEvent.MEMBERSHIP_PAYMENT_DUE,
+                WorkflowTriggerEvent.MEMBERSHIP_PAYMENT_RED_LIST)) {
+            AUDITED.put(event.name(), Set.of("userPlanId", "userId", "enrollInviteId", "dueDate", "daysToDue",
+                    "daysOverdue", "stage", "step", "amount", "currency", "planName", "autopay",
+                    "learnerName", "learnerEmail", "learnerMobile", "payLink"));
+        }
         // CommerceNotificationSender (commerce/notify/CommerceNotificationDispatcher.workflowContext).
         // customerPhone only for a proved phone, customerEmail only for a deliverable address,
         // userId and orderLink only when known; the trigger's own keys below.

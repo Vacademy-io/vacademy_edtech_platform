@@ -50,19 +50,28 @@ jobs:
 
       - name: Resolve server matrix
         id: resolve
+        # Inputs reach the script as environment variables, never pasted into it.
+        env:
+          ACTION: ${{ inputs.action }}
+          SLUG: ${{ inputs.server_slug }}
+          COUNT: ${{ inputs.server_count }}
         run: |
           CONFIG="bigbluebutton-server/pool-config.json"
 
-          if [ "${{ inputs.server_slug }}" = "all" ]; then
-            COUNT="${{ inputs.server_count }}"
+          if ! [[ "$SLUG" =~ ^[a-z0-9-]{1,40}$ ]]; then
+            echo "::error::server_slug must be \"all\" or a pool server slug (a-z, 0-9, -)"
+            exit 1
+          fi
+
+          if [ "$SLUG" = "all" ]; then
             # For 'stop' and 'status', operate on ALL servers regardless of count
-            if [ "${{ inputs.action }}" = "stop" ] || [ "${{ inputs.action }}" = "status" ]; then
+            if [ "$ACTION" = "stop" ] || [ "$ACTION" = "status" ]; then
               MATRIX=$(jq -c '{include: [.servers | sort_by(.priority) | .[]]}' "$CONFIG")
             else
               MATRIX=$(jq -c --argjson n "$COUNT" '{include: [.servers | sort_by(.priority) | .[:$n] | .[]]}' "$CONFIG")
             fi
           else
-            MATRIX=$(jq -c --arg slug "${{ inputs.server_slug }}" '{include: [.servers[] | select(.slug == $slug)]}' "$CONFIG")
+            MATRIX=$(jq -c --arg slug "$SLUG" '{include: [.servers[] | select(.slug == $slug)]}' "$CONFIG")
           fi
 
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"

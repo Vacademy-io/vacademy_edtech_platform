@@ -23,6 +23,7 @@ import {
     buildAppendReorderPayload,
     getNextSlideOrder,
 } from '../../-helper/slide-naming-utils';
+import { extractYouTubeVideoId } from '@/utils/youtube';
 
 const buildFormSchema = (t: TFunction) =>
     z.object({
@@ -81,11 +82,7 @@ export const AddVideoDialog = ({
         },
     });
 
-    const extractVideoId = (url: string): string => {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-        const match = url.match(regExp);
-        return match && match[2]?.length === 11 ? match[2] : '';
-    };
+    const extractVideoId = (url: string): string => extractYouTubeVideoId(url) ?? '';
 
     const loadYouTubeAPI = () => {
         if (window.YT) {

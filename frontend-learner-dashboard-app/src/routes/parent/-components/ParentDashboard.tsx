@@ -118,7 +118,7 @@ function AdmissionProgressSteps({
     useAdmissionStages(instituteId);
 
   const { data: applicantStages, isLoading: isApplicantStagesLoading } =
-    useApplicantStages("539c7877-f749-4c84-aa4e-bb92bbedb802");
+    useApplicantStages(child.applicant_id);
 
   const isLoading = isStagesLoading || isApplicantStagesLoading;
 

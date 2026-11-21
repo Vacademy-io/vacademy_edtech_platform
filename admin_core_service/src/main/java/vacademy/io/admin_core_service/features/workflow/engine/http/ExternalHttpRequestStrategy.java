@@ -1,9 +1,11 @@
 package vacademy.io.admin_core_service.features.workflow.engine.http;
 
 import vacademy.io.admin_core_service.core.external.ExternalCallLog;
+import vacademy.io.admin_core_service.core.external.OutboundUrlGuard;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -13,7 +15,10 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import vacademy.io.admin_core_service.features.workflow.dto.HttpRequestNodeConfigDTO;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -25,8 +30,27 @@ public class ExternalHttpRequestStrategy implements HttpRequestStrategy {
     private final HttpHelperUtils httpHelperUtils;
     private final ObjectMapper objectMapper;
 
+    /** Same limit HttpURLConnection applies when it follows redirects itself (http.maxRedirects). */
+    static final int MAX_REDIRECTS = 20;
+
+    /**
+     * When true, a target that is not a public address (loopback, private, link-local/metadata,
+     * cluster-internal names) is refused. When false (default) the request is sent as before and
+     * the would-be refusal is logged.
+     */
+    @Value("${workflow.http.block-private-targets:false}")
+    private boolean blockPrivateTargets;
+
     private static RestTemplate createRestTemplateWithTimeout() {
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        // Redirects are followed in execute() so that every hop's target is checked; the
+        // connection itself never follows one.
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory() {
+            @Override
+            protected void prepareConnection(HttpURLConnection connection, String httpMethod) throws IOException {
+                super.prepareConnection(connection, httpMethod);
+                connection.setInstanceFollowRedirects(false);
+            }
+        };
         factory.setConnectTimeout(5_000);
         factory.setReadTimeout(30_000);
         return ExternalCallLog.attach(new RestTemplate(factory));
@@ -107,7 +131,31 @@ public class ExternalHttpRequestStrategy implements HttpRequestStrategy {
             log.info("Executing EXTERNAL HTTP {} → {}", method, finalUrl);
             if (requestBody != null) log.debug("Request body: {}", requestBody);
 
+            Object workflowId = context != null ? context.get("workflowId") : null;
+            if (!targetAllowed(finalUri, workflowId)) {
+                result.put("error", "ExternalHttpRequestStrategy failed: target address is not allowed");
+                return result;
+            }
             ResponseEntity<String> response = restTemplate.exchange(finalUri, method, entity, String.class);
+            // Same redirects the connection used to follow on its own (GET only, same scheme),
+            // with each new target checked like the first.
+            URI current = finalUri;
+            int hops = 0;
+            while (method == HttpMethod.GET && isFollowedRedirect(response.getStatusCode().value())) {
+                URI next = redirectTarget(current, response.getHeaders().getFirst(HttpHeaders.LOCATION));
+                if (next == null || !current.getScheme().equalsIgnoreCase(next.getScheme())) {
+                    break;
+                }
+                if (++hops > MAX_REDIRECTS) {
+                    throw new IllegalStateException("Server redirected too many times (" + MAX_REDIRECTS + ")");
+                }
+                if (!targetAllowed(next, workflowId)) {
+                    result.put("error", "ExternalHttpRequestStrategy failed: redirect target address is not allowed");
+                    return result;
+                }
+                current = next;
+                response = restTemplate.exchange(current, method, entity, String.class);
+            }
             result.putAll(httpHelperUtils.processResponse(response));
 
         } catch (HttpClientErrorException e) {
@@ -120,6 +168,45 @@ public class ExternalHttpRequestStrategy implements HttpRequestStrategy {
         return result;
     }
 
+    /** False only when the target is refused (blocking enabled); otherwise logs what would be refused. */
+    boolean targetAllowed(URI target, Object workflowId) {
+        String reason = OutboundUrlGuard.blockReason(target);
+        if (reason == null) {
+            return true;
+        }
+        String host = target != null ? target.getHost() : null;
+        if (blockPrivateTargets) {
+            log.warn("Workflow HTTP request refused: {} (host={}, workflowId={})", reason, host, workflowId);
+            return false;
+        }
+        log.warn("Workflow HTTP request would be refused: {} (host={}, workflowId={}); sent because "
+                + "workflow.http.block-private-targets=false", reason, host, workflowId);
+        return true;
+    }
+
+    /** The statuses HttpURLConnection followed for GET (300, 301, 302, 303, 307). */
+    static boolean isFollowedRedirect(int status) {
+        return status >= 300 && status <= 307 && status != 304 && status != 305 && status != 306;
+    }
+
+    static URI redirectTarget(URI current, String location) {
+        if (location == null || location.isBlank()) {
+            return null;
+        }
+        try {
+            return current.resolve(location.trim());
+        } catch (IllegalArgumentException e) {
+            try {
+                return new URL(current.toURL(), location.trim()).toURI();
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+    }
+
+    private static final java.util.Set<String> SECRET_HEADERS = java.util.Set.of(
+            "authorization", "proxy-authorization", "cookie", "set-cookie");
+
     private void logCurl(HttpMethod method, String finalUrl, HttpEntity<?> entity) {
         try {
             StringBuilder curlBuilder = new StringBuilder("curl --location");
@@ -129,6 +216,9 @@ public class ExternalHttpRequestStrategy implements HttpRequestStrategy {
             entity.getHeaders().forEach((key, values) -> {
                 if (!key.equalsIgnoreCase(HttpHeaders.CONTENT_LENGTH)) {
                     values.forEach(value -> {
+                        if (SECRET_HEADERS.contains(key.toLowerCase(java.util.Locale.ROOT))) {
+                            value = "<redacted>";
+                        }
                         String escapedValue = value.replace("'", "'\\''");
                         curlBuilder.append(" -H '").append(key).append(": ").append(escapedValue).append("'");
                     });

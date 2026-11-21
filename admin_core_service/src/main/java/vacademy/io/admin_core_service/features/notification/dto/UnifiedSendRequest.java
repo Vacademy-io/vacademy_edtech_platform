@@ -103,5 +103,12 @@ public class UnifiedSendRequest {
         private String originId;
         @JsonInclude(JsonInclude.Include.NON_NULL)
         private String originName;
+
+        /**
+         * EMAIL only: name of the template the body was built from, recorded on the log row for the
+         * timeline. Display only; notification-service never looks a template up by it.
+         */
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        private String logTemplateName;
     }
 }

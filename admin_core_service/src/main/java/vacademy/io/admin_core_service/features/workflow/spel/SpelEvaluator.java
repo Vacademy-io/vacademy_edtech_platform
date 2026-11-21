@@ -1,6 +1,7 @@
 package vacademy.io.admin_core_service.features.workflow.spel;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.expression.MapAccessor;
 import org.springframework.expression.Expression;
 import org.springframework.expression.ExpressionParser;
@@ -25,8 +26,28 @@ public class SpelEvaluator {
 
     private final WorkflowDateFunctions dateFunctions;
 
+    /**
+     * When true (default), expressions run with {@link WorkflowExpressionPolicy}: only the
+     * allow-listed types, constructors and members resolve. Setting
+     * {@code workflow.expression.restricted=false} (env WORKFLOW_EXPRESSION_RESTRICTED) brings
+     * back the previous context without a code change.
+     */
+    private volatile boolean restricted = true;
+
     public SpelEvaluator(WorkflowDateFunctions dateFunctions) {
         this.dateFunctions = dateFunctions;
+    }
+
+    @Value("${workflow.expression.restricted:true}")
+    public void setRestricted(boolean restricted) {
+        this.restricted = restricted;
+        if (!restricted) {
+            log.warn("Workflow expressions run with the unrestricted evaluation context (workflow.expression.restricted=false)");
+        }
+    }
+
+    public boolean isRestricted() {
+        return restricted;
     }
 
     /**
@@ -54,13 +75,20 @@ public class SpelEvaluator {
         String exprStr = expressionString.trim();
 
         ExpressionParser parser = new SpelExpressionParser();
-        StandardEvaluationContext context = new StandardEvaluationContext(contextVars);
-        context.setTypeLocator(new SafeTypeLocator());
-        // Dot access on Map values (e.g. #ctx['user'].fullName). Context objects that start
-        // life as beans (UserDTO) come back as LinkedHashMaps after a persisted-DELAY pause
-        // serializes the context to JSONB — without this accessor every dot-style expression
-        // in a node AFTER a multi-day delay would throw EL1008 and drop/abort the run.
-        context.addPropertyAccessor(new MapAccessor());
+        StandardEvaluationContext context;
+        if (restricted) {
+            // Same root object and Map access as below; type/method/property lookups go through
+            // the allow-list (MapAccessor is installed first there too).
+            context = WorkflowExpressionPolicy.newContext(contextVars, workflowIdOf(contextVars));
+        } else {
+            context = new StandardEvaluationContext(contextVars);
+            context.setTypeLocator(new SafeTypeLocator());
+            // Dot access on Map values (e.g. #ctx['user'].fullName). Context objects that start
+            // life as beans (UserDTO) come back as LinkedHashMaps after a persisted-DELAY pause
+            // serializes the context to JSONB — without this accessor every dot-style expression
+            // in a node AFTER a multi-day delay would throw EL1008 and drop/abort the run.
+            context.addPropertyAccessor(new MapAccessor());
+        }
         context.setVariable("ctx", contextVars);
         // Date helpers: #dates.nextWeekday(...) lets any node compute an anchor date from config
         // using the same strictly-next logic the DELAY node schedules against.
@@ -121,7 +149,22 @@ public class SpelEvaluator {
         }
     }
 
+    /** Workflow id for refusal warnings; the engine seeds it into every run context. */
+    private static String workflowIdOf(Map<String, Object> contextVars) {
+        if (contextVars == null) {
+            return null;
+        }
+        for (String key : new String[] {"workflowId", "workflow_id"}) {
+            Object v = contextVars.get(key);
+            if (v != null) {
+                return String.valueOf(v);
+            }
+        }
+        return null;
+    }
+
     /**
+     * Previous context's type locator (used only when workflow.expression.restricted=false).
      * Type locator that allows safe JDK types but blocks dangerous ones
      * like Runtime, ProcessBuilder, Class, etc.
      */

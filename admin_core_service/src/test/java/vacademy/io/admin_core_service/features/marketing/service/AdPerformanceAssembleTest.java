@@ -31,6 +31,21 @@ class AdPerformanceAssembleTest {
     }
 
     @Test
+    @DisplayName("Blended cost ignores enquiries of platforms with no spend")
+    void blendedCostUsesPaidPlatformsOnly() {
+        AdPerformanceDTO dto = AdPerformanceReportService.assemble(FROM, TO,
+                List.of(spend("a1", "META", "META", "m1", FROM, "100.00")),
+                List.of(new AttributionFact("E", "META", FROM, "m1", 2),
+                        new AttributionFact("E", "GOOGLE", FROM, null, 8),
+                        new AttributionFact("A", "GOOGLE", TO, null, 1)));
+
+        assertEquals(10, dto.getTotals().getEnquiries());
+        assertEquals(1, dto.getTotals().getAdmissions());
+        assertEquals(new BigDecimal("50.00"), dto.getTotals().getCostPerEnquiry());
+        assertNull(dto.getTotals().getCostPerAdmission());
+    }
+
+    @Test
     @DisplayName("Folds spend and attribution into platform, daily and campaign rows")
     void assembles() {
         AdPerformanceDTO dto = AdPerformanceReportService.assemble(FROM, TO,

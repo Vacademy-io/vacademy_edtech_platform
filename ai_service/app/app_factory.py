@@ -53,6 +53,7 @@ from .routers.lead_agent import router as lead_agent_router
 from .routers.kb_paper import router as kb_paper_router
 from .routers.kb_companion import router as kb_companion_router
 from .site_assistant.router import router as site_assistant_router
+from .demo_guide.router import router as demo_guide_router
 from .routers.paper_digitise import router as paper_digitise_router
 from .routers.kb_library import router as kb_library_router
 from .routers.voice_agent import router as voice_agent_router
@@ -193,6 +194,13 @@ async def _lifespan(app: FastAPI):
         start_billing_reconciliation()
     except Exception as exc:  # noqa: BLE001
         _logger.warning("copy-check billing reconciliation startup skipped: %s", exc)
+    # Third-party API alerts: every few minutes, emails the team about an API that is
+    # out of credits or keeps failing. One replica runs each pass (advisory lock).
+    try:
+        from .services.external_api_alerts import start_external_api_alerts
+        start_external_api_alerts()
+    except Exception as exc:  # noqa: BLE001
+        _logger.warning("external API alerts startup skipped: %s", exc)
     # Vacademy Assistant help corpus: keep the deployed pgvector corpus in sync
     # with app/data/help_knowledge.jsonl. Change-detected, so an unchanged corpus
     # is a no-op. Lazy import + background task so it can't block app boot.
@@ -389,6 +397,13 @@ def create_app() -> FastAPI:
         lifespan=_lifespan,
     )
 
+    # Read-only demo user (core/demo_read_only.py): refuses writes made with that user's
+    # token on every route. Added before CORS so it sits INSIDE it and the 403 still
+    # carries the CORS headers the browser needs to read the body.
+    from .core import demo_read_only as _demo_read_only
+    app.add_middleware(_demo_read_only.DemoReadOnlyMiddleware, base_path=settings.api_base_path)
+    app.add_exception_handler(_demo_read_only.DemoReadOnlyRefused, _demo_read_only.refused_handler)
+
     # CORS
     allow_origins = [o.strip() for o in settings.cors_allow_origins.split(",") if o.strip()]
     allow_methods = [m.strip() for m in settings.cors_allow_methods.split(",") if m.strip()]
@@ -415,6 +430,12 @@ def create_app() -> FastAPI:
         # continue a stream.
         expose_headers=["Server-Timing", "Mcp-Session-Id", "Mcp-Protocol-Version"],
     )
+
+    # Demo guide (app/demo_guide): its routes answer CORS only to the products'
+    # stage origins. Sits outside the app-wide CORS middleware above and acts on
+    # /demo-guide/v1 paths only; every other path passes through untouched.
+    from .demo_guide.cors import DemoGuideCorsMiddleware
+    app.add_middleware(DemoGuideCorsMiddleware)
 
     # AI usage limits (services/metering/limit_gate.py): LimitExceeded -> HTTP 429
     # {"error": "AI_USAGE_LIMIT", ...} + Retry-After, and the soft-limit header
@@ -497,6 +518,7 @@ def create_app() -> FastAPI:
     app.include_router(kb_companion_router, prefix=settings.api_base_path)
     # Public website assistant for institute sites (hosted + embed), docs/site-assistant.
     app.include_router(site_assistant_router, prefix=settings.api_base_path)
+    app.include_router(demo_guide_router, prefix=settings.api_base_path)
     # A question-paper PDF read into gradable questions for offline tests.
     app.include_router(paper_digitise_router, prefix=settings.api_base_path)
     app.include_router(kb_library_router, prefix=settings.api_base_path)

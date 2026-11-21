@@ -65,6 +65,7 @@ public class LiveSessionNotificationProcessor {
     private final InstituteDomainRoutingRepository domainRoutingRepository;
     private final TimezoneSettingService timezoneSettingService;
     private final GetSessionByIdService getSessionByIdService;
+    private final vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
     private final InstituteStudentRepository studentRepository;
     private final LiveSessionNotificationConfigRepository notificationConfigRepository;
     private final LiveClassTemplateService liveClassTemplateService;
@@ -368,6 +369,15 @@ public class LiveSessionNotificationProcessor {
         if (!individualUserIds.isEmpty()) {
             List<Object[]> individualStudents = mappingRepository.findStudentContactsByUserIds(individualUserIds);
             allStudents.addAll(individualStudents);
+        }
+
+        // Learners on a break with class reminders stopped (docs/ENROLMENT_BREAKS.md) are left out.
+        // Instructors are added after this, so they are never filtered.
+        if (enrolmentBreakGuard.instituteHasActiveBreaks(instituteId)) {
+            allStudents.removeIf(r -> enrolmentBreakGuard.isHeld(instituteId,
+                    r.length >= 7 ? (String) r[1] : (String) r[0],
+                    vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard.Category.CLASS,
+                    r.length >= 8 ? (String) r[7] : null, null));
         }
 
         allStudents.addAll(getInstructorRecipients(sessionId));
@@ -1076,6 +1086,12 @@ public class LiveSessionNotificationProcessor {
             LiveSession session = sessionOpt.get();
             // Attendance-only institute: no learner notifications at all, this one included.
             if (attendanceOnlyModeService.suppressesLearnerNotifications(session)) {
+                return;
+            }
+            // A learner on a break with class reminders stopped gets no attendance message either.
+            if (enrolmentBreakGuard.isHeld(session.getInstituteId(), userId,
+                    vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard.Category.CLASS,
+                    null, null)) {
                 return;
             }
 

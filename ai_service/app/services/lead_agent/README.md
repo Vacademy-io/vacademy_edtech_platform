@@ -97,6 +97,13 @@ by hand, and the scheduler kept discovering because `quota - delivered` stayed l
   penalty ranks it lower. `auto_score` / `review_score` are still accepted (old agents and dashboards send
   them) and ignored.
   What research may search for a lead follows the same gate (`contact_hunt.worth_searching`).
+  `org_email_only` (default off; 2026-11-21, lists that send by email abroad): right after the send bar, a lead
+  with no business email -> REJECT whether or not the list needs approval ("Only a personal email address",
+  "Only careers/membership-type inboxes", "No business email found"). A business email: usable (not rated
+  avoid), on a domain not in `engine/research/contacts.FREE_MAIL` (webmail + internet providers; `is_free_mail`)
+  and not an inbox like careers@, hr@, membership@, records@, no-reply@ (`IRRELEVANT_INBOX_TOKENS`). Delivery
+  then sends only such an email (`delivery.best_contacts(lead, gate_cfg)`), never the Gmail. The search guards
+  (`worth_searching`, `worth_a_lookup`) ignore it: the hunt is what may find that email.
 * **Delivery order** (`store.claim_approved`): APPROVED by score, best first (then oldest), up to the daily
   quota, so each day sends the best of the pool.
 * **Pacing** (`scheduler.pool_need`): pool = APPROVED not delivered yet (+ REVIEW with `require_approval`),

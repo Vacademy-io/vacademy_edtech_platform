@@ -442,6 +442,17 @@ DEFAULT_TOOL_PRICING: Dict[str, Dict[str, Any]] = {
         "unit_field": "flat",
         "params": {"fixed_price": True},
     },
+    # Demo guide (public product demo, app/demo_guide): our own sales demo, so a
+    # turn costs the institute nothing. Usage rows are written record-only
+    # (free_reason POLICY_FREE); this row exists so the tool key has a price of 0
+    # everywhere a price is looked up. Must mirror the admin_core demo-guide migration.
+    "demo_guide_turn": {
+        "request_type": "chatbot",
+        "flat_base_credits": Decimal("0"),
+        "per_unit_credits": Decimal("0"),
+        "unit_field": "flat",
+        "params": {"fixed_price": True},
+    },
     # ---- Lead Agent (admin_core V612) -------------------------------------
     # ONE fixed-price charge per lead delivered into a lead list (idempotency key
     # lead_agent:{candidate_id}); rejected leads are free. Local = the pages were

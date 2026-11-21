@@ -15,6 +15,13 @@ import vacademy.io.common.exceptions.VacademyException;
  * a student "belongs" to the institute too, so membership alone must never
  * gate an HR endpoint).
  *
+ * With security.institute-guards.enforce on, membership is
+ * {@link InstituteAccessValidator#requireInstituteMemberOrSuperAdmin} (the caller's authorities
+ * were minted for the clientId institute and that header equals the target institute) and the
+ * root flag is not an HR role; platform super admins on the SUPER_ADMIN_USER_IDS allowlist pass.
+ * With it off (default) the previous checks apply ({@code validateUserAccess}, root flag counts
+ * as every HR role) and the cases the new checks would refuse are logged.
+ *
  * Roles are authority strings minted by CustomUserDetails from the caller's
  * user_role rows for the clientId institute: ADMIN (institute admin, superset
  * of all HR access), HR_ADMIN (full HR & payroll), HR_MANAGER (team-scoped HR
@@ -44,31 +51,31 @@ public class HrAccessGuard {
 
     /** Membership only — for endpoints any institute member may hit (rare in HR). */
     public void validateMember(CustomUserDetails user, String instituteId) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.guardMember("hr.validateMember", user, instituteId);
     }
 
     /** Membership + ADMIN or HR_ADMIN. For payroll processing, salary admin, config. */
     public void requireHrAdmin(CustomUserDetails user, String instituteId) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        if (!isHrAdmin(user)) {
+        instituteAccessValidator.guardMember("hr.requireHrAdmin", user, instituteId);
+        if (!hasAnyAuthority("hr.requireHrAdmin", user, instituteId, ROLE_ADMIN, ROLE_HR_ADMIN)) {
             throw new ForbiddenException("Access denied: HR admin role required");
         }
     }
 
     /** Membership + ADMIN, HR_ADMIN or HR_MANAGER. For team-scoped HR operations. */
     public void requireHrStaff(CustomUserDetails user, String instituteId) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
-        if (!isHrStaff(user)) {
+        instituteAccessValidator.guardMember("hr.requireHrStaff", user, instituteId);
+        if (!hasAnyAuthority("hr.requireHrStaff", user, instituteId, ROLE_ADMIN, ROLE_HR_ADMIN, ROLE_HR_MANAGER)) {
             throw new ForbiddenException("Access denied: HR role required");
         }
     }
 
     public boolean isHrAdmin(CustomUserDetails user) {
-        return hasAnyAuthority(user, ROLE_ADMIN, ROLE_HR_ADMIN);
+        return hasAnyAuthority("hr.isHrAdmin", user, null, ROLE_ADMIN, ROLE_HR_ADMIN);
     }
 
     public boolean isHrStaff(CustomUserDetails user) {
-        return hasAnyAuthority(user, ROLE_ADMIN, ROLE_HR_ADMIN, ROLE_HR_MANAGER);
+        return hasAnyAuthority("hr.isHrStaff", user, null, ROLE_ADMIN, ROLE_HR_ADMIN, ROLE_HR_MANAGER);
     }
 
     /**
@@ -89,11 +96,11 @@ public class HrAccessGuard {
      * re-fetch by unchecked id.
      */
     public EmployeeProfile requireSelfOrHrStaff(CustomUserDetails user, String instituteId, String employeeId) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.guardMember("hr.requireSelfOrHrStaff", user, instituteId);
         EmployeeProfile employee = employeeProfileRepository.findById(employeeId)
                 .orElseThrow(() -> new VacademyException("Employee not found"));
         requireInstituteMatch(employee.getInstituteId(), instituteId, "Employee");
-        if (isHrStaff(user)) {
+        if (hasAnyAuthority("hr.requireSelfOrHrStaff", user, instituteId, ROLE_ADMIN, ROLE_HR_ADMIN, ROLE_HR_MANAGER)) {
             return employee;
         }
         if (user.getUserId() == null || !user.getUserId().equals(employee.getUserId())) {
@@ -104,14 +111,31 @@ public class HrAccessGuard {
 
     /** The caller's own employee profile in this institute (self-service endpoints). */
     public EmployeeProfile resolveSelfEmployee(CustomUserDetails user, String instituteId) {
-        instituteAccessValidator.validateUserAccess(user, instituteId);
+        instituteAccessValidator.guardMember("hr.resolveSelfEmployee", user, instituteId);
         return employeeProfileRepository.findByUserIdAndInstituteId(user.getUserId(), instituteId)
                 .orElseThrow(() -> new VacademyException("No employee profile found for the current user"));
     }
 
-    private boolean hasAnyAuthority(CustomUserDetails user, String... roles) {
+    /**
+     * Enforced: an allowlisted platform super admin or one of {@code roles} in the authorities;
+     * the root flag is not consulted (learners carry it too). Not enforced: the previous answer
+     * (root flag, or one of {@code roles}), logging the cases the enforced answer would refuse.
+     */
+    private boolean hasAnyAuthority(String route, CustomUserDetails user, String instituteId, String... roles) {
         if (user == null) return false;
-        if (user.isRootUser()) return true;
+        boolean hasRole = holdsAnyRole(user, roles);
+        boolean enforced = hasRole || instituteAccessValidator.isPlatformSuperAdmin(user);
+        if (instituteAccessValidator.isInstituteGuardsEnforced()) {
+            return enforced;
+        }
+        boolean previous = hasRole || user.isRootUser();
+        if (!enforced && previous) {
+            instituteAccessValidator.logWouldRefuse(route, user, instituteId, "no_hr_role", "allow");
+        }
+        return previous;
+    }
+
+    private static boolean holdsAnyRole(CustomUserDetails user, String... roles) {
         if (user.getAuthorities() == null) return false;
         return user.getAuthorities().stream().anyMatch(a -> {
             String auth = a.getAuthority();

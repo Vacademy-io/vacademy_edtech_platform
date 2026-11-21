@@ -19,7 +19,7 @@ import httpx
 import pytest
 
 import app.report as rpt
-from app.bot import strip_stage_directions
+from app.bot import drop_spoken_directions as strip_stage_directions
 from app.turntake import is_company_ivr
 
 

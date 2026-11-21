@@ -289,6 +289,11 @@ public class AdPerformanceReportService {
         long totalImpressions = 0;
         long totalEnquiries = 0;
         long totalAdmissions = 0;
+        // Blended cost divides spend only by enquiries / admissions of platforms that had spend in
+        // the window, so free UTM-tagged leads of a platform with no connected account (or no
+        // spend) don't make the paid platforms look cheaper than they are.
+        long paidEnquiries = 0;
+        long paidAdmissions = 0;
         for (Map.Entry<String, PlatformAgg> e : platforms.entrySet()) {
             PlatformAgg p = e.getValue();
             totalSpend = totalSpend.add(p.spend);
@@ -296,6 +301,10 @@ public class AdPerformanceReportService {
             totalImpressions += p.impressions;
             totalEnquiries += p.enquiries;
             totalAdmissions += p.admissions;
+            if (p.spend.signum() > 0) {
+                paidEnquiries += p.enquiries;
+                paidAdmissions += p.admissions;
+            }
             if (p.spend.signum() <= 0 && p.enquiries == 0 && p.admissions == 0) continue;
             platformRows.add(AdPerformanceDTO.PlatformRow.builder()
                     .platform(e.getKey())
@@ -372,8 +381,8 @@ public class AdPerformanceReportService {
                         .impressions(totalImpressions)
                         .enquiries(totalEnquiries)
                         .admissions(totalAdmissions)
-                        .costPerEnquiry(cost(totalSpend, totalEnquiries))
-                        .costPerAdmission(cost(totalSpend, totalAdmissions))
+                        .costPerEnquiry(cost(totalSpend, paidEnquiries))
+                        .costPerAdmission(cost(totalSpend, paidAdmissions))
                         .build())
                 .platforms(platformRows)
                 .daily(dailyRows)

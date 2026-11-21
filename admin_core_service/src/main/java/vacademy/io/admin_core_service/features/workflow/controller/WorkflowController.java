@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
 import vacademy.io.admin_core_service.features.workflow.dto.*;
+import vacademy.io.admin_core_service.features.workflow.entity.Workflow;
 import vacademy.io.admin_core_service.features.workflow.entity.WorkflowTemplate;
 import vacademy.io.admin_core_service.features.workflow.entity.WorkflowTrigger;
 import vacademy.io.admin_core_service.features.workflow.repository.WorkflowTemplateRepository;
@@ -19,6 +20,8 @@ import vacademy.io.admin_core_service.features.workflow.service.WorkflowSchedule
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowService;
 import vacademy.io.admin_core_service.features.workflow.service.WorkflowValidationService;
 import vacademy.io.common.auth.config.PageConstants;
+import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.exceptions.ForbiddenException;
 
 import java.time.Instant;
 import java.util.*;
@@ -41,10 +44,14 @@ public class WorkflowController {
     private final AsyncWorkflowExecutor asyncWorkflowExecutor;
     private final WorkflowContextSchemaService workflowContextSchemaService;
     private final ObjectMapper objectMapper;
+    private final WorkflowAccessGuard accessGuard;
 
     @GetMapping("/institute/{instituteId}")
     public ResponseEntity<List<WorkflowResponseDTO>> getActiveWorkflowsByInstituteId(
-            @PathVariable String instituteId) {
+            @PathVariable String instituteId,
+            @RequestAttribute("user") CustomUserDetails user) {
+
+        accessGuard.requireStaff(user, instituteId);
 
         List<WorkflowResponseDTO> workflows = workflowService.getActiveWorkflowsByInstituteId(instituteId);
         return ResponseEntity.ok(workflows);
@@ -54,7 +61,11 @@ public class WorkflowController {
     public ResponseEntity<PagedWorkflowScheduleResponseDTO> getWorkflowSchedules(
             @RequestBody WorkflowScheduleFilterDTO filter,
             @RequestParam(value = "pageNo", defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo,
-            @RequestParam(value = "pageSize", defaultValue = PageConstants.DEFAULT_PAGE_SIZE, required = false) int pageSize) {
+            @RequestParam(value = "pageSize", defaultValue = PageConstants.DEFAULT_PAGE_SIZE, required = false) int pageSize,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+
+        accessGuard.requireStaffForList("workflow.getWorkflowSchedules", user,
+                filter != null ? filter.getInstituteId() : null);
 
         log.info("Getting workflow schedules for instituteId: {}, workflowIds: {}, statuses: {}, page: {}, size: {}",
                 filter.getInstituteId(), filter.getWorkflowIds(), filter.getStatuses(), pageNo, pageSize);
@@ -72,7 +83,11 @@ public class WorkflowController {
     public ResponseEntity<PagedWorkflowsResponseDTO> getWorkflowsWithSchedules(
         @RequestBody WorkflowWithSchedulesFilterDTO filter,
         @RequestParam(value = "pageNo", defaultValue = DEFAULT_PAGE_NUMBER, required = false) int pageNo,
-        @RequestParam(value = "pageSize", defaultValue = PageConstants.DEFAULT_PAGE_SIZE, required = false) int pageSize) {
+        @RequestParam(value = "pageSize", defaultValue = PageConstants.DEFAULT_PAGE_SIZE, required = false) int pageSize,
+        @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+
+        accessGuard.requireStaffForList("workflow.getWorkflowsWithSchedules", user,
+            filter != null ? filter.getInstituteId() : null);
 
         PagedWorkflowsResponseDTO response = workflowService.getWorkflowsWithSchedulesPaged(filter, pageNo,
             pageSize);
@@ -90,8 +105,10 @@ public class WorkflowController {
             descriptionExpr = "'created automation ' + (#dto?.name ?: '')")
     public ResponseEntity<WorkflowBuilderDTO> createWorkflow(
             @RequestBody WorkflowBuilderDTO dto,
-            @RequestParam(value = "userId") String userId) {
+            @RequestParam(value = "userId") String userId,
+            @RequestAttribute("user") CustomUserDetails user) {
 
+        accessGuard.requireStaff(user, dto.getInstituteId());
         log.info("Creating workflow '{}' for institute: {} by user: {}", dto.getName(), dto.getInstituteId(), userId);
         WorkflowBuilderDTO result = workflowBuilderService.createWorkflow(dto, userId);
         log.info("Created workflow with id: {}", result.getId());
@@ -113,8 +130,14 @@ public class WorkflowController {
     public ResponseEntity<WorkflowBuilderDTO> updateWorkflow(
             @PathVariable String workflowId,
             @RequestBody WorkflowBuilderDTO dto,
-            @RequestParam(value = "userId") String userId) {
+            @RequestParam(value = "userId") String userId,
+            @RequestAttribute("user") CustomUserDetails user) {
 
+        Workflow workflow = accessGuard.requireStaffForWorkflow(user, workflowId);
+        // New nodes are saved under dto.instituteId; it must be the workflow's own institute.
+        if (dto.getInstituteId() != null && !dto.getInstituteId().equals(workflow.getInstituteId())) {
+            throw new ForbiddenException("Workflow belongs to a different institute");
+        }
         log.info("Updating workflow '{}' ({}) by user: {}", dto.getName(), workflowId, userId);
         WorkflowBuilderDTO result = workflowBuilderService.updateWorkflow(workflowId, dto, userId);
         return ResponseEntity.ok(result);
@@ -122,7 +145,10 @@ public class WorkflowController {
 
     @GetMapping("/{workflowId}/edit")
     public ResponseEntity<WorkflowBuilderDTO> getWorkflowForEditing(
-            @PathVariable String workflowId) {
+            @PathVariable String workflowId,
+            @RequestAttribute("user") CustomUserDetails user) {
+
+        accessGuard.requireStaffForWorkflow(user, workflowId);
 
         log.info("Fetching workflow for editing: {}", workflowId);
         WorkflowBuilderDTO result = workflowBuilderService.getWorkflowForEditing(workflowId);
@@ -136,7 +162,10 @@ public class WorkflowController {
             entityIdExpr = "#workflowId",
             descriptionExpr = "'deleted an automation'")
     public ResponseEntity<Void> deleteWorkflow(
-            @PathVariable String workflowId) {
+            @PathVariable String workflowId,
+            @RequestAttribute("user") CustomUserDetails user) {
+
+        accessGuard.requireStaffForWorkflow(user, workflowId);
 
         log.info("Soft-deleting workflow: {}", workflowId);
         workflowBuilderService.deleteWorkflow(workflowId);
@@ -153,7 +182,10 @@ public class WorkflowController {
      */
     @GetMapping("/{workflowId}/raw")
     public ResponseEntity<WorkflowRawDTO> getWorkflowRaw(
-            @PathVariable String workflowId) {
+            @PathVariable String workflowId,
+            @RequestAttribute("user") CustomUserDetails user) {
+
+        accessGuard.requireStaffForWorkflow(user, workflowId);
 
         log.info("Fetching raw workflow config: {}", workflowId);
         return ResponseEntity.ok(workflowBuilderService.getWorkflowRaw(workflowId));
@@ -169,7 +201,10 @@ public class WorkflowController {
     public ResponseEntity<WorkflowRawDTO.RawNodeDTO> updateNodeTemplate(
             @PathVariable String workflowId,
             @PathVariable String nodeTemplateId,
-            @RequestBody NodeTemplateUpdateDTO dto) {
+            @RequestBody NodeTemplateUpdateDTO dto,
+            @RequestAttribute("user") CustomUserDetails user) {
+
+        accessGuard.requireStaffForWorkflow(user, workflowId);
 
         log.info("Updating node template {} of workflow {}", nodeTemplateId, workflowId);
         return ResponseEntity.ok(
@@ -190,7 +225,10 @@ public class WorkflowController {
     @PostMapping("/{workflowId}/test-run")
     public ResponseEntity<Map<String, Object>> testRunWorkflow(
             @PathVariable String workflowId,
-            @RequestBody(required = false) Map<String, Object> sampleContext) {
+            @RequestBody(required = false) Map<String, Object> sampleContext,
+            @RequestAttribute("user") CustomUserDetails user) {
+
+        accessGuard.requireStaffForWorkflow(user, workflowId);
 
         log.info("Test-running workflow: {} with dry-run mode", workflowId);
         Map<String, Object> ctx = sampleContext != null ? new HashMap<>(sampleContext) : new HashMap<>();
@@ -227,7 +265,10 @@ public class WorkflowController {
             descriptionExpr = "'manually ran an automation'")
     public ResponseEntity<Map<String, Object>> triggerWorkflowNow(
             @PathVariable String workflowId,
-            @RequestBody(required = false) Map<String, Object> sampleContext) {
+            @RequestBody(required = false) Map<String, Object> sampleContext,
+            @RequestAttribute("user") CustomUserDetails user) {
+
+        accessGuard.requireStaffForWorkflow(user, workflowId);
 
         log.info("Manually triggering workflow (production mode, real emails): {}", workflowId);
         Map<String, Object> ctx = sampleContext != null ? new HashMap<>(sampleContext) : new HashMap<>();
@@ -268,8 +309,10 @@ public class WorkflowController {
             @RequestParam(value = "templateId") String templateId,
             @RequestParam(value = "instituteId") String instituteId,
             @RequestParam(value = "userId") String userId,
-            @RequestParam(value = "workflowName", required = false) String workflowName) {
+            @RequestParam(value = "workflowName", required = false) String workflowName,
+            @RequestAttribute("user") CustomUserDetails user) {
 
+        accessGuard.requireStaff(user, instituteId);
         log.info("Applying template {} for institute {} by user {}", templateId, instituteId, userId);
 
         WorkflowTemplate template = workflowTemplateRepository.findById(UUID.fromString(templateId))

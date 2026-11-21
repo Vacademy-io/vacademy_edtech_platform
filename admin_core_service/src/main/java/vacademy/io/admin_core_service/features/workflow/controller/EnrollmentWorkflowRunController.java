@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import vacademy.io.admin_core_service.features.workflow.dto.EnrollmentWorkflowRunDTO;
 import vacademy.io.admin_core_service.features.workflow.service.EnrollmentWorkflowRunService;
+import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,6 +24,7 @@ import java.util.stream.Collectors;
 public class EnrollmentWorkflowRunController {
 
     private final EnrollmentWorkflowRunService enrollmentWorkflowRunService;
+    private final WorkflowAccessGuard accessGuard;
 
     /**
      * @param instituteId        institute that owns the workflow
@@ -32,7 +34,10 @@ public class EnrollmentWorkflowRunController {
     @GetMapping
     public ResponseEntity<List<EnrollmentWorkflowRunDTO>> getEnrollmentRuns(
             @RequestParam("instituteId") String instituteId,
-            @RequestParam("packageSessionIds") String packageSessionIds) {
+            @RequestParam("packageSessionIds") String packageSessionIds,
+            @RequestAttribute(value = "user", required = false) CustomUserDetails user) {
+
+        accessGuard.requireStaffForList("workflow.getEnrollmentRuns", user, instituteId);
 
         List<String> ids = Arrays.stream(packageSessionIds.split(","))
                 .map(String::trim)

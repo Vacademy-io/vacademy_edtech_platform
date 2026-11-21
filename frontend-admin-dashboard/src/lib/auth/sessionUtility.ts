@@ -219,10 +219,11 @@ async function refreshTokens(refreshToken: string): Promise<UnauthorizedResponse
     console.log('[Token Refresh] Starting token refresh...');
 
     try {
+        // The endpoint is POST-only and reads the token from a JSON body.
         const response: AxiosResponse<Tokens> = await axios({
-            method: 'GET',
+            method: 'POST',
             url: REFRESH_TOKEN_URL,
-            params: { token: refreshToken },
+            data: { token: refreshToken },
             timeout: 10000, // 10 second timeout
         });
 
@@ -232,15 +233,18 @@ async function refreshTokens(refreshToken: string): Promise<UnauthorizedResponse
             hasRefreshToken: !!response.data?.refreshToken,
         });
 
-        if (!response.data?.accessToken || !response.data?.refreshToken) {
+        if (!response.data?.accessToken) {
             throw new Error('Invalid response from token refresh endpoint');
         }
 
+        // The admin endpoint returns only a new access token; the refresh token itself does not
+        // change, so keep the stored one when the response omits it.
+        const nextRefreshToken = response.data.refreshToken || refreshToken;
         await setTokenInStorage(TokenKey.accessToken, response.data.accessToken);
-        await setTokenInStorage(TokenKey.refreshToken, response.data.refreshToken);
+        await setTokenInStorage(TokenKey.refreshToken, nextRefreshToken);
 
         console.log('[Token Refresh] Tokens stored successfully');
-        return response.data;
+        return { ...response.data, refreshToken: nextRefreshToken };
     } catch (error) {
         console.error('[Token Refresh] Failed to refresh tokens:', error);
 

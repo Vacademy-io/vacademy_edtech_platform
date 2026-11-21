@@ -35,9 +35,9 @@ const allIds = (pick: (g: (typeof catalog.modules)[0]['features'][0]['governs'])
     Array.from(new Set(catalog.modules.flatMap((m) => m.features.flatMap((f) => pick(f.governs)))));
 
 describe('catalogue', () => {
-    it('normalizes the real catalogue (15 modules, 60 features)', () => {
+    it('normalizes the real catalogue (15 modules, 62 features)', () => {
         expect(catalog.modules).toHaveLength(15);
-        expect(catalog.modules.flatMap((m) => m.features)).toHaveLength(60);
+        expect(catalog.modules.flatMap((m) => m.features)).toHaveLength(62);
     });
 
     it('rejects malformed bodies (fail open = no catalogue)', () => {
@@ -62,7 +62,7 @@ describe('catalogue', () => {
  * Sidebar entries deliberately outside the catalogue (always available). A new
  * sidebar tab must either be governed in catalog.json or be listed here (§4).
  *
- * The ten commerce tabs are listed because their gate is not the catalogue: it
+ * The commerce tabs are listed because their gate is not the catalogue: it
  * is the fail-closed commerce reader, in every mode (lib/commerce/
  * commerce-access.ts, tested in commerce-access.test.ts), and two of them (Home,
  * Settings) open on ANY commerce feature, which `governs.nav` cannot express
@@ -185,7 +185,15 @@ describe('LEGACY regression — nothing is ever gated', () => {
             'commerce.stock',
             'commerce.pos',
             'commerce.tax_reports',
+            'commerce.accounts',
+            'commerce.migration',
         ]);
+        // The switch-over feature ships off and governs exactly its own tab and page.
+        const migration = catalog.modules
+            .flatMap((m) => m.features)
+            .find((f) => f.key === 'commerce.migration');
+        expect(migration?.governs.nav).toEqual(['commerce-parallel-run']);
+        expect(migration?.governs.routes).toEqual(['/commerce/parallel-run']);
         const snapshot = (features: Record<string, boolean>) => ({
             instituteId: 'inst-1',
             status: 'loaded' as const,

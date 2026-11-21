@@ -165,7 +165,7 @@ export interface LiveClassDashboardParams {
 
 const LIVE_REFRESH_MS = 60_000;
 
-const fetchLiveClassDashboard = async (
+export const fetchLiveClassDashboard = async (
     params: LiveClassDashboardParams
 ): Promise<LiveClassDashboardData> => {
     const response = await authenticatedAxiosInstance.post<LiveClassDashboardData>(

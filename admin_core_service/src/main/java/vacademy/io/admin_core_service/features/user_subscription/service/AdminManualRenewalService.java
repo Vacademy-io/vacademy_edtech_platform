@@ -397,6 +397,82 @@ public class AdminManualRenewalService {
                 .build();
     }
 
+    public static final String ACTION_PRICE_CHANGE = "PRICE_CHANGE";
+
+    /**
+     * Sets the price this member pays each period (a legacy or negotiated rate), or clears it to
+     * go back to the plan's list price. Stored as the membership's price lock
+     * (user_plan.regional_price + currency), which every later charge already reads: the autopay
+     * sweep, the learner's pay-to-continue, renewal invoices and ledger accruals. Applies from the
+     * next charge; nothing already paid changes. A remark is required and kept in the history.
+     */
+    @CacheEvict(value = { "userPlanById", "userPlanWithPaymentLogs", "membershipDetails" }, allEntries = true)
+    @Transactional
+    public vacademy.io.admin_core_service.features.user_subscription.dto.MemberPriceResultDTO changeMemberPrice(
+            String userPlanId, String instituteId,
+            vacademy.io.admin_core_service.features.user_subscription.dto.ChangeMemberPriceRequestDTO req,
+            CustomUserDetails admin) {
+        if (req == null) throw new VacademyException("Enter the new price");
+        if (!StringUtils.hasText(req.getRemarks())) {
+            throw new VacademyException("Add a remark explaining why this member pays a different price");
+        }
+        if (req.getPrice() != null && req.getPrice().signum() < 0) {
+            throw new VacademyException("The price cannot be negative");
+        }
+        UserPlan plan = loadForInstitute(userPlanId, instituteId);
+        commercePlans.refuseCommercePlan(plan, "change the price");
+
+        java.math.BigDecimal list = plan.getPaymentPlan() != null
+                ? java.math.BigDecimal.valueOf(plan.getPaymentPlan().getActualPrice()) : null;
+        String planCurrency = plan.getPaymentPlan() != null ? plan.getPaymentPlan().getCurrency() : null;
+        boolean wasLocked = vacademy.io.admin_core_service.features.regional_pricing.service.RegionalPriceLock.isLocked(plan);
+        java.math.BigDecimal previous = wasLocked ? plan.getRegionalPrice() : list;
+        String currency = wasLocked ? plan.getRegionalCurrency()
+                : StringUtils.hasText(planCurrency) ? planCurrency : currencyOf(plan, null, instituteId);
+
+        java.math.BigDecimal next = req.getPrice() == null ? null : req.getPrice().setScale(2, java.math.RoundingMode.HALF_UP);
+        boolean backToList = next == null || (list != null && next.compareTo(list) == 0
+                && (planCurrency == null || planCurrency.equalsIgnoreCase(currency)) && plan.getRegionalCountry() == null);
+        if (backToList) {
+            plan.setRegionalPrice(null);
+            plan.setRegionalCurrency(null);
+            plan.setRegionalCountry(null);
+        } else {
+            plan.setRegionalPrice(next);
+            plan.setRegionalCurrency(currency);
+        }
+        userPlanRepository.save(plan);
+
+        java.math.BigDecimal effective = backToList ? list : next;
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("previous_price", previous);
+        metadata.put("new_price", effective);
+        metadata.put("currency", currency);
+        metadata.put("uses_list_price", backToList);
+        timelineEventService.createManualEvent(TimelineEventRequestDTO.builder()
+                .type(REMARK_TYPE)
+                .typeId(plan.getId())
+                .actionType(ACTION_PRICE_CHANGE)
+                .title("Price changed: " + (previous != null ? previous.toPlainString() : "—") + " → "
+                        + (effective != null ? effective.toPlainString() : "—") + " " + (currency != null ? currency : ""))
+                .description(req.getRemarks().trim())
+                .metadata(metadata)
+                .studentUserId(plan.getUserId())
+                .build(), admin);
+        log.info("Member price of plan {} changed by {}: {} -> {} {}", plan.getId(),
+                admin != null ? admin.getUserId() : null, previous, effective, currency);
+
+        return vacademy.io.admin_core_service.features.user_subscription.dto.MemberPriceResultDTO.builder()
+                .userPlanId(plan.getId())
+                .previousPrice(previous)
+                .newPrice(effective)
+                .listPrice(list)
+                .currency(currency)
+                .usesListPrice(backToList)
+                .autopayOn(Boolean.TRUE.equals(plan.getAutoRenewalEnabled()))
+                .build();
+    }
+
     @Transactional
     public TimelineEventDTO addRemark(String userPlanId, String instituteId, String remark, CustomUserDetails admin) {
         if (!StringUtils.hasText(remark)) {

@@ -12,6 +12,7 @@ import vacademy.io.admin_core_service.features.audience.service.AutoLeadListProv
 import vacademy.io.admin_core_service.features.auth_service.service.AuthService;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.SignupEventDTO;
+import vacademy.io.admin_core_service.features.utm_attribution.service.UtmAttributionService;
 import vacademy.io.common.auth.dto.UserDTO;
 import vacademy.io.common.exceptions.VacademyException;
 
@@ -54,6 +55,9 @@ public class ProductDemoLeadService {
     static final String FIELD_SOURCE = "Source";
     static final String FIELD_METHOD = "Sign-up Method";
 
+    /** What a lead (audience_response) id looks like. */
+    private static final java.util.regex.Pattern LEAD_ID = java.util.regex.Pattern.compile("^[A-Za-z0-9-]{1,64}$");
+
     /** At most this many institutes per backfill call. */
     static final int MAX_BACKFILL = 50;
 
@@ -66,6 +70,7 @@ public class ProductDemoLeadService {
     private final AudienceService audienceService;
     private final JdbcTemplate jdbcTemplate;
     private final AuthService authService;
+    private final UtmAttributionService utmAttribution;
 
     public static boolean isDemo(SignupEventDTO event) {
         return event != null && DEMO_METHOD.equalsIgnoreCase(event.getMethod());
@@ -124,12 +129,50 @@ public class ProductDemoLeadService {
                     event.getInstituteId());
             log.info("[demo-leads] {}: {} ({}) -> list {}: {}", productKey, event.getEmail(), event.getMethod(),
                     list.getId(), result);
+            try {
+                recordUtm(list, event, result);
+            } catch (Exception e) {
+                // The lead is already saved; a missing UTM record must not change what the capture reports.
+                log.warn("[demo-leads] {}: utm of {} not recorded: {}", productKey, event.getEmail(), e.getMessage());
+            }
             return result;
         } catch (Exception e) {
             log.warn("[demo-leads] {}: lead for {} not captured: {}", productKey,
                     event == null ? null : event.getEmail(), e.getMessage(), e);
             return null;
         }
+    }
+
+    /**
+     * The visit's utm tags go to the CRM's own UTM record (utm_attribution), which the lead list shows as
+     * UTM Source / Campaign; the Source field keeps the page the sign-up started from. The record is tied
+     * to the lead's user, read from the lead row the capture returned, because the list looks UTM up by
+     * user. Without that row (a repeat sign-up) it is tied to the email. Never fails the capture.
+     */
+    void recordUtm(Audience list, SignupEventDTO event, String leadId) {
+        Map<String, String> utm = new LinkedHashMap<>();
+        putIfText(utm, "utm_source", event.getUtmSource());
+        putIfText(utm, "utm_medium", event.getUtmMedium());
+        putIfText(utm, "utm_campaign", event.getUtmCampaign());
+        putIfText(utm, "utm_content", event.getUtmContent());
+        putIfText(utm, "utm_term", event.getUtmTerm());
+        if (utm.isEmpty()) return;
+        String userId = null;
+        // The capture returns the lead's id, or a sentence (e.g. "already captured") that is not worth a query.
+        if (leadId != null && LEAD_ID.matcher(leadId).matches()) {
+            try {
+                userId = jdbcTemplate.query("SELECT user_id FROM audience_response WHERE id = ? AND audience_id = ?",
+                        (rs, n) -> rs.getString(1), leadId, list.getId()).stream().findFirst().orElse(null);
+            } catch (Exception e) {
+                log.warn("[demo-leads] lead {} user not read for its utm: {}", leadId, e.getMessage());
+            }
+        }
+        utmAttribution.record(list.getInstituteId(), userId, event.getEmail().trim(), event.getPhone(),
+                "AUDIENCE", list.getId(), utm);
+    }
+
+    private static void putIfText(Map<String, String> map, String key, String value) {
+        if (StringUtils.hasText(value)) map.put(key, value.trim());
     }
 
     /**

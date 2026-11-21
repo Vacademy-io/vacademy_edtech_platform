@@ -87,7 +87,24 @@ public class WebSecurityConfig {
             "/notification-service/v1/email-sending/**",
             // Email inbox: every email the institute sent/received (attachments included) and
             // reply-as-the-institute. The controller further requires institute staff.
-            "/notification-service/v1/email-inbox/**"
+            "/notification-service/v1/email-inbox/**",
+            // Admin dashboard (and the admin assistant, which forwards the admin's token)
+            // screens: WhatsApp inbox, provider/channel setup, chatbot flows, WhatsApp and
+            // notification templates, sender verification, the communication timeline, email
+            // tracking and the notification hub. Every caller signs in; none of these is a
+            // provider webhook (those live under /v1/webhook/** and /webhook/v1/**).
+            "/notification-service/v1/inbox/**",
+            "/notification-service/v1/channel-mapping/**",
+            "/notification-service/v1/chatbot-flow/**",
+            "/notification-service/v1/whatsapp-templates/**",
+            "/notification-service/v1/templates/**",
+            "/notification-service/v1/email-verification/**",
+            "/notification-service/v1/communications/**",
+            "/notification-service/v1/email-tracking/**",
+            "/notification-service/v1/hub/**",
+            // Manual test push. The controller further requires a platform super admin.
+            // register and deactivate stay under the push-notifications permitAll.
+            "/notification-service/push-notifications/send-test"
     };
 
     @Autowired

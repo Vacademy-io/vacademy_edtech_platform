@@ -55,6 +55,10 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private EngagementWorkflowSuppression engagementSuppression;
 
+    /** Learners on a break (docs/ENROLMENT_BREAKS.md). Optional: absent = no hold. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
+
     // Cache for templates (InstituteID:TemplateName -> Template)
     private final Map<String, Template> templateCache = new java.util.concurrent.ConcurrentHashMap<>();
 
@@ -287,6 +291,11 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
             // nurture workflow skips them (transactional and learner sends are never held).
             Set<String> engagedPhones = engagementSuppression != null && EngagementWorkflowSuppression.appliesTo(context)
                     ? engagementSuppression.engagedLeadPhones(instituteId) : Set.of();
+            // Learners on a break whose class or fee reminders are stopped (live-class and
+            // membership-expiry events only; see EnrolmentBreakGuard.categoryForWorkflow).
+            final var breakCategory = enrolmentBreakGuard == null ? null
+                    : vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard.categoryForWorkflow(context);
+            final boolean checkBreaks = breakCategory != null && enrolmentBreakGuard.instituteHasActiveBreaks(instituteId);
 
             // --- OPTIMIZATION START ---
 
@@ -485,6 +494,14 @@ public class SendWhatsAppNodeHandler implements NodeHandler {
                                     .errorType("VALIDATION_ERROR")
                                     .failureReason("SKIPPED")
                                     .build());
+                            continue;
+                        }
+
+                        if (checkBreaks && userId != null
+                                && enrolmentBreakGuard.isHeld(instituteId, userId, breakCategory, null, null)) {
+                            log.info("Skipping user {}: on a break with these reminders stopped.", userId);
+                            results.add("SKIPPED: User " + userId + " - On a break (reminders stopped).");
+                            skippedCount++;
                             continue;
                         }
 

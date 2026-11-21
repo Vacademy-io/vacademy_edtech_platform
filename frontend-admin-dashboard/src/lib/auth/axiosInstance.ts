@@ -3,6 +3,7 @@ import axios from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 import * as Sentry from '@sentry/react';
 import { getInstituteId } from '@/constants/helper';
+import { demoNoteRefusal } from '@/lib/demo-stage/bridge';
 import { AI_SERVICE_BASE_URL } from '@/constants/urls';
 // Locale helper only (reads the zustand store lazily at request time) — no
 // import cycle: formatters → language store → i18n/locales, none touch axios.
@@ -101,6 +102,76 @@ const shouldSkipAuthLogout = (config?: InternalAxiosRequestConfig): boolean => {
     if ((config as { skipAuthLogout?: boolean }).skipAuthLogout) return true;
     const url = config.url ?? '';
     return url.includes('/ai-service') || url.startsWith(AI_SERVICE_BASE_URL);
+};
+
+// ── 403 TOKEN_INVALID: the backend no longer accepts this access token (e.g. it was signed
+// with a key the platform has since replaced). Refresh once and retry the request once; if that
+// cannot work, end the session cleanly and let the root route guard show the sign-in page.
+type RetriableConfig = InternalAxiosRequestConfig & { __tokenInvalidRetried?: boolean };
+
+// One refresh shared by every request that is refused at the same moment.
+let tokenInvalidRefresh: Promise<unknown> | null = null;
+let tokenInvalidLogoutStarted = false;
+
+const bearerSent = (config?: InternalAxiosRequestConfig): string | null => {
+    const headers = config?.headers as Record<string, unknown> | undefined;
+    const raw = headers?.Authorization ?? headers?.authorization;
+    return typeof raw === 'string' && raw.startsWith('Bearer ') ? raw.slice('Bearer '.length) : null;
+};
+
+// Network failures and 5xx say nothing about the session; anything else means the refresh
+// token is no longer usable.
+const refreshFailedForGood = (error: unknown): boolean => {
+    if (!axios.isAxiosError(error)) return true;
+    const status = error.response?.status;
+    return typeof status === 'number' && status < 500;
+};
+
+const endSessionForInvalidToken = (requestUrl?: string) => {
+    if (tokenInvalidLogoutStarted) return;
+    tokenInvalidLogoutStarted = true;
+    captureForcedLogout('Forced logout: token not accepted and could not be refreshed', {
+        extra: { requestUrl },
+    });
+    removeCookiesAndLogout();
+    if (typeof window !== 'undefined') window.location.reload();
+};
+
+const recoverFromInvalidToken = async (error: { config?: RetriableConfig }) => {
+    const config = error.config;
+    const sent = bearerSent(config);
+    const current = getTokenFromCookie(TokenKey.accessToken);
+    // No session to recover (already signed out), or a bearer we did not attach.
+    if (!config || !sent || !current) return Promise.reject(error);
+
+    if (config.__tokenInvalidRetried) {
+        // Refused again with a freshly refreshed token: refreshing cannot fix it.
+        if (sent === current) endSessionForInvalidToken(config.url);
+        return Promise.reject(error);
+    }
+
+    // When another request has already replaced the token, just retry with the new one.
+    if (sent === current) {
+        const refreshToken = getTokenFromCookie(TokenKey.refreshToken);
+        if (!refreshToken) {
+            endSessionForInvalidToken(config.url);
+            return Promise.reject(error);
+        }
+        try {
+            if (!tokenInvalidRefresh) {
+                tokenInvalidRefresh = refreshTokens(refreshToken).finally(() => {
+                    tokenInvalidRefresh = null;
+                });
+            }
+            await tokenInvalidRefresh;
+        } catch (refreshError) {
+            if (refreshFailedForGood(refreshError)) endSessionForInvalidToken(config.url);
+            return Promise.reject(error);
+        }
+    }
+
+    config.__tokenInvalidRetried = true;
+    return authenticatedAxiosInstance(config);
 };
 
 // Debug function that can be called from browser console
@@ -208,6 +279,9 @@ authenticatedAxiosInstance.interceptors.response.use(
             response?.headers
         );
 
+        // Public demo frame: the server refused a change; tell the visitor why.
+        demoNoteRefusal(response?.status, response?.data, error?.config?.method, error?.config?.url);
+
         // Only log non-403 errors to reduce noise
         if (response?.status !== 403) {
             console.error('[Axios Response] Request failed:', {
@@ -308,6 +382,9 @@ authenticatedAxiosInstance.interceptors.response.use(
 
         // Handle 403 Forbidden
         if (response?.status === 403) {
+            if (response?.data?.error === 'TOKEN_INVALID') {
+                return recoverFromInvalidToken(error);
+            }
             // An admin disabled or removed this member ("Disable access" / "Delete member" on
             // Teams). The backend sends this code only for that case — never for an
             // auth-service blip — so it is safe to end the session here.

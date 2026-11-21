@@ -21,6 +21,7 @@ import vacademy.io.admin_core_service.features.engagement.spi.DataPointRegistry;
 import vacademy.io.admin_core_service.features.engagement.spi.FetchContext;
 import vacademy.io.admin_core_service.features.engagement.spi.Subject;
 import vacademy.io.admin_core_service.features.engagement.templates.EngagementEmailTemplateCatalog;
+import vacademy.io.admin_core_service.features.engagement.templates.TemplateVariableSources;
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -445,8 +446,32 @@ public class EngagementDecisionService {
             // the dispatcher can actually send it. If the pick is invalid (unknown template, missing
             // a variable), leave it unattached — the task still surfaces with the resolved draft for
             // a human to fix; the dispatcher refuses a template-less WhatsApp send, so nothing leaks.
+            String missingValue = null;
             if ("WHATSAPP".equals(action.getChannel())) {
-                attachWhatsAppTemplate(action, d, templatesByName);
+                missingValue = attachWhatsAppTemplate(action, d, templatesByName, payloads,
+                        TemplateVariableSources.briefLinks(brief));
+            }
+            // A template value nobody has: nothing a person could fix by approving, so this touch is
+            // skipped (a closed no-op with the reason) and the engine looks again at its next check.
+            // An answer to someone who wrote in still goes to a person, as before.
+            if (missingValue != null && (timing == PolicyGate.SendTiming.REPLY || dryRun)) {
+                unattached(action, missingValue);
+            } else if (missingValue != null) {
+                EngagementAction skipped = new EngagementAction();
+                skipped.setEngineId(engine.getId());
+                skipped.setMemberId(member.getId());
+                skipped.setInstituteId(engine.getInstituteId());
+                skipped.setPromptVersionId(prompt.getId());
+                skipped.setChannel(chosenChannel);
+                skipped.setKind("NO_OP");
+                skipped.setStatus("DONE");
+                skipped.setRationale(cap("Skipped this touch: " + missingValue
+                        + ", and the lead's own data has no value for it. Nothing was sent; the engine looks "
+                        + "again at its next check. " + nullToEmpty(d.rationale())));
+                EngagementLlmUsage.applyTo(d.usage(), skipped);
+                actionRepository.save(skipped);
+                log.info("Engine {}: WhatsApp touch for member {} skipped: {}", engine.getId(), member.getId(), missingValue);
+                return recordAndFinish(member, engine, d, fingerprint, heldLease, now);
             }
             boolean emailTemplateOnly = "EMAIL".equals(action.getChannel()) && menu != null && menu.emailTemplates() != null;
             if (emailTemplateOnly) {
@@ -644,7 +669,8 @@ public class EngagementDecisionService {
         try {
             return templateProposalRepository.findApproved(engine.getId(), engine.getInstituteId()).stream()
                     .map(p -> new EngagementBrainClient.TemplateOption(
-                            p.getName(), p.getProposedBody(), readJsonArray(p.getVariableNames()), p.getLanguage()))
+                            p.getName(), p.getProposedBody(), readJsonArray(p.getVariableNames()), p.getLanguage(),
+                            readJsonStringMap(p.getVariableSources())))
                     .toList();
         } catch (Exception e) {
             log.warn("Engine {} approved-template load failed: {}", engine.getId(), e.getMessage());
@@ -657,9 +683,13 @@ public class EngagementDecisionService {
      * complete: the template must be one of THIS engine's approved templates, and the brain must
      * have supplied a value for EVERY variable the template declares. Otherwise leave it unattached
      * (the dispatcher rejects a template-less WhatsApp send, so an incomplete pick never sends).
+     * A variable the model left out is filled from the person's own data when that has it.
+     *
+     * @return why a variable has no value (the caller skips the touch), or null
      */
-    private void attachWhatsAppTemplate(EngagementAction action, EngagementBrainClient.Decision d,
-                                        Map<String, EngagementBrainClient.TemplateOption> byName) {
+    private String attachWhatsAppTemplate(EngagementAction action, EngagementBrainClient.Decision d,
+                                          Map<String, EngagementBrainClient.TemplateOption> byName,
+                                          Map<String, JsonNode> payloads, List<String> briefLinks) {
         String tn = d.templateName() != null ? d.templateName().trim() : null;
         EngagementBrainClient.TemplateOption t = tn == null || tn.isEmpty() ? null : byName.get(tn);
         if (t == null && tn != null && !tn.isEmpty()) {
@@ -674,7 +704,7 @@ public class EngagementDecisionService {
             unattached(action, tn == null || tn.isEmpty()
                     ? "the AI did not choose an approved template"
                     : "the AI chose '" + tn + "', which is not an approved template");
-            return;
+            return null;
         }
         Map<String, String> supplied = d.variables() != null ? d.variables() : Map.of();
         // Serialize ONLY the template's declared variables (drop any extras the model invented),
@@ -692,8 +722,11 @@ public class EngagementDecisionService {
                 }
             }
             if (v == null || v.isBlank()) {
-                unattached(action, "the AI left out the value for '" + name + "' in template '" + t.name() + "'");
-                return;
+                // Left out by the model: fill it from the person's own data when that has it.
+                v = TemplateVariableSources.fromLeadData(name, t.variableSources(), payloads, briefLinks);
+            }
+            if (v == null || v.isBlank()) {
+                return "the AI left out the value for '" + name + "' in template '" + t.name() + "'";
             }
             vars.put(name, v);
         }
@@ -707,6 +740,7 @@ public class EngagementDecisionService {
         // real message and sent_body records the truth (the model's paraphrase could silently diverge).
         String rendered = renderTemplate(t.body(), t.variableNames(), vars);
         if (rendered != null && !rendered.isBlank()) action.setDraftBody(cap(rendered));
+        return null;
     }
 
     /**
@@ -757,6 +791,19 @@ public class EngagementDecisionService {
             return out;
         } catch (Exception e) {
             return List.of();
+        }
+    }
+
+    private Map<String, String> readJsonStringMap(String json) {
+        try {
+            Map<String, String> out = new java.util.LinkedHashMap<>();
+            JsonNode n = objectMapper.readTree(json == null ? "{}" : json);
+            if (n.isObject()) n.fields().forEachRemaining(e -> {
+                if (e.getValue().isTextual()) out.put(e.getKey(), e.getValue().asText());
+            });
+            return out;
+        } catch (Exception e) {
+            return Map.of();
         }
     }
 

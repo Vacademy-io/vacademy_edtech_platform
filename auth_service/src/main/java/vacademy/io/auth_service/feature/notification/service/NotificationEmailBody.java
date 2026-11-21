@@ -5,7 +5,18 @@ public class NotificationEmailBody {
     /** Last-resort login link, used only when neither a connected LMS nor an institute learner portal resolves. */
     public static final String LEARNER_LOGIN_URL = "https://learner.vacademy.io/login";
 
-    public static String forgetPasswordEmailBody(String service, String name, String username, String password) {
+    /**
+     * @param instituteName signs the mail; blank signs it "Team" (never the platform's name)
+     * @param loginUrl      the institute portal the user signs in to; blank omits the button
+     * @param themeColor    institute_theme_code (preset or hex); blank/unknown paints neutral
+     */
+    public static String forgetPasswordEmailBody(String instituteName, String name, String username, String password,
+                                                 String loginUrl, String themeColor) {
+        String theme = ThemeColorResolver.resolveOrNeutral(themeColor);
+        String signOff = instituteName != null && !instituteName.isBlank() ? instituteName.trim() : "Team";
+        String loginButton = loginUrl != null && !loginUrl.isBlank()
+                ? "<p style=\"text-align: center;\"><a href=\"" + loginUrl.trim() + "\" class=\"login-button\">Login Now</a></p>"
+                : "";
         return """
                 <!DOCTYPE html>
                 <html>
@@ -16,19 +27,19 @@ public class NotificationEmailBody {
                             font-family: Arial, sans-serif;
                             margin: 0;
                             padding: 0;
-                            background-color: #FFF7E1; /* Light yellow background */
+                            background-color: #F4F4F4;
                         }
                         .container {
                             max-width: 600px;
                             margin: 40px auto;
                             padding: 20px;
                             background-color: #FFFFFF; /* White background for email content */
-                            border: 1px solid #ED7424; /* Warm orange border */
+                            border: 1px solid %s;
                             border-radius: 10px;
                             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
                         }
                         .header {
-                            background-color: #ED7424; /* Warm orange header */
+                            background-color: %s;
                             color: #FFF;
                             padding: 15px;
                             text-align: center;
@@ -40,7 +51,7 @@ public class NotificationEmailBody {
                             color: #333;
                         }
                         .footer {
-                            background-color: #ED7424; /* Warm orange footer */
+                            background-color: %s;
                             color: #FFF;
                             padding: 10px;
                             text-align: center;
@@ -49,11 +60,21 @@ public class NotificationEmailBody {
                         .credentials {
                             font-size: 18px;
                             font-weight: bold;
-                            color: #ED7424; /* Warm orange for credentials */
+                            color: %s;
                             text-align: center;
                             padding: 10px;
-                            background-color: #FFFAE1; /* Light yellow background */
-                            border: 2px solid #ED7424; /* Matching border color */
+                            background-color: #F8F8F8;
+                            border: 2px solid %s;
+                            border-radius: 5px;
+                        }
+                        .login-button {
+                            display: inline-block;
+                            margin-top: 10px;
+                            padding: 12px 20px;
+                            background-color: %s;
+                            color: #FFF !important;
+                            text-decoration: none;
+                            font-weight: bold;
                             border-radius: 5px;
                         }
                     </style>
@@ -71,6 +92,7 @@ public class NotificationEmailBody {
                                 <p><strong>Password:</strong> %s</p>
                             </div>
                             <p>Please use these details to log in and consider changing your password for security.</p>
+                            %s
                         </div>
                         <div class="footer">
                             <p>Best regards, <br> %s</p>
@@ -78,7 +100,7 @@ public class NotificationEmailBody {
                     </div>
                 </body>
                 </html>
-                """.formatted(name, username, password, service);
+                """.formatted(theme, theme, theme, theme, theme, theme, name, username, password, loginButton, signOff);
     }
 
     public static String createWelcomeEmailBody(
@@ -88,6 +110,8 @@ public class NotificationEmailBody {
             String password,
             String frontendLoginUrl,
             String themeColor) {
+        // Preset codes ("primary", "amber") are not CSS colours; blank/unknown paints neutral.
+        themeColor = ThemeColorResolver.resolveOrNeutral(themeColor);
         return """
                 <!DOCTYPE html>
                 <html>
@@ -133,7 +157,7 @@ public class NotificationEmailBody {
                             font-weight: 600;
                         }
                         .credentials-box {
-                            background: #FDF2E9;
+                            background: #F5F5F5;
                             border-radius: 6px;
                             padding: 24px;
                             margin: 32px 0;
@@ -233,10 +257,14 @@ public class NotificationEmailBody {
     }
 
     /**
-     * One body for the whole batch: {{username}}, {{password}} and {{login_url}} are filled
-     * per recipient, because each learner may sign in to a different LMS site.
+     * One body for the whole batch: {{greeting}}, {{username}}, {{password}} and {{login_url}}
+     * are filled per recipient, because each learner has their own name and may sign in to a
+     * different LMS site.
+     *
+     * @param themeColor institute_theme_code (preset or hex); blank/unknown paints neutral
      */
-    public static String sendUserPasswords(String service) {
+    public static String sendUserPasswords(String service, String themeColor) {
+        String theme = ThemeColorResolver.resolveOrNeutral(themeColor);
         return """
                 <!DOCTYPE html>
                 <html>
@@ -247,19 +275,19 @@ public class NotificationEmailBody {
                             font-family: Arial, sans-serif;
                             margin: 0;
                             padding: 0;
-                            background-color: #FFF7E1;
+                            background-color: #F4F4F4;
                         }
                         .container {
                             max-width: 600px;
                             margin: 40px auto;
                             padding: 20px;
                             background-color: #FFFFFF;
-                            border: 1px solid #ED7424;
+                            border: 1px solid %s;
                             border-radius: 10px;
                             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
                         }
                         .header {
-                            background-color: #ED7424;
+                            background-color: %s;
                             color: #FFF;
                             padding: 15px;
                             text-align: center;
@@ -271,7 +299,7 @@ public class NotificationEmailBody {
                             color: #333;
                         }
                         .footer {
-                            background-color: #ED7424;
+                            background-color: %s;
                             color: #FFF;
                             padding: 10px;
                             text-align: center;
@@ -280,18 +308,18 @@ public class NotificationEmailBody {
                         .credentials {
                             font-size: 18px;
                             font-weight: bold;
-                            color: #ED7424;
+                            color: %s;
                             text-align: center;
                             padding: 10px;
-                            background-color: #FFFAE1;
-                            border: 2px solid #ED7424;
+                            background-color: #F8F8F8;
+                            border: 2px solid %s;
                             border-radius: 5px;
                         }
                         .login-button {
                             display: inline-block;
                             margin-top: 20px;
                             padding: 12px 20px;
-                            background-color: #ED7424;
+                            background-color: %s;
                             color: #FFF;
                             text-decoration: none;
                             font-weight: bold;
@@ -305,7 +333,7 @@ public class NotificationEmailBody {
                             <h2>Access Your Account</h2>
                         </div>
                         <div class="content">
-                            <p>Dear User,</p>
+                            <p>{{greeting}}</p>
                             <p>These are your credentials to access the app:</p>
                             <div class="credentials">
                                 <p><strong>Username:</strong> {{username}}</p>
@@ -322,11 +350,14 @@ public class NotificationEmailBody {
                     </div>
                 </body>
                 </html>
-                """.formatted(service);
+                """.formatted(theme, theme, theme, theme, theme, theme, service);
     }
 
+    /** @param themeColor institute_theme_code (preset or hex); blank/unknown paints neutral */
     public static String sendUpdatedUserPasswords(String service, String name, String username, String password,
-                                                  String loginUrl) {
+                                                  String loginUrl, String themeColor) {
+        String theme = ThemeColorResolver.resolveOrNeutral(themeColor);
+        String dark = darkenWelcomeColor(theme);
         return """
                     <!DOCTYPE html>
                     <html>
@@ -344,12 +375,12 @@ public class NotificationEmailBody {
                                 margin: 40px auto;
                                 padding: 20px;
                                 background-color: #FFFFFF;
-                                border: 1px solid #FF5722;
+                                border: 1px solid %s;
                                 border-radius: 10px;
                                 box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
                             }
                             .header {
-                                background: linear-gradient(45deg, #FF5722, #D84315);
+                                background: linear-gradient(45deg, %s, %s);
                                 color: #FFF;
                                 padding: 15px;
                                 text-align: center;
@@ -361,7 +392,7 @@ public class NotificationEmailBody {
                                 color: #333;
                             }
                             .footer {
-                                background: linear-gradient(45deg, #FF5722, #D84315);
+                                background: linear-gradient(45deg, %s, %s);
                                 color: #FFF;
                                 padding: 10px;
                                 text-align: center;
@@ -370,18 +401,18 @@ public class NotificationEmailBody {
                             .credentials {
                                 font-size: 18px;
                                 font-weight: bold;
-                                color: #D84315;
+                                color: %s;
                                 text-align: center;
                                 padding: 10px;
-                                background-color: #FFCCBC;
-                                border: 2px solid #D84315;
+                                background-color: #F5F5F5;
+                                border: 2px solid %s;
                                 border-radius: 5px;
                             }
                             .login-button {
                                 display: inline-block;
                                 margin-top: 20px;
                                 padding: 10px 20px;
-                                background-color: #FF5722;
+                                background-color: %s;
                                 color: white;
                                 text-decoration: none;
                                 border-radius: 5px;
@@ -414,7 +445,8 @@ public class NotificationEmailBody {
                     </body>
                     </html>
                 """
-                .formatted(service, service, name, username, password, loginUrl, service);
+                .formatted(service, theme, theme, dark, theme, dark, dark, dark, theme,
+                        service, name, username, password, loginUrl, service);
     }
 
     public static String createCredentialsFoundEmailBody(
@@ -425,6 +457,8 @@ public class NotificationEmailBody {
             String frontendLoginUrl,
             String themeColor // <-- NEW PARAMETER
     ) {
+        // Preset codes ("primary", "amber") are not CSS colours; blank/unknown paints neutral.
+        themeColor = ThemeColorResolver.resolveOrNeutral(themeColor);
         return """
                 <!DOCTYPE html>
                 <html>
@@ -470,7 +504,7 @@ public class NotificationEmailBody {
                             font-weight: 600;
                         }
                         .credentials-box {
-                            background: #FDF2E9;
+                            background: #F5F5F5;
                             border-radius: 6px;
                             padding: 24px;
                             margin: 32px 0;
@@ -591,6 +625,8 @@ public class NotificationEmailBody {
             String password,
             String loginUrl,
             String themeColor) {
+        // Preset codes ("primary", "amber") are not CSS colours; blank/unknown paints neutral.
+        themeColor = ThemeColorResolver.resolveOrNeutral(themeColor);
         return """
                 <!DOCTYPE html>
                 <html>
@@ -636,7 +672,7 @@ public class NotificationEmailBody {
                             font-weight: 600;
                         }
                         .credentials-box {
-                            background: #FDF2E9;
+                            background: #F5F5F5;
                             border-radius: 6px;
                             padding: 24px;
                             margin: 32px 0;
@@ -736,6 +772,8 @@ public class NotificationEmailBody {
             String password,
             String loginUrl,
             String themeColor) {
+        // Preset codes ("primary", "amber") are not CSS colours; blank/unknown paints neutral.
+        themeColor = ThemeColorResolver.resolveOrNeutral(themeColor);
         return """
                 <!DOCTYPE html>
                 <html>
@@ -781,7 +819,7 @@ public class NotificationEmailBody {
                             font-weight: 600;
                         }
                         .credentials-box {
-                            background: #FDF2E9;
+                            background: #F5F5F5;
                             border-radius: 6px;
                             padding: 24px;
                             margin: 32px 0;
@@ -900,6 +938,8 @@ public class NotificationEmailBody {
             String password,
             String loginUrl,
             String themeColor) {
+        // Preset codes ("primary", "amber") are not CSS colours; blank/unknown paints neutral.
+        themeColor = ThemeColorResolver.resolveOrNeutral(themeColor);
         return """
                 <!DOCTYPE html>
                 <html>

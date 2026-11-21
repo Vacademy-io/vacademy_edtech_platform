@@ -110,6 +110,7 @@ public class NotificationService {
                         .emailType(dto.getEmailType() != null ? dto.getEmailType() : "UTILITY_EMAIL")
                         .source(dto.getSource())
                         .sourceId(dto.getSourceId())
+                        .logTemplateName(dto.getTemplateName())
                         .build())
                 .build());
     }

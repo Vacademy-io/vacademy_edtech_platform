@@ -59,6 +59,8 @@ export const INVENTORY_ERROR_CODES = [
     'SERIES_EXHAUSTED',
     'SERIES_PREFIX_IN_USE',
     'RECEIPT_BILLED',
+    // WP-53: an opening receipt line with no cost while the switch-over feature is on.
+    'OPENING_COST_MISSING',
     // Client side: an earlier send with no answer turned out to be saved under another body.
     'PROBABLY_SAVED',
 ] as const;
@@ -79,6 +81,7 @@ const SHOW_SENTENCE = new Set<string>([
     'QTY_REQUIRED',
     'COUNT_NEEDS_RECOUNT',
     'MEASURED_CONFIRM_REQUIRED',
+    'OPENING_COST_MISSING',
 ]);
 
 export interface InventoryError extends OrderError {

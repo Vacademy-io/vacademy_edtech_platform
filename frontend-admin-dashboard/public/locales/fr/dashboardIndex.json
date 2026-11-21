@@ -89,16 +89,16 @@
                 "prompt": "Quel est le montant total des frais en attente dans l’établissement ?"
             },
             "learner": {
-                "label": "Trouver un apprenant",
-                "prompt": "Aidez-moi à trouver un apprenant par son nom."
+                "label": "Nouveaux apprenants",
+                "prompt": "Quels apprenants se sont inscrits ces 7 derniers jours ?"
             },
             "assessments": {
                 "label": "Évaluations en attente",
                 "prompt": "Quels travaux soumis sont encore en attente d’évaluation ?"
             },
             "announcement": {
-                "label": "Rédiger une annonce",
-                "prompt": "Aidez-moi à rédiger une annonce pour un groupe."
+                "label": "Annonces récentes",
+                "prompt": "Affichez les 5 dernières annonces envoyées."
             },
             "schedule": {
                 "label": "Cours du jour",
@@ -109,8 +109,8 @@
                 "prompt": "Aidez-moi à vérifier les frais en retard d’un apprenant."
             },
             "batch": {
-                "label": "Liste d’un groupe",
-                "prompt": "Aidez-moi à trouver les apprenants d’un groupe."
+                "label": "Inscriptions par groupe",
+                "prompt": "Combien d’apprenants ont rejoint chaque groupe ces 30 derniers jours ?"
             },
             "help": {
                 "label": "Aide pour une tâche",
@@ -194,14 +194,14 @@
                 "createCourse": "Comment créer un cours ?",
                 "inviteMember": "Comment inviter un membre de l’équipe ?",
                 "addToBatch": "Où ajouter un apprenant à un groupe ?",
-                "findLearner": "Trouver un apprenant par son nom",
+                "findLearner": "Quels apprenants se sont inscrits ces 7 derniers jours ?",
                 "studentAttendance": "Quelle est la présence de cet élève ce mois-ci ?",
                 "overdueFees": "Cet apprenant a-t-il des frais en retard ?",
                 "liveNow": "Quels cours sont en direct en ce moment ?",
                 "pendingFees": "Combien de frais restent impayés dans l’établissement ?",
                 "extendAccess": "Prolonger l’accès d’un apprenant",
                 "pendingEvaluation": "Quelles copies attendent encore une correction ?",
-                "sendAnnouncement": "Envoyer une annonce à un groupe"
+                "sendAnnouncement": "Affichez les 5 dernières annonces envoyées"
             }
         },
         "panel": {

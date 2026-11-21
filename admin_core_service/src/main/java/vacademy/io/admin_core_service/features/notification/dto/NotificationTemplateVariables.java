@@ -148,6 +148,13 @@ public class NotificationTemplateVariables {
         /**
          * Factory method to create variables from entities
          */
+        private static String themeHexOf(Institute institute) {
+                String hex = institute == null ? null
+                                : vacademy.io.admin_core_service.features.student_analysis.service.aggregation.ThemeColorResolver
+                                                .resolve(institute.getInstituteThemeCode());
+                return hex != null ? hex : "#333333";
+        }
+
         public static NotificationTemplateVariables fromEntities(
                         UserDTO user,
                         PackageEntity packageEntity,
@@ -200,7 +207,9 @@ public class NotificationTemplateVariables {
                                 .referralLink("")
                                 .shortReferralLink("")
                                 .inviteCode("")
-                                .themeColor("#FF9800") // Default orange color
+                                // The institute's theme (preset or hex) as a hex; neutral when unset. The old
+                                // fixed orange stopped the institute theme from ever being applied.
+                                .themeColor(themeHexOf(institute))
                                 .build();
         }
 }

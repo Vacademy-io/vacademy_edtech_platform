@@ -13,14 +13,17 @@ import vacademy.io.admin_core_service.features.engagement.entity.EngagementEngin
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementActionRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementEngineRepository;
 import vacademy.io.admin_core_service.features.engagement.repository.EngagementMemberRepository;
+import vacademy.io.admin_core_service.features.engagement.service.EngagementApprovalDigest.Item;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementApprovalDigest.Line;
 import vacademy.io.admin_core_service.features.engagement.service.EngagementApprovalDigest.Need;
+import vacademy.io.admin_core_service.features.engagement.spi.Subject;
 import vacademy.io.admin_core_service.features.institute.service.InstituteTimezoneService;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -40,12 +43,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class EngagementApprovalDigestJob {
 
-    private static final Map<String, String> NAMES = Map.of(
-            "EMAIL", "Emails", "WHATSAPP", "WhatsApp messages", "IN_APP", "In-app messages",
-            EngagementActionTypes.SCHEDULE_AI_CALL, "AI calls", EngagementActionTypes.ADD_NOTE, "Notes",
-            EngagementActionTypes.CREATE_FOLLOWUP, "Follow-ups", EngagementActionTypes.ESCALATE, "Hand-overs",
-            EngagementActionTypes.UPDATE_STATUS, "Status changes");
-
     private final EngagementApprovalDigestDao dao;
     private final EngagementEngineRepository engineRepository;
     private final EngagementMemberRepository memberRepository;
@@ -53,6 +50,7 @@ public class EngagementApprovalDigestJob {
     private final EngagementCrmActionService crmActions;
     private final EngagementPointsOfContact pointsOfContact;
     private final InstituteTimezoneService timezoneService;
+    private final ContactResolver contactResolver;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${engagement.approval-digest.enabled:true}")
@@ -93,24 +91,44 @@ public class EngagementApprovalDigestJob {
         for (EngagementEngine e : engineRepository.findByInstituteIdOrderByCreatedAtDesc(instituteId)) {
             engines.put(e.getId(), e);
         }
-        List<Line> lines = new ArrayList<>();
-        Set<String> contacts = new LinkedHashSet<>();
-        for (EngagementApprovalDigestDao.Waiting w : rows) {
-            EngagementEngine engine = engines.get(w.engineId());
-            if (engine == null) continue;
-            Line line = lineFor(engine, w);
-            if (line == null) continue;
-            lines.add(line);
-            contacts.addAll(notifyIds(engine));
-        }
-        // Replies first, then the biggest piles.
-        lines.sort(Comparator.comparing((Line l) -> l.need() == Need.REPLY ? 0 : 1)
-                .thenComparing(Line::count, Comparator.reverseOrder()));
         String host = dao.adminPortalHost(instituteId);
         if (host == null || host.isBlank()) host = defaultHost;
         String inboxUrl = (host.startsWith("http") ? host : "https://" + host).replaceAll("/+$", "")
                 + "/engagement-engines/inbox";
-        EngagementApprovalDigest.Notice notice = EngagementApprovalDigest.build(lines,
+
+        // The people a person must act on, by name; they are taken out of the counts below.
+        Set<String> contacts = new LinkedHashSet<>();
+        List<Item> items = new ArrayList<>();
+        Map<String, Integer> listed = new HashMap<>();
+        List<EngagementApprovalDigestDao.Candidate> candidates = dao.candidates(instituteId, now);
+        Map<String, String> names = names(candidates);
+        for (EngagementApprovalDigestDao.Candidate c : candidates) {
+            EngagementEngine engine = engines.get(c.engineId());
+            if (engine == null) continue;
+            Item item = EngagementApprovalDigest.classify(c, names.get(c.memberId()), engine.getName(),
+                    EngagementApprovalDigest.taskLink(inboxUrl, c.id()));
+            if (item == null) continue;
+            items.add(item);
+            contacts.addAll(notifyIds(engine));
+            listed.merge(groupKey(c.engineId(), c.kind(), c.channel(), c.actionType(), c.blocked()), 1, Integer::sum);
+        }
+
+        List<Line> lines = new ArrayList<>();
+        for (EngagementApprovalDigestDao.Waiting w : rows) {
+            EngagementEngine engine = engines.get(w.engineId());
+            if (engine == null) continue;
+            int left = w.count() - listed.getOrDefault(
+                    groupKey(w.engineId(), w.kind(), w.channel(), w.actionType(), w.blocked()), 0);
+            if (left <= 0) continue;
+            Line line = lineFor(engine, new EngagementApprovalDigestDao.Waiting(w.engineId(), w.kind(), w.channel(),
+                    w.actionType(), w.blocked(), left, Math.min(left, w.lapsingSoon()), w.oldest()), inboxUrl);
+            if (line == null) continue;
+            lines.add(line);
+            contacts.addAll(notifyIds(engine));
+        }
+        // The biggest piles first.
+        lines.sort(Comparator.comparing(Line::count, Comparator.reverseOrder()));
+        EngagementApprovalDigest.Notice notice = EngagementApprovalDigest.build(items, lines,
                 dao.lapsed(instituteId, now.minus(Duration.ofHours(24)), now), inboxUrl, now);
         if (notice == null) return false;
         pointsOfContact.alertTeam(instituteId, contacts, notice.title(), notice.html(), "ENGAGEMENT_APPROVALS",
@@ -123,13 +141,16 @@ public class EngagementApprovalDigestJob {
      * by itself (set to run on its own, approvals earned, nothing blocking) are only waiting for
      * their time.
      */
-    Line lineFor(EngagementEngine engine, EngagementApprovalDigestDao.Waiting w) {
+    Line lineFor(EngagementEngine engine, EngagementApprovalDigestDao.Waiting w, String inboxUrl) {
         boolean crm = EngagementActionTypes.isCrmAction(w.actionType());
         String key = crm ? w.actionType() : w.channel();
         if (key == null) return null;
-        String what = NAMES.getOrDefault(key, key);
+        String what = EngagementApprovalDigest.whatOf(w.channel(), w.actionType());
+        String link = "REPLY".equals(w.kind())
+                ? EngagementApprovalDigest.engineLink(inboxUrl, engine.getId()) + (inboxUrl == null ? "" : "&kind=REPLY")
+                : EngagementApprovalDigest.groupLink(inboxUrl, engine.getId(), w.channel(), w.actionType());
         if ("REPLY".equals(w.kind())) {
-            return new Line(engine.getName(), what, Need.REPLY, w.count(), w.lapsingSoon(), 0, w.oldest());
+            return line(engine, what, Need.REPLY, w, 0, link);
         }
         int threshold = engine.getFirstN() != null ? engine.getFirstN() : defaultFirstN;
         boolean auto;
@@ -142,16 +163,41 @@ public class EngagementApprovalDigestJob {
             approved = threshold <= 0 ? 0 : actionRepository.countApprovedSendsForChannel(engine.getId(), key);
         }
         if (!auto || Boolean.TRUE.equals(engine.getAutoSendKilled())) {
-            return new Line(engine.getName(), what, Need.MANUAL, w.count(), w.lapsingSoon(), 0, w.oldest());
+            return line(engine, what, Need.MANUAL, w, 0, link);
         }
         if (threshold > 0 && approved < threshold) {
-            return new Line(engine.getName(), what, Need.TRIAL, w.count(), w.lapsingSoon(),
-                    (int) (threshold - approved), w.oldest());
+            return line(engine, what, Need.TRIAL, w, (int) (threshold - approved), link);
         }
         if (w.blocked()) {
-            return new Line(engine.getName(), what, Need.BLOCKED, w.count(), w.lapsingSoon(), 0, w.oldest());
+            return line(engine, what, Need.BLOCKED, w, 0, link);
         }
         return null;
+    }
+
+    private static Line line(EngagementEngine engine, String what, Need need, EngagementApprovalDigestDao.Waiting w,
+                             int remaining, String link) {
+        return new Line(engine.getId(), engine.getName(), what, need, w.count(), w.lapsingSoon(), remaining,
+                w.oldest(), link);
+    }
+
+    private static String groupKey(String engineId, String kind, String channel, String actionType, boolean blocked) {
+        return engineId + "|" + kind + "|" + channel + "|" + actionType + "|" + blocked;
+    }
+
+    /** Lead names of the candidates' members, by member id; a failed lookup only loses the names. */
+    private Map<String, String> names(List<EngagementApprovalDigestDao.Candidate> candidates) {
+        Map<String, String> names = new HashMap<>();
+        if (candidates.isEmpty()) return names;
+        try {
+            List<String> ids = candidates.stream().map(EngagementApprovalDigestDao.Candidate::memberId)
+                    .filter(java.util.Objects::nonNull).distinct().toList();
+            for (Subject s : contactResolver.resolve(memberRepository.findAllById(ids))) {
+                if (s.getName() != null && !s.getName().isBlank()) names.put(s.getMemberId(), s.getName());
+            }
+        } catch (Exception e) {
+            log.warn("Approvals notice: lead names unavailable: {}", e.getMessage());
+        }
+        return names;
     }
 
     private boolean channelAuto(EngagementEngine engine, String channel) {

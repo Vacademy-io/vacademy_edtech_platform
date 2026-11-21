@@ -31,6 +31,10 @@ public class PackageSessionScheduler {
 
     private final PackageSessionEnrolmentService enrolmentService;
     private final UserPlanRepository userPlanRepository;
+
+    /** Paused memberships (docs/ENROLMENT_BREAKS.md) are skipped. Optional: absent = nothing skipped. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
     private final WorkflowTriggerService workflowTriggerService;
     private final WorkflowExecutionRepository workflowExecutionRepository;
     private final RenewalChargeService renewalChargeService;
@@ -84,6 +88,11 @@ public class PackageSessionScheduler {
     public void reportPaidPlansWithoutEnrollment() {
         try {
             List<UserPlan> orphans = userPlanRepository.findPaidActivePlansWithoutEnrollment();
+            // A paused learner's access is switched off on purpose (enrolment break): not an orphan.
+            if (enrolmentBreakGuard != null && !orphans.isEmpty()) {
+                orphans = orphans.stream().filter(p -> !enrolmentBreakGuard.isPlanPaused(p.getId()))
+                        .collect(Collectors.toList());
+            }
             if (orphans.isEmpty()) {
                 log.info("[PaidWithoutEnrollment] Clean — every paid ACTIVE plan has an enrolment");
                 return;
@@ -160,6 +169,11 @@ public class PackageSessionScheduler {
             if (instituteId == null || instituteId.isBlank()) {
                 skippedNoInstitute++;
                 log.debug("[MembershipExpiry] Skipping plan {} — no institute resolvable", plan.getId());
+                continue;
+            }
+            if (enrolmentBreakGuard != null
+                    && enrolmentBreakGuard.isFeeHeldForPlan(instituteId, plan.getUserId(), plan.getId())) {
+                log.debug("[MembershipExpiry] Skipping plan {} — learner on a break (fee reminders stopped)", plan.getId());
                 continue;
             }
 

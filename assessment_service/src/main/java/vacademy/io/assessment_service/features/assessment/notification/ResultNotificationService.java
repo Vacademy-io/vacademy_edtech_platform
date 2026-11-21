@@ -49,6 +49,10 @@ public class ResultNotificationService {
 
     /** The templates for one release, looked up once. */
     public record Templates(Map<String, Object> email, Map<String, Object> whatsapp) {
+        /** Where the email template was bound: ASSESSMENT, INSTITUTE or DEFAULT; null when none resolved. */
+        public String emailLevel() {
+            return email == null || email.get("level") == null ? null : email.get("level").toString();
+        }
     }
 
     /**
@@ -99,7 +103,9 @@ public class ResultNotificationService {
             dto.setBody((String) t.get("content"));
         } else {
             dto.setSubject("Your result for {{assessment_name}} is ready");
-            dto.setBody(AssessmentNotificationEmailBody.getAssessmentReportBody());
+            AdminCoreServiceClient.LearnerMailInstitute institute = learnerMailInstitute(instituteId);
+            dto.setBody(AssessmentNotificationEmailBody.getAssessmentReportBody(
+                    institute != null ? institute.name() : null, institute != null ? institute.themeCode() : null));
         }
         dto.setSource(SOURCE);
         dto.setSourceId(assessmentId);
@@ -162,6 +168,16 @@ public class ResultNotificationService {
             // fall through
         }
         return "en";
+    }
+
+    /** Name and theme for the built-in email; null (neutral, unsigned) when admin_core cannot be read. */
+    private AdminCoreServiceClient.LearnerMailInstitute learnerMailInstitute(String instituteId) {
+        try {
+            return adminCore.getLearnerMailInstitute(instituteId);
+        } catch (Exception e) {
+            log.warn("[result-notify] institute {} unavailable for the built-in email: {}", instituteId, e.getMessage());
+            return null;
+        }
     }
 
     private static String fileName(Item item) {

@@ -95,7 +95,7 @@ describe('dashboard assistant starters', () => {
                 pickStarters(
                     {
                         groups: [
-                            { key: 'announcements', mode: 'READ', tools: ['list_announcements'] },
+                            { key: 'announcements', mode: 'WRITE', tools: ['send_announcement'] },
                         ],
                     },
                     FULL_ENTITLEMENT

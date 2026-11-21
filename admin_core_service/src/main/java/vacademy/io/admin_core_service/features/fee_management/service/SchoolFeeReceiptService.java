@@ -1226,11 +1226,30 @@ public class SchoolFeeReceiptService {
 
             // Replace placeholders in email
             String learnerName = user.getFullName() != null ? user.getFullName() : user.getEmail();
+            // The reused course "Invoice Email" template also carries the institute and
+            // amount placeholders (same set InvoiceService fills); left unfilled they went
+            // out as raw {{institute_name}} etc.
+            String instName = institute != null && institute.getInstituteName() != null
+                    ? institute.getInstituteName() : "";
+            String instAddress = institute != null ? buildInstituteAddress(institute) : "";
+            String instContact = institute == null ? ""
+                    : institute.getMobileNumber() != null ? institute.getMobileNumber()
+                    : institute.getEmail() != null ? institute.getEmail() : "";
+            String totalAmount = invoice.getTotalAmount() != null ? invoice.getTotalAmount().toPlainString() : "0.00";
             body = body.replace("{{invoice_number}}", receiptNumber)
                     .replace("{{learner_name}}", learnerName)
+                    .replace("{{user_name}}", learnerName)
+                    .replace("{{total_amount}}", totalAmount)
+                    .replace("{{document_type}}", "Receipt")
+                    .replace("{{institute_name}}", instName)
+                    .replace("{{institute_address}}", instAddress)
+                    .replace("{{institute_contact}}", instContact)
                     .replace("{{invoice_pdf_link}}", "Please find your fee receipt attached to this email.");
             subject = subject.replace("{{invoice_number}}", receiptNumber)
-                    .replace("{{learner_name}}", learnerName);
+                    .replace("{{learner_name}}", learnerName)
+                    .replace("{{user_name}}", learnerName)
+                    .replace("{{document_type}}", "Receipt")
+                    .replace("{{institute_name}}", instName);
 
             // Build attachment
             String attachmentName = "receipt_" + receiptNumber + ".pdf";

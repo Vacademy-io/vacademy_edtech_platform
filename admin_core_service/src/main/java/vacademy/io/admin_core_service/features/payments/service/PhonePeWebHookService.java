@@ -34,6 +34,9 @@ public class PhonePeWebHookService {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private PaymentWebhookVerifier webhookVerifier;
+
     public ResponseEntity<String> processWebHook(String payload, String authHeader, String instituteIdParam) {
         log.info("Received PhonePe webhook callback.");
         String webhookId = null;
@@ -58,9 +61,9 @@ public class PhonePeWebHookService {
     }
 
     /**
-     * Manually re-runs a previously persisted PhonePe webhook by id. Auth check
-     * for PhonePe is currently a no-op so reprocess simply re-runs the parsing
-     * and event-handling pipeline.
+     * Manually re-runs a previously persisted PhonePe webhook by id. The stored
+     * row has no Authorization header to check; the status read-back
+     * (PaymentWebhookVerifier) runs as on live delivery.
      */
     public ResponseEntity<String> reprocessWebhook(String webhookId) {
         log.info("Manual reprocess requested for PhonePe webhookId={}", webhookId);
@@ -140,34 +143,94 @@ public class PhonePeWebHookService {
                 merchantOrderId, webhookId);
 
         // Step 5: Handle events
-        handleEvent(webhookDTO, instituteId);
+        EventResult handled = handleEvent(webhookId, payload, webhookDTO, instituteId);
+        if (handled.notApplied() != null) {
+            return handled.notApplied();
+        }
 
         // Step 6: Mark as processed
         webHookService.updateWebHook(webhookId, payload, merchantOrderId, event);
         webHookService.updateWebHookStatus(webhookId, WebHookStatus.PROCESSED, null);
 
+        if (handled.checkAfterApply() != null) {
+            try {
+                webhookVerifier.checkPhonePeAfterApply(webhookId, merchantOrderId, handled.checkAfterApply(),
+                        instituteId);
+            } catch (Exception e) {
+                log.warn("WEBHOOK_VERIFY vendor=PHONEPE orderId={} check not started: {}", merchantOrderId,
+                        e.getMessage());
+            }
+        }
+
         return ResponseEntity.ok("SUCCESS");
     }
 
-    private void handleEvent(PhonePeWebHookDTO webhookDTO, String instituteId) {
+    /**
+     * What {@link #handleEvent} did: {@code notApplied} is the response to send when enforced
+     * verification kept the event from being applied (else null); {@code checkAfterApply} is
+     * the claimed status to read back from PhonePe after processing, in log mode (else null).
+     */
+    private record EventResult(ResponseEntity<String> notApplied, PaymentStatusEnum checkAfterApply) {
+        static final EventResult DONE = new EventResult(null, null);
+    }
+
+    /**
+     * Applies a completed/failed event to the order's payment logs. In log mode this is the
+     * previous handling, unchanged, and the read-back is left for after processing; in enforce
+     * mode the event is applied only when PhonePe confirms it.
+     */
+    private EventResult handleEvent(String webhookId, String payload, PhonePeWebHookDTO webhookDTO,
+            String instituteId) {
         String event = webhookDTO.getEvent();
         String merchantOrderId = webhookDTO.getPayload().getMerchantOrderId();
         String state = webhookDTO.getPayload().getState();
 
         log.info("Handling PhonePe event: {} for order: {} with state: {}", event, merchantOrderId, state);
 
+        PaymentStatusEnum claimed = null;
         if ("checkout.order.completed".equals(event) || "pg.order.completed".equals(event)
                 || "COMPLETED".equalsIgnoreCase(state)) {
             log.info("Payment completed for order: {}", merchantOrderId);
-            paymentLogService.updatePaymentLogsByOrderId(merchantOrderId, PaymentStatusEnum.PAID.name(), instituteId);
+            claimed = PaymentStatusEnum.PAID;
         } else if ("checkout.order.failed".equals(event) || "pg.order.failed".equals(event)
                 || "FAILED".equalsIgnoreCase(state)) {
             log.warn("Payment failed for order: {}", merchantOrderId);
-            paymentLogService.updatePaymentLogsByOrderId(merchantOrderId, PaymentStatusEnum.FAILED.name(), instituteId);
+            claimed = PaymentStatusEnum.FAILED;
         } else if ("pg.refund.completed".equals(event)) {
             log.info("Refund completed for order: {}", merchantOrderId);
             // Implement refund status update if needed
         }
+        if (claimed == null) {
+            return EventResult.DONE;
+        }
+
+        PaymentWebhookVerifier.Mode mode = webhookVerifier.phonePeMode();
+        if (mode != PaymentWebhookVerifier.Mode.ENFORCE) {
+            paymentLogService.updatePaymentLogsByOrderId(merchantOrderId, claimed.name(), instituteId);
+            return new EventResult(null, claimed);
+        }
+
+        PaymentWebhookVerifier.Outcome outcome;
+        try {
+            outcome = webhookVerifier.verifyPhonePe(merchantOrderId, claimed);
+            webhookVerifier.report(PaymentGateway.PHONEPE.name(), mode, webhookId, merchantOrderId, claimed,
+                    outcome, instituteId);
+        } catch (Exception e) {
+            log.warn("WEBHOOK_VERIFY vendor=PHONEPE orderId={} check failed: {}", merchantOrderId, e.getMessage());
+            outcome = new PaymentWebhookVerifier.Outcome(PaymentWebhookVerifier.Result.FETCH_ERROR, null, null);
+        }
+        if (!outcome.ok()) {
+            webHookService.updateWebHook(webhookId, payload, merchantOrderId, event);
+            webHookService.updateWebHookStatus(webhookId, WebHookStatus.FAILED,
+                    "Not applied, gateway check: " + outcome.result().code());
+            if (outcome.retryable()) {
+                return new EventResult(ResponseEntity.status(503).body("Payment could not be confirmed yet"), null);
+            }
+            return new EventResult(ResponseEntity.ok("IGNORED"), null);
+        }
+        paymentLogService.updatePaymentLogsForWebhook(merchantOrderId, PaymentGateway.PHONEPE.name(),
+                claimed.name(), outcome.instituteId());
+        return EventResult.DONE;
     }
 
     /**
@@ -204,8 +267,11 @@ public class PhonePeWebHookService {
             byte[] encodedhash = digest.digest(input.getBytes(StandardCharsets.UTF_8));
             String expectedAuth = bytesToHex(encodedhash);
 
-            // Per docs: Authorization: SHA256(username:password), hex-encoded.
-            boolean matches = authHeader.trim().equalsIgnoreCase(expectedAuth);
+            // Per docs: Authorization: SHA256(username:password), hex-encoded. Compared
+            // in constant time, case-insensitively as before (expectedAuth is lower case).
+            boolean matches = MessageDigest.isEqual(
+                    expectedAuth.getBytes(StandardCharsets.UTF_8),
+                    authHeader.trim().toLowerCase(java.util.Locale.ROOT).getBytes(StandardCharsets.UTF_8));
             if (!matches) {
                 log.error("PhonePe webhook signature mismatch for institute {}", instituteId);
             }

@@ -1,5 +1,8 @@
 package vacademy.io.admin_core_service.core.security;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestAttributes;
@@ -7,11 +10,14 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import vacademy.io.common.auth.entity.UserRole;
 import vacademy.io.common.auth.model.CustomUserDetails;
+import vacademy.io.common.auth.util.SuperAdminAuthUtil;
 import vacademy.io.common.exceptions.ForbiddenException;
 import vacademy.io.common.exceptions.VacademyException;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Supplier;
 
 /**
  * Shared utility to validate that an authenticated user belongs to
@@ -28,6 +34,100 @@ import java.util.Set;
  */
 @Component
 public class InstituteAccessValidator {
+
+    private static final Logger log = LoggerFactory.getLogger(InstituteAccessValidator.class);
+
+    /**
+     * security.institute-guards.enforce (env SECURITY_INSTITUTE_GUARDS_ENFORCE), default false.
+     * Off: the routes that use {@link #guardStaff}, {@link #guardAdmin}, {@link #guardMember} or
+     * {@link #guard} evaluate the "...OrSuperAdmin" check, log
+     * {@code INSTITUTE_GUARD_WOULD_REFUSE} when it would refuse, and then apply the previous
+     * check unchanged. On: the "...OrSuperAdmin" check decides.
+     */
+    @Value("${security.institute-guards.enforce:false}")
+    private boolean instituteGuardsEnforced;
+
+    public boolean isInstituteGuardsEnforced() {
+        return instituteGuardsEnforced;
+    }
+
+    /**
+     * Staff of the institute or an allowlisted super admin ({@link #requireInstituteStaffOrSuperAdmin});
+     * the previous check is {@link #validateUserAccess}.
+     */
+    public void guardStaff(String route, CustomUserDetails user, String instituteId) {
+        guard(route, user, () -> instituteId, this::requireInstituteStaffOrSuperAdmin,
+                () -> validateUserAccess(user, instituteId));
+    }
+
+    /**
+     * ADMIN of the institute or an allowlisted super admin ({@link #requireInstituteAdminOrSuperAdmin});
+     * the previous check is {@link #requireAdminAccess}.
+     */
+    public void guardAdmin(String route, CustomUserDetails user, String instituteId) {
+        guard(route, user, () -> instituteId, this::requireInstituteAdminOrSuperAdmin,
+                () -> requireAdminAccess(user, instituteId));
+    }
+
+    /**
+     * Member of the institute or an allowlisted super admin ({@link #requireInstituteMemberOrSuperAdmin});
+     * the previous check is {@link #validateUserAccess}.
+     */
+    public void guardMember(String route, CustomUserDetails user, String instituteId) {
+        guard(route, user, () -> instituteId, this::requireInstituteMemberOrSuperAdmin,
+                () -> validateUserAccess(user, instituteId));
+    }
+
+    /**
+     * Runs {@code check} against the institute from {@code instituteId} when enforcement is on.
+     * When it is off, {@code check} (and the institute lookup) only decide whether to log
+     * {@code INSTITUTE_GUARD_WOULD_REFUSE}; any error from them is swallowed and
+     * {@code previousCheck} then runs exactly as before.
+     */
+    public void guard(String route, CustomUserDetails user, Supplier<String> instituteId,
+                      BiConsumer<CustomUserDetails, String> check, Runnable previousCheck) {
+        if (instituteGuardsEnforced) {
+            check.accept(user, instituteId.get());
+            return;
+        }
+        String institute = null;
+        String reason = null;
+        try {
+            institute = instituteId.get();
+            check.accept(user, institute);
+        } catch (RuntimeException e) {
+            reason = refusalReason(e);
+        }
+        if (reason == null) {
+            previousCheck.run();
+            return;
+        }
+        try {
+            previousCheck.run();
+        } catch (RuntimeException e) {
+            logWouldRefuse(route, user, institute, reason, "refuse");
+            throw e;
+        }
+        logWouldRefuse(route, user, institute, reason, "allow");
+    }
+
+    /** Logs a refusal the enforced check would have made; ids only. */
+    public void logWouldRefuse(String route, CustomUserDetails user, String instituteId, String reason,
+                               String previousOutcome) {
+        log.warn("INSTITUTE_GUARD_WOULD_REFUSE route={} user={} institute={} reason={} previous={}",
+                route, user != null ? user.getUserId() : null, instituteId, reason, previousOutcome);
+    }
+
+    private static String refusalReason(RuntimeException e) {
+        String message = e.getMessage() == null ? "" : e.getMessage();
+        if (message.contains("authentication required")) return "no_user";
+        if (message.contains("Institute ID is required")) return "no_institute";
+        if (message.contains("admin role required")) return "not_admin";
+        if (message.contains("staff role required")) return "not_staff";
+        if (message.contains("does not belong")) return "not_member";
+        if (message.contains("not found")) return "not_found";
+        return e.getClass().getSimpleName();
+    }
 
     /**
      * Validates that the given user has an active or invited role in the specified institute.
@@ -134,6 +234,61 @@ public class InstituteAccessValidator {
      */
     public void requireInstituteMember(CustomUserDetails user, String instituteId) {
         requireMemberWithoutRootBypass(user, instituteId);
+    }
+
+    /**
+     * {@link #requireInstituteAdmin}, or a platform super admin on the SUPER_ADMIN_USER_IDS
+     * allowlist (see {@link #isPlatformSuperAdmin}) so Vacademy operations keep access to every
+     * institute. The root flag is not consulted.
+     */
+    public void requireInstituteAdminOrSuperAdmin(CustomUserDetails user, String instituteId) {
+        requireInstituteId(instituteId);
+        if (isPlatformSuperAdmin(user)) {
+            return;
+        }
+        requireInstituteAdmin(user, instituteId);
+    }
+
+    /** {@link #requireInstituteStaff}, or a platform super admin on the allowlist. */
+    public void requireInstituteStaffOrSuperAdmin(CustomUserDetails user, String instituteId) {
+        requireInstituteId(instituteId);
+        if (isPlatformSuperAdmin(user)) {
+            return;
+        }
+        requireInstituteStaff(user, instituteId);
+    }
+
+    /** {@link #requireInstituteMember}, or a platform super admin on the allowlist. */
+    public void requireInstituteMemberOrSuperAdmin(CustomUserDetails user, String instituteId) {
+        requireInstituteId(instituteId);
+        if (isPlatformSuperAdmin(user)) {
+            return;
+        }
+        requireInstituteMember(user, instituteId);
+    }
+
+    /**
+     * True when the caller's auth user id is on the SUPER_ADMIN_USER_IDS allowlist and, when the
+     * token carried a signed user claim, that claim names the same id (the full
+     * {@link SuperAdminAuthUtil#requireSuperAdmin} test). False when the list is unset. This is
+     * an explicit allowlist, never the root flag.
+     */
+    public boolean isPlatformSuperAdmin(CustomUserDetails user) {
+        if (user == null || !SuperAdminAuthUtil.isSuperAdminUserId(user.getUserId())) {
+            return false;
+        }
+        try {
+            SuperAdminAuthUtil.requireSuperAdmin(user);
+            return true;
+        } catch (VacademyException e) {
+            return false;
+        }
+    }
+
+    private static void requireInstituteId(String instituteId) {
+        if (instituteId == null || instituteId.isBlank()) {
+            throw new VacademyException("Institute ID is required");
+        }
     }
 
     /**

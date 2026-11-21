@@ -64,11 +64,13 @@ public class VoiceBotVendorFailureRecorder {
                     (occurred_at, vendor, source_service, operation, status, http_status, error_message, run_id,
                      request_summary, response_summary)
                 SELECT ?, ?, ?, ?, 'FAILED', ?, ?, ?, CAST(? AS jsonb), CAST(? AS jsonb)
-                 WHERE NOT EXISTS (SELECT 1 FROM external_api_call_log WHERE run_id = ?)
+                 WHERE NOT EXISTS (SELECT 1 FROM external_api_call_log WHERE occurred_at = ? AND run_id = ?)
                 """,
                 Timestamp.from(at), clip(vendor, 255), SOURCE_SERVICE, clip(operation == null ? "call" : operation, 64),
                 status, clip(text(f, "reason"), 1000), clip(id, 255), json(f.get("request")), json(f.get("response")),
-                clip(id, 255));
+                // An entry always comes back with the same `at`, so the time index finds it; run_id
+                // alone has no index and the bot's whole list is re-read every poll.
+                Timestamp.from(at), clip(id, 255));
     }
 
     /** An object node as JSON text for a jsonb column; null when absent. The bot already redacted it. */

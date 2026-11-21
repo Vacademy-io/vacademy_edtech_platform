@@ -85,6 +85,8 @@ public class EngagementCrmActionService {
     private static final int WAITING_CALLS_PER_RUN = 20;
     private static final String OUT_OF_CREDITS = "out of AI credits (or the balance could not be read)";
     public static final String OUTCOME_AUTO = "AUTO";
+    /** Closed by the engine without running: another AI call for the lead was already waiting. */
+    public static final String OUTCOME_SKIPPED = "SKIPPED";
 
     private Map<String, EngagementActionHandler> handlers;
 
@@ -298,6 +300,8 @@ public class EngagementCrmActionService {
             EngagementAction done = settleDone(task, h.execute(ctx, params, approver), h.describe(ctx, params), SYSTEM_ACTOR, now);
             done.setOutcome(OUTCOME_AUTO);
             return actionRepository.save(done);
+        } catch (ScheduleAiCallActionHandler.AlreadyQueuedException e) {
+            return skipAlreadyQueued(task, e, now);
         } catch (Exception e) {
             task.setStatus("OPEN");
             task.setErrorMessage("Not run automatically: " + e.getMessage());
@@ -308,7 +312,9 @@ public class EngagementCrmActionService {
 
     /**
      * The identity an autonomous action runs as. A follow-up belongs to the lead's counsellor (the
-     * follow-up service records its creator); with no counsellor it is left to a person (F-5).
+     * follow-up service records its creator). With no counsellor it goes to the first person on the
+     * engine's alert team (notify_user_ids), who already hears about this engine's leads; only when
+     * that list is empty too is it left to a person (F-5).
      */
     private EngagementActionHandler.Approver systemApprover(EngagementEngine engine, EngagementMember member, String type) {
         if (!EngagementActionTypes.CREATE_FOLLOWUP.equals(type)) {
@@ -316,11 +322,29 @@ public class EngagementCrmActionService {
         }
         String owner = coordinationDao != null && member.getAudienceResponseId() != null
                 ? coordinationDao.leadOwnerUserId(engine.getInstituteId(), member.getAudienceResponseId()) : null;
+        if (owner == null) owner = firstAlertContact(engine);
         if (owner == null) throw new VacademyException("the lead has no counsellor to own the follow-up");
         UserServiceDTO dto = new UserServiceDTO();
         dto.setUserId(owner);
         dto.setUsername("AI · Engagement Engine");
         return new EngagementActionHandler.Approver(owner, "AI · Engagement Engine", new CustomUserDetails(dto));
+    }
+
+    private static final ObjectMapper ID_LIST_JSON = new ObjectMapper();
+
+    /** The first user id in the engine's notify_user_ids (its alert team); null when there is none. */
+    static String firstAlertContact(EngagementEngine engine) {
+        String raw = engine.getNotifyUserIds();
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            List<String> ids = ID_LIST_JSON.readValue(raw, new TypeReference<List<String>>() {});
+            for (String id : ids) {
+                if (id != null && !id.isBlank()) return id.trim();
+            }
+        } catch (Exception e) {
+            log.warn("Engine {} has unreadable notify_user_ids: {}", engine.getId(), e.getMessage());
+        }
+        return null;
     }
 
     /**
@@ -578,6 +602,9 @@ public class EngagementCrmActionService {
                 actionRepository.save(done);
             }
             return true;
+        } catch (ScheduleAiCallActionHandler.AlreadyQueuedException e) {
+            skipAlreadyQueued(claimed, e, now);
+            return false;
         } catch (Exception e) {
             claimed.setStatus("EXPIRED");
             claimed.setErrorMessage("Not done: " + e.getMessage());
@@ -640,6 +667,20 @@ public class EngagementCrmActionService {
         action.setExpiresAt(at.plus(Duration.ofHours(24)));
         action.setErrorMessage(null);
         return actionRepository.save(action);
+    }
+
+    /**
+     * The lead already has an AI call waiting for a line, so this one is closed, not left in the inbox:
+     * there is nothing a person could do with it (2026-11-21: these were most of a day's open tasks).
+     * DONE with outcome SKIPPED, so it is no task, no lapse and no approval for graduation.
+     */
+    private EngagementAction skipAlreadyQueued(EngagementAction task, Exception e, Instant now) {
+        task.setStatus("DONE");
+        task.setOutcome(OUTCOME_SKIPPED);
+        task.setCompletedAt(now);
+        task.setErrorMessage("Skipped: " + e.getMessage());
+        log.info("AI call {} for member {} skipped: the lead already has one waiting", task.getId(), task.getMemberId());
+        return actionRepository.save(task);
     }
 
     private EngagementAction settleDone(EngagementAction action, Map<String, String> result, String summary,

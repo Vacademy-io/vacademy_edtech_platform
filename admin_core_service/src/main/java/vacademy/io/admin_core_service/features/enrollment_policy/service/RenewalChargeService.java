@@ -49,6 +49,10 @@ import java.util.Map;
 public class RenewalChargeService {
 
     private final UserPlanRepository userPlanRepository;
+
+    /** Paused memberships (docs/ENROLMENT_BREAKS.md) are skipped. Optional: absent = nothing skipped. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
     private final PaymentService paymentService;
     private final UserInstitutePaymentGatewayMappingService mandateService;
     private final RenewalPaymentService renewalPaymentService;
@@ -107,6 +111,12 @@ public class RenewalChargeService {
         log.info("[RenewalCharge] {} autopay plan(s) due", due.size());
         int charged = 0, failed = 0, skipped = 0;
         for (UserPlan plan : due) {
+            if (enrolmentBreakGuard != null && enrolmentBreakGuard.isPlanPaused(plan.getId())) {
+                // Paused: no charge, no grace expiry. The resume moves next_charge_at forward.
+                log.info("[RenewalCharge] plan {} is paused (enrolment break), skipping", plan.getId());
+                skipped++;
+                continue;
+            }
             try {
                 // A plan still unpaid after its grace window is closed here, on the sweep,
                 // not left to whenever the gateway's next failure webhook happens to

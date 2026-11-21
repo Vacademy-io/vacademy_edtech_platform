@@ -1,4 +1,4 @@
-import { type KeyboardEvent, useEffect, useMemo, useRef } from 'react';
+import { type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearch } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
@@ -11,12 +11,19 @@ import {
     rememberLocation,
     useInventoryLocations,
 } from '../-shared/inventory-hooks';
-import { INVENTORY_TABS, type InventoryLocation, type InventoryTab, ONE_LOCATION_TABS } from '../-shared/inventory-types';
+import {
+    INVENTORY_TABS,
+    type InventoryLocation,
+    type InventoryTab,
+    ONE_LOCATION_TABS,
+    type ReceiveSource,
+} from '../-shared/inventory-types';
 import { CountsTab } from './CountsTab';
 import { InventoryErrorNotice, NeedOneLocation } from './inventory-ui';
 import { LabelsTab } from './LabelsTab';
 import { LowStockTab } from './LowStockTab';
 import { MovementsTab } from './MovementsTab';
+import { type OpeningLink, OpeningStockPanel } from './OpeningStockPanel';
 import { ReceiveTab } from './ReceiveTab';
 import { StockTab } from './StockTab';
 import { TransfersTab } from './TransfersTab';
@@ -31,6 +38,8 @@ export interface TabProps {
     /** Every place of the institute (names of other places, transfer destinations). */
     allPlaces: InventoryLocation[];
     onPickLocation: (id: string) => void;
+    /** The receipt source to start with (the opening-stock panel's link: OPENING). */
+    presetSource?: ReceiveSource;
 }
 
 /**
@@ -69,6 +78,7 @@ function InventoryBody() {
     const tab: InventoryTab = search.tab ?? 'stock';
     const location = resolveLocation(search.location, readRememberedLocation(), places);
     const locationId = location === ALL_LOCATIONS ? null : location;
+    const [presetSource, setPresetSource] = useState<ReceiveSource | undefined>(undefined);
 
     const setSearch = (next: Partial<typeof search>) =>
         void navigate({
@@ -97,12 +107,23 @@ function InventoryBody() {
     }
 
     const needsOne = ONE_LOCATION_TABS.includes(tab) && !locationId;
-    const props: TabProps = { locationId, places, allPlaces, onPickLocation: pickLocation };
+    const props: TabProps = { locationId, places, allPlaces, onPickLocation: pickLocation, presetSource };
+    const openFromPanel = (next: OpeningLink) => {
+        if (next === 'receive') setPresetSource('OPENING');
+        setSearch({ tab: next, item: undefined });
+    };
 
     return (
         <div className="flex flex-col gap-4">
+            <OpeningStockPanel locationId={locationId} onGo={openFromPanel} />
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
-                <InventoryTabs active={tab} onChange={(next) => setSearch({ tab: next, item: undefined })} />
+                <InventoryTabs
+                    active={tab}
+                    onChange={(next) => {
+                        setPresetSource(undefined);
+                        setSearch({ tab: next, item: undefined });
+                    }}
+                />
                 <PlainSelect
                     className="md:w-72"
                     label={t('inventory.location.label')}

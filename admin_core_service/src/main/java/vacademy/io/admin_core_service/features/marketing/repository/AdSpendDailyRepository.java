@@ -25,7 +25,7 @@ public interface AdSpendDailyRepository extends JpaRepository<AdSpendDaily, Stri
             INSERT INTO ad_spend_daily
                    (id, institute_id, ad_account_id, platform, channel, campaign_id, campaign_name,
                     day, spend, currency, impressions, clicks, platform_leads, updated_at)
-            VALUES (gen_random_uuid()::text, :instituteId, :adAccountId, :platform, :channel, :campaignId,
+            VALUES (CAST(gen_random_uuid() AS text), :instituteId, :adAccountId, :platform, :channel, :campaignId,
                     :campaignName, :day, :spend, :currency, :impressions, :clicks, :platformLeads, now())
             ON CONFLICT (ad_account_id, campaign_id, day) DO UPDATE
                SET institute_id   = EXCLUDED.institute_id,

@@ -171,6 +171,13 @@ public class UserPlanService {
     @Lazy
     private vacademy.io.admin_core_service.features.stock_hold.service.RepeatPurchasePolicyService repeatPurchasePolicyService;
 
+    @Autowired(required = false)
+    private vacademy.io.admin_core_service.features.institute.service.InstituteTimezoneService billingTimezoneService;
+
+    private java.time.ZoneId billingZone(String instituteId) {
+        return billingTimezoneService != null ? billingTimezoneService.getZone(instituteId) : java.time.ZoneId.systemDefault();
+    }
+
     public UserPlan createUserPlan(String userId,
             PaymentPlan paymentPlan,
             AppliedCouponDiscount appliedCouponDiscount,
@@ -510,9 +517,20 @@ public class UserPlanService {
         userPlan.setStartDate(new Timestamp(startTimeMillis));
 
         if (validityDays != null) {
-            // Add days to milliseconds: days * 24 * 60 * 60 * 1000
-            long validityMillis = validityDays * 24L * 60L * 60L * 1000L;
-            userPlan.setEndDate(new Timestamp(startTimeMillis + validityMillis));
+            String billingInstituteId = enrollInvite != null ? enrollInvite.getInstituteId() : null;
+            if (billingInstituteId != null && paymentSettingService != null
+                    && paymentSettingService.isCalendarMonthBilling(billingInstituteId)
+                    && vacademy.io.admin_core_service.features.user_subscription.util.BillingPeriod
+                            .calendarMonths(validityDays) != null) {
+                // Calendar-month billing: the first period ends on the same day N months later.
+                java.time.ZoneId zone = billingZone(billingInstituteId);
+                userPlan.setEndDate(new Timestamp(vacademy.io.admin_core_service.features.user_subscription.util
+                        .BillingPeriod.add(new Date(startTimeMillis), validityDays, true, zone).getTime()));
+            } else {
+                // Add days to milliseconds: days * 24 * 60 * 60 * 1000
+                long validityMillis = validityDays * 24L * 60L * 60L * 1000L;
+                userPlan.setEndDate(new Timestamp(startTimeMillis + validityMillis));
+            }
         }
         // -----------------------------------------------------
 
@@ -1538,6 +1556,10 @@ public class UserPlanService {
                 .createdAt(userPlan.getCreatedAt())
                 .updatedAt(userPlan.getUpdatedAt())
                 .startDate(userPlan.getStartDate())
+                .regionalPrice(userPlan.getRegionalPrice())
+                .regionalCurrency(userPlan.getRegionalCurrency())
+                .autoRenewalEnabled(userPlan.getAutoRenewalEnabled())
+                .nextChargeAt(userPlan.getNextChargeAt())
                 .endDate(userPlan.getEndDate())
                 .quantity(userPlan.getQuantity())
                 .enrollInvite(
@@ -1604,6 +1626,10 @@ public class UserPlanService {
                 .createdAt(userPlan.getCreatedAt())
                 .updatedAt(userPlan.getUpdatedAt())
                 .startDate(userPlan.getStartDate())
+                .regionalPrice(userPlan.getRegionalPrice())
+                .regionalCurrency(userPlan.getRegionalCurrency())
+                .autoRenewalEnabled(userPlan.getAutoRenewalEnabled())
+                .nextChargeAt(userPlan.getNextChargeAt())
                 .endDate(userPlan.getEndDate())
                 .quantity(userPlan.getQuantity())
                 .enrollInvite(

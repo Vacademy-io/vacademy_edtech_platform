@@ -1,8 +1,9 @@
 package vacademy.io.auth_service.feature.user.service;
 
+import vacademy.io.auth_service.feature.notification.service.ThemeColorResolver;
+
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -17,9 +18,6 @@ import java.util.stream.Collectors;
  * {@code String.formatted}, so the markup can use {@code %} widths freely.
  */
 public class InviteUserEmailBody {
-
-    private static final String DEFAULT_THEME_COLOR = "#E67E22";
-    private static final Pattern HEX_COLOR = Pattern.compile("^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$");
 
     private static final String FONT_STACK =
             "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
@@ -131,7 +129,8 @@ public class InviteUserEmailBody {
     private static String render(String preheader, String eyebrow, String headline, String intro, String ctaLabel,
                                  String credentialRows, String username, String password, List<String> roles,
                                  String themeColor, String instituteName, String adminLoginUrl) {
-        String theme = resolveThemeColor(themeColor);
+        // Preset codes ("primary", "amber") become their hex; blank/unknown paints neutral.
+        String theme = ThemeColorResolver.resolveOrNeutral(themeColor);
         String institute = escape(instituteName);
         String url = escape(adminLoginUrl);
 
@@ -182,26 +181,6 @@ public class InviteUserEmailBody {
 
     private static String credentialRows(boolean withUsername, boolean withPassword) {
         return (withUsername ? USERNAME_ROW : "") + (withPassword ? PASSWORD_ROW : "");
-    }
-
-    // Institutes store either a hex code or a colour name in institute_theme_code; anything
-    // else would land verbatim inside a style attribute, so only pass through what we can vouch for.
-    static String resolveThemeColor(String themeCode) {
-        if (themeCode == null || themeCode.isBlank()) {
-            return DEFAULT_THEME_COLOR;
-        }
-        String code = themeCode.trim();
-        if (HEX_COLOR.matcher(code).matches()) {
-            return code;
-        }
-        return switch (code.toLowerCase(Locale.ROOT)) {
-            case "red" -> "#e74c3c";
-            case "purple" -> "#9b59b6";
-            case "blue" -> "#3498db";
-            case "green" -> "#27ae60";
-            case "amber", "orange" -> "#f39c12";
-            default -> DEFAULT_THEME_COLOR;
-        };
     }
 
     /** "TEACHER" -> "Teacher", "COURSE_CREATOR" -> "Course Creator". */

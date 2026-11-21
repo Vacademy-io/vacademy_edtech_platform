@@ -26,6 +26,7 @@ import { getInstituteId } from '@/constants/helper';
 import { ChangePlanDialog } from '../student-membership/change-plan-dialog';
 import { ManualRenewalDialog } from '../student-membership/manual-renewal-dialog';
 import { ChangeEndDateDialog } from '../student-membership/change-end-date-dialog';
+import { ChangePriceDialog } from '../student-membership/change-price-dialog';
 import { PlanRemarksDialog } from '../student-membership/plan-remarks';
 import { useStudentSidebar } from '@/routes/manage-students/students-list/-context/selected-student-sidebar-context';
 import { toast } from 'sonner';
@@ -93,7 +94,11 @@ const QUERIES_SHOWING_MEMBERSHIP = [
 ];
 
 /** payment_plan_dto.actual_price is the price of ONE copy. */
-const getPlanUnitPrice = (plan: UserPlan): number => plan.payment_plan_dto?.actual_price || 0;
+const getPlanUnitPrice = (plan: UserPlan): number =>
+    plan.regional_price ?? plan.payment_plan_dto?.actual_price ?? 0;
+
+/** The plan's own list price, before any member price. */
+const getPlanListPrice = (plan: UserPlan): number => plan.payment_plan_dto?.actual_price || 0;
 
 /** What the plan cost in total: the unit price times the copies on it. */
 const getPlanAmount = (plan: UserPlan): number => getPlanUnitPrice(plan) * getPlanQuantity(plan);
@@ -101,7 +106,7 @@ const getPlanAmount = (plan: UserPlan): number => getPlanUnitPrice(plan) * getPl
 // The plan's currency, else the institute's saved default (Settings → Payment). 'N/A' when
 // neither is known — the card then hides the amount rather than guess a symbol.
 const getPlanCurrency = (plan: UserPlan): string =>
-    plan.payment_plan_dto?.currency || getInstituteDefaultCurrency() || 'N/A';
+    plan.regional_currency || plan.payment_plan_dto?.currency || getInstituteDefaultCurrency() || 'N/A';
 
 const getCourseLabel = (plan: UserPlan, t: TFunction): string => {
     const policy = getFirstPolicy(plan);
@@ -510,6 +515,7 @@ const PlanCard = ({
     onRenew,
     onRemarks,
     onChangeEndDate,
+    onChangePrice,
 }: {
     plan: UserPlan;
     enrollmentStatus: 'ACTIVE' | 'INACTIVE' | 'TERMINATED' | null;
@@ -521,6 +527,8 @@ const PlanCard = ({
     onRemarks?: (plan: UserPlan) => void;
     /** Correct when an active membership ends, without a payment. */
     onChangeEndDate?: (plan: UserPlan) => void;
+    /** Set the price this member pays each period. */
+    onChangePrice?: (plan: UserPlan) => void;
 }) => {
     const { t } = useTranslation('manageStudentsPlanDetails');
     const policy = getFirstPolicy(plan);
@@ -534,6 +542,12 @@ const PlanCard = ({
         !isCpoPlan(plan);
     // Lapsed memberships come back through Renew manually, which records what was paid.
     const canChangeEndDate = Boolean(onChangeEndDate) && plan.status === 'ACTIVE';
+    // A member price is a per-period rate: not for instalment (CPO) plans.
+    const canChangePrice = Boolean(onChangePrice) && plan.status === 'ACTIVE' && !isCpoPlan(plan);
+    const hasMemberPrice =
+        plan.regional_price !== null &&
+        plan.regional_price !== undefined &&
+        plan.regional_price !== getPlanListPrice(plan);
     const planName = getPlanName(plan, t);
     const daysLeft = computeDaysLeft(plan.end_date);
     const tone = getDaysLeftTone(t, daysLeft);
@@ -653,11 +667,18 @@ const PlanCard = ({
 
             <CouponAppliedRow plan={plan} currency={currency} />
 
+            {hasMemberPrice && currency !== 'N/A' && (
+                <p className="mb-2 text-caption text-neutral-500">
+                    {t('memberPrice.badge', {
+                        list: `${getCurrencySymbol(currency)}${getPlanListPrice(plan).toLocaleString('en-IN')}`,
+                    })}
+                </p>
+            )}
             <PolicyDetailsSection policy={policy} compact />
 
             {/* CPO-backed memberships are excluded: their price comes from an installment
                 schedule that a plan swap would leave unreconciled. */}
-            {(canChangePlan || canRenew || canChangeEndDate || onRemarks) && (
+            {(canChangePlan || canRenew || canChangeEndDate || canChangePrice || onRemarks) && (
                 <div className="mt-3 flex flex-wrap justify-end gap-2 border-t border-neutral-100 pt-2">
                     {onRemarks && (
                         <MyButton
@@ -687,6 +708,16 @@ const PlanCard = ({
                         >
                             <CalendarCheck className="mr-1 size-3" />
                             {t('endDate.button')}
+                        </MyButton>
+                    )}
+                    {canChangePrice && (
+                        <MyButton
+                            buttonType="secondary"
+                            scale="small"
+                            onClick={() => onChangePrice?.(plan)}
+                        >
+                            <Tag className="me-1 size-3" />
+                            {t('memberPrice.button')}
                         </MyButton>
                     )}
                     {canChangePlan && (
@@ -721,6 +752,7 @@ const StudentPlanDetails = ({ userId, instituteId }: StudentPlanDetailsProps) =>
     const [planToRenew, setPlanToRenew] = useState<UserPlan | null>(null);
     const [planForRemarks, setPlanForRemarks] = useState<UserPlan | null>(null);
     const [planForEndDate, setPlanForEndDate] = useState<UserPlan | null>(null);
+    const [planForPrice, setPlanForPrice] = useState<UserPlan | null>(null);
     const pageSize = 5;
     // The dialog needs an explicit institute id; the prop is optional here because most
     // callers let the service derive it from the token.
@@ -895,6 +927,7 @@ const StudentPlanDetails = ({ userId, instituteId }: StudentPlanDetailsProps) =>
                                     onRenew={setPlanToRenew}
                                     onRemarks={setPlanForRemarks}
                                     onChangeEndDate={setPlanForEndDate}
+                                    onChangePrice={setPlanForPrice}
                                 />
                             ))}
                     </div>
@@ -928,6 +961,26 @@ const StudentPlanDetails = ({ userId, instituteId }: StudentPlanDetailsProps) =>
                 planLabel={planToRenew ? getCourseLabel(planToRenew, t) : undefined}
                 onRenewed={(result) => handleMembershipUpdated(planToRenew, result)}
             />
+
+            {planForPrice && (
+                <ChangePriceDialog
+                    key={planForPrice.id}
+                    onClose={() => setPlanForPrice(null)}
+                    userPlanId={planForPrice.id}
+                    instituteId={resolvedInstituteId}
+                    planLabel={getCourseLabel(planForPrice, t)}
+                    listPrice={getPlanListPrice(planForPrice)}
+                    currency={getPlanCurrency(planForPrice)}
+                    memberPrice={planForPrice.regional_price ?? null}
+                    autopayOn={Boolean(planForPrice.auto_renewal_enabled)}
+                    onChanged={() => {
+                        loadActivePlans();
+                        QUERIES_SHOWING_MEMBERSHIP.forEach((key) =>
+                            queryClient.invalidateQueries({ queryKey: [key] })
+                        );
+                    }}
+                />
+            )}
 
             <ChangeEndDateDialog
                 open={Boolean(planForEndDate)}

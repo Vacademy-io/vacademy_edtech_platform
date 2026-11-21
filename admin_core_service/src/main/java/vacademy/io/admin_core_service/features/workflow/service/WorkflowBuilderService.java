@@ -1000,7 +1000,10 @@ public class WorkflowBuilderService {
         //   - MEMBERSHIP_EXPIRY                       → PackageSessionScheduler.emitMembershipExpiryReminders
         return "LIVE_SESSION_END".equals(eventName)
                 || "LIVE_SESSION_START".equals(eventName)
-                || "MEMBERSHIP_EXPIRY".equals(eventName);
+                || "MEMBERSHIP_EXPIRY".equals(eventName)
+                // FeeReminderService: eventId = plan:dueDate:step, so each step dedups exactly once.
+                || "MEMBERSHIP_PAYMENT_DUE".equals(eventName)
+                || "MEMBERSHIP_PAYMENT_RED_LIST".equals(eventName);
     }
 
     /**

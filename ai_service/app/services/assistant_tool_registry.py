@@ -25,6 +25,7 @@ principal — never from the model-supplied arguments.
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import re
@@ -1030,6 +1031,14 @@ async def load_institute_profile(ctx: ToolContext) -> Dict[str, Any]:
     return {k: v for k, v in profile.items() if v not in (None, "", {})}
 
 
+def _amount(value: Any) -> float:
+    """A money figure from a service response; anything unreadable counts as zero."""
+    try:
+        return float(value or 0)
+    except (TypeError, ValueError):
+        return 0.0
+
+
 async def _execute_get_institute_overview(args: Dict[str, Any], ctx: ToolContext) -> str:
     sections = [s for s in (args.get("sections") or []) if isinstance(s, str)]
     out: Dict[str, Any] = {}
@@ -1044,12 +1053,18 @@ async def _execute_get_institute_overview(args: Dict[str, Any], ctx: ToolContext
             body={"instituteId": ctx.principal.institute_id}, timeout=30.0,
         )
         if isinstance(data, dict) and not data.get("error"):
-            out["outstanding_fees"] = {
+            fees = {
                 "overdue_total": data.get("totalOverdue"),
                 "collected_to_date": data.get("collectedToDate"),
                 "expected_to_date": data.get("expectedToDate"),
                 "note": "Use search_fee_records to list WHICH learners are overdue.",
             }
+            if not any(_amount(fees[k]) for k in ("overdue_total", "collected_to_date", "expected_to_date")):
+                fees["note"] = (
+                    "No fees are recorded in Vacademy for this institute (no fee plans, dues or "
+                    "payments). Say that fees are not tracked here, not that nothing is pending."
+                )
+            out["outstanding_fees"] = fees
         else:
             out["outstanding_fees"] = data  # error dict
     if "live_now" in sections:
@@ -1432,7 +1447,10 @@ _GET_ASSESSMENT_RESULTS_SCHEMA: Dict[str, Any] = {
             "YET GRADED (never report it as 'didn't attempt'); attempt_state 'pending' "
             "= registered but not attempted. release_status shows whether the learner "
             "can see their result. Use find_assessment first to get assessment_id and "
-            "visibility."
+            "visibility. For 'which submissions are pending evaluation' with no test named, "
+            "list recent tests with find_assessment(window='past'), skip ones with 0 attempted, "
+            "and check at most the 3 most recent with evaluation_status=PENDING; say which "
+            "tests you checked."
         ),
         "parameters": {
             "type": "object",
@@ -1461,52 +1479,82 @@ _GET_ASSESSMENT_RESULTS_SCHEMA: Dict[str, Any] = {
 
 _ATTEMPT_STATE_MAP = {"attempted": "ENDED", "not_attempted": "PENDING", "live": "LIVE"}
 
+# Who took part comes in separate lists, one per way a learner was registered, exactly as the
+# Submissions tab asks for them: batch learners and individually added learners for a private
+# test; those two plus people who registered through the public link for a public test.
+_PRIVATE_SOURCES = ("BATCH_PREVIEW_REGISTRATION", "ADMIN_PRE_REGISTRATION")
+_PUBLIC_SOURCES = _PRIVATE_SOURCES + ("OPEN_REGISTRATION",)
+_RESULTS_PAGE_SIZE = 15
 
-async def _execute_get_assessment_results(args: Dict[str, Any], ctx: ToolContext) -> str:
-    assessment_id = str((args or {}).get("assessment_id") or "").strip()
-    if not assessment_id:
-        return json.dumps({"error": "missing_assessment_id"})
-    body: Dict[str, Any] = {
+
+def _participants_filter(args: Dict[str, Any], visibility: str, source: str) -> Dict[str, Any]:
+    """The filter body the Submissions tab sends: one attempt type, one source, no sort."""
+    state = args.get("attempt_state")
+    evaluation = str(args.get("evaluation_status") or "")
+    return {
         "name": str(args.get("name") or "").strip(),
-        "assessment_type": str(args.get("visibility") or "PRIVATE"),
-        "attempt_type": (
-            [_ATTEMPT_STATE_MAP[args["attempt_state"]]]
-            if args.get("attempt_state") in _ATTEMPT_STATE_MAP else []
-        ),
-        "evaluation_status": (
-            [str(args["evaluation_status"])]
-            if str(args.get("evaluation_status") or "") in ("PENDING", "COMPLETED") else []
-        ),
+        "assessment_type": visibility,
+        # The tab always asks for one attempt type; finished attempts is its default.
+        "attempt_type": [_ATTEMPT_STATE_MAP.get(state, "ENDED")],
+        "registration_source": source,
         "batches": [str(b) for b in (args.get("batch_ids") or [])][:10],
         "status": ["ACTIVE"],
-        "registration_source": [],
-        # NB: never sort by end_time — the WAF blocks it.
-        "sort_columns": {"attempt_date": "DESC"},
+        "evaluation_status": [evaluation] if evaluation in ("PENDING", "COMPLETED") else [],
+        "submission_status": [],
+        "sort_columns": {},
     }
-    data = await _assessment_json(
-        ctx, "POST", "/assessment-service/assessment/admin-participants/all/registered-participants",
-        params={"instituteId": ctx.principal.institute_id, "assessmentId": assessment_id,
-                "pageNo": max(0, int(args.get("page") or 0)), "pageSize": 15},
-        body=body, timeout=30.0,
-    )
-    if isinstance(data, dict) and data.get("error"):
-        return json.dumps(data)
-    rows = []
-    for r in (data.get("content") or [])[:15]:
-        rows.append({
-            "user_id": r.get("user_id"),
-            "name": r.get("student_name"),
-            "batch_id": r.get("batch_id"),
-            "attempt_date": r.get("attempt_date"),
-            "score": r.get("score"),
-            "evaluation_status": r.get("evaluation_status"),
-            "release_status": r.get("report_release_result_status"),
-        })
-    total = data.get("totalElements", data.get("total_elements", len(rows)))
-    return json.dumps({
-        "participants": rows, "total_matching": total,
+
+
+async def _execute_get_assessment_results(args: Dict[str, Any], ctx: ToolContext) -> str:
+    args = args or {}
+    assessment_id = str(args.get("assessment_id") or "").strip()
+    if not assessment_id:
+        return json.dumps({"error": "missing_assessment_id"})
+    visibility = "PUBLIC" if str(args.get("visibility") or "").upper() == "PUBLIC" else "PRIVATE"
+    sources = _PUBLIC_SOURCES if visibility == "PUBLIC" else _PRIVATE_SOURCES
+    page = max(0, int(args.get("page") or 0))
+
+    async def fetch(source: str) -> Any:
+        return await _assessment_json(
+            ctx, "POST", "/assessment-service/assessment/admin-participants/all/registered-participants",
+            params={"instituteId": ctx.principal.institute_id, "assessmentId": assessment_id,
+                    "pageNo": page, "pageSize": _RESULTS_PAGE_SIZE},
+            body=_participants_filter(args, visibility, source), timeout=30.0,
+        )
+
+    results = await asyncio.gather(*(fetch(source) for source in sources))
+    rows: List[Dict[str, Any]] = []
+    total = 0
+    has_more = False
+    failures = []
+    for data in results:
+        if not isinstance(data, dict) or data.get("error"):
+            failures.append(data)
+            continue
+        for r in (data.get("content") or [])[:_RESULTS_PAGE_SIZE]:
+            rows.append({
+                "user_id": r.get("user_id"),
+                "name": r.get("student_name"),
+                "batch_id": r.get("batch_id"),
+                "attempt_date": r.get("attempt_date"),
+                "score": r.get("score"),
+                "evaluation_status": r.get("evaluation_status"),
+                "release_status": r.get("report_release_result_status"),
+            })
+        count = data.get("totalElements", data.get("total_elements"))
+        count = int(count) if isinstance(count, (int, float)) else len(data.get("content") or [])
+        total += count
+        has_more = has_more or (page + 1) * _RESULTS_PAGE_SIZE < count
+    if len(failures) == len(results):
+        failed = failures[0]
+        return json.dumps(failed if isinstance(failed, dict) else {"error": "fetch_failed"})
+    out: Dict[str, Any] = {
+        "participants": rows, "total_matching": total, "page": page, "has_more": has_more,
         "note": "evaluation_status PENDING = attempted, awaiting grading (NOT a missed test).",
-    })
+    }
+    if failures:
+        out["partial"] = "Some participants could not be loaded; the list may be incomplete."
+    return json.dumps(out)
 
 
 _GET_ASSESSMENT_LEADERBOARD_SCHEMA: Dict[str, Any] = {

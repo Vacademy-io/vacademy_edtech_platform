@@ -1,0 +1,25 @@
+{
+    "title": "Pauses et suspensions",
+    "description": "Permettre à l’équipe d’arrêter les rappels d’un apprenant un temps, ou de mettre une inscription en pause, depuis son onglet Abonnement.",
+    "loadFailed": "Impossible de charger ce réglage.",
+    "retry": "Réessayer",
+    "hold": {
+        "title": "Suspension des rappels",
+        "point1": "Pour une courte absence, ou un paiement promis pour plus tard.",
+        "point2": "Les rappels de cours et/ou de paiement s’arrêtent jusqu’au dernier jour.",
+        "point3": "L’apprenant reste inscrit, continue de payer et peut toujours rejoindre les cours."
+    },
+    "pause": {
+        "title": "Pause",
+        "point1": "Pour une longue pause pendant laquelle l’apprenant ne paie pas.",
+        "point2": "Ni prélèvement, ni renouvellement, ni expiration ; le cours peut être coupé.",
+        "point3": "Au retour, les dates de l’abonnement sont décalées des jours de pause."
+    },
+    "audit": "Chaque pause est enregistrée sur la chronologie de l’apprenant et dans le journal d’activité, avec son auteur et sa date.",
+    "save": "Enregistrer",
+    "saving": "Enregistrement…",
+    "saved": "Réglage des pauses enregistré.",
+    "saveFailed": "Impossible d’enregistrer le réglage.",
+    "toggleLabel": "Autoriser les pauses et suspensions",
+    "offNote": "Désactiver empêche les nouvelles pauses. Les pauses en cours continuent jusqu’à leur fin."
+}

@@ -807,14 +807,18 @@ export async function downloadBillingDocumentPdf(
 /** The Evalezy app's credits page, which also sells its plans. */
 export const EVALEZY_PLANS_PATH = '/evalezy/credits';
 
+/** Telleo's plan page: its dashboard and API plans, and their checkout. */
+export const TELLEO_PLANS_PATH = '/telleo/plan';
+
 /**
  * Where Razorpay sends the browser back, on this same host: the page the plan was bought
- * from (the Evalezy credits page inside the Evalezy app, else Settings → Plan & billing).
+ * from (the Evalezy credits page, Telleo's plan page, else Settings → Plan & billing).
  */
 export function planReturnUrl(): string {
     let path = PLANS_SETTINGS_PATH;
     try {
         if (window.location.pathname.startsWith('/evalezy')) path = EVALEZY_PLANS_PATH;
+        else if (window.location.pathname.startsWith('/telleo')) path = TELLEO_PLANS_PATH;
         return new URL(path, window.location.origin).toString();
     } catch {
         return path;
@@ -823,14 +827,18 @@ export function planReturnUrl(): string {
 
 /**
  * The storefront plan a "Buy <plan>" link names. Product plans are keyed `<product>_<plan>`
- * (evalezy_team) while the website says `team`; an exact key wins.
+ * (evalezy_team) while the website says `team`, and a website `api-pro` is stored `telleo_api_pro`.
+ * An exact key wins; among prefixed keys the shortest, so `pro` is telleo_pro, not telleo_api_pro.
  */
 export function findPlanByKey(plans: StorefrontPlan[], key: string | null | undefined) {
-    const k = (key ?? '').trim().toLowerCase();
+    const k = (key ?? '').trim().toLowerCase().replace(/-/g, '_');
     if (!k) return null;
+    const norm = (p: StorefrontPlan) => p.plan_key.toLowerCase().replace(/-/g, '_');
     return (
-        plans.find((p) => p.plan_key.toLowerCase() === k) ??
-        plans.find((p) => p.plan_key.toLowerCase().endsWith(`_${k}`)) ??
+        plans.find((p) => norm(p) === k) ??
+        plans
+            .filter((p) => norm(p).endsWith(`_${k}`))
+            .sort((a, b) => a.plan_key.length - b.plan_key.length)[0] ??
         null
     );
 }

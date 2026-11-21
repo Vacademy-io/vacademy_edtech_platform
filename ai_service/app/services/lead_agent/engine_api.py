@@ -220,6 +220,22 @@ def reachable(contact: dict) -> bool:
     return _m("research.contacts").reachable(contact)
 
 
+def business_email(contact: dict) -> bool:
+    """An email on a business domain that is not careers@ / membership@ ... (engine.research.contacts,
+    Gate.org_email_only)."""
+    return _m("research.contacts").business_email(contact)
+
+
+def org_email_problem(contacts: Optional[List[dict]]) -> Optional[str]:
+    """Why a lead has no business email, in plain words, or None (engine.research.contacts)."""
+    return _m("research.contacts").org_email_problem(contacts)
+
+
+def is_free_mail(domain: Optional[str]) -> bool:
+    """A personal (free webmail or internet provider) mailbox domain (engine.research.contacts.FREE_MAIL)."""
+    return _m("research.contacts").is_free_mail(domain)
+
+
 def rate_contact(contact: dict, *, site_domain: Optional[str], organisation: str,
                  region: Optional[str]) -> tuple:
     """(tier, reason) for one contact with only what is known before the AI step: no people, not a

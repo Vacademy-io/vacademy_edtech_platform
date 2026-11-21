@@ -1710,6 +1710,10 @@ public class AssessmentParticipantsManager {
             Assessment assessment, String instituteId, boolean publishWorkflow,
             vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext ctx) {
         Map<StudentAttempt, byte[]> reportMap = new HashMap<>();
+        // Released learners with no checked copy. MANUAL is not only for hand-checked copies: it
+        // is also used for objective (MCQ) tests whose result is released days later. These
+        // learners get the standard result report, as on an auto-evaluated test.
+        List<StudentAttempt> withoutCopy = new ArrayList<>();
         List<String> failedReleases = new ArrayList<>();
         attemptList.forEach(attempt -> {
             // The checked copy is what a manual-result learner receives. An attempt
@@ -1735,6 +1739,10 @@ public class AssessmentParticipantsManager {
             // Email + workflow only for learners who actually have a copy to receive.
             if (released && checkedCopy != null) {
                 reportMap.put(attempt, checkedCopy);
+            } else if (released && !StringUtils.hasText(attempt.getEvaluatedFileId()) && isSubmitted(attempt)) {
+                // Only when no copy was ever uploaded: a copy that exists but could not be
+                // fetched keeps today's behaviour (no email), not a different document.
+                withoutCopy.add(attempt);
             }
         });
         if (isResultUpdate(ctx)) {
@@ -1743,7 +1751,87 @@ public class AssessmentParticipantsManager {
             sendNotificationToStudent(reportMap, assessment.getId(), instituteId);
         }
         if (publishWorkflow) publishResultReleasedFor(reportMap);
+        sendStandardReportsForManualRelease(withoutCopy, assessment, instituteId, publishWorkflow, ctx);
         logFailedReleases(assessment, failedReleases);
+    }
+
+    /** Submitted (LIVE/ENDED), the same test the auto-evaluated release uses before rendering a report. */
+    private static boolean isSubmitted(StudentAttempt attempt) {
+        String status = attempt.getStatus();
+        return "LIVE".equals(status) || "ENDED".equals(status);
+    }
+
+    /**
+     * MANUAL assessment, learners without a checked copy: the standard result report (the same
+     * render as an auto-evaluated release) as the email attachment, through the same result
+     * templates (assessment, institute, else DEFAULT), WhatsApp when bound, and the
+     * ASSESSMENT_RESULT_RELEASED workflow for the learners who got it. Before this they got no
+     * email at all. The report is mailed only - it is not stored as the attempt's report file,
+     * so what the learner app shows for a manual test is unchanged. Skipped entirely when the
+     * institute turned learner result notifications off. A failure for one learner is logged
+     * and the others still go out; nothing here can undo or block the release itself.
+     */
+    private void sendStandardReportsForManualRelease(List<StudentAttempt> attempts, Assessment assessment,
+            String instituteId, boolean publishWorkflow,
+            vacademy.io.assessment_service.features.submission_review.service.SubmissionReleaseService.ReleaseContext releaseCtx) {
+        if (attempts.isEmpty() || learnerReportService == null || aiReportPdfService == null
+                || reportPdfRenderService == null || resultNotificationService == null) {
+            return;
+        }
+        try {
+            if (!adminCoreServiceClient.isLearnerResultNotificationEnabled(instituteId)) {
+                log.info("[result-notification] learner notifications disabled for institute {} — no report for {} manual attempt(s)",
+                        instituteId, attempts.size());
+                return;
+            }
+            final boolean update = isResultUpdate(releaseCtx);
+            final vacademy.io.assessment_service.features.learner_assessment.dto.ReportClassContext classCtx =
+                    learnerReportService.loadClassContext(assessment.getId(), instituteId);
+            final vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService.Templates templates =
+                    update ? vacademy.io.assessment_service.features.assessment.notification.ResultNotificationService
+                            .updated(assessment.getName())
+                            : resultNotificationService.resolve(instituteId, assessment.getId());
+            final int emailBatch = 5;
+            Map<StudentAttempt, byte[]> batch = new HashMap<>();
+            Map<String, Map<String, String>> variablesByAttempt = new HashMap<>();
+            for (StudentAttempt attempt : attempts) {
+                try {
+                    StudentReportOverallDetailDto detail =
+                            createStudentReportDetailResponse(classCtx, attempt.getId(), instituteId);
+                    String userId = attempt.getRegistration() != null ? attempt.getRegistration().getUserId() : null;
+                    vacademy.io.assessment_service.features.learner_assessment.dto.StudentComparisonDto comparison = null;
+                    try {
+                        comparison = learnerReportService.buildComparisonFromContext(classCtx, attempt.getId(), userId);
+                    } catch (Exception e) {
+                        log.warn("Failed to build comparison for attempt {}: {}", attempt.getId(), e.getMessage());
+                    }
+                    final vacademy.io.assessment_service.features.learner_assessment.dto.StudentComparisonDto cmp = comparison;
+                    var rendered = aiReportPdfService.renderWithVariables(userId, assessment.getId(), attempt.getId(),
+                            instituteId, detail, () -> reportPdfRenderService.render(detail, cmp, classCtx));
+                    if (rendered == null || rendered.pdf() == null) {
+                        continue;
+                    }
+                    batch.put(attempt, rendered.pdf());
+                    variablesByAttempt.put(attempt.getId(), rendered.variables());
+                } catch (Exception e) {
+                    log.warn("[release] manual assessment {}: no result report for attempt {}: {}",
+                            assessment.getId(), attempt.getId(), e.getMessage());
+                    continue;
+                }
+                if (batch.size() >= emailBatch) {
+                    sendResultNotifications(batch, variablesByAttempt, assessment.getId(), instituteId, templates);
+                    if (publishWorkflow) publishResultReleasedFor(batch);
+                    batch.clear();
+                }
+            }
+            if (!batch.isEmpty()) {
+                sendResultNotifications(batch, variablesByAttempt, assessment.getId(), instituteId, templates);
+                if (publishWorkflow) publishResultReleasedFor(batch);
+            }
+        } catch (Exception e) {
+            log.error("[release] manual assessment {}: result reports for attempts without a checked copy failed",
+                    assessment.getId(), e);
+        }
     }
 
     /**

@@ -60,6 +60,10 @@ import vacademy.io.common.auth.dto.UserDTO;
 public class QueryServiceImpl implements QueryNodeHandler.QueryService {
 
     private final StudentSessionInstituteGroupMappingRepository ssigmRepo;
+
+    /** Learners on a break (docs/ENROLMENT_BREAKS.md). Optional: absent = nothing held. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard enrolmentBreakGuard;
     private final CustomFieldValuesRepository customFieldValuesRepository;
     private final SessionScheduleRepository sessionScheduleRepository;
     private final LiveSessionParticipantRepository liveSessionParticipantRepository;
@@ -282,6 +286,7 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 item.put("isTrial", isTrial);
                 autopayDueList.add(item);
             }
+            autopayDueList = withoutFeeHeld(autopayDueList, params.get("instituteId"));
             return Map.of("autopayDueList", autopayDueList, "autopayDueCount", autopayDueList.size());
         } catch (Exception e) {
             log.error("Error executing getUpcomingAutopayCharges", e);
@@ -328,6 +333,7 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 item.put("email", row.length > 8 && row[8] != null ? String.valueOf(row[8]) : "");
                 manualRenewalList.add(item);
             }
+            manualRenewalList = withoutFeeHeld(manualRenewalList, params.get("instituteId"));
             return Map.of("manualRenewalList", manualRenewalList,
                     "manualRenewalCount", manualRenewalList.size());
         } catch (Exception e) {
@@ -367,6 +373,7 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 item.put("lastError", extractLastError(row[8]));
                 renewalFailedList.add(item);
             }
+            renewalFailedList = withoutFeeHeld(renewalFailedList, params.get("instituteId"));
             return Map.of("renewalFailedList", renewalFailedList,
                     "renewalFailedCount", renewalFailedList.size());
         } catch (Exception e) {
@@ -1514,10 +1521,12 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                 item.put("reminderType",       reminderType);
                 item.put("userId",             payment.getUserId());
                 item.put("studentFeePaymentId", payment.getId());
+                item.put("userPlanId",         payment.getUserPlanId());
                 item.put("instituteId",        payment.getInstituteId() != null ? payment.getInstituteId() : "");
                 feePaymentList.add(item);
             }
 
+            feePaymentList = withoutFeeHeld(feePaymentList, null);
             log.info("[FeeReminder] {} eligible payments resolved for reminders.", feePaymentList.size());
             return Map.of("feePaymentList", feePaymentList);
 
@@ -1525,6 +1534,32 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
             log.error("[FeeReminder] Error in getUpcomingFeeInstallments", e);
             return Map.of("error", e.getMessage(), "feePaymentList", List.of());
         }
+    }
+
+    /**
+     * Drops learners on a break whose fee reminders are stopped, or whose membership is paused
+     * (docs/ENROLMENT_BREAKS.md). Returns the list unchanged when no break exists anywhere.
+     */
+    private List<Map<String, Object>> withoutFeeHeld(List<Map<String, Object>> items, Object instituteIdParam) {
+        if (enrolmentBreakGuard == null || items == null || items.isEmpty() || !enrolmentBreakGuard.anyLive()) {
+            return items;
+        }
+        List<Map<String, Object>> kept = new ArrayList<>(items.size());
+        for (Map<String, Object> item : items) {
+            Object inst = item.get("instituteId") != null && !String.valueOf(item.get("instituteId")).isBlank()
+                    ? item.get("instituteId") : instituteIdParam;
+            String uid = item.get("userId") == null ? null : String.valueOf(item.get("userId"));
+            String plan = item.get("userPlanId") == null ? null : String.valueOf(item.get("userPlanId"));
+            boolean held = enrolmentBreakGuard.isPlanFeeHeld(plan)
+                    || (inst != null && uid != null && enrolmentBreakGuard.isHeld(String.valueOf(inst), uid,
+                        vacademy.io.admin_core_service.features.enrolment_break.service.EnrolmentBreakGuard.Category.FEE,
+                        null, plan));
+            if (!held) kept.add(item);
+        }
+        if (kept.size() != items.size()) {
+            log.info("[enrolment-break] {} fee/renewal reminder(s) held", items.size() - kept.size());
+        }
+        return kept;
     }
 
     private String resolveReminderType(long daysDiff) {
@@ -2033,6 +2068,7 @@ public class QueryServiceImpl implements QueryNodeHandler.QueryService {
                     .filter(map -> map.get("email") != null && !((String) map.get("email")).isEmpty())
                     .collect(Collectors.toList());
 
+            expiringList = withoutFeeHeld(expiringList, instituteId);
             return Map.of("expiringMemberships", expiringList,
                     "daysUntilExpiry", daysUntilExpiry,
                     "expiringCount", expiringList.size(),

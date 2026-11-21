@@ -23,6 +23,9 @@ public class OpenUserController {
         if (Objects.isNull(user)){
             return ResponseEntity.notFound().build();
         }
+        // Open route: the stored password is never part of this answer. The internal
+        // (HMAC) by-email lookup shares findUserByEmail and is unchanged.
+        user.setPassword(null);
         return ResponseEntity.ok(user);
     }
 

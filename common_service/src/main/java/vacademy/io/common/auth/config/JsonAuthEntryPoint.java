@@ -57,6 +57,10 @@ public class JsonAuthEntryPoint implements AuthenticationEntryPoint, AccessDenie
             // Clients end the session on this code — and only on this one.
             code = "ACCESS_REVOKED";
             message = "Your access to this institute has been disabled. Please contact your institute admin.";
+        } else if (JwtAuthFilter.TOKEN_INVALID.equals(reason)) {
+            // Clients refresh the session once on this code, then sign in again if that fails.
+            code = JwtAuthFilter.TOKEN_INVALID;
+            message = "The sign-in token is not valid. Please sign in again.";
         } else if (reason instanceof String r) {
             code = "USER_NOT_RESOLVED";
             message = r;

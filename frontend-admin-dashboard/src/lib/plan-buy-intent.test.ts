@@ -50,4 +50,11 @@ describe('findPlanByKey', () => {
         expect(findPlanByKey(plans, 'pro')).toBeNull();
         expect(findPlanByKey(plans, null)).toBeNull();
     });
+
+    it('matches a dashed website id and never picks the API plan for the dashboard one', () => {
+        const telleo = [plan('telleo_api_pro'), plan('telleo_pro'), plan('telleo_api_starter')];
+        expect(findPlanByKey(telleo, 'pro')?.plan_key).toBe('telleo_pro');
+        expect(findPlanByKey(telleo, 'api-pro')?.plan_key).toBe('telleo_api_pro');
+        expect(findPlanByKey(telleo, 'api-starter')?.plan_key).toBe('telleo_api_starter');
+    });
 });

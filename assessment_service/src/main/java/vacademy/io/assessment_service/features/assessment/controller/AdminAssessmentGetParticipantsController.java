@@ -11,6 +11,7 @@ import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.requ
 import vacademy.io.assessment_service.features.assessment.dto.admin_get_dto.response.RespondentListResponse;
 import vacademy.io.assessment_service.features.assessment.entity.AssessmentUserRegistration;
 import vacademy.io.assessment_service.features.assessment.manager.AssessmentParticipantsManager;
+import vacademy.io.assessment_service.features.assessment_folder.service.AssessmentFolderAccessGuard;
 import vacademy.io.common.auth.model.CustomUserDetails;
 
 import java.util.List;
@@ -25,6 +26,9 @@ public class AdminAssessmentGetParticipantsController {
     @Autowired
     AssessmentParticipantsManager assessmentParticipantsManager;
 
+    @Autowired
+    AssessmentFolderAccessGuard accessGuard;
+
     @GetMapping("/registered-participants")
     public ResponseEntity<List<AssessmentUserRegistration>> assessmentAdminParticipants(@RequestAttribute("user") CustomUserDetails user,
                                                                                         @RequestParam(name = "instituteId", required = false) String instituteId, @RequestParam(name = "assessmentId", required = false) String assessmentId) {
@@ -37,7 +41,12 @@ public class AdminAssessmentGetParticipantsController {
                                                                                              @RequestParam(name = "assessmentId") String assessmentId,
                                                                                              @RequestBody AssessmentUserFilter filter,
                                                                                              @RequestParam(name = "pageNo", required = false, defaultValue = DEFAULT_PAGE_NUMBER) Integer pageNo,
-                                                                                             @RequestParam(name = "pageSize", required = false, defaultValue = DEFAULT_PAGE_SIZE) Integer pageSize) {
+                                                                                             @RequestParam(name = "pageSize", required = false, defaultValue = DEFAULT_PAGE_SIZE) Integer pageSize,
+                                                                                             @RequestHeader(value = "clientId", required = false) String clientId) {
+        // The roster carries each participant's email and phone: staff of this institute only.
+        // The queries below are already filtered by instituteId, so pinning it to the caller's
+        // active institute is what stops a signed-in user of another institute reading it.
+        accessGuard.requireStaff(user, clientId, instituteId);
         return assessmentParticipantsManager.getAllParticipantsForAssessment(user, instituteId, assessmentId, filter, pageNo, pageSize);
     }
 

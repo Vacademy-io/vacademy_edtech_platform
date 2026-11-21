@@ -41,6 +41,18 @@ public class ScheduleAiCallActionHandler implements EngagementActionHandler {
             + "An AI call cannot get past it: reach them another way, or add a direct number.";
     static final String NO_AGENT = "This engine has no AI agent to call with. Add one to its AI call pool.";
 
+    static final String ALREADY_QUEUED = "This lead already has an AI call waiting for a line.";
+
+    /**
+     * The queue already holds an undialled call for this lead (the queue dedups per lead). Nothing for
+     * a person to do: the waiting call reaches them, so the engine closes the new one quietly.
+     */
+    public static class AlreadyQueuedException extends VacademyException {
+        public AlreadyQueuedException(String message) {
+            super(message);
+        }
+    }
+
     private final AiCallQueueService queueService;
     private final EngagementCoordinationDao coordinationDao;
     private final EngagementAiCallPool agentPool;
@@ -95,6 +107,10 @@ public class ScheduleAiCallActionHandler implements EngagementActionHandler {
         req.setMetadata(Map.of("engagementActionId", ctx.actionId()));
         AiCallQueueDTOs.EnqueueResult r = queueService.enqueue(req, CallTrigger.AUTOMATION, QUEUE_SOURCE,
                 ctx.actionId(), approver.userId());
+        if (r != null && !r.isQueued() && r.getQueueItemId() != null) {
+            // The lead already holds an undialled call: that call reaches them, this one is not needed.
+            throw new AlreadyQueuedException(r.getMessage() != null ? r.getMessage() : ALREADY_QUEUED);
+        }
         if (r == null || !r.isQueued()) {
             throw new VacademyException(r != null && r.getMessage() != null ? r.getMessage() : "The call was not queued.");
         }

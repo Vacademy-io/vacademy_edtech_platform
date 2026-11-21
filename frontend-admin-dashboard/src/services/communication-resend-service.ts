@@ -18,7 +18,7 @@ export interface ResendCommunicationRequest {
     channel: 'WHATSAPP' | 'EMAIL';
     /** notification_log row being replayed — becomes the audit row's entity id. */
     sourceLogId?: string;
-    /** WhatsApp only. */
+    /** WhatsApp: the template to send. EMAIL: only labels the resent log row. */
     templateName?: string;
     languageCode?: string;
     /** Phone (WhatsApp) or email address (EMAIL). */

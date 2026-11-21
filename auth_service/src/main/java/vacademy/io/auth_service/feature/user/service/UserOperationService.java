@@ -119,9 +119,11 @@ public class UserOperationService {
         Map<String, String> loginUrls = resolveLoginUrls(
                 users.stream().map(User::getId).filter(id -> id != null).toList(), instituteId, institute);
 
+        String instituteName = institute != null ? firstNonBlank(institute.getInstituteName()) : null;
         NotificationDTO notificationDTO = new NotificationDTO();
-        notificationDTO.setBody(NotificationEmailBody.sendUserPasswords(senderNameOf(institute)));
-        notificationDTO.setSubject("Login credentials!!");
+        notificationDTO.setBody(NotificationEmailBody.sendUserPasswords(senderNameOf(institute),
+                institute != null ? institute.getInstituteThemeCode() : null));
+        notificationDTO.setSubject(instituteName != null ? "Your login details - " + instituteName : "Your login details");
         notificationDTO.setSource(NotificationSource.USER_CREDENTIALS.name());
         notificationDTO.setSourceId(sourceId);
         notificationDTO.setNotificationType("EMAIL");
@@ -137,6 +139,7 @@ public class UserOperationService {
             notification.setUserId(user.getId());
             notification.setChannelId(user.getEmail());
             notification.setPlaceholders(Map.of(
+                    "greeting", greetingFor(user),
                     "username", user.getUsername(),
                     "password", user.getPassword(),
                     "login_url", loginUrls.get(user.getId())
@@ -314,6 +317,12 @@ public class UserOperationService {
         return name != null ? name : "Vacademy";
     }
 
+    /** "Dear {name}," when the recipient has a name on file, else "Hello,". Escaped: it lands in HTML. */
+    private static String greetingFor(User user) {
+        String name = firstNonBlank(user.getFullName());
+        return name != null ? "Dear " + org.springframework.web.util.HtmlUtils.htmlEscape(name) + "," : "Hello,";
+    }
+
     private static String firstNonBlank(String... values) {
         for (String v : values) {
             if (v != null && !v.isBlank()) return v.trim();
@@ -425,7 +434,8 @@ public class UserOperationService {
         String loginUrl = resolveLoginUrls(List.of(user.getId()), instituteId, institute).get(user.getId());
 
         String emailBody = NotificationEmailBody.sendUpdatedUserPasswords(
-                senderNameOf(institute), user.getFullName(), user.getUsername(), user.getPassword(), loginUrl);
+                senderNameOf(institute), user.getFullName(), user.getUsername(), user.getPassword(), loginUrl,
+                institute != null ? institute.getInstituteThemeCode() : null);
 
         GenericEmailRequest genericEmailRequest = new GenericEmailRequest();
         genericEmailRequest.setTo(user.getEmail());

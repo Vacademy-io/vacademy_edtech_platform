@@ -62,6 +62,53 @@ public class EngagementApprovalDigestDao {
                         Instant.ofEpochMilli(rs.getLong("oldest_ms"))));
     }
 
+    /**
+     * One open inbox row that may need a person by name in the notice: a reply someone wrote in, a
+     * hand-over or escalation, or a task whose reason may say the lead replied. The job decides which
+     * of them really are (the SQL is a coarse first cut).
+     */
+    public record Candidate(String id, String engineId, String memberId, String kind, String channel,
+                            String actionType, boolean blocked, String rationale, String draftBody,
+                            double priority, Instant created) {
+    }
+
+    /** Most candidate rows one notice reads; far above what a person can act on in a morning. */
+    static final int MAX_CANDIDATES = 500;
+
+    /**
+     * Open rows of the institute's ACTIVE engines, not expired, that may need a person by name:
+     * replies, hand-overs and escalations, and tasks whose reason mentions a reply.
+     */
+    public List<Candidate> candidates(String instituteId, Instant now) {
+        String sql = """
+                SELECT a.id, a.engine_id, a.member_id, a.kind, a.channel, a.action_type,
+                       (a.error_message IS NOT NULL) AS blocked, a.rationale, a.draft_body,
+                       COALESCE(a.priority, 0) AS priority,
+                       (EXTRACT(EPOCH FROM a.created_at) * 1000)::bigint AS created_ms
+                FROM engagement_action a
+                JOIN engagement_engine e ON e.id = a.engine_id
+                WHERE a.institute_id = :instituteId AND e.status = 'ACTIVE'
+                  AND a.status IN ('OPEN', 'ACKED')
+                  AND (a.expires_at IS NULL OR a.expires_at > :now)
+                  AND (a.kind = 'REPLY'
+                       OR (a.kind = 'TASK' AND (a.action_type = :escalate
+                                                OR a.rationale ILIKE 'Escalated%'
+                                                OR a.rationale ~* :replied)))
+                ORDER BY a.created_at
+                LIMIT :limit
+                """;
+        return jdbc.query(sql, new MapSqlParameterSource()
+                        .addValue("instituteId", instituteId)
+                        .addValue("now", utc(now))
+                        .addValue("escalate", EngagementActionTypes.ESCALATE)
+                        .addValue("replied", EngagementApprovalDigest.REPLIED_SQL)
+                        .addValue("limit", MAX_CANDIDATES),
+                (rs, i) -> new Candidate(rs.getString("id"), rs.getString("engine_id"), rs.getString("member_id"),
+                        rs.getString("kind"), rs.getString("channel"), rs.getString("action_type"),
+                        rs.getBoolean("blocked"), rs.getString("rationale"), rs.getString("draft_body"),
+                        rs.getDouble("priority"), Instant.ofEpochMilli(rs.getLong("created_ms"))));
+    }
+
     /** Drafts and proposed actions of ACTIVE engines that expired unsent between {@code since} and now. */
     public int lapsed(String instituteId, Instant since, Instant now) {
         Integer n = jdbc.queryForObject("""

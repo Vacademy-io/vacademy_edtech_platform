@@ -586,18 +586,24 @@ public class RenewalPaymentService {
      */
     private Date calculateNewEndDate(UserPlan userPlan) {
         Date now = new Date();
-        Date base = userPlan.getEndDate();
-        if (base == null || base.before(now)) {
-            base = now;
-        }
-
         int daysToAdd = resolveValidityDays(userPlan);
-
-        Calendar calendar = Calendar.getInstance();
-        calendar.setTime(base);
-        calendar.add(Calendar.DAY_OF_MONTH, daysToAdd);
-        return calendar.getTime();
+        String instituteId = userPlan.getEnrollInvite() != null ? userPlan.getEnrollInvite().getInstituteId() : null;
+        boolean calendar = instituteId != null && billingSettings != null
+                && billingSettings.isCalendarMonthBilling(instituteId);
+        java.time.ZoneId zone = calendar && timezoneService != null
+                ? timezoneService.getZone(instituteId) : java.time.ZoneId.systemDefault();
+        Date base = vacademy.io.admin_core_service.features.user_subscription.util.BillingPeriod
+                .renewalBase(userPlan.getEndDate(), now, daysToAdd, calendar, zone);
+        return vacademy.io.admin_core_service.features.user_subscription.util.BillingPeriod
+                .add(base, daysToAdd, calendar, zone);
     }
+
+    /** Calendar-month billing switch (PAYMENT_SETTING.calendarMonthBilling). Optional. */
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.institute.service.setting.PaymentSettingService billingSettings;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private vacademy.io.admin_core_service.features.institute.service.InstituteTimezoneService timezoneService;
 
     /**
      * Validity days for the plan, from the linked PaymentPlan (falling back to

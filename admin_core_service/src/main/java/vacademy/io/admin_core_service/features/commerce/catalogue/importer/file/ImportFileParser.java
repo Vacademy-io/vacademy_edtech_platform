@@ -69,6 +69,34 @@ public class ImportFileParser {
         return toRows(format, table);
     }
 
+    /**
+     * The raw cells of an upload (.csv, or the first sheet of an .xlsx), with the same size,
+     * type, encoding, row and cell caps as {@link #parse} and the same turn-taking for
+     * workbooks, but no template header: for other fixed sheets (the item-costs import).
+     * Rows keep their position, blank ones included, so index + 1 is the spreadsheet row.
+     */
+    public static List<List<String>> readTable(String fileName, byte[] content) {
+        if (content == null || content.length == 0) {
+            throw new InvalidRequestException("the file is empty");
+        }
+        if (content.length > ImportLimits.MAX_FILE_BYTES) {
+            throw new InvalidRequestException("the file is larger than "
+                    + (ImportLimits.MAX_FILE_BYTES / (1024 * 1024)) + " MB; split it into smaller files");
+        }
+        String format = detectFormat(fileName, content);
+        List<List<String>> table = ParsedImportFile.XLSX.equals(format) ? readXlsxInTurn(content)
+                : readCsv(content);
+        for (int i = 0; i < table.size(); i++) {
+            for (String cell : table.get(i)) {
+                if (cell != null && cell.length() > ImportLimits.MAX_CELL_CHARS) {
+                    throw new InvalidRequestException("row " + (i + 1) + ": a cell is longer than "
+                            + ImportLimits.MAX_CELL_CHARS + " characters");
+                }
+            }
+        }
+        return table;
+    }
+
     /** The extension and the first bytes must agree; an .xlsx file is a zip archive. */
     static String detectFormat(String fileName, byte[] content) {
         String name = fileName == null ? "" : fileName.trim().toLowerCase(Locale.ROOT);

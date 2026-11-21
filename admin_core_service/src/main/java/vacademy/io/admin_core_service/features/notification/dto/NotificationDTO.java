@@ -1,5 +1,6 @@
 package vacademy.io.admin_core_service.features.notification.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
@@ -17,4 +18,10 @@ public class NotificationDTO {
     /** Optional. Null means UTILITY_EMAIL. Commercial types get the unsubscribe footer. */
     private String emailType;
     private List<NotificationToUserDTO> users;
+    /**
+     * Template the body was built from, passed on as the unified send logTemplateName so the
+     * timeline can show it. Never serialised: the legacy notification endpoints do not know it.
+     */
+    @JsonIgnore
+    private String templateName;
 }

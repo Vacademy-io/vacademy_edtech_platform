@@ -29,6 +29,7 @@ def capture(monkeypatch):
     package.__path__ = [str(SERVICES_DIR)]
     log_module = types.ModuleType("capture_pkg.external_api_log")
     log_module.record_external_call = lambda **kwargs: calls.append(kwargs) or True
+    log_module.key_hint = lambda key: None if not key else key[-4:] if len(key) >= 12 else "****"
     monkeypatch.setitem(sys.modules, "capture_pkg", package)
     monkeypatch.setitem(sys.modules, "capture_pkg.external_api_log", log_module)
     # Restored after each test, so wrapping here never leaks into other tests.
@@ -168,6 +169,68 @@ def test_a_broken_log_never_breaks_the_request(capture, monkeypatch):
     monkeypatch.setattr(module, "record_external_call", boom)
     with httpx.Client(transport=_transport()) as client:
         assert client.get("https://api.sarvam.ai/v1/x").status_code == 200
+
+
+KEYED = {"Authorization": "Bearer sk-or-v1-secret-value-ab12"}
+
+
+def _sequence(*statuses):
+    remaining = list(statuses)
+    return httpx.MockTransport(lambda request: httpx.Response(remaining.pop(0)))
+
+
+def test_a_failure_with_a_key_is_kept_with_capture_off_and_shows_only_the_hint(capture):
+    _, calls = capture
+    with httpx.Client(transport=_transport(402), headers=KEYED) as client:
+        client.post("https://openrouter.ai/api/v1/chat")
+
+    assert calls[0]["automatic"] is False
+    assert calls[0]["hint"] == "ab12"
+    assert "secret" not in repr(calls[0])
+
+
+def test_only_the_first_success_after_a_failure_is_kept(capture):
+    _, calls = capture
+    with httpx.Client(transport=_sequence(200, 500, 200, 200), headers=KEYED) as client:
+        for _ in range(4):
+            client.get("https://openrouter.ai/api/v1/chat")
+
+    assert [(c["status"], c["automatic"]) for c in calls] == [
+        ("SUCCESS", True),
+        ("FAILED", False),
+        ("SUCCESS", False),
+        ("SUCCESS", True),
+    ]
+
+
+def test_a_failed_call_with_no_key_is_not_an_api_problem(capture):
+    """An integrated vendor called without a key (a public endpoint) is recorded, but not as a key's run."""
+    _, calls = capture
+    with httpx.Client(transport=_transport(403)) as client:
+        client.get("https://api.sarvam.ai/v1/text")
+
+    assert calls[0]["automatic"] is True
+    assert calls[0]["hint"] is None
+
+
+@pytest.mark.parametrize(
+    "header",
+    ["x-api-key", "api-key", "x-goog-api-key", "xi-api-key"],
+)
+def test_other_key_headers_are_recognised(capture, header):
+    _, calls = capture
+    with httpx.Client(transport=_transport(500), headers={header: "vendor-secret-value-cd34"}) as client:
+        client.get("https://api.sarvam.ai/v1/x")
+
+    assert calls[0]["hint"] == "cd34"
+
+
+def test_a_key_in_the_query_string_is_recognised(capture):
+    _, calls = capture
+    with httpx.Client(transport=_transport(500)) as client:
+        client.get("https://api.sarvam.ai/v1/x?key=vendor-secret-value-ef56")
+
+    assert calls[0]["hint"] == "ef56"
 
 
 def test_install_wraps_only_once(capture):

@@ -4,13 +4,10 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
-import io.jsonwebtoken.io.Decoders;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 import vacademy.io.common.auth.service.JwtService;
 import vacademy.io.common.exceptions.VacademyException;
 
-import java.security.Key;
 import java.util.Date;
 import java.util.Map;
 
@@ -30,7 +27,7 @@ public class VimotionSignupTokenService {
                         "purpose", PURPOSE))
                 .setIssuedAt(new Date(now))
                 .setExpiration(new Date(now + TTL_MILLIS))
-                .signWith(getKey(), SignatureAlgorithm.HS256)
+                .signWith(JwtService.signingKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
@@ -43,11 +40,7 @@ public class VimotionSignupTokenService {
             throw new VacademyException("Missing signup token");
         }
         try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(getKey())
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
+            Claims claims = JwtService.parseSignedClaims(token);
             if (!PURPOSE.equals(claims.get("purpose", String.class))) {
                 throw new VacademyException("Invalid signup token");
             }
@@ -59,10 +52,5 @@ public class VimotionSignupTokenService {
         } catch (JwtException e) {
             throw new VacademyException("Invalid or expired signup token");
         }
-    }
-
-    private Key getKey() {
-        byte[] keyBytes = Decoders.BASE64.decode(JwtService.secretKey);
-        return Keys.hmacShaKeyFor(keyBytes);
     }
 }

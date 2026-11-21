@@ -12,6 +12,7 @@ import vacademy.io.common.exceptions.VacademyException;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductLinkDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductPlanDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.ProductSettingsDTO;
+import vacademy.io.admin_core_service.features.product_config.dto.ProductShortLinkDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.PublicProductOfferDTO;
 import vacademy.io.admin_core_service.features.product_config.dto.SignupRulesDTO;
 
@@ -55,7 +56,14 @@ public class PlatformProductService {
     private static final Pattern PLAN_KEY = Pattern.compile("^[a-z0-9-]{1,30}$");
     private static final int MAX_PLANS = 6;
     private static final int MAX_PLAN_NUMBER = 10_000_000;
+    /** A plan for the dashboard or for API use (ProductPlanDTO.accessMode). */
+    static final java.util.Set<String> ACCESS_MODES = java.util.Set.of("PLATFORM", "API");
     static final int MAX_WELCOME_LINKS = 12;
+    static final int MAX_SHORT_LINKS = 50;
+    /** A short link's path: it becomes a page address on the product's website. */
+    private static final Pattern SHORT_CODE = Pattern.compile("^[a-z0-9][a-z0-9-]{0,29}$");
+    /** A utm value as reports group it: lowercase, no spaces. */
+    private static final Pattern UTM_VALUE = Pattern.compile("^[a-z0-9][a-z0-9_.-]{0,59}$");
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -110,7 +118,7 @@ public class PlatformProductService {
                 ? emptyToNull(body.getSignupAlertLanguage()) : existing.getSignupAlertLanguage());
         row.put("whatsapp_waba_id", body.getWhatsappWabaId() != null
                 ? emptyToNull(body.getWhatsappWabaId()) : existing.getWhatsappWabaId());
-        row.put("plans", body.getPlans() != null ? cleanPlans(body.getPlans()) : existing.getPlans());
+        row.put("plans", body.getPlans() != null ? cleanPlans(body.getPlans(), existing.getPlans()) : existing.getPlans());
         row.put("plan_validity_months", body.getPlanValidityMonths() != null
                 ? body.getPlanValidityMonths() : existing.getPlanValidityMonths());
         row.put("extra_credit_price_inr", body.getExtraCreditPriceInr() != null
@@ -118,6 +126,8 @@ public class PlatformProductService {
         row.put("signup_rules", body.getSignupRules() != null ? body.getSignupRules() : existing.getSignupRules());
         row.put("welcome_links", body.getWelcomeLinks() != null
                 ? cleanLinks(body.getWelcomeLinks()) : existing.getWelcomeLinks());
+        row.put("short_links", body.getShortLinks() != null
+                ? cleanShortLinks(body.getShortLinks()) : existing.getShortLinks());
         if (jdbcTemplate.update(UPDATE, toJson(row), actor, key) == 0) {
             throw new VacademyException(HttpStatus.NOT_FOUND, "No such product");
         }
@@ -149,6 +159,35 @@ public class PlatformProductService {
         validatePlans(b);
         validateSignupRules(b.getSignupRules());
         validateWelcomeLinks(b.getWelcomeLinks());
+        validateShortLinks(b.getShortLinks());
+    }
+
+    /** Checked as saved: trimmed and lowercased (cleanShortLinks). */
+    static void validateShortLinks(List<ProductShortLinkDTO> links) {
+        if (links == null) {
+            return;
+        }
+        require(links.size() <= MAX_SHORT_LINKS, "At most " + MAX_SHORT_LINKS + " short links");
+        java.util.Set<String> codes = new java.util.HashSet<>();
+        for (ProductShortLinkDTO link : links) {
+            require(link != null, "A short link is empty");
+            String code = lower(link.getCode());
+            require(code != null && SHORT_CODE.matcher(code).matches(),
+                    "Short link must be 1-30 lowercase letters, numbers or -, starting with a letter or number: "
+                            + link.getCode());
+            require(codes.add(code), "Short link used twice: " + code);
+            String source = lower(link.getSource());
+            require(source != null && UTM_VALUE.matcher(source).matches(),
+                    "Short link " + code + " needs a source of lowercase letters, numbers, - _ or . (no spaces)");
+            String campaign = lower(link.getCampaign());
+            require(campaign == null || UTM_VALUE.matcher(campaign).matches(),
+                    "Short link " + code + ": the campaign can hold only lowercase letters, numbers, - _ or . (no spaces)");
+        }
+    }
+
+    /** Trimmed and lowercased; blank is null. */
+    private static String lower(String value) {
+        return StringUtils.hasText(value) ? value.trim().toLowerCase(Locale.ROOT) : null;
     }
 
     static void validateWelcomeLinks(List<ProductLinkDTO> links) {
@@ -231,6 +270,10 @@ public class PlatformProductService {
                         "Plan credits must be between 0 and " + MAX_PLAN_NUMBER);
                 require(plan.getUsers() != null && plan.getUsers() >= 1 && plan.getUsers() <= 100_000,
                         "Plan users must be at least 1");
+                require(plan.getAccessMode() == null || ACCESS_MODES.contains(plan.getAccessMode().trim().toUpperCase(Locale.ROOT)),
+                        "Plan access must be PLATFORM or API");
+                require(plan.getValidityMonths() == null || (plan.getValidityMonths() >= 1 && plan.getValidityMonths() <= 60),
+                        "Plan validity must be between 1 and 60 months");
             }
         }
         require(b.getPlanValidityMonths() == null || (b.getPlanValidityMonths() >= 1 && b.getPlanValidityMonths() <= 60),
@@ -245,9 +288,33 @@ public class PlatformProductService {
                 .subtitle(emptyToNull(l.getSubtitle())).build()).toList();
     }
 
-    private static List<ProductPlanDTO> cleanPlans(List<ProductPlanDTO> plans) {
-        return plans.stream().map(p -> ProductPlanDTO.builder().key(p.getKey().trim()).name(p.getName().trim())
-                .priceInr(p.getPriceInr()).credits(p.getCredits()).users(p.getUsers()).build()).toList();
+    private static List<ProductShortLinkDTO> cleanShortLinks(List<ProductShortLinkDTO> links) {
+        return links.stream().map(l -> ProductShortLinkDTO.builder().code(lower(l.getCode()))
+                .source(lower(l.getSource())).campaign(lower(l.getCampaign())).build()).toList();
+    }
+
+    /**
+     * The plans as saved. Access mode and validity left out are kept from the stored plan with the same
+     * id, so a dashboard that does not know those fields cannot drop them.
+     */
+    static List<ProductPlanDTO> cleanPlans(List<ProductPlanDTO> plans, List<ProductPlanDTO> existing) {
+        Map<String, ProductPlanDTO> before = new LinkedHashMap<>();
+        if (existing != null) {
+            existing.stream().filter(e -> e != null && e.getKey() != null)
+                    .forEach(e -> before.put(e.getKey().trim(), e));
+        }
+        return plans.stream().map(p -> {
+            String key = p.getKey().trim();
+            ProductPlanDTO old = before.get(key);
+            String mode = p.getAccessMode() != null ? p.getAccessMode() : old == null ? null : old.getAccessMode();
+            Integer months = p.getValidityMonths() != null ? p.getValidityMonths()
+                    : old == null ? null : old.getValidityMonths();
+            return ProductPlanDTO.builder().key(key).name(p.getName().trim())
+                    .priceInr(p.getPriceInr()).credits(p.getCredits()).users(p.getUsers())
+                    .accessMode(StringUtils.hasText(mode) ? mode.trim().toUpperCase(Locale.ROOT) : null)
+                    .validityMonths(months)
+                    .build();
+        }).toList();
     }
 
     /** Digits with the country code, the way numbers are stored and sent. */
@@ -273,7 +340,9 @@ public class PlatformProductService {
         if (plans != null && !sold.isEmpty()) {
             plans = plans.stream().map(plan -> {
                 SoldPlan s = sold.get(storefrontKey(p.getProductKey(), plan.getKey()));
-                return s == null ? plan : plan.toBuilder().priceInr(s.priceInr()).credits(s.credits()).build();
+                return s == null ? plan : plan.toBuilder().priceInr(s.priceInr()).credits(s.credits())
+                        .validityMonths(s.periodMonths() > 0 ? Integer.valueOf(s.periodMonths()) : plan.getValidityMonths())
+                        .build();
             }).toList();
             months = plans.stream().map(plan -> sold.get(storefrontKey(p.getProductKey(), plan.getKey())))
                     .filter(java.util.Objects::nonNull).map(SoldPlan::periodMonths).findFirst().orElse(months);
@@ -288,6 +357,7 @@ public class PlatformProductService {
                 .plans(plans)
                 .planValidityMonths(months)
                 .extraCreditPriceInr(p.getExtraCreditPriceInr())
+                .shortLinks(p.getShortLinks())
                 .build();
     }
 

@@ -1,5 +1,8 @@
 package vacademy.io.admin_core_service.features.commerce.security;
 
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -9,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import vacademy.io.admin_core_service.features.commerce.accounts.AccountsAccess;
 import vacademy.io.admin_core_service.features.commerce.stock.controller.StockAccess;
 import vacademy.io.admin_core_service.features.commerce.security.dto.StaffLocationsRequest;
 import vacademy.io.admin_core_service.features.commerce.security.dto.StaffPinRequest;
@@ -28,6 +32,10 @@ import java.util.Set;
  * assigns and removes only locations they are assigned to themselves, and never changes
  * their own list: otherwise a manager of one shop could make themselves manager of all.
  * Roles themselves are granted in auth_service, not here.
+ *
+ * <p>{@code /staff/scope}: whether a manager or accountant acts for every location in the accounts
+ * work; set by an institute ADMIN only. The PIN routes open under the billing counter or the accounts
+ * feature (unlocking the books is approved with the manager's PIN).
  */
 @RestController
 @RequestMapping("/admin-core-service/commerce/v1/staff")
@@ -72,7 +80,7 @@ public class CommerceStaffController {
     @GetMapping("/pin")
     public ResponseEntity<Map<String, Object>> pinStatus(@RequestAttribute("user") CustomUserDetails user,
                                                          @RequestParam("instituteId") String instituteId) {
-        accessGuard.require(user, instituteId, CommerceFeature.POS, MANAGER);
+        requirePinAccess(user, instituteId);
         return ResponseEntity.ok(Map.of("has_pin", staffService.hasPin(instituteId, user.getUserId())));
     }
 
@@ -81,12 +89,44 @@ public class CommerceStaffController {
     public ResponseEntity<Map<String, Object>> setPin(@RequestAttribute("user") CustomUserDetails user,
                                                       @RequestParam("instituteId") String instituteId,
                                                       @RequestBody StaffPinRequest request) {
-        accessGuard.require(user, instituteId, CommerceFeature.POS, MANAGER);
+        requirePinAccess(user, instituteId);
         if (request == null) {
             throw new InvalidRequestException("Request body is required");
         }
         staffService.setOwnPin(instituteId, user.getUserId(), request.getPin());
         return ResponseEntity.ok(Map.of("has_pin", true));
+    }
+
+    @GetMapping("/scope")
+    public ResponseEntity<Map<String, Object>> scope(@RequestAttribute("user") CustomUserDetails user,
+                                                     @RequestParam("instituteId") String instituteId,
+                                                     @RequestParam("userId") String staffUserId) {
+        accessGuard.require(user, instituteId, CommerceFeature.ACCOUNTS, AccountsAccess.ADMIN_ONLY);
+        return ResponseEntity.ok(staffService.scope(instituteId, staffUserId));
+    }
+
+    @PutMapping("/scope")
+    public ResponseEntity<Map<String, Object>> setScope(@RequestAttribute("user") CustomUserDetails user,
+                                                        @RequestParam("instituteId") String instituteId,
+                                                        @RequestBody StaffScopeRequest request) {
+        accessGuard.require(user, instituteId, CommerceFeature.ACCOUNTS, AccountsAccess.ADMIN_ONLY);
+        if (request == null) {
+            throw new InvalidRequestException("Request body is required");
+        }
+        return ResponseEntity.ok(staffService.setScope(instituteId, user.getUserId(), request.getUserId(),
+                request.getAllLocations()));
+    }
+
+    /** Body of PUT /commerce/v1/staff/scope. */
+    @Data
+    @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+    public static class StaffScopeRequest {
+        private String userId;
+        private Boolean allLocations;
+    }
+
+    private void requirePinAccess(CustomUserDetails user, String instituteId) {
+        accessGuard.requireEither(user, instituteId, CommerceFeature.POS, MANAGER, CommerceFeature.ACCOUNTS, MANAGER);
     }
 
     private static Map<String, Object> locationsView(String staffUserId, List<String> locationIds) {

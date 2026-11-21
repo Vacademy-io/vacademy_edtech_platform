@@ -1,8 +1,23 @@
 package vacademy.io.assessment_service.features.assessment.notification;
 
+import org.springframework.util.StringUtils;
+import org.springframework.web.util.HtmlUtils;
+import vacademy.io.assessment_service.features.assessment.service.ThemeColorResolver;
+
 public class AssessmentNotificationEmailBody {
 
+    /** Accent used when the institute's theme is unknown. */
+    static final String NEUTRAL = "#333333";
+
     public static String getAssessmentReportBody() {
+        return getAssessmentReportBody(null, null);
+    }
+
+    /**
+     * The built-in "your report is attached" email. Coloured with the institute's theme (neutral
+     * when blank) and signed with its name when known; no links, the report is the attachment.
+     */
+    public static String getAssessmentReportBody(String instituteName, String themeCode) {
         return """
                 <!DOCTYPE html>
                 <html>
@@ -14,8 +29,8 @@ public class AssessmentNotificationEmailBody {
                 <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 40px;">
                     <table align="center" width="600" style="background: white; border-radius: 12px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); padding: 20px; border-collapse: collapse;">
                         <tr>
-                            <td align="center" style="background: #e06623; padding: 18px; border-radius: 12px 12px 0 0;">
-                                <h2 style="color: white; margin: 0; font-size: 24px;">📄 Assessment Report</h2>
+                            <td align="center" style="border-top: 4px solid %1$s; padding: 18px; border-radius: 12px 12px 0 0;">
+                                <h2 style="color: #333333; margin: 0; font-size: 24px;">📄 Assessment Report</h2>
                             </td>
                         </tr>
                         <tr>
@@ -23,20 +38,13 @@ public class AssessmentNotificationEmailBody {
                                 <p style="font-size: 18px; font-weight: bold;">Dear {{learner_name}},</p>
                                 <p>We are pleased to share your assessment report. Your performance and feedback are detailed in the attached document.</p>
                                 <p>For any questions, feel free to reach out. We appreciate your dedication to learning! 🚀</p>
-                                <div style="text-align: center; margin-top: 20px;">
-                                    <a href="{{report_link}}" style="background: #e06623; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: bold; display: inline-block;">📥 Download Report</a>
-                                </div>
                             </td>
                         </tr>
-                        <tr>
-                            <td style="background: #f8f8f8; padding: 15px; text-align: center; font-size: 14px; color: #666; border-radius: 0 0 12px 12px;">
-                                <p>Need help? <a href="{{support_link}}" style="color: #e06623; text-decoration: none; font-weight: bold;">Contact Support</a></p>
-                            </td>
-                        </tr>
+                        %2$s
                     </table>
                 </body>
                 </html>
-                """;
+                """.formatted(accent(themeCode), footer(instituteName));
     }
 
     /** Subject of the one message a learner gets when a released result is changed. */
@@ -61,8 +69,8 @@ public class AssessmentNotificationEmailBody {
                 <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 40px;">
                     <table align="center" width="600" style="background: white; border-radius: 12px; box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1); padding: 20px; border-collapse: collapse;">
                         <tr>
-                            <td align="center" style="background: #e06623; padding: 18px; border-radius: 12px 12px 0 0;">
-                                <h2 style="color: white; margin: 0; font-size: 24px;">Your result was updated</h2>
+                            <td align="center" style="border-top: 4px solid #333333; padding: 18px; border-radius: 12px 12px 0 0;">
+                                <h2 style="color: #333333; margin: 0; font-size: 24px;">Your result was updated</h2>
                             </td>
                         </tr>
                         <tr>
@@ -76,5 +84,16 @@ public class AssessmentNotificationEmailBody {
                 </body>
                 </html>
                 """;
+    }
+
+    private static String accent(String themeCode) {
+        String resolved = ThemeColorResolver.resolve(themeCode);
+        return resolved != null ? resolved : NEUTRAL;
+    }
+
+    private static String footer(String instituteName) {
+        if (!StringUtils.hasText(instituteName)) return "";
+        return "<tr><td style=\"padding: 15px; text-align: center; font-size: 14px; color: #666;\">"
+                + HtmlUtils.htmlEscape(instituteName.trim()) + "</td></tr>";
     }
 }

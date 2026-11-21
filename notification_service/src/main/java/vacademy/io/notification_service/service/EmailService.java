@@ -226,6 +226,10 @@ public class EmailService {
     }
 
     private void saveEmailNotificationLog(String to, String subject, String body, String source, String sourceId, String userId, String fromEmail, String instituteId, String correlationId) {
+        saveEmailNotificationLog(to, subject, body, source, sourceId, userId, fromEmail, instituteId, correlationId, null);
+    }
+
+    private void saveEmailNotificationLog(String to, String subject, String body, String source, String sourceId, String userId, String fromEmail, String instituteId, String correlationId, Map<String, String> logMeta) {
         try {
             NotificationLog notificationLog = new NotificationLog();
             notificationLog.setId(UUID.randomUUID().toString());
@@ -252,9 +256,10 @@ public class EmailService {
             // Body holds the HTML, so the subject line would otherwise be lost. The inbox and
             // timeline read it back from message_payload ({"subject": ...}); INBOUND_EMAIL rows use
             // the same key in their richer payload, so one reader covers both.
-            String subjectPayload = subjectPayload(objectMapper, subject);
-            if (subjectPayload != null) {
-                notificationLog.setMessagePayload(subjectPayload);
+            // Template name and sender (logMeta) ride in the same JSON, for the student timeline.
+            String payload = logPayload(objectMapper, subject, logMeta);
+            if (payload != null) {
+                notificationLog.setMessagePayload(payload);
             }
             notificationLog.setNotificationDate(Instant.now());
 
@@ -273,13 +278,34 @@ public class EmailService {
      */
     public static final String SUBJECT_PAYLOAD_KEY = "subject";
 
+    /** Key under which an outbound EMAIL row stores the name of the template it was built from. */
+    public static final String TEMPLATE_NAME_PAYLOAD_KEY = "templateName";
+
     /** {@code {"subject": ...}} JSON for a non-blank subject; null when there is nothing to store. */
     static String subjectPayload(ObjectMapper objectMapper, String subject) {
-        if (subject == null || subject.isBlank()) return null;
+        return logPayload(objectMapper, subject, null);
+    }
+
+    /**
+     * The subject plus the caller's extra keys (templateName, originType / originId / originName),
+     * skipping blank values. The subject key cannot be overridden from logMeta. Null when nothing
+     * is left to store.
+     */
+    static String logPayload(ObjectMapper objectMapper, String subject, Map<String, String> logMeta) {
+        Map<String, String> payload = new java.util.LinkedHashMap<>();
+        if (subject != null && !subject.isBlank()) payload.put(SUBJECT_PAYLOAD_KEY, subject);
+        if (logMeta != null) {
+            logMeta.forEach((key, value) -> {
+                if (key != null && !SUBJECT_PAYLOAD_KEY.equals(key) && value != null && !value.isBlank()) {
+                    payload.put(key, value);
+                }
+            });
+        }
+        if (payload.isEmpty()) return null;
         try {
-            return objectMapper.writeValueAsString(Map.of(SUBJECT_PAYLOAD_KEY, subject));
+            return objectMapper.writeValueAsString(payload);
         } catch (Exception e) {
-            logger.debug("Could not serialise subject payload: {}", e.getMessage());
+            logger.debug("Could not serialise email log payload: {}", e.getMessage());
             return null;
         }
     }
@@ -837,8 +863,21 @@ public class EmailService {
     public SendOutcome sendHtmlEmail(String to, String subject, String service, String body, String instituteId,
             String customFromEmail, String customFromName, String emailType,
             String correlationId, String userId, List<String> cc, String ccMode, EmailBillingClass billingClass) {
+        return sendHtmlEmail(to, subject, service, body, instituteId, customFromEmail, customFromName, emailType,
+                correlationId, userId, cc, ccMode, billingClass, null);
+    }
+
+    /**
+     * As above, with extra keys for the log row's message_payload beside the subject: the template
+     * the email was built from and who sent it (see {@link #logPayload}). A send deferred by the
+     * daily cap or held for credits is logged later without them.
+     */
+    public SendOutcome sendHtmlEmail(String to, String subject, String service, String body, String instituteId,
+            String customFromEmail, String customFromName, String emailType,
+            String correlationId, String userId, List<String> cc, String ccMode, EmailBillingClass billingClass,
+            Map<String, String> logMeta) {
         return doSendHtml(to, subject, service, body, instituteId, customFromEmail, customFromName, emailType,
-                correlationId, userId, cc, ccMode, false, null, billingClass);
+                correlationId, userId, cc, ccMode, false, null, billingClass, logMeta);
     }
 
     /**
@@ -850,7 +889,7 @@ public class EmailService {
             String customFromEmail, String customFromName, String emailType,
             String correlationId, String userId, List<String> cc, String ccMode, String inReplyTo) {
         return doSendHtml(to, subject, service, body, instituteId, customFromEmail, customFromName, emailType,
-                correlationId, userId, cc, ccMode, false, inReplyTo, null);
+                correlationId, userId, cc, ccMode, false, inReplyTo, null, null);
     }
 
     /**
@@ -860,7 +899,7 @@ public class EmailService {
     public SendOutcome sendDeferred(DeferredEmail d, List<String> cc) {
         return doSendHtml(d.getToEmail(), d.getSubject(), d.getService(), d.getBody(), d.getInstituteId(),
                 d.getCustomFromEmail(), d.getCustomFromName(), d.getEmailType(), d.getCorrelationId(), d.getUserId(),
-                cc, d.getCcMode(), true, null, null);
+                cc, d.getCcMode(), true, null, null, null);
     }
 
     /** True when this recipient opted out and the sender/type honours opt-outs. */
@@ -919,7 +958,7 @@ public class EmailService {
     private SendOutcome doSendHtml(String to, String subject, String service, String body, String instituteId,
             String customFromEmail, String customFromName, String emailType,
             String correlationId, String userId, List<String> cc, String ccMode, boolean fromQueue,
-            String inReplyTo, EmailBillingClass requestedBillingClass) {
+            String inReplyTo, EmailBillingClass requestedBillingClass, Map<String, String> logMeta) {
         try {
             // Check if email is blocked (domain blocklist or bounced email blocklist)
             if (isEmailBlocked(to)) {
@@ -1028,7 +1067,7 @@ public class EmailService {
 
                     String messageId = null;
                     try { messageId = message.getMessageID(); } catch (Exception ignored) {}
-                    saveEmailNotificationLog(to, emailSubject, emailBody, service != null ? service : "HTML_EMAIL_SERVICE", messageId, userId, finalFromEmail, instituteId, correlationId);
+                    saveEmailNotificationLog(to, emailSubject, emailBody, service != null ? service : "HTML_EMAIL_SERVICE", messageId, userId, finalFromEmail, instituteId, correlationId, logMeta);
                     emailUsageStore.recordSent(instituteId, billingClass, billingUnits);
 
                 } catch (Exception e) {

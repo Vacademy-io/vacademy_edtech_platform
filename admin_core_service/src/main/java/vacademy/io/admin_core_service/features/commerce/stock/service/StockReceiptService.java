@@ -23,6 +23,7 @@ import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockMod
 import vacademy.io.admin_core_service.features.commerce.catalogue.enums.StockPolicy;
 import vacademy.io.admin_core_service.features.commerce.order.desk.CommerceStockShortFlagger;
 import vacademy.io.admin_core_service.features.commerce.security.CommerceAccessDeniedException;
+import vacademy.io.admin_core_service.features.commerce.security.CommerceFeature;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.ReceiptCostRequest;
 import vacademy.io.admin_core_service.features.commerce.stock.dto.ReceiptRequest;
 import vacademy.io.admin_core_service.features.commerce.stock.entity.CommercePiece;
@@ -92,6 +93,10 @@ public class StockReceiptService {
     public static final String AUDIT_RECEIPT_REVERSE = "STOCK_RECEIPT_REVERSE";
     public static final String AUDIT_RECEIPT_COST = "STOCK_RECEIPT_COST";
     public static final String AUDIT_RECEIPT_NO_BILL = "STOCK_RECEIPT_NO_BILL";
+    /** WP-53: an opening receipt line with no cost while the switch-over feature is on. */
+    public static final String OPENING_COST_MISSING = "OPENING_COST_MISSING";
+    /** WP-53: an opening receipt while the switch-over feature state cannot be read (503, retry). */
+    public static final String FEATURE_STATE_UNKNOWN = "FEATURE_STATE_UNKNOWN";
     /** The accounts feature key; its enum value arrives with WP-60a. */
     static final String ACCOUNTS_FEATURE_KEY = "commerce.accounts";
 
@@ -188,6 +193,7 @@ public class StockReceiptService {
         if (earlier.isPresent()) {
             return sameRequestOrRefuse(earlier.get(), draft);
         }
+        requireOpeningCosts(instituteId, draft);
         String number = counters.nextNumber(instituteId, CommerceCounterService.SCOPE_GOODS_RECEIPT);
         try {
             return transaction.execute(status -> post(instituteId, actorUserId, draft, number));
@@ -197,6 +203,55 @@ public class StockReceiptService {
                     .findByInstituteIdAndClientRequestId(instituteId, draft.clientRequestId).orElseThrow(() -> e);
             return sameRequestOrRefuse(winner, draft);
         }
+    }
+
+    /**
+     * WP-53, only while the switch-over feature is on: an opening receipt must carry a cost for
+     * every line, typed or the item's standard cost, so opening stock never enters uncosted.
+     * Checked before the receipt number is taken, so a refusal writes nothing and leaves no gap.
+     * Other sources, and every receipt of an institute without the feature, are not touched.
+     * A cost of zero is no cost. When the feature state cannot be read an opening receipt is
+     * refused with 503 {@code FEATURE_STATE_UNKNOWN} (the client retries with the same request
+     * id); other sources go on as they always have.
+     */
+    private void requireOpeningCosts(String instituteId, Draft draft) {
+        if (draft.sourceKind != ReceiptSourceKind.OPENING) {
+            return;
+        }
+        boolean migrationOn;
+        try {
+            migrationOn = capabilityResolver.isFeatureGranted(instituteId, CommerceFeature.MIGRATION.key());
+        } catch (RuntimeException e) {
+            log.error("Opening receipt refused for institute {}: the switch-over feature state could not be read",
+                    instituteId, e);
+            throw new VacademyException(HttpStatus.SERVICE_UNAVAILABLE, FEATURE_STATE_UNKNOWN
+                    + ": opening stock cannot be received just now; try again in a minute");
+        }
+        if (!migrationOn) {
+            return;
+        }
+        List<String> uncosted = new ArrayList<>();
+        for (VariantFacts facts : variantRepository.findFactsIn(instituteId, draft.lines.keySet())) {
+            DraftLine line = draft.lines.get(facts.getPackageSessionId());
+            // A typed cost wins over the standard cost when the line posts, so a typed 0 is no cost.
+            boolean costed = line != null && (line.unitCost != null ? line.unitCost.signum() > 0
+                    : facts.getStandardCost() != null && facts.getStandardCost().signum() > 0);
+            if (line == null || costed
+                    || StockPolicy.UNTRACKED.name().equals(facts.getStockPolicy())
+                    || ProductStatus.ARCHIVED.name().equals(facts.getStatus())) {
+                // Untracked or retired items keep their own refusal in post().
+                continue;
+            }
+            uncosted.add(facts.getSku() == null ? facts.getPackageSessionId() : facts.getSku());
+        }
+        if (uncosted.isEmpty()) {
+            return;
+        }
+        uncosted.sort(Comparator.naturalOrder());
+        String named = String.join(", ", uncosted.subList(0, Math.min(5, uncosted.size())))
+                + (uncosted.size() > 5 ? ", …" : "");
+        throw new VacademyException(HttpStatus.UNPROCESSABLE_ENTITY, OPENING_COST_MISSING + ": " + uncosted.size()
+                + " item(s) have no cost yet (" + named + "); a manager or the accountant loads costs first");
     }
 
     private static StockReceipt sameRequestOrRefuse(StockReceipt earlier, Draft draft) {
