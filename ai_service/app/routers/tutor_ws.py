@@ -539,62 +539,140 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             svc.save_pointer(user_id=user_id, package_session_id=package_session_id, lesson=lesson, pointer=pointer,
                              language=lang, pace=pace)
 
-        async def _speak(text_: str) -> None:
-            if not speak_enabled or not text_.strip():
-                return
+        # Live synthesis in progress, per cache key: the early start of a reply
+        # (_prefetch_say, while the model is still writing) and the reply
+        # itself share one engine call instead of paying for two.
+        tts_inflight: Dict[str, "asyncio.Future"] = {}
+
+        def _voice() -> str:
             # The teacher is female by default (owner decision); a voice name
             # Sarvam does not serve (v2 names, Smallest voices) falls back to it.
             if tts_provider == "sarvam":
-                voice = sarvam_speaker(tts_voice, SARVAM_DEFAULT_FEMALE)
-            elif tts_provider == "smallest":
-                voice = (tts_voice or SMALLEST_DEFAULT_VOICE).strip()
-            else:
-                voice = tutor_langs.tutor_voice_for(tts_provider, tts_voice, lang)
+                return sarvam_speaker(tts_voice, SARVAM_DEFAULT_FEMALE)
+            if tts_provider == "smallest":
+                return (tts_voice or SMALLEST_DEFAULT_VOICE).strip()
+            return tutor_langs.tutor_voice_for(tts_provider, tts_voice, lang)
+
+        def _seg_key(segment: str, voice: str) -> Tuple[str, str, float]:
+            seg_pace = _effective_pace(segment)
+            # What the engine hears: "9/16" as "9 by 16", not a date.
+            spoken = _spoken_form(segment, lang)
+            return _cache_key(tts_provider, voice, _lang_stt(), str(seg_pace), spoken), spoken, seg_pace
+
+        async def _prepared_audio(key: str, segment: str, voice: str) -> Optional[bytes]:
+            """Prepared voice (compile-time warm-up, or another learner's
+            lesson): the same audio, already paid for once."""
+            row = await asyncio.to_thread(voice_cache.lookup, key)
+            prepared = await voice_cache.fetch(row.url) if row is not None else None
+            if not prepared:
+                return None
+            _cache_put(key, prepared)
+            svc.record_media_usage(kind="tts", institute_id=institute_id, user_id=user_id,
+                                   session_id=tutor_session_id, language=_lang_stt(),
+                                   characters=len(segment), detail=f"tutor:{voice}", provider=tts_provider, cached=True)
+            svc.bump_telemetry(tutor_session_id, tts_prepared_hits=1)
+            return prepared
+
+        async def _live_audio(key: str, segment: str, spoken: str, seg_pace: float, voice: str) -> Optional[bytes]:
+            """Synthesise now (or join the synthesis already running for this key)."""
+            running = tts_inflight.get(key)
+            if running is not None:
+                try:
+                    got = await asyncio.shield(running)
+                except Exception:  # noqa: BLE001
+                    got = None
+                if got:
+                    return got
+            fut = asyncio.get_running_loop().create_future()
+            tts_inflight[key] = fut
+            audio: Optional[bytes] = None
+            try:
+                audio, _mime, provider_used = await synthesize_speech(
+                    text=spoken, language=_lang_stt(), voice=voice, provider=tts_provider,
+                    pace=seg_pace, fallback_voice=SARVAM_DEFAULT_FEMALE,
+                )
+                if audio:
+                    _cache_put(key, audio)
+                    # Only synthesised audio costs money; a failed engine is not usage.
+                    svc.record_media_usage(kind="tts", institute_id=institute_id, user_id=user_id,
+                                           session_id=tutor_session_id, language=_lang_stt(),
+                                           characters=len(segment), detail=f"tutor:{voice}", provider=provider_used)
+                    svc.bump_telemetry(tutor_session_id, tts_chars=len(segment))
+                    if provider_used == tts_provider:
+                        _fire_and_forget(voice_cache.store(key, provider=tts_provider, voice=voice, lang=_lang_stt(),
+                                                           pace=str(seg_pace), text_=spoken, audio=audio, mime=_mime))
+            finally:
+                tts_inflight.pop(key, None)
+                if not fut.done():
+                    fut.set_result(audio or None)
+            return audio or None
+
+        def _first_sentence(segment: str, first_idx: int, n_sent: int) -> Optional[List[Tuple[str, int, int]]]:
+            """[first sentence, the rest] of a multi-sentence segment."""
+            parts = _tutor_segments(segment, max_chars=1)
+            if n_sent < 2 or len(parts) < 2:
+                return None
+            rest = " ".join(p for p, _i, _n in parts[1:])
+            return [(parts[0][0], first_idx, 1), (rest, first_idx + 1, n_sent - 1)]
+
+        def _prefetch_say(raw_say: str) -> None:
+            """The model's `say` is complete while the rest of its JSON is still
+            streaming: start voicing the reply's first sentence now, exactly as
+            _speak will cut it, so its audio is ready (or on its way) when the
+            teacher starts speaking."""
+            if not speak_enabled or not (raw_say or "").strip():
+                return
+            voice = _voice()
+            segs = _tutor_segments(raw_say, isolate=NAME_TOKEN)
+            if not segs:
+                return
+            segment, first_idx, n_sent = segs[0]
+            segment = _personalize(segment)
+            split = _first_sentence(segment, first_idx, n_sent)
+            if split:
+                segment = split[0][0]
+            key, spoken, seg_pace = _seg_key(segment, voice)
+            if _cache_get(key) is not None or key in tts_inflight:
+                return
+            _fire_and_forget(_live_audio(key, segment, spoken, seg_pace, voice))
+
+        async def _speak(text_: str) -> None:
+            if not speak_enabled or not text_.strip():
+                return
+            voice = _voice()
             # `text_` still carries {student_name}: the sentence with the name
             # is its own segment (voiced for this learner), every other
             # segment is the same audio for all learners — prepared at compile
             # time or cached from an earlier lesson.
-            for segment, first_idx, n_sent in _tutor_segments(text_, isolate=NAME_TOKEN):
+            pending = list(_tutor_segments(text_, isolate=NAME_TOKEN))
+            first = True
+            while pending:
+                segment, first_idx, n_sent = pending.pop(0)
                 segment = _personalize(segment)
+                key, spoken, seg_pace = _seg_key(segment, voice)
+                audio = _cache_get(key)
+                if audio is not None:
+                    svc.bump_telemetry(tutor_session_id, tts_cache_hits=1)
+                else:
+                    audio = await _prepared_audio(key, segment, voice)
+                    if audio is None and first:
+                        # Not prepared (a model-written reply): the first
+                        # sentence alone is synthesised in a third of the time
+                        # (measured 2026-11-21: 0.4 s vs 1.1-2.4 s), so the
+                        # learner hears the teacher sooner; the rest follows
+                        # while it plays.
+                        split = _first_sentence(segment, first_idx, n_sent)
+                        if split:
+                            pending[0:0] = split
+                            first = False
+                            continue
+                    if audio is None:
+                        audio = await _live_audio(key, segment, spoken, seg_pace, voice)
+                first = False
                 # The sentence(s) this audio segment speaks, with their index
                 # in the narration: the client reveals the board elements
                 # marked for those sentences as the segment starts playing.
                 await _send({"type": "segment_text", "text": segment, "index": first_idx, "count": n_sent})
-                seg_pace = _effective_pace(segment)
-                # What the engine hears: "9/16" as "9 by 16", not a date.
-                spoken = _spoken_form(segment, lang)
-                key = _cache_key(tts_provider, voice, _lang_stt(), str(seg_pace), spoken)
-                audio = _cache_get(key)
-                provider_used = tts_provider
-                if audio is None:
-                    # Prepared voice (compile-time warm-up, or another learner's
-                    # lesson): the same audio, already paid for once.
-                    row = await asyncio.to_thread(voice_cache.lookup, key)
-                    prepared = await voice_cache.fetch(row.url) if row is not None else None
-                    if prepared:
-                        audio = prepared
-                        _cache_put(key, audio)
-                        svc.record_media_usage(kind="tts", institute_id=institute_id, user_id=user_id,
-                                               session_id=tutor_session_id, language=_lang_stt(),
-                                               characters=len(segment), detail=f"tutor:{voice}", provider=tts_provider, cached=True)
-                        svc.bump_telemetry(tutor_session_id, tts_prepared_hits=1)
-                if audio is None:
-                    audio, _mime, provider_used = await synthesize_speech(
-                        text=spoken, language=_lang_stt(), voice=voice, provider=tts_provider,
-                        pace=seg_pace, fallback_voice=SARVAM_DEFAULT_FEMALE,
-                    )
-                    if audio:
-                        _cache_put(key, audio)
-                        # Only synthesised audio costs money; a failed engine is not usage.
-                        svc.record_media_usage(kind="tts", institute_id=institute_id, user_id=user_id,
-                                               session_id=tutor_session_id, language=_lang_stt(),
-                                               characters=len(segment), detail=f"tutor:{voice}", provider=provider_used)
-                        svc.bump_telemetry(tutor_session_id, tts_chars=len(segment))
-                        if provider_used == tts_provider:
-                            _fire_and_forget(voice_cache.store(key, provider=tts_provider, voice=voice, lang=_lang_stt(),
-                                                               pace=str(seg_pace), text_=spoken, audio=audio, mime=_mime))
-                else:
-                    svc.bump_telemetry(tutor_session_id, tts_cache_hits=1)
                 if not audio:
                     continue
                 for i in range(0, len(audio), TTS_CHUNK_SIZE):
@@ -767,6 +845,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             check: Dict[str, Any] = revisit["check"] or {}
             source_block = await svc.kb_source_block(lesson, institute_id, concept.title, text_) if kind == "doubt" else None
             decision, usage = await run_turn(
+                on_say=_prefetch_say,
                 institute_id=institute_id, user_id=user_id, model=live_model, teacher=teacher, lang=lang,
                 strictness=settings.strictness, learner_name=display_name or None, state=state, lesson=lesson,
                 pointer=dc_replace(pointer, remediations=0), board_ops=board, transcript=transcript, learner_message=text_, kind=kind,
@@ -1147,6 +1226,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
         async def _answer_doubt(text_: str, concept: sm.Concept, *, spoken: bool, what_next: str) -> None:
             source_block = await svc.kb_source_block(lesson, institute_id, concept.title, text_)
             decision, usage = await run_turn(
+                on_say=_prefetch_say,
                 institute_id=institute_id, user_id=user_id, model=live_model, teacher=teacher, lang=lang,
                 strictness=settings.strictness, learner_name=display_name or None, state=state, lesson=lesson,
                 pointer=pointer, board_ops=board, transcript=transcript, learner_message=text_, kind="doubt",
@@ -1349,6 +1429,7 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             # (sm.advance is pure), so the verdict can bridge into it.
             next_concept = bridge_target(sm.advance(lesson, pointer, mark_done=True), lang) if (natural and kind == "answer") else None
             decision, usage = await run_turn(
+                on_say=_prefetch_say,
                 institute_id=institute_id, user_id=user_id, model=live_model, teacher=teacher, lang=lang,
                 strictness=settings.strictness, learner_name=display_name or None, state=state, lesson=lesson,
                 pointer=pointer, board_ops=board, transcript=transcript, learner_message=text_, kind=kind,

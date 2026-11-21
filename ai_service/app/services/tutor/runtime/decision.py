@@ -3,9 +3,10 @@ validated against the current board, deterministic fallback."""
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from uuid import uuid4
 
 from ....db import db_session
@@ -198,8 +199,13 @@ async def run_turn(
     concept: Optional[Concept] = None,
     revisit: bool = False,
     next_concept: Optional[str] = None,
+    on_say: Optional[Callable[[str], None]] = None,
 ) -> Tuple[Decision, Dict[str, int]]:
-    """`concept` overrides the pointer's concept (a doubt raised during a
+    """`on_say`: called once with the reply's `say` as soon as it has
+    streamed in (it is the second field), so the socket can start voicing it
+    while the board ops and the assessment are still being written.
+
+    `concept` overrides the pointer's concept (a doubt raised during a
     topic summary or right after a verdict is about the concept just taught;
     a revisit carries the concept with its fresh check). `next_concept`
     (natural teaching, graded answers only) asks for the optional bridge."""
@@ -229,8 +235,12 @@ async def run_turn(
                 platform_default_key="chatbot.text.model",
             )
         client = ChatLLMClient(_FixedKeys(keys), platform_model_key="chatbot.text.model")
-        resp = await client.chat_completion(messages, temperature=0.3, max_tokens=TURN_MAX_TOKENS,
-                                            institute_id=institute_id, user_id=user_id, model=model)
+        if on_say is not None:
+            resp = await _streamed_completion(client, messages, on_say, institute_id=institute_id, user_id=user_id,
+                                              model=model)
+        else:
+            resp = await client.chat_completion(messages, temperature=0.3, max_tokens=TURN_MAX_TOKENS,
+                                                institute_id=institute_id, user_id=user_id, model=model)
         u = resp.get("usage") or {}
         usage = {"prompt_tokens": int(u.get("prompt_tokens") or 0), "completion_tokens": int(u.get("completion_tokens") or 0)}
         record_llm_billing(
@@ -249,6 +259,46 @@ async def run_turn(
     except Exception:  # noqa: BLE001
         logger.warning("Tutor decision turn failed for session %s", tutor_session_id, exc_info=True)
     return fallback_decision(kind=kind, lang=lang, concept=concept, remediation_no=pointer.remediations), usage
+
+
+# The `say` string of a decision, once its closing quote has arrived.
+_SAY_DONE = re.compile(r'"say"\s*:\s*"((?:[^"\\]|\\.)*)"')
+
+
+def early_say(partial: str) -> Optional[str]:
+    """The complete `say` value in a partial decision JSON, or None."""
+    m = _SAY_DONE.search(partial or "")
+    if not m:
+        return None
+    try:
+        return json.loads('"' + m.group(1) + '"')
+    except ValueError:
+        return None
+
+
+async def _streamed_completion(client: Any, messages: List[Dict[str, Any]], on_say: Callable[[str], None], *,
+                               institute_id: str, user_id: str, model: Optional[str]) -> Dict[str, Any]:
+    """chat_completion's result ({content, usage, model}), streamed so `say`
+    can be handed to `on_say` the moment it is complete (measured 2026-11-21:
+    the whole reply takes ~2.4 s, mostly writing the fields after `say`)."""
+    content, usage, used_model, told = "", None, model, False
+    async for chunk in client.chat_completion_stream(messages, temperature=0.3, max_tokens=TURN_MAX_TOKENS,
+                                                     institute_id=institute_id, user_id=user_id, model=model):
+        kind = chunk.get("type")
+        if kind == "token":
+            content += chunk.get("content") or ""
+            if not told:
+                say = early_say(content)
+                if say:
+                    told = True
+                    try:
+                        on_say(say)
+                    except Exception:  # noqa: BLE001 — an early start is an optimisation, never a failed turn
+                        logger.debug("on_say failed", exc_info=True)
+        elif kind == "done":
+            usage = chunk.get("usage") or usage
+            used_model = chunk.get("model") or used_model
+    return {"content": content, "usage": usage or {}, "model": used_model}
 
 
 def _turn_user_prompt(*, lesson: LessonPlan, pointer: Pointer, concept: Concept, check: Dict[str, Any], lang: str,
