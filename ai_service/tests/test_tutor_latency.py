@@ -147,3 +147,40 @@ def test_reply_first_sentence_is_voiced_alone_and_once(monkeypatch, tts_s, model
         reply_calls = spoken[before:]
         assert reply_calls.count("Close!") == 1, reply_calls          # early start and reply shared one call
         ws.send_text(json.dumps({"type": "end_session"}))
+
+
+LONG = "Good try, Riya — but yesterday is a finished time, so English uses the simple past here. Say it once more."
+
+
+def test_long_first_sentence_is_voiced_from_its_first_clause(monkeypatch):
+    client, calls = _socket(monkeypatch, natural=False, mode="VOICE")
+    spoken = []
+
+    async def tts(**kw):
+        spoken.append(kw["text"])
+        return b"mp3-bytes", "audio/mpeg", "sarvam"
+    monkeypatch.setattr(tutor_ws, "synthesize_speech", tts)
+    monkeypatch.setattr(tutor_ws.voice_cache, "store", lambda *a, **k: asyncio.sleep(0))
+    monkeypatch.setattr(tutor_ws.svc, "record_media_usage", lambda **kw: None)
+
+    async def turn(**kw):
+        kw["on_say"](LONG)
+        return ({"action": "remediate", "say": LONG, "board_ops": [], "assessment": {"score": 0.4},
+                 "learner_state_delta": {}}, {"prompt_tokens": 1, "completion_tokens": 1})
+    monkeypatch.setattr(tutor_ws, "run_turn", turn)
+    with client.websocket_connect("/tutor/ws/ts") as ws:
+        _auth(ws, caps=False)
+        _frames_until(ws, lambda m: m.get("type") == "await" and m.get("what") == "answer", limit=200)
+        before = len(spoken)
+        ws.send_text(json.dumps({"type": "answer", "text": "I have went"}))
+        seen = _frames_until(ws, lambda m: m.get("type") == "audio_end", limit=200)
+        segs = [m["text"] for m in seen if m["type"] == "segment_text"]
+        assert segs[0] == "Good try,"
+        assert " ".join(segs) == LONG                       # nothing lost or repeated
+        assert spoken[before:].count("Good try,") == 1
+        ws.send_text(json.dumps({"type": "end_session"}))
+
+
+def test_numbers_and_short_sentences_are_not_split():
+    assert not tutor_ws._CLAUSE_BREAK.search("It costs 1,000 rupees")
+    assert tutor_ws._CLAUSE_BREAK.search("Good try, Riya")

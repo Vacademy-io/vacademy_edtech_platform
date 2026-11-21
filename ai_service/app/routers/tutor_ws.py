@@ -156,6 +156,12 @@ from ..services.tutor.runtime.speech import (  # noqa: E402
     step_pace as _step_pace, tutor_segments as _tutor_segments, NAME_TOKEN,
 )
 QUESTION_BEAT_MS = 450
+# A live line's first sentence longer than this is voiced from its first
+# clause break (", " " — " "; " ": ") when the clause is 8-70 characters.
+CLAUSE_SPLIT_MIN_CHARS = 60
+CLAUSE_HEAD_MIN_CHARS = 8
+CLAUSE_HEAD_MAX_CHARS = 70
+_CLAUSE_BREAK = re.compile(r"(?:,|;|:|\s[—–-])\s")
 # Silence recovery: a nudge (hint) after this long on an open question; the
 # idle exit then counts from the nudge.
 NUDGE_SECONDS = 60
@@ -608,12 +614,24 @@ async def tutor_socket(websocket: WebSocket, tutor_session_id: str) -> None:
             return audio or None
 
         def _first_sentence(segment: str, first_idx: int, n_sent: int) -> Optional[List[Tuple[str, int, int]]]:
-            """[first sentence, the rest] of a multi-sentence segment."""
+            """[a short head, the rest] of a segment, so the head's audio is
+            ready sooner: the first sentence of several, or — when that first
+            sentence is long — its first clause ("Good try, Riya —"). Measured
+            2026-11-21: synthesis time grows with length (0.4 s short, ~1.1 s
+            for a 100-character sentence)."""
             parts = _tutor_segments(segment, max_chars=1)
+            head = parts[0][0] if parts else segment
+            m = _CLAUSE_BREAK.search(head) if len(head) > CLAUSE_SPLIT_MIN_CHARS else None
+            if m and CLAUSE_HEAD_MIN_CHARS <= m.end() <= CLAUSE_HEAD_MAX_CHARS:
+                clause, remainder = head[:m.end()].strip(), head[m.end():].strip()
+                rest = " ".join([remainder] + [p for p, _i, _n in parts[1:]]).strip()
+                if clause and rest:
+                    # The remainder still belongs to sentence first_idx.
+                    return [(clause, first_idx, 1), (rest, first_idx, n_sent)]
             if n_sent < 2 or len(parts) < 2:
                 return None
             rest = " ".join(p for p, _i, _n in parts[1:])
-            return [(parts[0][0], first_idx, 1), (rest, first_idx + 1, n_sent - 1)]
+            return [(head, first_idx, 1), (rest, first_idx + 1, n_sent - 1)]
 
         def _prefetch_say(raw_say: str) -> None:
             """The model's `say` is complete while the rest of its JSON is still
