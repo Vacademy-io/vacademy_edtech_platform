@@ -667,6 +667,9 @@ class DemoStartRequest(BaseModel):
     topic_key: str = Field(..., min_length=1, max_length=64)
     language: Optional[str] = Field(default=None, pattern="^(en|hi|bn|kn)$")
     mode: str = Field(default="VOICE", pattern="^(VOICE|TEXT)$")
+    # Tutezy Studio (the stall kiosk): its code lifts the one-lesson-per-visitor
+    # limit for the kiosk and applies the studio's lesson length.
+    studio_code: Optional[str] = Field(default=None, max_length=64)
 
 
 @router.get("/demo/topics", summary="Public: topics the free 3-minute lesson can teach")
@@ -692,21 +695,29 @@ def demo_start(payload: DemoStartRequest, request: Request, background: Backgrou
     topic = {**topic, "slide_id": demo.slide_id_for(topic["key"])}
     ip = demo.client_ip(request)
     iph = demo.ip_hash(ip)
-    reason = demo.grant_allowed(db, iph=iph, per_ip_per_day=c["per_ip_per_day"], daily_cap=c["daily_cap"])
-    if reason:
-        raise HTTPException(status_code=429, detail=reason)
+    from ..services.tutor import studio
+    sc = studio.config(db)
+    studio_role = studio.role_for(payload.studio_code, sc)
+    minutes = sc["minutes"] if studio_role else c["minutes"]
+    # The kiosk is one device serving a queue of visitors: no per-visitor limit
+    # and outside the public daily cap (its own caps are on lesson builds).
+    if studio_role != "kiosk":
+        reason = demo.grant_allowed(db, iph=iph, per_ip_per_day=c["per_ip_per_day"], daily_cap=c["daily_cap"])
+        if reason:
+            raise HTTPException(status_code=429, detail=reason)
     name = demo.sanitize_name(payload.name)
     user_id = demo.guest_user_id()
     try:
         boot = svc.start_session(user_id=user_id, institute_id=c["institute_id"], package_session_id=c["package_session_id"] or "demo",
                                  slide_id=str(topic["slide_id"]), mode=payload.mode,
                                  language=payload.language or topic.get("language") or "en",
-                                 guest={"name": name, "minutes": c["minutes"]})
+                                 guest={"name": name, "minutes": minutes})
     except (PermissionError, LookupError, ValueError) as e:
         logger.warning("demo start failed for topic %s: %s", payload.topic_key, e)
         raise HTTPException(status_code=503, detail="The free lesson is not ready right now. Book a demo instead.")
-    demo.record_grant(db, iph=iph, name=name, topic_key=payload.topic_key, tutor_session_id=boot["tutor_session_id"],
-                      user_agent=request.headers.get("user-agent") or "")
+    if studio_role != "kiosk":
+        demo.record_grant(db, iph=iph, name=name, topic_key=payload.topic_key, tutor_session_id=boot["tutor_session_id"],
+                          user_agent=request.headers.get("user-agent") or "")
     lesson: sm.LessonPlan = boot["lesson"]
     settings: TutorSettings = boot["settings"]
     token = demo.mint_guest_token(user_id=user_id, tutor_session_id=boot["tutor_session_id"], institute_id=c["institute_id"])
@@ -720,7 +731,7 @@ def demo_start(payload: DemoStartRequest, request: Request, background: Backgrou
         background.add_task(spatius_service.warm_session_token)
     return {
         "token": token,
-        "minutes": c["minutes"],
+        "minutes": minutes,
         "boot": {
             "tutor_session_id": boot["tutor_session_id"],
             "slide_id": lesson.slide_id,

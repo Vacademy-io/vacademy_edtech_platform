@@ -59,6 +59,7 @@ from .routers.kb_library import router as kb_library_router
 from .routers.voice_agent import router as voice_agent_router
 from .routers.tutor import router as tutor_router
 from .routers.tutor_ws import router as tutor_ws_router
+from .routers.tutor_studio import router as tutor_studio_router
 from .routers.input_asset import router as input_asset_router
 from .routers.reels import router as reels_router
 from .routers.studio_projects import router as studio_router
@@ -142,6 +143,8 @@ async def _lifespan(app: FastAPI):
             ensure_tutor_asset_registry_schema(db)
             from .services.tutor.demo import ensure_tutor_demo_schema
             ensure_tutor_demo_schema(db)
+            from .services.tutor.studio import ensure_tutor_studio_schema
+            ensure_tutor_studio_schema(db)
         sweep_stale_tasks()
     except Exception as exc:  # noqa: BLE001
         _logger.warning("ai_task startup init skipped: %s", exc)
@@ -525,6 +528,7 @@ def create_app() -> FastAPI:
     app.include_router(voice_agent_router, prefix=settings.api_base_path)
     app.include_router(tutor_router, prefix=settings.api_base_path)
     app.include_router(tutor_ws_router, prefix=settings.api_base_path)
+    app.include_router(tutor_studio_router, prefix=settings.api_base_path)
     # Primary path: /input-asset/* — handles both video and image kinds.
     app.include_router(
         input_asset_router,
