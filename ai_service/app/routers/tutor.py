@@ -702,7 +702,10 @@ def demo_start(payload: DemoStartRequest, request: Request, background: Backgrou
     # The kiosk is one device serving a queue of visitors: no per-visitor limit
     # and outside the public daily cap (its own caps are on lesson builds).
     if studio_role != "kiosk":
-        reason = demo.grant_allowed(db, iph=iph, per_ip_per_day=c["per_ip_per_day"], daily_cap=c["daily_cap"])
+        # A visitor with the studio code is usually on the venue's Wi-Fi, where
+        # every phone shares one IP: the studio's own per-IP allowance applies.
+        per_ip = sc["visitor_per_ip"] * 3 if studio_role == "visitor" else c["per_ip_per_day"]
+        reason = demo.grant_allowed(db, iph=iph, per_ip_per_day=per_ip, daily_cap=c["daily_cap"])
         if reason:
             raise HTTPException(status_code=429, detail=reason)
     name = demo.sanitize_name(payload.name)

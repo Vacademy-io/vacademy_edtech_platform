@@ -43,6 +43,7 @@ MAX_CONCURRENT_JOBS = 6
 STALE_AFTER_SECONDS = 240
 MATERIAL_MAX_CHARS = 9000
 PDF_MAX_BYTES = 15 * 1024 * 1024
+NOTES_MAX_TOKENS = 900
 KINDS = ("topic", "text", "youtube", "pdf")
 ACTIVE = ("QUEUED", "WRITING", "BUILDING")
 
@@ -262,11 +263,15 @@ def parse_notes(raw: str) -> Dict[str, Any]:
 async def write_notes(kind: str, request_text: str, *, institute_id: str, model: Optional[str], job_id: str) -> Dict[str, Any]:
     from ..api_key_resolver import ApiKeyResolver
     from ..chat_llm_client import ChatLLMClient
-    from .plan_compiler import _FixedKeys
+    from .plan_compiler import _FixedKeys, resolve_compile_model
+    # The compile model, named explicitly: a blank model here would inherit the
+    # chatbot's (a reasoning model that spent the whole reply thinking and
+    # returned nothing — every topic came back "could not plan", 2026-11-21).
+    model = resolve_compile_model(model)
     with db_session() as db:
-        keys = ApiKeyResolver(db).resolve_keys(institute_id, None, request_model=model, platform_default_key="chatbot.text.model")
-    client = ChatLLMClient(_FixedKeys(keys), platform_model_key="chatbot.text.model")
-    resp = await client.chat_completion(notes_messages(kind, request_text), temperature=0.4, max_tokens=800,
+        keys = ApiKeyResolver(db).resolve_keys(institute_id, None, request_model=model)
+    client = ChatLLMClient(_FixedKeys(keys), disable_reasoning=True)
+    resp = await client.chat_completion(notes_messages(kind, request_text), temperature=0.4, max_tokens=NOTES_MAX_TOKENS,
                                         institute_id=institute_id, user_id=None, model=model)
     u = resp.get("usage") or {}
     pt, ct = int(u.get("prompt_tokens") or 0), int(u.get("completion_tokens") or 0)
@@ -275,7 +280,10 @@ async def write_notes(kind: str, request_text: str, *, institute_id: str, model:
                            prompt_tokens=pt, completion_tokens=ct, total_tokens=pt + ct, institute_id=institute_id,
                            user_id=None, request_id=job_id, metadata={"tool": "tutor_studio_notes", "kind": kind},
                            use_case=UC.TUTOR_SETUP, usage_context={"feature": "tutor_studio", "job_id": job_id})
-    return parse_notes(resp.get("content") or "")
+    content = (resp.get("content") or "").strip()
+    if not content:
+        raise RuntimeError(f"studio notes: empty reply from {resp.get('model') or model}")
+    return parse_notes(content)
 
 
 # ── material ─────────────────────────────────────────────────────────────────

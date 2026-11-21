@@ -228,3 +228,47 @@ def test_qr_endpoint(monkeypatch):
     ok = c.get("/tutor/v1/studio/qr", params={"u": "https://tutezy.ai/#demo"})
     assert ok.status_code == 200 and ok.headers["content-type"].startswith("image/svg+xml")
     assert c.get("/tutor/v1/studio/qr", params={"u": "https://example.com"}).status_code == 400
+
+
+def test_notes_use_the_compile_model_and_an_empty_reply_is_an_error(monkeypatch):
+    """A blank model inherited the chatbot's reasoning model, which returned
+    nothing: every topic was refused. The compile model is named explicitly,
+    and an empty reply fails the job (retry) instead of blaming the topic."""
+    import app.services.api_key_resolver as akr
+    import app.services.chat_llm_client as llm
+    from app.services.tutor import plan_compiler
+    seen = {}
+
+    class _Resolver:
+        def __init__(self, db):
+            pass
+
+        def resolve_keys(self, institute_id, user_id, request_model=None, **kw):
+            seen["resolve_model"] = request_model
+            return ("k", None, request_model)
+
+    class _Client:
+        def __init__(self, keys, **kw):
+            seen["client_kw"] = kw
+
+        async def chat_completion(self, messages, **kw):
+            seen["model"] = kw.get("model")
+            return {"content": seen.get("reply", ""), "usage": {}, "model": kw.get("model")}
+
+    class _DB:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(akr, "ApiKeyResolver", _Resolver)
+    monkeypatch.setattr(llm, "ChatLLMClient", _Client)
+    monkeypatch.setattr(studio, "db_session", lambda: _DB())
+    monkeypatch.setattr(plan_compiler, "resolve_compile_model", lambda override=None: override or "z-ai/glm-5.3-flash")
+    with pytest.raises(RuntimeError):
+        asyncio.run(studio.write_notes("topic", "Ohm's law", institute_id="i", model=None, job_id="j"))
+    assert seen["model"] == "z-ai/glm-5.3-flash" == seen["resolve_model"] and seen["client_kw"] == {"disable_reasoning": True}
+    seen["reply"] = NOTES
+    out = asyncio.run(studio.write_notes("topic", "Ohm's law", institute_id="i", model=None, job_id="j"))
+    assert out["title"] == "Photosynthesis in four minutes"
