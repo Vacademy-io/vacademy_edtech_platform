@@ -276,6 +276,14 @@ async def _analyze(outcome: CallOutcome) -> Dict[str, Any]:
         "asked to be called later or said they will call back, with or without a time. "
         "An answering machine or recorded message asking to call later is not a "
         "callback.\n"
+        # The bare label list never said what interest IS, so a caller who only
+        # listened, asked who was calling, or said they were busy came back
+        # "Interested" — and admin_core turns that label into a hot-lead alert.
+        "6. An interested-type label needs the CALLER's own words showing interest: they "
+        "asked about the offering (price, timing, how it works, details), asked for "
+        "something to be sent, agreed to a next step, or said they want it. Listening to "
+        "the pitch, 'ok'/'haan'/'hmm', asking who is calling or where from, saying they are "
+        "busy or will talk later, or hanging up after the pitch is NOT interest.\n"
         f"RIGHT NOW it is {now_stamp} ({tzname}, UTC offset {now_offset}). Use this to resolve any "
         "relative day the caller mentioned into an exact date.\n"
         f"Return STRICT JSON with keys: disposition (exactly one of {dispositions} — "
@@ -740,6 +748,122 @@ def _drop_unanswered_proposal(analysis: Dict[str, Any], outcome: CallOutcome) ->
         analysis["meetingDatetimeIso"] = None
     except Exception:
         logger.exception("report: unanswered-proposal check failed corr=%s", corr)
+
+
+# ── "Interested" the caller never showed ─────────────────────────────────────
+# admin_core reads any label containing "interested" (and nothing negated or
+# booking-shaped, EngagementCallOutcomeService.verdict) as a hot lead: a CRM
+# follow-up due now and a team alert "please call them while they are interested".
+# The analyser was given no definition of interest, so a caller who listened, asked
+# who was calling, or said they were busy came back Interested.
+#
+# Measured on the caller's words, one-sided like the booking guards: any sign of
+# interest keeps the label; only a refusal, or a thin call with no such sign, loses
+# it — to the retry-safe sentinel (admin_core sends an engaged caller to a human).
+# A long call with no keyword is left to the model: a prospect describing their
+# business at length is a lead even without saying "price".
+_INTEREST_RE = re.compile(
+    r"\b(?:price|pricing|prices|fee|fees|cost|costs|charges?|kitna|kitne|kitni|rupees?|"
+    r"discount|emi|course|courses|batch|batches|classes|demo|trial|admission|syllabus|"
+    r"timings?|duration|details?|info|information|brochure|interested|chahiye|want|"
+    r"need|join|enrol|enroll|register|whatsapp|send|bhej\w*|share|bata\w*|samjha\w*|"
+    r"explain|tell\s+me|how\s+much|how\s+does|kaise|online|offline|location|address|"
+    r"certificate|placement)\b|"
+    + _dv("कितना", "कितने", "कितनी", "फीस", "कोर्स", "डेमो", "एडमिशन", "बैच", "चाहिए",
+          "जानकारी", "डिटेल", "डिटेल्स", "व्हाट्सएप")
+    + r"|(?<![ऀ-ॿ])(?:बता|भेज|समझा)",
+    re.IGNORECASE)
+# A plain refusal. Removed from the text BEFORE the interest search, so "not
+# interested" / "nahi chahiye" / "don't send" never count as interest.
+_REFUSAL_RE = re.compile(
+    r"\bnot\s+interested\b|\bno\s+interest\b|\binterest(?:ed)?\s+nahi\w*|"
+    r"\bnah(?:i|in|ee)\s+chahiye\b|\bnai\s+chahiye\b|\bno\s+need\b|"
+    r"\b(?:don'?t|do\s+not)\s+(?:need|want|call|send)\b|\bcall\s+mat\b|"
+    r"\bmat\s+(?:karo|karna|kijiye|bhejo)\b|\bzaro?o?rat\s+nahi\w*|\bneed\s+nahi\b|"
+    r"\bwrong\s+number\b|\bgalat\s+number\b|\bnot\s+required\b|"
+    r"\balready\s+(?:joined|enrolled|taken|done|bought)\b|"
+    r"नहीं\s*चाहिए|ज़?ज?रूरत\s*नहीं|इंटरेस्टेड\s*नहीं|इंटरेस्ट\s*नहीं|कॉल\s*मत|गलत\s*नंबर",
+    re.IGNORECASE)
+# Busy / later: not a refusal and not interest. Removed before the interest search
+# ("class mein hoon" is not a question about classes) and from the thin count.
+_BUSY_RE = re.compile(
+    r"\bbusy\b|\bbaad\s+m(?:e|ein|ein)\b|\blater\b|\babhi\s+nah(?:i|in)\b|\bdriving\b|"
+    r"\b(?:meeting|class|office|kaam)\s+m(?:e|ein)\b|बाद\s*में|अभी\s*नहीं|बिज़?ी",
+    re.IGNORECASE)
+# Asking who is calling is not interest in what they are calling about.
+_IDENTITY_RE = re.compile(
+    r"\bwho\s+(?:is\s+this|are\s+you|is\s+calling|is\s+speaking)\b|"
+    r"\bwhere\s+(?:are\s+you\s+)?(?:calling\s+)?from\b|\bwhich\s+company\b|"
+    r"\bka?(?:u|o)n\s+(?:bol\s+raha|bol\s+rahe|bol\s+rahi|hai|ho)\w*|\bka?(?:u|o)n\b|"
+    r"\bkaha?n?\s+se\b|\bkidhar\s+se\b|\bkya\s+naam\b|कौन|कहा[ँं]?\s*से",
+    re.IGNORECASE)
+# Words that carry nothing once greetings, "ok", "who is this" and busy talk are out:
+# "abhi main busy hoon, baad mein call karna" leaves only these. ANY other word — even
+# a one-word answer like "CBSE" to "which board?" — is the caller engaging, and keeps
+# the label: this guard only removes Interested where the caller said nothing at all.
+_FILLER_WORDS = frozenset({
+    "hai", "hain", "ho", "hoon", "hu", "hun", "main", "mai", "me", "mein", "raha", "rahe",
+    "rahi", "kar", "karo", "karna", "karenge", "karunga", "call", "phone", "abhi", "toh",
+    "to", "na", "kya", "thank", "thanks", "you", "i", "am", "is", "it", "this", "that",
+    "the", "a", "no", "bye", "sorry", "wait", "ek", "minute", "second", "bhai", "are",
+    "aap", "ap", "baat", "me", "my", "please", "and", "what", "huh", "nahi", "nahin",
+    "है", "हैं", "हो", "हूँ", "हूं", "मैं", "में", "रहा", "रहे", "रही", "बोल", "कर", "करो",
+    "करना", "अभी", "तो", "क्या", "कॉल", "फोन", "धन्यवाद", "आप", "बात", "नहीं",
+})
+_THIN_CALLER_WORDS = 0
+
+
+def _is_interest_label(label: str) -> bool:
+    """Mirror of admin_core EngagementCallOutcomeService.verdict == INTERESTED."""
+    d = _norm_label(label)
+    if not d or "interested" not in d:
+        return False
+    if re.search(r"notinterested|wrongnumber|notrelevant|donotcall|wrongperson", d):
+        return False
+    if re.search(r"not|cancel|declin|reject|noshow|lost|uninterest", d):
+        return False
+    return not any(h in d for h in _BOOKING_LABEL_HINTS)
+
+
+def _interest_evidence(outcome: CallOutcome) -> tuple:
+    """(interest shown, refused, content words left) from the caller's own turns."""
+    text = " ".join(_caller_turns(outcome)).casefold()
+    refused = bool(_REFUSAL_RE.search(text))
+    rest = _REFUSAL_RE.sub(" ", text)
+    rest = _BUSY_RE.sub(" ", rest)
+    interest = bool(_INTEREST_RE.search(rest))
+    rest = _IDENTITY_RE.sub(" ", rest)
+    # "kal call karna" / "shaam ko" is WHEN to call back (a callback, rule 5), not
+    # interest; an agreed meeting time already returned early in the caller.
+    rest = _TIME_WORD_RE.sub(" ", rest)
+    words =[w.strip(_WORD_STRIP) for w in rest.split()]
+    content = [w for w in words if w and w not in _GREETING_WORDS
+               and w not in _AFFIRMATIVE_WORDS and w not in _FILLER_WORDS]
+    return interest, refused, len(content)
+
+
+def _drop_unevidenced_interest(analysis: Dict[str, Any], outcome: CallOutcome) -> None:
+    """Refuse an interested-type label the caller's words do not support."""
+    corr = outcome.corr
+    try:
+        label = str(analysis.get("disposition") or "")
+        if not _is_interest_label(label):
+            return
+        if analysis.get("meetingRequested") and analysis.get("meetingDatetimeIso"):
+            return                   # an agreed meeting survived both booking guards
+        interest, refused, content = _interest_evidence(outcome)
+        if interest:
+            return
+        if not refused and content > _THIN_CALLER_WORDS:
+            return
+        why = ("the caller refused" if refused else
+               f"the caller said nothing showing interest ({content} content words)")
+        logger.warning("report: %r but %s — degrading to %s corr=%s",
+                       label, why, _INSUFFICIENT, corr)
+        analysis["disposition"] = _INSUFFICIENT
+        analysis["dispositionDowngradedFrom"] = label
+    except Exception:
+        logger.exception("report: interest-evidence check failed corr=%s", corr)
 
 
 # Callback-type labels, best first. "callback" outranks a generic follow-up because
@@ -1406,7 +1530,8 @@ async def build_and_post_report(outcome: CallOutcome, call_uuid: Optional[str]) 
         analysis = await _analyze(outcome)
         _drop_unevidenced_booking(analysis, outcome.corr)
         _drop_unanswered_proposal(analysis, outcome)
-        # AFTER both booking guards: a callback label like "Follow_Up_Scheduled"
+        _drop_unevidenced_interest(analysis, outcome)
+        # AFTER the booking and interest guards: a callback label like "Follow_Up_Scheduled"
         # reads as booking-shaped to them, and a caller who asked for a call-back
         # must not be degraded to a failed call on the way through.
         _promote_callback(analysis, outcome,

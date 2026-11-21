@@ -295,3 +295,90 @@ def test_a_receptionist_greeting_then_hello_ends_the_hold():
     for line in ("Hello?", "Hello, who is this?", "जी बोलिए", "Yes, tell me"):
         assert not hold_absorbs(line, 1.0)
         assert sounds_like_person(line) or "?" in line or len(line.split()) > 2
+
+
+# ── "Interested" the caller never showed ─────────────────────────────────────
+
+_PITCH = "Main Vidya Academy se bol rahi hoon, hamare naye NEET batch ke baare mein batana tha."
+
+
+def _interest(caller_lines, label="Interested", **extra):
+    turns = [_a(_PITCH)]
+    for line in caller_lines:
+        turns += [_u(line), _a("Ji, bilkul.")]
+    analysis = {"disposition": label, **extra}
+    rpt._drop_unevidenced_interest(analysis, _Outcome(turns))
+    return analysis
+
+
+@pytest.mark.parametrize("caller", [
+    ["Hello?", "Haan ji", "Kaun bol raha hai?", "Okay."],          # listened, asked who
+    ["Hello", "Where are you calling from?", "Hmm, okay"],
+    ["Abhi main busy hoon, baad mein call karna."],                 # busy is a callback
+    ["Main driving kar raha hoon", "Haan"],
+    ["Not interested, thank you."],                                 # refusal
+    ["Nahi chahiye ji, already joined somewhere else."],
+    ["हाँ जी", "कौन बोल रहा है?", "अभी नहीं, बाद में"],
+    ["नहीं चाहिए"],
+])
+def test_interested_without_the_callers_interest_is_dropped(caller):
+    out = _interest(caller)
+    assert out["disposition"] == "Incomplete"
+    assert out["dispositionDowngradedFrom"] == "Interested"
+
+
+@pytest.mark.parametrize("caller", [
+    ["Fees kitni hai?"],
+    ["Haan", "WhatsApp pe details bhej do"],
+    ["Mujhe NEET coaching chahiye beta ke liye"],
+    ["Online hai ya offline?"],
+    ["Interested hoon, bataiye"],
+    ["Abhi busy hoon, but course ki details send kar dijiye"],     # busy AND interest
+    ["फीस कितनी है?"],
+    ["मुझे जानकारी भेज दीजिए"],
+    # A long, substantive answer with no keyword is left to the model.
+    ["Mera beta abhi class eleven mein hai aur woh pichle saal se ghar pe khud padh raha hai"],
+])
+def test_real_interest_keeps_the_label(caller):
+    assert _interest(caller)["disposition"] == "Interested"
+
+
+def test_likely_interested_is_checked_too_and_other_labels_are_not():
+    assert _interest(["Hello", "Kaun?"], label="Likely_Interested")["disposition"] == "Incomplete"
+    for label in ("Not_Interested", "Uninterested", "Demo_Booked", "Callback", "Incomplete"):
+        assert _interest(["Hello", "Kaun?"], label=label)["disposition"] == label
+
+
+def test_an_agreed_meeting_keeps_interested():
+    out = _interest(["Haan", "Theek hai"], meetingRequested=True,
+                    meetingDatetimeIso="2026-11-22T16:00:00+05:30")
+    assert out["disposition"] == "Interested"
+
+
+def test_a_busy_caller_downgraded_from_interested_becomes_a_callback():
+    turns = [_a(_PITCH), _u("Abhi busy hoon, kal call karna")]
+    outcome = _Outcome(turns, dispositions=["Interested", "Callback", "Not_Interested"])
+    analysis = {"disposition": "Interested", "callbackRequested": True}
+    rpt._drop_unevidenced_interest(analysis, outcome)
+    rpt._promote_callback(analysis, outcome, ["Interested", "Callback", "Not_Interested"])
+    assert analysis["disposition"] == "Callback"
+
+
+def test_the_prompt_defines_interest(monkeypatch):
+    seen = {}
+
+    async def fake(s_, base_url, api_key, model, prompt, corr):
+        seen["prompt"] = prompt
+        return {"disposition": "Incomplete"}
+
+    monkeypatch.setattr(rpt, "_analysis_request", fake)
+    import asyncio
+    asyncio.run(rpt._analyze(_Outcome([_a("Hi"), _u("tell me the price")])))
+    assert "asking who is calling" in seen["prompt"]
+
+
+@pytest.mark.parametrize("caller", [["CBSE"], ["Class 11"], ["Haan", "Delhi"], ["Science stream"]])
+def test_a_short_answer_to_a_qualifying_question_keeps_interested(caller):
+    # One word answering "which board?" is the caller engaging — only a caller who
+    # said nothing beyond hello / ok / who is this / busy loses the label.
+    assert _interest(caller)["disposition"] == "Interested"
