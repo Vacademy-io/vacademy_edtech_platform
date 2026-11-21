@@ -245,6 +245,8 @@ export interface TaskListFilters {
     template?: string;
     /** Needs `date`, or `from` and `to`. One of INBOX_OUTCOME_KEYS. */
     outcome?: string;
+    /** One task by id (a link from the daily approvals email); the server ignores the rest with it. */
+    taskId?: string;
 }
 
 /** The call behind an AI_CALL action (GET /tasks/outcomes). */

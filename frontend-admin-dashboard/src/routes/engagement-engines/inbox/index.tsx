@@ -16,6 +16,7 @@ import { normalizeInboxSearch, type InboxSearch } from './-utils/search';
  *             needed, from <= to, and the pair wins over date (else it is ignored)
  *   template  template name, or an email subject
  *   outcome   delivered | opened | bounced ... (needs date, or from + to)
+ *   task      one task id (the daily approvals email links each person to theirs)
  */
 export const Route = createFileRoute('/engagement-engines/inbox/')({
     validateSearch: (search: Record<string, unknown>): InboxSearch => normalizeInboxSearch(search),

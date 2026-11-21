@@ -135,7 +135,7 @@ export const listTasks = async (
     size: number,
     filters: TaskListFilters = {}
 ): Promise<PageResponse<EngagementAction>> => {
-    const { engineId, channel, kind, date, from, to, template, outcome } = filters;
+    const { engineId, channel, kind, date, from, to, template, outcome, taskId } = filters;
     const res = await authenticatedAxiosInstance.get(ENGAGEMENT_TASKS_BASE, {
         params: {
             instituteId,
@@ -150,6 +150,7 @@ export const listTasks = async (
             ...(from && to ? { from, to } : {}),
             ...(template ? { template } : {}),
             ...(outcome ? { outcome } : {}),
+            ...(taskId ? { taskId } : {}),
         },
     });
     return res.data;

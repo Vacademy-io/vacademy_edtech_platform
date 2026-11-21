@@ -146,3 +146,15 @@ describe('inbox search params', () => {
         expect(hasInboxPeriod(normalizeInboxSearch({ from: '2026-10-12' }))).toBe(false);
     });
 });
+
+describe('task deep link', () => {
+    it('keeps a task id and counts it as a filter', () => {
+        const s = normalizeInboxSearch({ task: '3f2a9c1e-0b7d-4e8a-9c55-1d2e3f4a5b6c' });
+        expect(s.task).toBe('3f2a9c1e-0b7d-4e8a-9c55-1d2e3f4a5b6c');
+        expect(hasInboxFilters(s)).toBe(true);
+    });
+    it('drops a task id that is not an id', () => {
+        expect(normalizeInboxSearch({ task: 'x y<script>' }).task).toBeUndefined();
+        expect(normalizeInboxSearch({ task: 42 }).task).toBeUndefined();
+    });
+});

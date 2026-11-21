@@ -2,6 +2,7 @@ package vacademy.io.admin_core_service.features.engagement.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import vacademy.io.admin_core_service.features.admin_activity_logs.annotation.Auditable;
@@ -66,6 +67,10 @@ public class EngagementTaskController {
      * first, or from + to (a period, inclusive; wins over date; the report's rules: both or neither,
      * from ≤ to, not in the future, from today − 89), template (WhatsApp template, email subject or
      * email template), and outcome (needs date or from / to) as the report counts it.
+     *
+     * <p>taskId opens one task (the daily approvals notice links each person to theirs): a page of
+     * that one row when it is this institute's and in the asked statuses, else an empty page. The
+     * other filters are ignored with it.
      */
     @GetMapping
     public ResponseEntity<Page<EngagementAction>> inbox(
@@ -81,9 +86,17 @@ public class EngagementTaskController {
             @RequestParam(required = false) String to,
             @RequestParam(required = false) String template,
             @RequestParam(required = false) String outcome,
+            @RequestParam(required = false) String taskId,
             @RequestAttribute("user") CustomUserDetails user) {
         accessGuard.requireAdmin(user, instituteId);
         List<String> statusList = List.of(statuses.split(","));
+        if (taskId != null && !taskId.isBlank()) {
+            PageRequest one = PageRequest.of(0, 1);
+            List<EngagementAction> rows = actionRepository.findById(taskId.trim())
+                    .filter(a -> instituteId.equals(a.getInstituteId()) && statusList.contains(a.getStatus()))
+                    .map(List::of).orElse(List.of());
+            return ResponseEntity.ok(new PageImpl<>(rows, one, rows.size()));
+        }
         TaskFilter filter = new TaskFilter(engineId, channel, kind, date, from, to, template, outcome);
         if (filter.isEmpty()) {
             return ResponseEntity.ok(actionRepository.findInbox(

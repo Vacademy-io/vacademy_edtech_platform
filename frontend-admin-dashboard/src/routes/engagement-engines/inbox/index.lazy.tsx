@@ -210,6 +210,7 @@ function TaskInboxPage() {
         filters.to,
         filters.template,
         filters.outcome,
+        filters.task,
     ].join('|');
     const [pageState, setPageState] = useState({ page: 0, key: pageKey });
     const page = pageState.key === pageKey ? pageState.page : 0;
@@ -252,6 +253,7 @@ function TaskInboxPage() {
         to: filters.to,
         template: filters.template,
         outcome: withOutcome ? filters.outcome : undefined,
+        taskId: filters.task,
     });
     const { data, error, isLoading, isError, refetch } = useTasks(
         statuses,
