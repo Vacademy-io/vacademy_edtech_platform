@@ -168,6 +168,13 @@ export const flavorConfig: FlavorConfigs = {
     subdomain: "student",
   },
 
+  // Elevate Education iOS app, published from the institute's own Apple team
+  "in.elevateeducation.app": {
+    appName: "Elevate Education",
+    domain: "elevateeducation.in",
+    subdomain: "student",
+  },
+
   // Elevate Education Android app
   "com.elevateeducation.app": {
     appName: "Elevate Education",
